@@ -937,7 +937,7 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
             baseRuleset = _getStructFor(projectId, baseRuleset.basedOnId);
         }
 
-        // Make sure the ruleset starts after the base.
+        // Make sure the ruleset starts after the base ruleset.
         if (baseRuleset.start > mustStartAtOrAfter) mustStartAtOrAfter = baseRuleset.start;
 
         // The time when the duration of the base ruleset's approval hook has finished.

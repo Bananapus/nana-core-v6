@@ -15,6 +15,8 @@
     "coverage": "forge coverage --match-path \"./src/*.sol\" --report lcov --report summary",
     "deploy:mainnets": "source ./.env && npx sphinx propose ./script/Deploy.s.sol --networks mainnets",
     "deploy:testnets": "source ./.env && npx sphinx propose ./script/Deploy.s.sol --networks testnets",
+    "deploy:mainnets:5_1": "source ./.env && npx sphinx propose ./script/Deploy5_1.s.sol --networks mainnets",
+    "deploy:testnets:5_1": "source ./.env && npx sphinx propose ./script/Deploy5_1.s.sol --networks testnets",
     "deploy:testnets:periphery": "source ./.env && npx sphinx propose ./script/DeployPeriphery.s.sol --networks testnets",
     "deploy:mainnets:periphery": "source ./.env && npx sphinx propose ./script/DeployPeriphery.s.sol --networks mainnets",
     "deploy:testnets:usdc": "source ./.env && npx sphinx propose ./script/DeployUSDCFeeds.s.sol --networks testnets",
