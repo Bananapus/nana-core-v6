@@ -20,6 +20,7 @@ import {JBTerminalStore} from "../../src/JBTerminalStore.sol";
 import {JBFeelessAddresses} from "../../src/JBFeelessAddresses.sol";
 import {JBFundAccessLimits} from "../../src/JBFundAccessLimits.sol";
 import {JBRulesets} from "../../src/JBRulesets.sol";
+import {JBRulesets5_1} from "../../src/JBRulesets5_1.sol";
 import {JBPermissions} from "../../src/JBPermissions.sol";
 import {JBPrices} from "../../src/JBPrices.sol";
 import {JBProjects} from "../../src/JBProjects.sol";
@@ -115,10 +116,12 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
     JBPrices private _jbPrices;
     JBDirectory private _jbDirectory;
     JBRulesets private _jbRulesets;
+    JBRulesets5_1 private _jbRulesets5_1;
     JBERC20 private _jbErc20;
     JBTokens private _jbTokens;
     JBSplits private _jbSplits;
     JBController private _jbController;
+    JBController private _jbController5_1;
     JBFeelessAddresses private _jbFeelessAddresses;
     JBFundAccessLimits private _jbFundAccessLimits;
     JBTerminalStore private _jbTerminalStore;
@@ -162,6 +165,10 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         return _jbRulesets;
     }
 
+    function jbRulesets5_1() internal view returns (JBRulesets5_1) {
+        return _jbRulesets5_1;
+    }
+
     function jbErc20() internal view returns (JBERC20) {
         return _jbErc20;
     }
@@ -176,6 +183,10 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
 
     function jbController() internal view returns (JBController) {
         return _jbController;
+    }
+
+    function jbController5_1() internal view returns (JBController) {
+        return _jbController5_1;
     }
 
     function jbFeelessAddresses() internal view returns (JBFeelessAddresses) {
@@ -214,6 +225,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         _jbErc20 = new JBERC20();
         _jbTokens = new JBTokens(_jbDirectory, _jbErc20);
         _jbRulesets = new JBRulesets(_jbDirectory);
+        _jbRulesets5_1 = new JBRulesets5_1(_jbDirectory);
         _jbPrices = new JBPrices(_jbDirectory, _jbPermissions, _jbProjects, _multisig, _trustedForwarder);
         _jbSplits = new JBSplits(_jbDirectory);
         _jbFundAccessLimits = new JBFundAccessLimits(_jbDirectory);
@@ -233,11 +245,25 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
             address(0), // omnichainRulesetOperator
             _trustedForwarder
         );
+        _jbController5_1 = new JBController(
+            _jbDirectory,
+            _jbFundAccessLimits,
+            _jbPermissions,
+            _jbPrices,
+            _jbProjects,
+            _jbRulesets5_1,
+            _jbSplits,
+            _jbTokens,
+            address(0), // omnichainRulesetOperator
+            _trustedForwarder
+        );
 
         _metadataHelper = new MetadataResolverHelper();
 
         vm.prank(_multisig);
         _jbDirectory.setIsAllowedToSetFirstController(address(_jbController), true);
+        vm.prank(_multisig);
+        _jbDirectory.setIsAllowedToSetFirstController(address(_jbController5_1), true);
 
         _jbTerminalStore = new JBTerminalStore(_jbDirectory, _jbPrices, _jbRulesets);
 
@@ -279,6 +305,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         vm.label(address(_jbFundAccessLimits), "JBFundAccessLimits");
         vm.label(address(_jbSplits), "JBSplits");
         vm.label(address(_jbController), "JBController");
+        vm.label(address(_jbController5_1), "JBController5_1");
         vm.label(address(_jbTerminalStore), "JBTerminalStore");
         vm.label(address(_jbMultiTerminal2), "JBMultiTerminal2");
         vm.label(address(_jbMultiTerminal), "JBMultiTerminal");
