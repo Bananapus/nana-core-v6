@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 
 // A project's rulesets can be queued, and re-queued as long as the current ruleset approval hook approves.
-contract TestRulesetQueuing_Local is TestBaseWorkflow {
+contract TestRulesetQueuing5_1_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBRulesetMetadata private _metadata;
     JBDeadline private _deadline;
@@ -20,7 +20,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
     function setUp() public override {
         super.setUp();
 
-        _terminal = jbMultiTerminal();
+        _terminal = jbMultiTerminal5_1();
         _controller = jbController5_1();
 
         _deadline = new JBDeadline(_DEADLINE_DURATION);

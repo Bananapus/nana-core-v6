@@ -5,10 +5,16 @@ import "@sphinx-labs/contracts/SphinxPlugin.sol";
 import {Script, stdJson, VmSafe} from "forge-std/Script.sol";
 import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
 
+import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBRulesets5_1} from "src/JBRulesets5_1.sol";
+import {JBMultiTerminal5_1} from "src/JBMultiTerminal5_1.sol";
+import {JBTerminalStore5_1} from "src/JBTerminalStore5_1.sol";
 import {JBController} from "src/JBController.sol";
 
 contract DeployPeriphery is Script, Sphinx {
+    /// @notice The universal PERMIT2 address.
+    IPermit2 private constant _PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+
     /// @notice tracks the deployment of the core contracts for the chain we are deploying to.
     CoreDeployment core;
 
@@ -42,6 +48,20 @@ contract DeployPeriphery is Script, Sphinx {
 
     function deploy() public sphinx {
         JBRulesets5_1 rulesets = new JBRulesets5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(core.directory);
+        
+        new JBMultiTerminal5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            permissions: core.permissions,
+            projects: core.projects,
+            splits: core.splits,
+            store: new JBTerminalStore5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                directory: core.directory,
+                prices: core.prices
+            }),
+            tokens: core.tokens,
+            feelessAddresses: core.feeless,
+            permit2: _PERMIT2,
+            trustedForwarder: TRUSTED_FORWARDER
+        });
 
         core.directory.setIsAllowedToSetFirstController(
             address(
