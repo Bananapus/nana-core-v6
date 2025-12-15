@@ -224,8 +224,12 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         return _jbMultiTerminal2;
     }
 
-        function jbMultiTerminal2_5_1() internal view returns (JBMultiTerminal5_1) {
+    function jbMultiTerminal2_5_1() internal view returns (JBMultiTerminal5_1) {
         return _jbMultiTerminal2_5_1;
+    }
+
+    function trustedForwarder() internal view returns (address) {
+        return _trustedForwarder;
     }
 
     function metadataHelper() internal view returns (MetadataResolverHelper) {

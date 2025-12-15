@@ -143,7 +143,8 @@ contract TestPermissions5_1_Local is TestBaseWorkflow, JBTest {
     {
         vm.assume(_projectId != 0);
         vm.assume(_set_permissions.length != 0);
-
+        vm.assume(_account != trustedForwarder());
+        
         uint256[] memory _check_permissions = new uint256[](1);
         _check_permissions[0] = _checkedId;
 
