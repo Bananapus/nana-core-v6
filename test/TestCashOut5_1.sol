@@ -9,8 +9,8 @@ import {JBCashOuts} from "../src/libraries/JBCashOuts.sol";
 // tokens
 contract TestCashOut5_1_Local is TestBaseWorkflow {
     IJBController private _controller;
-    IJBMultiTerminal5_1 private _terminal;
-    IJBTerminalStore5_1 private _terminalStore;
+    IJBMultiTerminal private _terminal;
+    IJBTerminalStore private _terminalStore;
     JBTokens private _tokens;
     uint112 private _weight;
     JBRulesetMetadata _metadata;

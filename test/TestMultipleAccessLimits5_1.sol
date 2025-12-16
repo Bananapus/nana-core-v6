@@ -7,7 +7,7 @@ import {MockPriceFeed} from "./mock/MockPriceFeed.sol";
 contract TestMultipleAccessLimits5_1_Local is TestBaseWorkflow {
     uint32 private _nativeCurrency;
     IJBController private _controller;
-    IJBMultiTerminal5_1 private __terminal;
+    IJBMultiTerminal private __terminal;
     IJBPrices private _prices;
     JBTokens private _tokens;
     uint112 private _weight;

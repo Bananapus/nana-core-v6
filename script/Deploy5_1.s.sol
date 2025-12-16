@@ -7,8 +7,8 @@ import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol
 
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBRulesets5_1} from "src/JBRulesets5_1.sol";
-import {JBMultiTerminal5_1} from "src/JBMultiTerminal5_1.sol";
-import {JBTerminalStore5_1} from "src/JBTerminalStore5_1.sol";
+import {JBMultiTerminal} from "src/JBMultiTerminal.sol";
+import {JBTerminalStore} from "src/JBTerminalStore.sol";
 import {JBController} from "src/JBController.sol";
 
 contract DeployPeriphery is Script, Sphinx {
@@ -49,13 +49,14 @@ contract DeployPeriphery is Script, Sphinx {
     function deploy() public sphinx {
         JBRulesets5_1 rulesets = new JBRulesets5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(core.directory);
         
-        new JBMultiTerminal5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+        new JBMultiTerminal{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
             permissions: core.permissions,
             projects: core.projects,
             splits: core.splits,
-            store: new JBTerminalStore5_1{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
                 directory: core.directory,
-                prices: core.prices
+                prices: core.prices,
+                rulesets: rulesets
             }),
             tokens: core.tokens,
             feelessAddresses: core.feeless,

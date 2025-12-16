@@ -9,7 +9,7 @@ contract TestMetaTx5_1_Local is TestBaseWorkflow {
     uint112 private constant _WEIGHT = 1000 * 10 ** 18;
 
     IJBController private _controller;
-    IJBMultiTerminal5_1 private _terminal;
+    IJBMultiTerminal private _terminal;
     JBTokens private _tokens;
     ERC2771ForwarderMock internal _erc2771Forwarder = ERC2771ForwarderMock(address(123_456));
     address private _projectOwner;

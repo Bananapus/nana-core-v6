@@ -10,9 +10,9 @@ contract TestCashOutHooks5_1_Local is TestBaseWorkflow {
     address private constant _DATA_HOOK = address(bytes20(keccak256("datahook")));
 
     IJBController private _controller;
-    IJBMultiTerminal5_1 private _terminal;
+    IJBMultiTerminal private _terminal;
     IJBTokens private _tokens;
-    IJBTerminalStore5_1 private _terminalStore;
+    IJBTerminalStore private _terminalStore;
     address private _projectOwner;
     address private _beneficiary;
 

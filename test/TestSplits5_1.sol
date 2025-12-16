@@ -6,7 +6,7 @@ import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 contract TestSplits5_1_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBRulesetMetadata private _metadata;
-    IJBMultiTerminal5_1 private _terminal;
+    IJBMultiTerminal private _terminal;
     IJBTokens private _tokens;
     uint112 private _weight;
 

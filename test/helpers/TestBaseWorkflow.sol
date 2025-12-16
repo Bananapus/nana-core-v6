@@ -17,7 +17,6 @@ import {JBPermissioned} from "../../src/abstract/JBPermissioned.sol";
 import {JBController} from "../../src/JBController.sol";
 import {JBDirectory} from "../../src/JBDirectory.sol";
 import {JBTerminalStore} from "../../src/JBTerminalStore.sol";
-import {JBTerminalStore5_1} from "../../src/JBTerminalStore5_1.sol";
 import {JBFeelessAddresses} from "../../src/JBFeelessAddresses.sol";
 import {JBFundAccessLimits} from "../../src/JBFundAccessLimits.sol";
 import {JBRulesets} from "../../src/JBRulesets.sol";
@@ -31,7 +30,6 @@ import {JBTokens} from "../../src/JBTokens.sol";
 import {JBDeadline} from "../../src/JBDeadline.sol";
 import {JBApprovalStatus} from "../../src/enums/JBApprovalStatus.sol";
 import {JBMultiTerminal} from "../../src/JBMultiTerminal.sol";
-import {JBMultiTerminal5_1} from "../../src/JBMultiTerminal5_1.sol";
 import {JBAccountingContext} from "../../src/structs/JBAccountingContext.sol";
 import {JBCurrencyAmount} from "../../src/structs/JBCurrencyAmount.sol";
 import {JBAfterPayRecordedContext} from "../../src/structs/JBAfterPayRecordedContext.sol";
@@ -64,7 +62,6 @@ import {IJBMigratable} from "../../src/interfaces/IJBMigratable.sol";
 import {IJBPermissions} from "../../src/interfaces/IJBPermissions.sol";
 import {IJBDirectoryAccessControl} from "../../src/interfaces/IJBDirectoryAccessControl.sol";
 import {IJBTerminalStore} from "../../src/interfaces/IJBTerminalStore.sol";
-import {IJBTerminalStore5_1} from "../../src/interfaces/IJBTerminalStore5_1.sol";
 import {IJBProjects} from "../../src/interfaces/IJBProjects.sol";
 import {IJBRulesetApprovalHook} from "../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBDirectory} from "../../src/interfaces/IJBDirectory.sol";
@@ -78,7 +75,6 @@ import {IJBRulesetDataHook} from "../../src/interfaces/IJBRulesetDataHook.sol";
 import {IJBCashOutHook} from "../../src/interfaces/IJBCashOutHook.sol";
 import {IJBRulesetDataHook} from "../../src/interfaces/IJBRulesetDataHook.sol";
 import {IJBMultiTerminal} from "../../src/interfaces/IJBMultiTerminal.sol";
-import {IJBMultiTerminal5_1} from "../../src/interfaces/IJBMultiTerminal5_1.sol";
 import {IJBCashOutTerminal} from "../../src/interfaces/IJBCashOutTerminal.sol";
 import {IJBPayoutTerminal} from "../../src/interfaces/IJBPayoutTerminal.sol";
 import {IJBPermitTerminal} from "../../src/interfaces/IJBPermitTerminal.sol";
@@ -129,12 +125,12 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
     JBFeelessAddresses private _jbFeelessAddresses;
     JBFundAccessLimits private _jbFundAccessLimits;
     JBTerminalStore private _jbTerminalStore;
-    JBTerminalStore5_1 private _jbTerminalStore5_1;
+    JBTerminalStore private _jbTerminalStore5_1;
     JBMultiTerminal private _jbMultiTerminal;
-    JBMultiTerminal5_1 private _jbMultiTerminal5_1;
+    JBMultiTerminal private _jbMultiTerminal5_1;
     MetadataResolverHelper private _metadataHelper;
     JBMultiTerminal private _jbMultiTerminal2;
-    JBMultiTerminal5_1 private _jbMultiTerminal2_5_1;
+    JBMultiTerminal private _jbMultiTerminal2_5_1;
     
     function multisig() internal view returns (address) {
         return _multisig;
@@ -208,7 +204,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         return _jbTerminalStore;
     }
 
-    function jbTerminalStore5_1() internal view returns (JBTerminalStore5_1) {
+    function jbTerminalStore5_1() internal view returns (JBTerminalStore) {
         return _jbTerminalStore5_1;
     }
 
@@ -216,7 +212,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         return _jbMultiTerminal;
     }
 
-    function jbMultiTerminal5_1() internal view returns (JBMultiTerminal5_1) {
+    function jbMultiTerminal5_1() internal view returns (JBMultiTerminal) {
         return _jbMultiTerminal5_1;
     }
 
@@ -224,7 +220,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         return _jbMultiTerminal2;
     }
 
-    function jbMultiTerminal2_5_1() internal view returns (JBMultiTerminal5_1) {
+    function jbMultiTerminal2_5_1() internal view returns (JBMultiTerminal) {
         return _jbMultiTerminal2_5_1;
     }
 
@@ -289,7 +285,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
         _jbDirectory.setIsAllowedToSetFirstController(address(_jbController5_1), true);
 
         _jbTerminalStore = new JBTerminalStore(_jbDirectory, _jbPrices, _jbRulesets);
-        _jbTerminalStore5_1 = new JBTerminalStore5_1(_jbDirectory, _jbPrices);
+        _jbTerminalStore5_1 = new JBTerminalStore(_jbDirectory, _jbPrices, _jbRulesets5_1);
 
         vm.prank(_multisig);
         _permit2 = deployPermit2();
@@ -305,7 +301,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
             _trustedForwarder
         );
 
-        _jbMultiTerminal5_1 = new JBMultiTerminal5_1(
+        _jbMultiTerminal5_1 = new JBMultiTerminal(
             _jbFeelessAddresses,
             _jbPermissions,
             _jbProjects,
@@ -327,7 +323,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
             _trustedForwarder
         );
 
-        _jbMultiTerminal2_5_1 = new JBMultiTerminal5_1(
+        _jbMultiTerminal2_5_1 = new JBMultiTerminal(
             _jbFeelessAddresses,
             _jbPermissions,
             _jbProjects,

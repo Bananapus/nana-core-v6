@@ -8,8 +8,8 @@ contract TestFees5_1_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBRulesetMetadata private _metadata;
     JBRulesetMetadata private _feeProjectMetadata;
-    IJBMultiTerminal5_1 private _terminal;
-    IJBMultiTerminal5_1 private _terminal2;
+    IJBMultiTerminal private _terminal;
+    IJBMultiTerminal private _terminal2;
     IJBRulesets private _rulesets;
 
     uint224 _nativePayAmount;

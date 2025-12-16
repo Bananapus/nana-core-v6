@@ -25,9 +25,9 @@ contract TestAccessToFunds5_1_Local is TestBaseWorkflow {
 
     IJBController private _controller;
     IJBPrices private _prices;
-    IJBMultiTerminal5_1 private _terminal;
-    IJBMultiTerminal5_1 private _terminal2;
-    IJBTerminalStore5_1 private _terminalStore;
+    IJBMultiTerminal private _terminal;
+    IJBMultiTerminal private _terminal2;
+    IJBTerminalStore private _terminalStore;
     IJBTokens private _tokens;
     address private _projectOwner;
     address private _beneficiary;
