@@ -24,9 +24,6 @@ contract DeployPeriphery is Script, Sphinx {
     /// the same bytecode.
     uint256 private CORE_DEPLOYMENT_NONCE = 1;
 
-    // TODO
-    address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
-
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
         sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum"];
@@ -63,23 +60,5 @@ contract DeployPeriphery is Script, Sphinx {
             permit2: _PERMIT2,
             trustedForwarder: TRUSTED_FORWARDER
         });
-
-        core.directory.setIsAllowedToSetFirstController(
-            address(
-                new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                    directory: core.directory,
-                    fundAccessLimits: core.fundAccess,
-                    prices: core.prices,
-                    permissions: core.permissions,
-                    projects: core.projects,
-                    rulesets: rulesets,
-                    splits: core.splits,
-                    tokens: core.tokens,
-                    omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                    trustedForwarder: TRUSTED_FORWARDER
-                })
-            ),
-            true
-        );
     }
 }
