@@ -91,13 +91,13 @@ library CoreDeploymentLib {
         deployment.terminal =
             JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal"));
 
-        deployment.terminal =
+        deployment.terminal5_1 =
             JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal5_1"));
 
         deployment.terminalStore =
             JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore"));
 
-        deployment.terminalStore =
+        deployment.terminalStore5_1 =
             JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore5_1"));
 
         deployment.prices = JBPrices(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBPrices"));
