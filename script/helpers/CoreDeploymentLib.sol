@@ -32,7 +32,9 @@ struct CoreDeployment {
     // Once its deployed we can uncomment this (and the setter in `getDeployment(..)`).
     JBController controller;
     JBMultiTerminal terminal;
+    JBMultiTerminal terminal5_1;
     JBTerminalStore terminalStore;
+    JBTerminalStore terminalStore5_1;
     JBPrices prices;
     JBFeelessAddresses feeless;
     JBFundAccessLimits fundAccess;
@@ -89,8 +91,14 @@ library CoreDeploymentLib {
         deployment.terminal =
             JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal"));
 
+        deployment.terminal =
+            JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal5_1"));
+
         deployment.terminalStore =
             JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore"));
+
+        deployment.terminalStore =
+            JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore5_1"));
 
         deployment.prices = JBPrices(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBPrices"));
 
