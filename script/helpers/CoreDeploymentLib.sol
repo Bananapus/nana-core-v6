@@ -8,6 +8,7 @@ import {JBPermissions} from "../../src/JBPermissions.sol";
 import {JBProjects} from "../../src/JBProjects.sol";
 import {JBPrices} from "../../src/JBPrices.sol";
 import {JBRulesets} from "../../src/JBRulesets.sol";
+import {JBRulesets5_1} from "src/JBRulesets5_1.sol";
 import {JBDirectory} from "../../src/JBDirectory.sol";
 import {JBTokens} from "../../src/JBTokens.sol";
 import {JBSplits} from "../../src/JBSplits.sol";
@@ -26,11 +27,14 @@ struct CoreDeployment {
     JBDirectory directory;
     JBSplits splits;
     JBRulesets rulesets;
+    JBRulesets5_1 rulesets5_1;
     // NOTICE: Temporarily commented out as its no longer deployed on first deployment.
     // Once its deployed we can uncomment this (and the setter in `getDeployment(..)`).
     JBController controller;
     JBMultiTerminal terminal;
+    JBMultiTerminal terminal5_1;
     JBTerminalStore terminalStore;
+    JBTerminalStore terminalStore5_1;
     JBPrices prices;
     JBFeelessAddresses feeless;
     JBFundAccessLimits fundAccess;
@@ -80,13 +84,21 @@ library CoreDeploymentLib {
 
         deployment.rulesets = JBRulesets(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBRulesets"));
 
+        deployment.rulesets5_1 = JBRulesets5_1(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBRulesets5_1"));
+
         deployment.controller = JBController(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBController"));
 
         deployment.terminal =
             JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal"));
 
+        deployment.terminal5_1 =
+            JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal5_1"));
+
         deployment.terminalStore =
             JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore"));
+
+        deployment.terminalStore5_1 =
+            JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore5_1"));
 
         deployment.prices = JBPrices(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBPrices"));
 
