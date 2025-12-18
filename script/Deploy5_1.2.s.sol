@@ -20,8 +20,7 @@ contract DeployPeriphery is Script, Sphinx {
     /// the same bytecode.
     uint256 private CORE_DEPLOYMENT_NONCE = 1;
 
-    // TODO
-    address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
+    address private OMNICHAIN_RULESET_OPERATOR = address(0x587BF86677Ec0d1B766D9bA0d7AC2A51c6C2fc71);
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
@@ -38,27 +37,33 @@ contract DeployPeriphery is Script, Sphinx {
         // We use the same trusted forwarder as the core deployment.
         TRUSTED_FORWARDER = core.permissions.trustedForwarder();
 
+        // Make sure the ruleset operator is actually deployed.
+        if (OMNICHAIN_RULESET_OPERATOR.code.length == 0) {
+            revert("Omnichain ruleset operator not deployed");
+        }
+
         // Deploy the protocol.
         deploy();
     }
 
     function deploy() public sphinx {
-        core.directory.setIsAllowedToSetFirstController(
-            address(
-                new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                    directory: core.directory,
-                    fundAccessLimits: core.fundAccess,
-                    prices: core.prices,
-                    permissions: core.permissions,
-                    projects: core.projects,
-                    rulesets: core.rulesets5_1,
-                    splits: core.splits,
-                    tokens: core.tokens,
-                    omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                    trustedForwarder: TRUSTED_FORWARDER
-                })
-            ),
-            true
-        );
+        core.directory
+            .setIsAllowedToSetFirstController(
+                address(
+                    new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                        directory: core.directory,
+                        fundAccessLimits: core.fundAccess,
+                        prices: core.prices,
+                        permissions: core.permissions,
+                        projects: core.projects,
+                        rulesets: core.rulesets5_1,
+                        splits: core.splits,
+                        tokens: core.tokens,
+                        omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
+                        trustedForwarder: TRUSTED_FORWARDER
+                    })
+                ),
+                true
+            );
     }
 }
