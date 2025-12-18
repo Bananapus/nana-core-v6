@@ -28,9 +28,8 @@ struct CoreDeployment {
     JBSplits splits;
     JBRulesets rulesets;
     JBRulesets5_1 rulesets5_1;
-    // NOTICE: Temporarily commented out as its no longer deployed on first deployment.
-    // Once its deployed we can uncomment this (and the setter in `getDeployment(..)`).
     JBController controller;
+    JBController controller5_1;
     JBMultiTerminal terminal;
     JBMultiTerminal terminal5_1;
     JBTerminalStore terminalStore;
@@ -87,6 +86,9 @@ library CoreDeploymentLib {
         deployment.rulesets5_1 = JBRulesets5_1(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBRulesets5_1"));
 
         deployment.controller = JBController(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBController"));
+
+        deployment.controller5_1 =
+            JBController(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBController5_1"));
 
         deployment.terminal =
             JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal"));
