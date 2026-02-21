@@ -824,10 +824,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 for (uint256 j; j < i; j++) {
                     delete _heldFeesOf[projectId][token][startIndex + j];
                 }
-                // Restart at this index next time.
-                if (i > 0) _nextHeldFeeIndexOf[projectId][token] = startIndex + i;
                 return;
             }
+
+            // Update the index before the external call to prevent reentrancy from reprocessing the same fee.
+            _nextHeldFeeIndexOf[projectId][token] = startIndex + i + 1;
 
             // Process the fee.
             // slither-disable-next-line reentrancy-no-eth
@@ -850,9 +851,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (startIndex + count >= numberOfHeldFees) {
             delete _heldFeesOf[projectId][token];
             delete _nextHeldFeeIndexOf[projectId][token];
-        } else {
-            // Restart at the next fee next time.
-            _nextHeldFeeIndexOf[projectId][token] = startIndex + count;
         }
     }
 
