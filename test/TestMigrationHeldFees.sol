@@ -3,9 +3,9 @@ pragma solidity ^0.8.6;
 
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 
-/// @notice Confirms M-16: held fees are stranded when a terminal migrates.
-/// The migration calls addToBalanceOf with shouldReturnHeldFees: false,
-/// leaving held fees in the old terminal with no balance to process them.
+/// @notice Verifies M-16 fix: held fees are returned to project balance before terminal migration.
+/// The migration now calls _returnHeldFees before recording the migration,
+/// ensuring held fee tokens are included in the migrated balance.
 contract TestMigrationHeldFees_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBMultiTerminal private _terminal;
@@ -117,8 +117,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         });
     }
 
-    /// @notice M-16 CONFIRMED: Pay → distribute payouts (holds fees) → migrate → fees stranded.
-    function test_migration_heldFeesStranded() external {
+    /// @notice M-16 FIX VERIFIED: held fees are returned to project balance during migration.
+    function test_migration_heldFeesReturnedBeforeMigration() external {
         // Step 1: Pay the project.
         _terminal.pay{value: PAY_AMOUNT}({
             projectId: _projectId,
@@ -130,7 +130,7 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
             metadata: new bytes(0)
         });
 
-        // Step 2: Distribute payouts — fees will be held (holdFees=true).
+        // Step 2: Distribute payouts (fees will be held since holdFees=true).
         vm.prank(_projectOwner);
         _terminal.sendPayoutsOf({
             projectId: _projectId,
@@ -144,19 +144,26 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
         assertGt(heldFees.length, 0, "Should have held fees after payout");
 
-        // Step 3: Migrate balance to terminal2.
+        // Record balance before migration.
         uint256 balanceBefore = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
 
+        // Step 3: Migrate balance to terminal2.
+        // The fix returns held fees to the project balance before migrating.
         vm.prank(_projectOwner);
         uint256 migrated = _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
 
-        // Step 4: Verify old terminal has no balance but still has held fees.
+        // Step 4: Verify old terminal has no balance.
         uint256 balanceAfter = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceAfter, 0, "Old terminal should have 0 balance after migration");
 
-        // Held fees still exist in old terminal.
+        // Held fees should be cleared in old terminal (returned during migration).
         JBFee[] memory feesAfterMigration = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
-        assertEq(feesAfterMigration.length, heldFees.length, "M-16: Held fees remain in old terminal");
+        assertEq(feesAfterMigration.length, 0, "Held fees should be cleared after migration");
+
+        // New terminal should have received the full balance (including returned fee amounts).
+        uint256 newTerminalBalance = _store.balanceOf(address(_terminal2), _projectId, JBConstants.NATIVE_TOKEN);
+        assertGt(newTerminalBalance, balanceBefore, "New terminal balance should include returned fees");
+        assertEq(newTerminalBalance, migrated, "Migrated amount should match new terminal balance");
     }
 
     /// @notice Process held fees FIRST, then migrate — correct approach.
@@ -202,8 +209,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
     }
 
-    /// @notice After migration, processHeldFeesOf on old terminal processes nothing (no balance).
-    function test_migration_heldFeesUnclaimable() external {
+    /// @notice After migration with fix, no held fees remain in old terminal.
+    function test_migration_noHeldFeesRemainAfterMigration() external {
         // Pay and distribute.
         _terminal.pay{value: PAY_AMOUNT}({
             projectId: _projectId,
@@ -224,26 +231,25 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        // Migrate.
+        // Verify held fees exist before migration.
+        JBFee[] memory heldFeesBefore = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertGt(heldFeesBefore.length, 0, "Should have held fees before migration");
+
+        // Migrate. Held fees are returned to project balance first.
         vm.prank(_projectOwner);
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
 
-        // Warp past holding period.
+        // After migration, held fees should be cleared.
+        JBFee[] memory heldFeesAfter = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertEq(heldFeesAfter.length, 0, "Held fees should be cleared after migration");
+
+        // processHeldFeesOf is a no-op since all fees were returned during migration.
         vm.warp(block.timestamp + 28 days + 1);
-
-        // Fee project balance before attempting to process.
-        uint256 feeBalanceBefore = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
-
-        // Try to process held fees — the fees still exist but the old terminal has no ETH.
-        // The _processFee try-catch will catch the revert and credit the fee amount back to the project.
         _terminal.processHeldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
 
-        // Fee project should NOT have received fees (old terminal had no ETH to transfer).
-        uint256 feeBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
-
-        // The fee processing attempted but the terminal has no actual ETH.
-        // The _recordAddedBalanceFor in the catch block inflates the store balance
-        // without actual funds — this is a phantom balance.
-        // This documents the M-16 issue: either fees are lost OR phantom balances are created.
+        // Old terminal should have no balance and no held fees.
+        uint256 oldBalance = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(oldBalance, 0, "Old terminal should have 0 balance");
     }
+
 }

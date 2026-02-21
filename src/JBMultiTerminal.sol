@@ -709,6 +709,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             revert JBMultiTerminal_TerminalTokensIncompatible();
         }
 
+        // Return any held fees to the project's balance before migration.
+        // This ensures held fee tokens are included in the migrated balance and not stranded in the old terminal.
+        uint256 returnedFees = _returnHeldFees({projectId: projectId, token: token, amount: type(uint256).max});
+        if (returnedFees != 0) _recordAddedBalanceFor({projectId: projectId, token: token, amount: returnedFees});
+
         // Record the migration in the store.
         // slither-disable-next-line reentrancy-events
         balance = STORE.recordTerminalMigration({projectId: projectId, token: token});
