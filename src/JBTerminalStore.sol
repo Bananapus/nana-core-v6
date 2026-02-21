@@ -788,6 +788,36 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
+    /// @notice Records a return of funds that were previously counted against a payout limit.
+    /// @dev Called by the terminal when a payout to a split fails and funds are returned to the project balance.
+    /// @param projectId The ID of the project whose payout limit is being restored.
+    /// @param token The token whose payout limit usage is being decremented.
+    /// @param rulesetCycleNumber The cycle number of the ruleset during which the payout was attempted.
+    /// @param currency The currency of the payout limit being restored.
+    /// @param amount The amount to restore to the payout limit, denominated in the payout limit's currency.
+    function recordPayoutLimitReturnFor(
+        uint256 projectId,
+        address token,
+        uint256 rulesetCycleNumber,
+        uint256 currency,
+        uint256 amount
+    )
+        external
+        override
+    {
+        // Get the current used payout limit.
+        uint256 currentUsed = usedPayoutLimitOf[msg.sender][projectId][token][rulesetCycleNumber][currency];
+
+        // The amount to restore cannot exceed what has been used.
+        uint256 restoredAmount = amount > currentUsed ? currentUsed : amount;
+
+        // Decrement the used payout limit.
+        unchecked {
+            usedPayoutLimitOf[msg.sender][projectId][token][rulesetCycleNumber][currency] =
+                currentUsed - restoredAmount;
+        }
+    }
+
     /// @notice Records the migration of funds from this store.
     /// @param projectId The ID of the project being migrated.
     /// @param token The token being migrated.

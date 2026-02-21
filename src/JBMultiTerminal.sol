@@ -1730,12 +1730,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Send payouts to the splits and get a reference to the amount left over after the splits have been paid.
         // Also get a reference to the amount which was paid out to splits that is eligible for fees.
-        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = _sendPayoutsToSplitGroupOf({
-            projectId: projectId,
-            token: token,
-            rulesetId: ruleset.id,
-            amount: amountPaidOut
-        });
+        // Also track how much was returned to the project balance due to failed split payouts.
+        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees, uint256 amountReturnedToBalance) =
+            _sendPayoutsToSplitGroupOf({
+                projectId: projectId,
+                token: token,
+                rulesetId: ruleset.id,
+                amount: amountPaidOut
+            });
 
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
         if (leftoverPayoutAmount != 0) {
@@ -1763,7 +1765,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
                 // Add balance back to the project.
                 _recordAddedBalanceFor({projectId: projectId, token: token, amount: leftoverPayoutAmount});
+
+                // Track the leftover as returned to balance.
+                amountReturnedToBalance += leftoverPayoutAmount;
             }
+        }
+
+        // If any payouts failed and funds were returned to balance, restore the corresponding payout limit.
+        if (amountReturnedToBalance != 0 && amountPaidOut != 0) {
+            // Convert the returned token amount back to the payout limit's currency.
+            // amount is in `currency`, amountPaidOut is in the token's currency.
+            uint256 limitAmountToRestore = (currency == _accountingContextForTokenOf[projectId][token].currency)
+                ? amountReturnedToBalance
+                : mulDiv(amountReturnedToBalance, amount, amountPaidOut);
+
+            // Restore the payout limit in the store.
+            STORE.recordPayoutLimitReturnFor({
+                projectId: projectId,
+                token: token,
+                rulesetCycleNumber: ruleset.cycleNumber,
+                currency: currency,
+                amount: limitAmountToRestore
+            });
         }
 
         // Take the fee.
@@ -1839,6 +1862,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// terminal.
     /// @return amount The leftover amount (zero if the splits add up to 100%).
     /// @return amountEligibleForFees The total amount of funds which were paid out and are eligible for fees.
+    /// @return amountReturnedToBalance The total amount of funds returned to the project balance due to failed split payouts.
     function _sendPayoutsToSplitGroupOf(
         uint256 projectId,
         address token,
@@ -1846,7 +1870,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 amount
     )
         internal
-        returns (uint256, uint256 amountEligibleForFees)
+        returns (uint256, uint256 amountEligibleForFees, uint256 amountReturnedToBalance)
     {
         // The total percentage available to split
         uint256 leftoverPercentage = JBConstants.SPLITS_TOTAL_PERCENT;
@@ -1872,6 +1896,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 amountEligibleForFees += payoutAmount;
             }
 
+            // If the payout failed (returned 0) but was non-zero, track the returned amount.
+            if (netPayoutAmount == 0 && payoutAmount != 0) {
+                amountReturnedToBalance += payoutAmount;
+            }
+
             if (payoutAmount != 0) {
                 // Subtract from the amount to be sent to the beneficiary.
                 unchecked {
@@ -1895,7 +1924,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        return (amount, amountEligibleForFees);
+        return (amount, amountEligibleForFees, amountReturnedToBalance);
     }
 
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).

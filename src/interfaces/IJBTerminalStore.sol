@@ -120,4 +120,12 @@ interface IJBTerminalStore {
     )
         external
         returns (JBRuleset memory ruleset, uint256 usedAmount);
+    function recordPayoutLimitReturnFor(
+        uint256 projectId,
+        address token,
+        uint256 rulesetCycleNumber,
+        uint256 currency,
+        uint256 amount
+    )
+        external;
 }
