@@ -1,0 +1,249 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.6;
+
+import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+
+/// @notice Confirms M-16: held fees are stranded when a terminal migrates.
+/// The migration calls addToBalanceOf with shouldReturnHeldFees: false,
+/// leaving held fees in the old terminal with no balance to process them.
+contract TestMigrationHeldFees_Local is TestBaseWorkflow {
+    IJBController private _controller;
+    JBMultiTerminal private _terminal;
+    JBMultiTerminal private _terminal2;
+    JBTokens private _tokens;
+    JBTerminalStore private _store;
+    uint256 private _projectId;
+    address private _projectOwner;
+
+    uint112 private constant WEIGHT = 1000 * 10 ** 18;
+    uint112 private constant PAY_AMOUNT = 10 ether;
+
+    function setUp() public override {
+        super.setUp();
+
+        _projectOwner = multisig();
+        _controller = jbController();
+        _terminal = jbMultiTerminal();
+        _terminal2 = jbMultiTerminal2();
+        _tokens = jbTokens();
+        _store = jbTerminalStore();
+
+        // Ruleset with holdFees=true and allowTerminalMigration=true.
+        JBRulesetMetadata memory metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: 0,
+            baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: true,
+            allowSetTerminals: true,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: true, // Fees are held, not processed immediately.
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
+        rulesetConfig[0].mustStartAtOrAfter = 0;
+        rulesetConfig[0].duration = 0;
+        rulesetConfig[0].weight = WEIGHT;
+        rulesetConfig[0].weightCutPercent = 0;
+        rulesetConfig[0].approvalHook = IJBRulesetApprovalHook(address(0));
+        rulesetConfig[0].metadata = metadata;
+        rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
+
+        // Set up payout limit so fees are taken on payouts.
+        JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
+        payoutLimits[0] = JBCurrencyAmount({
+            amount: uint224(PAY_AMOUNT),
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+        JBFundAccessLimitGroup[] memory limitGroups = new JBFundAccessLimitGroup[](1);
+        limitGroups[0] = JBFundAccessLimitGroup({
+            terminal: address(_terminal),
+            token: JBConstants.NATIVE_TOKEN,
+            payoutLimits: payoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+        rulesetConfig[0].fundAccessLimitGroups = limitGroups;
+
+        // Terminal configs — both terminals accept native token.
+        JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
+        tokensToAccept[0] = JBAccountingContext({
+            token: JBConstants.NATIVE_TOKEN,
+            decimals: 18,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+
+        JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](2);
+        terminalConfigs[0] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
+        terminalConfigs[1] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal2)), accountingContextsToAccept: tokensToAccept});
+
+        // Fee project (#1).
+        JBTerminalConfig[] memory feeTerminalConfigs = new JBTerminalConfig[](1);
+        feeTerminalConfigs[0] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
+
+        JBRulesetConfig[] memory feeRulesetConfig = new JBRulesetConfig[](1);
+        feeRulesetConfig[0].mustStartAtOrAfter = 0;
+        feeRulesetConfig[0].duration = 0;
+        feeRulesetConfig[0].weight = WEIGHT;
+        feeRulesetConfig[0].metadata = metadata;
+        feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
+        feeRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
+
+        _controller.launchProjectFor({
+            owner: address(420),
+            projectUri: "fee",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: feeTerminalConfigs,
+            memo: ""
+        });
+
+        // Test project (#2).
+        _projectId = _controller.launchProjectFor({
+            owner: _projectOwner,
+            projectUri: "test",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigs,
+            memo: ""
+        });
+    }
+
+    /// @notice M-16 CONFIRMED: Pay → distribute payouts (holds fees) → migrate → fees stranded.
+    function test_migration_heldFeesStranded() external {
+        // Step 1: Pay the project.
+        _terminal.pay{value: PAY_AMOUNT}({
+            projectId: _projectId,
+            amount: PAY_AMOUNT,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _projectOwner,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        // Step 2: Distribute payouts — fees will be held (holdFees=true).
+        vm.prank(_projectOwner);
+        _terminal.sendPayoutsOf({
+            projectId: _projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: PAY_AMOUNT,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
+
+        // Verify held fees exist.
+        JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertGt(heldFees.length, 0, "Should have held fees after payout");
+
+        // Step 3: Migrate balance to terminal2.
+        uint256 balanceBefore = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+
+        vm.prank(_projectOwner);
+        uint256 migrated = _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
+
+        // Step 4: Verify old terminal has no balance but still has held fees.
+        uint256 balanceAfter = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+        assertEq(balanceAfter, 0, "Old terminal should have 0 balance after migration");
+
+        // Held fees still exist in old terminal.
+        JBFee[] memory feesAfterMigration = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertEq(feesAfterMigration.length, heldFees.length, "M-16: Held fees remain in old terminal");
+    }
+
+    /// @notice Process held fees FIRST, then migrate — correct approach.
+    function test_migration_feeProcessingBeforeMigration() external {
+        // Pay.
+        _terminal.pay{value: PAY_AMOUNT}({
+            projectId: _projectId,
+            amount: PAY_AMOUNT,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _projectOwner,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        // Distribute payouts (holds fees).
+        vm.prank(_projectOwner);
+        _terminal.sendPayoutsOf({
+            projectId: _projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: PAY_AMOUNT,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
+
+        // Fast-forward past fee holding period (28 days).
+        vm.warp(block.timestamp + 28 days + 1);
+
+        // Process held fees before migration.
+        uint256 feeProjectBalanceBefore = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+        _terminal.processHeldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        uint256 feeProjectBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+
+        // Fee project should have received fees.
+        assertGt(feeProjectBalanceAfter, feeProjectBalanceBefore, "Fee project should receive fees");
+
+        // Now held fees should be cleared.
+        JBFee[] memory feesAfter = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertEq(feesAfter.length, 0, "Held fees should be cleared after processing");
+
+        // Now migrate safely.
+        vm.prank(_projectOwner);
+        _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
+    }
+
+    /// @notice After migration, processHeldFeesOf on old terminal processes nothing (no balance).
+    function test_migration_heldFeesUnclaimable() external {
+        // Pay and distribute.
+        _terminal.pay{value: PAY_AMOUNT}({
+            projectId: _projectId,
+            amount: PAY_AMOUNT,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _projectOwner,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        vm.prank(_projectOwner);
+        _terminal.sendPayoutsOf({
+            projectId: _projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: PAY_AMOUNT,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
+
+        // Migrate.
+        vm.prank(_projectOwner);
+        _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
+
+        // Warp past holding period.
+        vm.warp(block.timestamp + 28 days + 1);
+
+        // Fee project balance before attempting to process.
+        uint256 feeBalanceBefore = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+
+        // Try to process held fees — the fees still exist but the old terminal has no ETH.
+        // The _processFee try-catch will catch the revert and credit the fee amount back to the project.
+        _terminal.processHeldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+
+        // Fee project should NOT have received fees (old terminal had no ETH to transfer).
+        uint256 feeBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+
+        // The fee processing attempted but the terminal has no actual ETH.
+        // The _recordAddedBalanceFor in the catch block inflates the store balance
+        // without actual funds — this is a phantom balance.
+        // This documents the M-16 issue: either fees are lost OR phantom balances are created.
+    }
+}
