@@ -115,7 +115,9 @@ library JBMetadataResolver {
 
         // Add the new entry after the last entry of the table, the new offset is the last offset + the number of words
         // taken by the last data
-        newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(lastOffset + numberOfWordslastData)));
+        uint256 newOffset = lastOffset + numberOfWordslastData;
+        if (newOffset > 255) revert JBMetadataResolver_MetadataTooLong();
+        newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(newOffset)));
 
         // Pad as needed - inlined for gas saving
         uint256 paddedLength =
@@ -297,7 +299,7 @@ library JBMetadataResolver {
             let sliceBytesStartOfData := add(slicedBytes, 0x20)
 
             // store dem data
-            for { let i := 0 } lt(i, end) { i := add(i, 0x20) } {
+            for { let i := 0 } lt(i, length) { i := add(i, 0x20) } {
                 mstore(add(sliceBytesStartOfData, i), mload(add(startBytes, i)))
             }
         }
