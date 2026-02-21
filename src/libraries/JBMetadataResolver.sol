@@ -287,7 +287,7 @@ library JBMetadataResolver {
 
             // Allocate memory at the freemem(add 0x20 to include the length)
             slicedBytes := mload(0x40)
-            mstore(0x40, add(add(slicedBytes, length), 0x20))
+            mstore(0x40, and(add(add(add(slicedBytes, length), 0x20), 0x1f), not(0x1f)))
 
             // Store the length (first element)
             mstore(slicedBytes, length)
