@@ -73,7 +73,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
     error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
     error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
-    error JBMultiTerminal_ZeroAccountingContextDecimals();
+    error JBMultiTerminal_AccountingContextDecimalsMismatch();
     error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
@@ -289,7 +289,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return interfaceId == type(IJBMultiTerminal).interfaceId || interfaceId == type(IJBPermissioned).interfaceId
             || interfaceId == type(IJBTerminal).interfaceId || interfaceId == type(IJBCashOutTerminal).interfaceId
             || interfaceId == type(IJBPayoutTerminal).interfaceId || interfaceId == type(IJBPermitTerminal).interfaceId
-            || interfaceId == type(IJBMultiTerminal).interfaceId || interfaceId == type(IJBFeeTerminal).interfaceId
+            || interfaceId == type(IJBFeeTerminal).interfaceId
             || interfaceId == type(IERC165).interfaceId;
     }
 
@@ -413,13 +413,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     }
                 } catch {
                     // The token didn't support `decimals`.
+                    // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
+                    // The caller is responsible for providing the correct decimals for such tokens.
                     knownInvalidDecimals = false;
                 }
             }
 
             // Make sure the decimals are correct.
             if (knownInvalidDecimals) {
-                revert JBMultiTerminal_ZeroAccountingContextDecimals();
+                revert JBMultiTerminal_AccountingContextDecimalsMismatch();
             }
 
             // Make sure the currency is non-zero.
@@ -1160,15 +1162,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // Take the fee from all outbound reclaimings.
-        amountEligibleForFees != 0
-            ? _takeFeeFrom({
+        if (amountEligibleForFees != 0) {
+            _takeFeeFrom({
                 projectId: projectId,
                 token: tokenToReclaim,
                 amount: amountEligibleForFees,
                 beneficiary: beneficiary,
                 shouldHoldFees: false
-            })
-            : 0;
+            });
+        }
 
         emit CashOutTokens({
             rulesetId: ruleset.id,

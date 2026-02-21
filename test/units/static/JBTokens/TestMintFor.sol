@@ -74,14 +74,13 @@ contract TestMintFor_Local is JBTokensSetup {
         // Set storage
         vm.store(address(_tokens), tokenOfSlot, bytes32(uint256(uint160(address(_token)))));
 
-        // mock call to token mint()
-        mockExpect(address(_token), abi.encodeCall(IJBToken.mint, (_holder, _defaultAmount)), "");
-
-        // mock call to token totalSupply()
+        // mock call to token totalSupply() - overflow check happens before mint
         mockExpect(address(_token), abi.encodeCall(IJBToken.totalSupply, ()), abi.encode(_overflowedSupply));
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBTokens.JBTokens_OverflowAlert.selector, _overflowedSupply, type(uint208).max)
+            abi.encodeWithSelector(
+                JBTokens.JBTokens_OverflowAlert.selector, _overflowedSupply + _defaultAmount, type(uint208).max
+            )
         );
         _tokens.mintFor(_holder, _projectId, _defaultAmount);
     }

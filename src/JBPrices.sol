@@ -114,6 +114,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         feed = priceFeedFor[projectId][unitCurrency][pricingCurrency];
 
         // If it exists, return the inverse of its price.
+        // @dev The inverse calculation `(10^d * 10^d) / price` has acceptable precision when the feed price
+        // is in the range of ~1e9 to ~1e27 (for 18 decimals). Extreme prices outside this range may lose
+        // significant precision due to fixed-point division truncation.
         if (feed != IJBPriceFeed(address(0))) {
             return mulDiv(10 ** decimals, 10 ** decimals, feed.currentUnitPrice(decimals));
         }

@@ -716,6 +716,9 @@ contract JBTerminalStore is IJBTerminalStore {
     }
 
     /// @notice Records a payout from a project.
+    /// @dev The balance is decremented and the used payout limit is incremented before the payout limit validation.
+    /// This is safe because the entire transaction reverts atomically if the validation fails, but callers should
+    /// be aware of this ordering.
     /// @param projectId The ID of the project that is paying out funds.
     /// @param accountingContext The context of the token being paid out.
     /// @param amount The amount to pay out (use from the payout limit), as a fixed point number.
