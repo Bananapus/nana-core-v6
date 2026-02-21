@@ -603,7 +603,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Get the distance from the current time to the start of the next possible ruleset.
         // If the simulated ruleset must not yet have started, the start time of the simulated ruleset must be in the
         // future.
-        uint256 mustStartAtOrAfter = !allowMidRuleset ? block.timestamp + 1 : block.timestamp - baseRuleset.duration + 1;
+        uint256 mustStartAtOrAfter = !allowMidRuleset ? block.timestamp + 1 : baseRuleset.duration >= block.timestamp ? 1 : block.timestamp - baseRuleset.duration + 1;
 
         // Calculate what the start time should be.
         uint256 start = deriveStartFrom({
