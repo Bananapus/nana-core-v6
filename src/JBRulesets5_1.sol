@@ -28,16 +28,15 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
     error JBRulesets_InvalidRulesetDuration(uint256 duration, uint256 limit);
     error JBRulesets_InvalidRulesetEndTime(uint256 timestamp, uint256 limit);
     error JBRulesets_InvalidWeight(uint256 weight, uint256 limit);
+    error JBRulesets_WeightCacheRequired(uint256 projectId);
 
     //*********************************************************************//
     // ------------------------- internal constants ----------------------- //
     //*********************************************************************//
 
-    /// @notice The number of weight cut percent multiples before a cached value is sought.
+    /// @notice The maximum number of weight cut iterations allowed per call.
+    /// If more cycles are needed, callers must populate the cache via updateRulesetWeightCache() first.
     uint256 internal constant _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD = 1000;
-
-    /// @notice The maximum number of weight cut percent multiples that can be cached at a time.
-    uint256 internal constant _MAX_WEIGHT_CUT_MULTIPLE_CACHE_THRESHOLD = 50_000;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
@@ -475,6 +474,12 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
             }
         }
 
+        // If too many iterations remain after cache lookup, require the cache to be populated first.
+        // This prevents gas exhaustion for short-duration rulesets with large cycle counts.
+        if (weightCutMultiple > _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD) {
+            revert JBRulesets_WeightCacheRequired(projectId);
+        }
+
         for (uint256 i; i < weightCutMultiple; i++) {
             // The number of times to apply the weight cut percent.
             // Base the new weight on the specified ruleset's weight.
@@ -837,8 +842,11 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
         JBRulesetWeightCache storage cache = _weightCacheOf[projectId][latestQueuedRuleset.id];
 
         // Determine the largest start timestamp the cache can be filled to.
+        // Cap the advance to the cache lookup threshold per call to stay within the iteration limit in
+        // deriveWeightFrom.
+        // Multiple calls are needed to advance the cache for large cycle gaps.
         uint256 maxStart = latestQueuedRuleset.start
-            + (cache.weightCutMultiple + _MAX_WEIGHT_CUT_MULTIPLE_CACHE_THRESHOLD) * latestQueuedRuleset.duration;
+            + (cache.weightCutMultiple + _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD) * latestQueuedRuleset.duration;
 
         // Determine the start timestamp to derive a weight from for the cache.
         uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;

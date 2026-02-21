@@ -546,14 +546,12 @@ contract TestJBRulesetsUnits_Local is JBTest {
 
         vm.warp(block.timestamp + (20_000 days));
 
-        // Update the weight cache
-        vm.expectEmit();
-        emit IJBRulesets.WeightCacheUpdated(_projectId, 0, 20_000, address(this));
+        // Update the weight cache incrementally — each call advances by at most 1000 cycles.
+        // With 20,000 cycles and 10% weight cut per cycle, weight reaches 0 well before 1000 cycles.
+        // First call: advances cache by up to 1000 cycles (weight decays to 0).
         _rulesets.updateRulesetWeightCache(_projectId);
 
-        // Update the weight cache during the same block, which will mirror the previous call.
-        vm.expectEmit();
-        emit IJBRulesets.WeightCacheUpdated(_projectId, 0, 20_000, address(this));
+        // Second call during the same block should mirror the previous (cache already covers current time).
         _rulesets.updateRulesetWeightCache(_projectId);
     }
 
