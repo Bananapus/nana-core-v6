@@ -41,6 +41,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_RulesetNotFound();
     error JBTerminalStore_RulesetPaymentPaused();
     error JBTerminalStore_TerminalMigrationNotAllowed();
+    error JBTerminalStore_Uint224Overflow(uint256 value);
 
     //*********************************************************************//
     // -------------------------- internal constants --------------------- //
@@ -404,39 +405,41 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCurrencyAmount memory payoutLimit = payoutLimits[i];
 
             // Set the payout limit value to the amount still available to pay out during the ruleset.
-            payoutLimit.amount = uint224(
-                payoutLimit.amount
+            {
+                uint256 remaining = payoutLimit.amount
                     - usedPayoutLimitOf[terminal][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit
-                        .currency]
-            );
+                        .currency];
+                if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
+                payoutLimit.amount = uint224(remaining);
+            }
 
             // Adjust the decimals of the fixed point number if needed to have the correct decimals.
-            payoutLimit.amount = accountingContext.decimals == targetDecimals
-                ? payoutLimit.amount
-                : uint224(
-                    JBFixedPointNumber.adjustDecimals({
-                        value: payoutLimit.amount,
-                        decimals: accountingContext.decimals,
-                        targetDecimals: targetDecimals
-                    })
-                );
+            if (accountingContext.decimals != targetDecimals) {
+                uint256 adjusted = JBFixedPointNumber.adjustDecimals({
+                    value: payoutLimit.amount,
+                    decimals: accountingContext.decimals,
+                    targetDecimals: targetDecimals
+                });
+                if (adjusted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(adjusted);
+                payoutLimit.amount = uint224(adjusted);
+            }
 
             // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
-            payoutLimit.amount = payoutLimit.amount == 0 || payoutLimit.currency == targetCurrency
-                ? payoutLimit.amount
-                : uint224(
-                    mulDiv(
-                        payoutLimit.amount,
-                        10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                            // `payoutLimitRemaining`'s fidelity as possible when converting.
-                        PRICES.pricePerUnitOf({
-                            projectId: projectId,
-                            pricingCurrency: payoutLimit.currency,
-                            unitCurrency: targetCurrency,
-                            decimals: _MAX_FIXED_POINT_FIDELITY
-                        })
-                    )
+            if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
+                uint256 converted = mulDiv(
+                    payoutLimit.amount,
+                    10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                        // `payoutLimitRemaining`'s fidelity as possible when converting.
+                    PRICES.pricePerUnitOf({
+                        projectId: projectId,
+                        pricingCurrency: payoutLimit.currency,
+                        unitCurrency: targetCurrency,
+                        decimals: _MAX_FIXED_POINT_FIDELITY
+                    })
                 );
+                if (converted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(converted);
+                payoutLimit.amount = uint224(converted);
+            }
 
             // Decrement from the balance until it reaches zero.
             if (surplus > payoutLimit.amount) {

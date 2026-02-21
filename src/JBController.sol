@@ -67,6 +67,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     error JBController_RulesetSetTokenNotAllowed();
     error JBController_ZeroTokensToBurn();
     error JBController_ZeroTokensToMint();
+    error JBController_TerminalTokensNotTransferred();
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
@@ -548,7 +549,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
 
         // Make sure that the terminal received the tokens.
-        assert(IERC20(address(token)).allowance(address(this), address(terminal)) == 0);
+        if (IERC20(address(token)).allowance(address(this), address(terminal)) != 0) {
+            revert JBController_TerminalTokensNotTransferred();
+        }
     }
 
     /// @notice Creates a project.
