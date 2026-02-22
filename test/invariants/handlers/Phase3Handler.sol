@@ -212,6 +212,7 @@ contract Phase3Handler is Test {
 
         uint256 amount = bound(seed, 1, balance);
 
+        uint256 terminalBalBefore = address(terminal).balance;
         vm.prank(projectOwner);
         try terminal.sendPayoutsOf({
             projectId: projectId2,
@@ -221,7 +222,10 @@ contract Phase3Handler is Test {
             minTokensPaidOut: 0
         }) returns (uint256 amountPaidOut) {
             ghost_totalPaidOut[projectId2] += amountPaidOut;
-            ghost_globalOutflows += amountPaidOut;
+            // Track actual ETH that left the terminal, not the gross recorded amount.
+            // The fee stays in the terminal (paid to project #1 via internal _pay).
+            uint256 actualOutflow = terminalBalBefore - address(terminal).balance;
+            ghost_globalOutflows += actualOutflow;
             callCount_sendPayouts2++;
         } catch {}
     }
