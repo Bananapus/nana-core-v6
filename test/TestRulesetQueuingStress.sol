@@ -303,7 +303,9 @@ contract TestRulesetQueuingStress_Local is TestBaseWorkflow {
         assertGt(current.cycleNumber, 1, "Should have rolled over multiple cycles");
     }
 
-    /// @notice H-3 CONFIRMATION: Reverting approval hook causes currentOf to revert (DoS).
+    /// @notice H-3 FIX VERIFICATION: Reverting approval hook no longer causes DoS.
+    /// The try/catch in _approvalStatusOf catches the revert and returns Failed status,
+    /// so currentOf succeeds and falls back to the previous ruleset.
     function test_approvalHook_revert_causesDoS_H3() external {
         RevertingApprovalHook revertHook = new RevertingApprovalHook();
 
@@ -319,10 +321,11 @@ contract TestRulesetQueuingStress_Local is TestBaseWorkflow {
         // Warp past current cycle so the queued one is checked.
         vm.warp(block.timestamp + FOURTEEN_DAYS);
 
-        // H-3: The approval hook reverts, which propagates through _approvalStatusOf.
-        // This makes currentOf revert — a DoS on the entire project.
-        vm.expectRevert("HOOK_REVERTED");
-        _rulesets.currentOf(pid);
+        // H-3 FIX: The reverting hook is caught by try/catch, treated as Failed.
+        // currentOf succeeds and falls back to the original ruleset (weight not doubled).
+        JBRuleset memory current = _rulesets.currentOf(pid);
+        assertGt(current.id, 0, "currentOf should succeed, not revert");
+        assertEq(current.weight, INITIAL_WEIGHT, "Should fall back to original ruleset weight");
     }
 
     /// @notice Approval status transitions from ApprovalExpected to Approved.
