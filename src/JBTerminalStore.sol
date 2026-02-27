@@ -527,6 +527,12 @@ contract JBTerminalStore is IJBTerminalStore {
         // Can't cash out more tokens than are in the supply.
         if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
 
+        // SECURITY NOTE: The data hook has absolute control over cash-out economics.
+        // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+        // completely overriding the terminal's bonding curve math. For example, setting
+        // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
             // Create the cash out context that'll be sent to the data hook.
