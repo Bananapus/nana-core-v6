@@ -6,6 +6,7 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -49,7 +50,7 @@ import {JBTokenAmount} from "./structs/JBTokenAmount.sol";
 
 /// @notice `JBMultiTerminal` manages native/ERC-20 payments, cash outs, and surplus allowance usage for any number of
 /// projects. Terminals are the entry point for operations involving inflows and outflows of funds.
-contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
+contract JBMultiTerminal is JBPermissioned, ERC2771Context, ReentrancyGuard, IJBMultiTerminal {
     // A library that parses the packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;
 
@@ -498,6 +499,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         external
         override
+        nonReentrant
         returns (uint256 reclaimAmount)
     {
         // Enforce permissions.
@@ -762,6 +764,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         external
         payable
         override
+        nonReentrant
         returns (uint256 beneficiaryTokenCount)
     {
         // Get a reference to the beneficiary's balance before the payment.
@@ -796,7 +799,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param projectId The ID of the project to process held fees for.
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
-    function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override {
+    function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override nonReentrant {
         // Keep a reference to the start index.
         uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
 
@@ -869,6 +872,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         external
         override
+        nonReentrant
         returns (uint256 amountPaidOut)
     {
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
@@ -909,6 +913,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         external
         override
+        nonReentrant
         returns (uint256 netAmountPaidOut)
     {
         // Keep a reference to the project's owner.
