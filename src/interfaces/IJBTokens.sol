@@ -36,7 +36,7 @@ interface IJBTokens {
     function tokenOf(uint256 projectId) external view returns (IJBToken);
     function totalCreditSupplyOf(uint256 projectId) external view returns (uint256);
 
-    function totalBalanceOf(address holder, uint256 projectId) external view returns (uint256 result);
+    function totalBalanceOf(address holder, uint256 projectId) external view returns (uint256 balance);
     function totalSupplyOf(uint256 projectId) external view returns (uint256);
 
     function burnFrom(address holder, uint256 projectId, uint256 count) external;

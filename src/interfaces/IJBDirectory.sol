@@ -18,13 +18,13 @@ interface IJBDirectory {
     function PROJECTS() external view returns (IJBProjects);
 
     function controllerOf(uint256 projectId) external view returns (IERC165);
-    function isAllowedToSetFirstController(address account) external view returns (bool);
+    function isAllowedToSetFirstController(address addr) external view returns (bool);
     function isTerminalOf(uint256 projectId, IJBTerminal terminal) external view returns (bool);
     function primaryTerminalOf(uint256 projectId, address token) external view returns (IJBTerminal);
     function terminalsOf(uint256 projectId) external view returns (IJBTerminal[] memory);
 
     function setControllerOf(uint256 projectId, IERC165 controller) external;
-    function setIsAllowedToSetFirstController(address account, bool flag) external;
+    function setIsAllowedToSetFirstController(address addr, bool flag) external;
     function setPrimaryTerminalOf(uint256 projectId, address token, IJBTerminal terminal) external;
     function setTerminalsOf(uint256 projectId, IJBTerminal[] calldata terminals) external;
 }
