@@ -12,6 +12,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
     IJBTokens private _tokens;
+    IJBTerminalStore private _terminalStore;
     address private _projectOwner;
     address private _beneficiary;
 
@@ -26,6 +27,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         _projectOwner = multisig();
         _beneficiary = beneficiary();
         _terminal = jbMultiTerminal();
+        _terminalStore = jbTerminalStore();
         _tokens = jbTokens();
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -130,7 +132,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         // Make sure the native token balance in terminal is up to date.
         uint256 _nativeTerminalBalance = _nativePayAmount;
         assertEq(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
             _nativeTerminalBalance
         );
 
@@ -234,7 +236,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         // Make sure the native token balance in terminal is up to date.
         uint256 _nativeTerminalBalance = _nativePayAmount;
         assertEq(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
             _nativeTerminalBalance
         );
 

@@ -10,6 +10,7 @@ import {JBCashOuts} from "../src/libraries/JBCashOuts.sol";
 contract TestCashOut_Local is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
+    IJBTerminalStore private _terminalStore;
     JBTokens private _tokens;
     uint112 private _weight;
     JBRulesetMetadata _metadata;
@@ -24,6 +25,7 @@ contract TestCashOut_Local is TestBaseWorkflow {
         _beneficiary = beneficiary();
         _controller = jbController();
         _terminal = jbMultiTerminal();
+        _terminalStore = jbTerminalStore();
         _tokens = jbTokens();
         _weight = 1000 * 10 ** 18;
         _metadata = JBRulesetMetadata({
@@ -113,7 +115,7 @@ contract TestCashOut_Local is TestBaseWorkflow {
         // Make sure the native token balance in terminal is up to date.
         uint256 _nativeTerminalBalance = _nativePayAmount;
         assertEq(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
             _nativeTerminalBalance
         );
 
@@ -128,7 +130,7 @@ contract TestCashOut_Local is TestBaseWorkflow {
         });
 
         // Get the expected gross per a different view.
-        uint256 _grossPerReclaimable = jbTerminalStore().currentReclaimableSurplusOf(
+        uint256 _grossPerReclaimable = _terminalStore.currentReclaimableSurplusOf(
             _projectId, _tokenAmountToCashOut, new IJBTerminal[](0), _tokensContext, 18, _tokensContext[0].currency
         );
 
@@ -180,7 +182,7 @@ contract TestCashOut_Local is TestBaseWorkflow {
 
         // Make sure the native token balance in terminal should be up to date (with 1 wei precision).
         assertApproxEqAbs(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
             _nativeTerminalBalance - _grossCashedOut,
             1
         );

@@ -8,6 +8,7 @@ import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
+    IJBTerminalStore private _terminalStore;
     JBTokens private _tokens;
     uint112 private _weight;
     JBRulesetMetadata _metadata;
@@ -22,6 +23,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
         _beneficiary = beneficiary();
         _controller = jbController();
         _terminal = jbMultiTerminal();
+        _terminalStore = jbTerminalStore();
         _tokens = jbTokens();
         _weight = 1000 * 10 ** 18;
         _metadata = JBRulesetMetadata({
@@ -122,7 +124,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
         // Make sure the native token balance in terminal is up to date.
         uint256 _terminalBalance = _nativePayAmount;
         assertEq(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN), _terminalBalance
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN), _terminalBalance
         );
 
         // Burn tokens from beneficiary.
@@ -178,7 +180,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
 
         // Make sure the native token balance in terminal is up to date.
         assertEq(
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
+            _terminalStore.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
             _terminalBalance - _reclaimAmt
         );
     }

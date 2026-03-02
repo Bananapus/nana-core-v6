@@ -937,6 +937,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
             baseRuleset = _getStructFor(projectId, baseRuleset.basedOnId);
         }
 
+        // Make sure the ruleset starts after the base ruleset.
+        if (baseRuleset.start > mustStartAtOrAfter) mustStartAtOrAfter = baseRuleset.start;
+
         // The time when the duration of the base ruleset's approval hook has finished.
         // If the provided ruleset has no approval hook, return 0 (no constraint on start time).
         uint256 timestampAfterApprovalHook = baseRuleset.approvalHook == IJBRulesetApprovalHook(address(0))

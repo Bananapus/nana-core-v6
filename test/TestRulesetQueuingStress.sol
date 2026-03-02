@@ -687,12 +687,12 @@ contract TestRulesetQueuingStress_Local is TestBaseWorkflow {
         assertGt(current.cycleNumber, 3, "Cycle number should advance with 1-day duration");
     }
 
-    // ───────────────────── V5.1 TIME INVERSION FIX ─────────────────────
+    // ───────────────────── TIME INVERSION FIX ─────────────────────
 
-    /// @notice V5.1 clamps mustStartAtOrAfter to >= baseRuleset.start (prevents time inversion).
-    function test_v51_preventsTimeInversion() external {
-        IJBController controller51 = jbController5_1();
-        IJBRulesets rulesets51 = jbRulesets5_1();
+    /// @notice JBRulesets clamps mustStartAtOrAfter to >= baseRuleset.start (prevents time inversion).
+    function test_preventsTimeInversion() external {
+        IJBController controller51 = jbController();
+        IJBRulesets rulesets51 = jbRulesets();
 
         JBRulesetConfig[] memory config = new JBRulesetConfig[](1);
         config[0].mustStartAtOrAfter = 0;
@@ -728,9 +728,9 @@ contract TestRulesetQueuingStress_Local is TestBaseWorkflow {
         vm.prank(multisig());
         controller51.queueRulesetsOf(pid, config2, "");
 
-        // V5.1 clamps start to >= baseRuleset.start.
+        // JBRulesets clamps start to >= baseRuleset.start.
         JBRuleset memory upcoming = rulesets51.upcomingOf(pid);
-        assertGe(upcoming.start, originalStart, "V5.1 should prevent time inversion");
+        assertGe(upcoming.start, originalStart, "Should prevent time inversion");
     }
 
     // ───────────────────── FUZZ: CYCLE NUMBER CONSISTENCY ─────────────────────

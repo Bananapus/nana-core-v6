@@ -5,12 +5,16 @@ import "@sphinx-labs/contracts/SphinxPlugin.sol";
 import {Script, stdJson, VmSafe} from "forge-std/Script.sol";
 import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
 
-import {JBRulesets5_1} from "src/JBRulesets5_1.sol";
+import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
+import {JBRulesets} from "src/JBRulesets.sol";
 import {JBMultiTerminal} from "src/JBMultiTerminal.sol";
 import {JBTerminalStore} from "src/JBTerminalStore.sol";
 import {JBController} from "src/JBController.sol";
 
 contract DeployPeriphery is Script, Sphinx {
+    /// @notice The universal PERMIT2 address.
+    IPermit2 private constant _PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+
     /// @notice tracks the deployment of the core contracts for the chain we are deploying to.
     CoreDeployment core;
 
@@ -19,8 +23,6 @@ contract DeployPeriphery is Script, Sphinx {
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
     uint256 private CORE_DEPLOYMENT_NONCE = 1;
-
-    address private OMNICHAIN_RULESET_OPERATOR = address(0x587BF86677Ec0d1B766D9bA0d7AC2A51c6C2fc71);
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
@@ -37,33 +39,26 @@ contract DeployPeriphery is Script, Sphinx {
         // We use the same trusted forwarder as the core deployment.
         TRUSTED_FORWARDER = core.permissions.trustedForwarder();
 
-        // Make sure the ruleset operator is actually deployed.
-        if (OMNICHAIN_RULESET_OPERATOR.code.length == 0) {
-            revert("Omnichain ruleset operator not deployed");
-        }
-
         // Deploy the protocol.
         deploy();
     }
 
     function deploy() public sphinx {
-        core.directory
-            .setIsAllowedToSetFirstController(
-                address(
-                    new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                        directory: core.directory,
-                        fundAccessLimits: core.fundAccess,
-                        prices: core.prices,
-                        permissions: core.permissions,
-                        projects: core.projects,
-                        rulesets: core.rulesets5_1,
-                        splits: core.splits,
-                        tokens: core.tokens,
-                        omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                        trustedForwarder: TRUSTED_FORWARDER
-                    })
-                ),
-                true
-            );
+        JBRulesets rulesets = new JBRulesets{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(core.directory);
+
+        new JBMultiTerminal{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            permissions: core.permissions,
+            projects: core.projects,
+            splits: core.splits,
+            store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                directory: core.directory,
+                prices: core.prices,
+                rulesets: rulesets
+            }),
+            tokens: core.tokens,
+            feelessAddresses: core.feeless,
+            permit2: _PERMIT2,
+            trustedForwarder: TRUSTED_FORWARDER
+        });
     }
 }

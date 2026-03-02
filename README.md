@@ -16,8 +16,7 @@ Juicebox V5 separates concerns across specialized contracts that coordinate thro
 | `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, and sending reserved tokens. |
 | `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, and manages surplus allowances. Charges a 2.5% fee on payouts and surplus usage. |
 | `JBTerminalStore` | Bookkeeping engine for all terminal inflows and outflows. Tracks balances, enforces payout limits and surplus allowances, and computes cash out reclaim amounts via a bonding curve. |
-| `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, and approval hook validation. |
-| `JBRulesets5_1` | V5.1 rulesets implementation with weight cache optimization for long-running projects with many cycles. |
+| `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, approval hook validation, and weight cache optimization for long-running projects with many cycles. |
 | `JBTokens` | Manages dual-balance token accounting (credits + ERC-20). Credits are minted by default; once an ERC-20 is deployed, credits can be claimed as tokens. |
 | `JBSplits` | Stores split configurations per project, ruleset, and group. Splits route percentages of payouts or reserved tokens to beneficiaries, projects, or hooks. |
 | `JBFundAccessLimits` | Stores payout limits and surplus allowances per project, ruleset, terminal, and token. Limits are denominated in configurable currencies. |

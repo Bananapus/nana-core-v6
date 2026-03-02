@@ -1004,4 +1004,135 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         // check: current should be an iterated cycle.
         assertEq(currentRuleset.cycleNumber, (2 days / 1 hours) + 1);
     }
+
+    function testZeroDurationWithDeadlineHookQueuing() public {
+        // Keep references to different weights for assertions.
+        uint112 _weightFirst = uint112(1000 * 10 ** 18);
+        uint112 _weightSecond = uint112(2000 * 10 ** 18);
+        uint112 _weightThird = uint112(3000 * 10 ** 18);
+
+        uint256 projectId;
+        uint256 _firstRulesetId;
+        uint256 _secondRulesetId;
+
+        {
+            // Create a deadline hook with 3 day duration.
+            JBDeadline _deadlineHook = new JBDeadline(3 days);
+
+            // Package up first ruleset configuration with 0 duration and deadline hook.
+            JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);
+            _rulesetConfig[0].mustStartAtOrAfter = 0;
+            _rulesetConfig[0].duration = 0; // 0 duration
+            _rulesetConfig[0].weight = _weightFirst;
+            _rulesetConfig[0].weightCutPercent = 0;
+            _rulesetConfig[0].approvalHook = _deadlineHook; // 3 day deadline
+            _rulesetConfig[0].metadata = _metadata;
+            _rulesetConfig[0].splitGroups = _splitGroup;
+            _rulesetConfig[0].fundAccessLimitGroups = _fundAccessLimitGroup;
+
+            // Package up terminal configuration.
+            JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
+            JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
+            _tokensToAccept[0] = JBAccountingContext({
+                token: JBConstants.NATIVE_TOKEN,
+                decimals: 18,
+                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            });
+            _terminalConfigurations[0] =
+                JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
+
+            // Launch a project with the first ruleset configuration (0 duration with deadline hook).
+            projectId = _controller.launchProjectFor({
+                owner: address(multisig()),
+                projectUri: "myIPFSHash",
+                rulesetConfigurations: _rulesetConfig,
+                terminalConfigurations: _terminalConfigurations,
+                memo: ""
+            });
+        }
+
+        {
+            // Get the current ruleset - should be the first ruleset with 0 duration.
+            JBRuleset memory _currentRuleset = jbRulesets().currentOf(projectId);
+            assertEq(_currentRuleset.weight, _weightFirst, "First ruleset should be current");
+            assertEq(_currentRuleset.duration, 0, "First ruleset should have 0 duration");
+            _firstRulesetId = _currentRuleset.id;
+
+            // Fast forward a few minutes.
+            vm.warp(block.timestamp + 5 minutes);
+        }
+
+        {
+            // Package up second ruleset with 0 duration and no deadline hook.
+            JBRulesetConfig[] memory _secondConfig = new JBRulesetConfig[](1);
+            _secondConfig[0].mustStartAtOrAfter = 0;
+            _secondConfig[0].duration = 0; // 0 duration
+            _secondConfig[0].weight = _weightSecond;
+            _secondConfig[0].weightCutPercent = 0;
+            _secondConfig[0].approvalHook = IJBRulesetApprovalHook(address(0)); // no deadline
+            _secondConfig[0].metadata = _metadata;
+            _secondConfig[0].splitGroups = _splitGroup;
+            _secondConfig[0].fundAccessLimitGroups = _fundAccessLimitGroup;
+
+            // Queue the second ruleset right away.
+            vm.prank(multisig());
+            _controller.queueRulesetsOf(projectId, _secondConfig, "");
+
+            // Fast forward a few minutes.
+            vm.warp(block.timestamp + 5 minutes);
+        }
+
+        {
+            // Verify: current is the first, queued (upcoming) is the second.
+            JBRuleset memory _currentRuleset = jbRulesets().currentOf(projectId);
+            assertEq(_currentRuleset.weight, _weightFirst, "Current should be the first ruleset");
+            assertEq(_currentRuleset.id, _firstRulesetId, "Current should have the first ruleset ID");
+
+            JBRuleset memory _upcomingRuleset = jbRulesets().upcomingOf(projectId);
+            assertEq(_upcomingRuleset.weight, _weightSecond, "Upcoming should be the second ruleset");
+            _secondRulesetId = _upcomingRuleset.id;
+        }
+
+        {
+            // Package up third ruleset with 0 duration and no deadline hook.
+            JBRulesetConfig[] memory _thirdConfig = new JBRulesetConfig[](1);
+            _thirdConfig[0].mustStartAtOrAfter = 0;
+            _thirdConfig[0].duration = 0; // 0 duration
+            _thirdConfig[0].weight = _weightThird;
+            _thirdConfig[0].weightCutPercent = 0;
+            _thirdConfig[0].approvalHook = IJBRulesetApprovalHook(address(0)); // no deadline
+            _thirdConfig[0].metadata = _metadata;
+            _thirdConfig[0].splitGroups = _splitGroup;
+            _thirdConfig[0].fundAccessLimitGroups = _fundAccessLimitGroup;
+
+            // Queue the third ruleset.
+            vm.prank(multisig());
+            _controller.queueRulesetsOf(projectId, _thirdConfig, "");
+
+            // Fast forward a few minutes.
+            vm.warp(block.timestamp + 5 minutes);
+        }
+
+        {
+            // Verify: current is the first, queued (upcoming) is the second, with the third coming after the second.
+            JBRuleset memory _currentRuleset = jbRulesets().currentOf(projectId);
+            assertEq(_currentRuleset.weight, _weightFirst, "Current should still be the first ruleset");
+            assertEq(_currentRuleset.id, _firstRulesetId, "Current should still have the first ruleset ID");
+
+            JBRuleset memory _upcomingRuleset = jbRulesets().upcomingOf(projectId);
+            assertEq(_upcomingRuleset.weight, _weightSecond, "Upcoming should still be the second ruleset");
+            assertEq(_upcomingRuleset.id, _secondRulesetId, "Upcoming should still have the second ruleset ID");
+        }
+
+        {
+            // Get all queued rulesets to verify the third is queued after the second.
+            JBRuleset[] memory _allRulesets = jbRulesets().allOf(projectId, 0, 3);
+            // allOf returns rulesets sorted from latest to earliest (furthest start time to nearest)
+            // So the order should be: third (furthest), second, first (current)
+            assertEq(_allRulesets.length, 3, "Should have three rulesets");
+            assertEq(_allRulesets[0].weight, _weightThird, "First in allOf should be the third ruleset (furthest start)");
+            assertEq(_allRulesets[1].weight, _weightSecond, "Second in allOf should be the second ruleset");
+            assertEq(_allRulesets[2].weight, _weightFirst, "Third in allOf should be the first ruleset (current)");
+        }
+    }
 }
