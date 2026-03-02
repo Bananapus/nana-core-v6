@@ -36,7 +36,7 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
 
     /// @notice The maximum number of weight cut iterations allowed per call.
     /// If more cycles are needed, callers must populate the cache via updateRulesetWeightCache() first.
-    uint256 internal constant _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD = 1000;
+    uint256 internal constant _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD = 20_000;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
