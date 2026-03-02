@@ -18,7 +18,9 @@ import {IJBSplitHook} from "./../interfaces/IJBSplitHook.sol";
 /// @custom:member projectId The ID of a project to `pay`, if applicable. Resulting tokens will be routed to the
 /// `beneficiary`.
 /// @custom:member beneficiary Receives this split's tokens if the `hook` and `projectId` are zero. If the `projectId`
-/// is specified, the `beneficiary` receives any project tokens minted by this split.
+/// is specified, the `beneficiary` receives any project tokens minted by this split. If `beneficiary` is `address(0)`
+/// and the split targets a project, the terminal defaults to `msg.sender` as the token recipient — always set an
+/// explicit beneficiary when routing tokens to a project.
 /// @custom:member preferAddToBalance If this split were to `pay` a project through its terminal, this flag indicates
 /// whether it should prefer using the terminal's `addToBalance` function instead.
 /// @custom:member lockedUntil The split cannot be changed until this timestamp. The `lockedUntil` timestamp can be
