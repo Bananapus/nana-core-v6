@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The core Juicebox V5 protocol on EVM: a modular system for launching treasury-backed tokens with configurable rulesets that govern payments, payouts, cash outs, and token issuance.
+The core Juicebox V6 protocol on EVM: a modular system for launching treasury-backed tokens with configurable rulesets that govern payments, payouts, cash outs, and token issuance.
 
 ## Contracts
 
@@ -14,8 +14,7 @@ The core Juicebox V5 protocol on EVM: a modular system for launching treasury-ba
 | `JBController` | Orchestrates rulesets, tokens, splits, fund access limits. Entry point for project lifecycle. |
 | `JBMultiTerminal` | Handles ETH/ERC-20 payments, cash outs, payouts, surplus allowance, fees. |
 | `JBTerminalStore` | Bookkeeping: balances, payout limit tracking, surplus calculation, bonding curve reclaim math. |
-| `JBRulesets` | Stores/cycles rulesets with weight decay and approval hooks. |
-| `JBRulesets5_1` | V5.1 rulesets with weight cache for gas-efficient long-running cycles. |
+| `JBRulesets` | Stores/cycles rulesets with weight decay, approval hooks, and weight cache for gas-efficient long-running cycles. |
 | `JBTokens` | Dual-balance system: credits (internal) + ERC-20. Credits burned first on burn. |
 | `JBSplits` | Split configurations per project/ruleset/group. Packed storage for gas efficiency. |
 | `JBFundAccessLimits` | Payout limits and surplus allowances per project/ruleset/terminal/token. |
@@ -118,11 +117,11 @@ The core Juicebox V5 protocol on EVM: a modular system for launching treasury-ba
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {IJBController} from "@bananapus/core-v5/src/interfaces/IJBController.sol";
-import {IJBDirectory} from "@bananapus/core-v5/src/interfaces/IJBDirectory.sol";
-import {IJBMultiTerminal} from "@bananapus/core-v5/src/interfaces/IJBMultiTerminal.sol";
-import {IJBTerminal} from "@bananapus/core-v5/src/interfaces/IJBTerminal.sol";
-import {JBConstants} from "@bananapus/core-v5/src/libraries/JBConstants.sol";
+import {IJBController} from "@bananapus/core-v6/src/interfaces/IJBController.sol";
+import {IJBDirectory} from "@bananapus/core-v6/src/interfaces/IJBDirectory.sol";
+import {IJBMultiTerminal} from "@bananapus/core-v6/src/interfaces/IJBMultiTerminal.sol";
+import {IJBTerminal} from "@bananapus/core-v6/src/interfaces/IJBTerminal.sol";
+import {JBConstants} from "@bananapus/core-v6/src/libraries/JBConstants.sol";
 
 contract PayProject {
     IJBDirectory public immutable DIRECTORY;
