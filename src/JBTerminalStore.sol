@@ -644,6 +644,11 @@ contract JBTerminalStore is IJBTerminalStore {
         // The weight according to which new tokens are to be minted, as a fixed point number with 18 decimals.
         uint256 weight;
 
+        // SECURITY NOTE: The data hook has absolute control over payment token minting.
+        // It can return an arbitrary weight (overriding the ruleset's weight) and hook specifications
+        // that divert payment funds to external hooks before they reach the project's balance.
+        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
         // If the ruleset has a data hook enabled for payments, use it to derive a weight and memo.
         if (ruleset.useDataHookForPay() && ruleset.dataHook() != address(0)) {
             // Create the pay context that'll be sent to the data hook.
