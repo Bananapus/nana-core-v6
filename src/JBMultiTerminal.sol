@@ -797,34 +797,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
     function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override {
-        // Get a reference to the project's held fees.
-        uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
-
         // Keep a reference to the terminal that'll receive the fees.
         IJBTerminal feeTerminal = _primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
 
-        // Process each fee. Re-read the index from storage each iteration to account for reentrant calls
-        // that may have already advanced the index.
+        // Process each fee. Re-read the index and array length from storage each iteration to account for reentrant
+        // calls that may have already advanced the index or cleaned up the array.
         for (uint256 i; i < count; i++) {
             // Read the current index from storage (not a cached value) to prevent reentrancy from
             // causing double-processing.
             uint256 currentIndex = _nextHeldFeeIndexOf[projectId][token];
 
-            // If all fees have been processed, return.
-            if (currentIndex >= numberOfHeldFees) return;
+            // If all fees have been processed, break to cleanup.
+            if (currentIndex >= _heldFeesOf[projectId][token].length) break;
 
             // Keep a reference to the held fee being iterated on.
             JBFee memory heldFee = _heldFeesOf[projectId][token][currentIndex];
 
             // Can't process fees that aren't yet unlocked. Fees unlock sequentially in the array, so nothing left to do
             // if the current fee isn't yet unlocked.
-            if (heldFee.unlockTimestamp > block.timestamp) {
-                // Delete processed entries to reclaim gas before returning.
-                for (uint256 j; j < i; j++) {
-                    delete _heldFeesOf[projectId][token][startIndex + j];
-                }
-                return;
-            }
+            if (heldFee.unlockTimestamp > block.timestamp) break;
+
+            // Delete the entry to reclaim gas before the external call.
+            delete _heldFeesOf[projectId][token][currentIndex];
 
             // Update the index before the external call to prevent reentrancy from reprocessing the same fee.
             _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
@@ -841,13 +835,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // Delete processed entries from storage to reclaim gas and bound storage growth.
-        for (uint256 i; i < count; i++) {
-            delete _heldFeesOf[projectId][token][startIndex + i];
-        }
-
-        // If all held fees have been processed, reset the array and index entirely.
-        if (startIndex + count >= numberOfHeldFees) {
+        // If all held fees have been processed, reset the array and index entirely to bound storage growth.
+        if (_nextHeldFeeIndexOf[projectId][token] >= _heldFeesOf[projectId][token].length
+            && _heldFeesOf[projectId][token].length > 0) {
             delete _heldFeesOf[projectId][token];
             delete _nextHeldFeeIndexOf[projectId][token];
         }
