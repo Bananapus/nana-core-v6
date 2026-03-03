@@ -416,6 +416,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
+    /// @notice Called after this controller has been set as the project's controller in the directory.
+    /// @dev Can only be called by the directory.
+    /// @param from The controller being migrated from.
+    /// @param projectId The ID of the project that migrated to this controller.
+    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external override {
+        from; // Suppress unused variable warning.
+        projectId; // Suppress unused variable warning.
+
+        // Make sure the sender is the directory.
+        if (_msgSender() != address(DIRECTORY)) revert JBController_OnlyDirectory(_msgSender(), DIRECTORY);
+    }
+
     /// @notice Burns a project's tokens or credits from the specific holder's balance.
     /// @dev Can only be called by the holder, an address with the holder's permission to `BURN_TOKENS`, or a project's
     /// terminal.

@@ -33,6 +33,8 @@ contract MockMigratingController is ERC165 {
     }
 
     function beforeReceiveMigrationFrom(IERC165, uint256) external {}
+
+    function afterReceiveMigrationFrom(IERC165, uint256) external {}
 }
 
 /// @notice A simple new controller that accepts migration.
@@ -44,6 +46,8 @@ contract MockNewController is ERC165 {
     function migrate(uint256, IERC165) external {}
 
     function beforeReceiveMigrationFrom(IERC165, uint256) external {}
+
+    function afterReceiveMigrationFrom(IERC165, uint256) external {}
 }
 
 contract TestSetControllerOfMigrationOrder is JBDirectorySetup {

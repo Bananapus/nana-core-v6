@@ -8,4 +8,5 @@ interface IJBMigratable is IERC165 {
 
     function migrate(uint256 projectId, IERC165 to) external;
     function beforeReceiveMigrationFrom(IERC165 from, uint256 projectId) external;
+    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external;
 }

@@ -228,6 +228,11 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
         controllerOf[projectId] = controller;
 
         emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
+
+        // Notify the new controller that migration is complete and it is now the active controller.
+        if (address(currentController) != address(0) && controller.supportsInterface(type(IJBMigratable).interfaceId)) {
+            IJBMigratable(address(controller)).afterReceiveMigrationFrom(currentController, projectId);
+        }
     }
 
     /// @notice Set a project's primary terminal for a token.
