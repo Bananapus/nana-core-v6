@@ -516,8 +516,17 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // Return the approval hook's approval status.
+        // Wrap in try/catch to prevent a reverting approval hook from permanently freezing the project.
+        // Note: A malicious hook that consumes all gas (e.g. infinite loop) could still DoS via gas exhaustion.
+        // This is accepted risk since the project owner chose their own approval hook.
         // slither-disable-next-line calls-loop
-        return approvalHookRuleset.approvalHook.approvalStatusOf(projectId, ruleset);
+        try approvalHookRuleset.approvalHook.approvalStatusOf(projectId, ruleset) returns (
+            JBApprovalStatus status
+        ) {
+            return status;
+        } catch {
+            return JBApprovalStatus.Failed;
+        }
     }
 
     /// @notice The ID of the ruleset which has started and hasn't expired yet, whether or not it has been approved, for
@@ -950,9 +959,15 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // The time when the duration of the base ruleset's approval hook has finished.
         // If the provided ruleset has no approval hook, return 0 (no constraint on start time).
-        uint256 timestampAfterApprovalHook = baseRuleset.approvalHook == IJBRulesetApprovalHook(address(0))
-            ? 0
-            : rulesetId + baseRuleset.approvalHook.DURATION();
+        uint256 timestampAfterApprovalHook;
+        if (baseRuleset.approvalHook != IJBRulesetApprovalHook(address(0))) {
+            try baseRuleset.approvalHook.DURATION() returns (uint256 duration) {
+                timestampAfterApprovalHook = rulesetId + duration;
+            } catch {
+                // If DURATION() reverts, treat as no approval hook constraint.
+                timestampAfterApprovalHook = 0;
+            }
+        }
 
         _initializeRulesetFor({
             projectId: projectId,
