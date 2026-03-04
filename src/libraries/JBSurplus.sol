@@ -27,7 +27,7 @@ library JBSurplus {
         view
         returns (uint256 surplus)
     {
-        // Keep a reference to the number of termainls.
+        // Keep a reference to the number of terminals.
         uint256 numberOfTerminals = terminals.length;
 
         // Add the current surplus for each terminal.

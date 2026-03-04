@@ -101,7 +101,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     }
 
     /// @notice A project's payout limits for a given ruleset, terminal, and token.
-    /// @notice The total value of `token`s that a project can pay out from the terminal during the ruleset is dictated
+    /// @dev The total value of `token`s that a project can pay out from the terminal during the ruleset is dictated
     /// by a list of payout limits. Each payout limit is a fixed-point amount in terms of a currency.
     /// @dev The fixed point `amount`s returned will use the same number of decimals as the `terminal`.
     /// @param projectId The project's ID.
@@ -134,7 +134,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             // Set the data being iterated on.
             uint256 packedPayoutLimitData = packedPayoutLimitsData[i];
 
-            // The limit amount is in bits 0-231. The currency is in bits 224-255.
+            // The limit amount is in bits 0-223. The currency is in bits 224-255.
             payoutLimits[i] = JBCurrencyAmount({
                 currency: uint32(packedPayoutLimitData >> 224),
                 amount: uint224(packedPayoutLimitData)
@@ -183,7 +183,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     }
 
     /// @notice A project's surplus allowances for a given ruleset, terminal, and token.
-    /// @notice The total value of `token`s that a project can pay out from its surplus in a terminal during the ruleset
+    /// @dev The total value of `token`s that a project can pay out from its surplus in a terminal during the ruleset
     /// is dictated by a list of surplus allowances. Each surplus allowance is a fixed-point amount in terms of a
     /// currency.
     /// @dev The fixed point `amount`s returned will use the same number of decimals as the `terminal`.
@@ -281,7 +281,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
 
             // Iterate through each surplus allowance to validate and store them.
             for (uint256 j; j < numberOfSurplusAllowances; j++) {
-                // Set the payout limit being iterated on.
+                // Set the surplus allowance being iterated on.
                 JBCurrencyAmount calldata surplusAllowance = fundAccessLimitGroup.surplusAllowances[j];
 
                 // Make sure the surplus allowances are passed in strictly increasing order (sorted by currency) to
