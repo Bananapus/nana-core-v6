@@ -115,7 +115,10 @@ library JBMetadataResolver {
 
         // Add the new entry after the last entry of the table, the new offset is the last offset + the number of words
         // taken by the last data
-        newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(lastOffset + numberOfWordslastData)));
+        // M-21: Compute in uint256 first — casting directly to uint8 silently wraps offsets > 255.
+        uint256 newOffset = lastOffset + numberOfWordslastData;
+        if (newOffset > 255) revert JBMetadataResolver_MetadataTooLong();
+        newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(newOffset)));
 
         // Pad as needed - inlined for gas saving
         uint256 paddedLength =
@@ -283,9 +286,10 @@ library JBMetadataResolver {
         assembly {
             let length := sub(end, start)
 
-            // Allocate memory at the freemem(add 0x20 to include the length)
+            // M-20: Allocate memory at freemem — round up to 32-byte boundary so subsequent
+            // allocations do not overlap the tail of this buffer.
             slicedBytes := mload(0x40)
-            mstore(0x40, add(add(slicedBytes, length), 0x20))
+            mstore(0x40, and(add(add(add(slicedBytes, length), 0x20), 0x1f), not(0x1f)))
 
             // Store the length (first element)
             mstore(slicedBytes, length)
@@ -296,8 +300,9 @@ library JBMetadataResolver {
             // same for the out array
             let sliceBytesStartOfData := add(slicedBytes, 0x20)
 
-            // store dem data
-            for { let i := 0 } lt(i, end) { i := add(i, 0x20) } {
+            // M-20: Copy data — bound is `length` not `end`. Using `end` (an absolute source offset)
+            // would over-copy by `start` bytes past the allocated buffer.
+            for { let i := 0 } lt(i, length) { i := add(i, 0x20) } {
                 mstore(add(sliceBytesStartOfData, i), mload(add(startBytes, i)))
             }
         }
