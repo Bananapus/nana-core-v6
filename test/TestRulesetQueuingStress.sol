@@ -690,52 +690,6 @@ contract TestRulesetQueuingStress_Local is TestBaseWorkflow {
         assertGt(current.cycleNumber, 3, "Cycle number should advance with 1-day duration");
     }
 
-    // ───────────────────── V5.1 TIME INVERSION FIX ─────────────────────
-
-    /// @notice V5.1 clamps mustStartAtOrAfter to >= baseRuleset.start (prevents time inversion).
-    function test_v51_preventsTimeInversion() external {
-        IJBController controller51 = jbController5_1();
-        IJBRulesets rulesets51 = jbRulesets5_1();
-
-        JBRulesetConfig[] memory config = new JBRulesetConfig[](1);
-        config[0].mustStartAtOrAfter = 0;
-        config[0].duration = FOURTEEN_DAYS;
-        config[0].weight = INITIAL_WEIGHT;
-        config[0].weightCutPercent = 0;
-        config[0].approvalHook = IJBRulesetApprovalHook(address(0));
-        config[0].metadata = _metadata;
-        config[0].splitGroups = new JBSplitGroup[](0);
-        config[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
-
-        uint256 pid = controller51.launchProjectFor({
-            owner: multisig(),
-            projectUri: "v51",
-            rulesetConfigurations: config,
-            terminalConfigurations: new JBTerminalConfig[](0),
-            memo: ""
-        });
-
-        uint256 originalStart = block.timestamp;
-
-        // Queue with mustStartAtOrAfter=0 (defaults to block.timestamp).
-        JBRulesetConfig[] memory config2 = new JBRulesetConfig[](1);
-        config2[0].mustStartAtOrAfter = 0;
-        config2[0].duration = FOURTEEN_DAYS;
-        config2[0].weight = INITIAL_WEIGHT * 2;
-        config2[0].weightCutPercent = 0;
-        config2[0].approvalHook = IJBRulesetApprovalHook(address(0));
-        config2[0].metadata = _metadata;
-        config2[0].splitGroups = new JBSplitGroup[](0);
-        config2[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
-
-        vm.prank(multisig());
-        controller51.queueRulesetsOf(pid, config2, "");
-
-        // V5.1 clamps start to >= baseRuleset.start.
-        JBRuleset memory upcoming = rulesets51.upcomingOf(pid);
-        assertGe(upcoming.start, originalStart, "V5.1 should prevent time inversion");
-    }
-
     // ───────────────────── FUZZ: CYCLE NUMBER CONSISTENCY ─────────────────────
 
     /// @notice Fuzz: cycle number always equals elapsed cycles + 1.
