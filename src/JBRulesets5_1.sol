@@ -512,6 +512,8 @@ contract JBRulesets5_1 is JBControlled, IJBRulesets {
 
         // Return the approval hook's approval status.
         // Wrap in try/catch to prevent a reverting approval hook from permanently freezing the project.
+        // Note: A malicious hook that consumes all gas (e.g. infinite loop) could still DoS via gas exhaustion.
+        // This is accepted risk since the project owner chose their own approval hook.
         // slither-disable-next-line calls-loop
         try approvalHookRuleset.approvalHook.approvalStatusOf(projectId, ruleset) returns (
             JBApprovalStatus status
