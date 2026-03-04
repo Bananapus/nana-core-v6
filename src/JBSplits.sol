@@ -208,14 +208,20 @@ contract JBSplits is JBControlled, IJBSplits {
         external
         override
     {
+        // Cache whether the controller check has already passed to avoid repeated external calls.
+        bool controllerChecked;
+
         // Set each grouped splits.
         for (uint256 i; i < splitGroups.length; i++) {
             // Get a reference to the grouped split being iterated on.
             JBSplitGroup memory splitGroup = splitGroups[i];
 
             // Allow contracts to set splits in their own namespace (first 160 bits of groupId == msg.sender).
-            // Otherwise, require controller.
-            if (address(uint160(splitGroup.groupId)) != msg.sender) _onlyControllerOf(projectId);
+            // Otherwise, require controller (checked once).
+            if (address(uint160(splitGroup.groupId)) != msg.sender && !controllerChecked) {
+                _onlyControllerOf(projectId);
+                controllerChecked = true;
+            }
 
             // Set the splits for the group.
             _setSplitsOf(projectId, rulesetId, splitGroup.groupId, splitGroup.splits);
