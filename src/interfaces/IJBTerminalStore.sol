@@ -40,7 +40,7 @@ interface IJBTerminalStore {
 
     function currentReclaimableSurplusOf(
         uint256 projectId,
-        uint256 tokenCount,
+        uint256 cashOutCount,
         uint256 totalSupply,
         uint256 surplus
     )
