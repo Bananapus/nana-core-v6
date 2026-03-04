@@ -214,18 +214,24 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
             IJBMigratable(address(controller)).beforeReceiveMigrationFrom(currentController, projectId);
         }
 
-        // Set the new controller.
-        // slither-disable-next-line reentrancy-no-eth
-        controllerOf[projectId] = controller;
-
-        emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
-
-        // Migrate if needed.
+        // Migrate if needed. The old controller's migrate() runs while the directory still points to it,
+        // closing the reentrancy window where the directory would point to the new controller during migration.
         if (
             address(currentController) != address(0)
                 && currentController.supportsInterface(type(IJBMigratable).interfaceId)
         ) {
             IJBMigratable(address(currentController)).migrate(projectId, controller);
+        }
+
+        // Set the new controller after migration completes.
+        // slither-disable-next-line reentrancy-no-eth
+        controllerOf[projectId] = controller;
+
+        emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
+
+        // Notify the new controller that migration is complete and it is now the active controller.
+        if (address(currentController) != address(0) && controller.supportsInterface(type(IJBMigratable).interfaceId)) {
+            IJBMigratable(address(controller)).afterReceiveMigrationFrom(currentController, projectId);
         }
     }
 

@@ -15,6 +15,8 @@ import {IJBProjects} from "./interfaces/IJBProjects.sol";
 
 /// @notice Manages and normalizes price feeds. Price feeds are contracts which return the "pricing currency" cost of 1
 /// "unit currency".
+/// @dev Price feeds are immutable once set and cannot be replaced or removed. If a price feed needs to be changed,
+/// a new JBPrices contract must be deployed and projects must migrate to use it.
 contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBPrices {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -158,7 +160,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     //*********************************************************************//
 
     /// @notice Add a price feed for the `unitCurrency`, priced in terms of the `pricingCurrency`.
-    /// @dev Price feeds can only be added, not modified or removed.
+    /// @dev Price feeds can only be added, not modified or removed. Once a feed is set for a currency pair (in either
+    /// direction), it is permanent for that project ID. Recovery from a misconfigured feed requires deploying a new
+    /// JBPrices contract.
     /// @dev This contract's owner can add protocol-wide default price feed by passing a `projectId` of 0.
     /// @param projectId The ID of the project to add a feed for. If `projectId` is 0, add a protocol-wide default price
     /// feed.

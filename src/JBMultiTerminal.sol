@@ -820,6 +820,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Can't process fees that aren't yet unlocked. Fees unlock sequentially in the array, so nothing left to do
             // if the current fee isn't yet unlocked.
             if (heldFee.unlockTimestamp > block.timestamp) {
+                // Delete processed entries to reclaim gas before returning.
+                for (uint256 j; j < i; j++) {
+                    delete _heldFeesOf[projectId][token][startIndex + j];
+                }
                 // Restart at this index next time.
                 if (i > 0) _nextHeldFeeIndexOf[projectId][token] = startIndex + i;
                 return;
@@ -837,8 +841,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // Restart at the next fee next time.
-        _nextHeldFeeIndexOf[projectId][token] = startIndex + count;
+        // Delete processed entries from storage to reclaim gas and bound storage growth.
+        for (uint256 i; i < count; i++) {
+            delete _heldFeesOf[projectId][token][startIndex + i];
+        }
+
+        // If all held fees have been processed, reset the array and index entirely.
+        if (startIndex + count >= numberOfHeldFees) {
+            delete _heldFeesOf[projectId][token];
+            delete _nextHeldFeeIndexOf[projectId][token];
+        } else {
+            // Restart at the next fee next time.
+            _nextHeldFeeIndexOf[projectId][token] = startIndex + count;
+        }
     }
 
     /// @notice Sends payouts to a project's current payout split group, according to its ruleset, up to its current
