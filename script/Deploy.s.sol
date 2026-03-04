@@ -38,7 +38,7 @@ contract Deploy is Script, Sphinx {
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    uint256 private CORE_DEPLOYMENT_NONCE = 1;
+    uint256 private CORE_DEPLOYMENT_NONCE = 6;
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";

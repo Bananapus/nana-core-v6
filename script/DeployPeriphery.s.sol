@@ -38,12 +38,12 @@ contract DeployPeriphery is Script, Sphinx {
 
     address private TRUSTED_FORWARDER;
 
-    bytes32 private DEADLINES_SALT = keccak256("_JBDeadlines_");
-    bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEED");
+    bytes32 private DEADLINES_SALT = keccak256("_JBDeadlinesV6_");
+    bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEEDV6");
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    uint256 private CORE_DEPLOYMENT_NONCE = 1;
+    uint256 private CORE_DEPLOYMENT_NONCE = 6;
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
