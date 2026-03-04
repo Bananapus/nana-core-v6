@@ -219,7 +219,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
     }
 
     function test_WhenCurrencyIsNativeButDecimalsDNEQ18() external {
-        // it will revert JBMultiTerminal_ZeroAccountingContextDecimals
+        // it will revert JBMultiTerminal_AccountingContextDecimalsMismatch
 
         // mock call to JBProjects ownerOf(_projectId)
         bytes memory _projectsCall = abi.encodeCall(IERC721.ownerOf, (_projectId));
@@ -245,12 +245,12 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // mock rulesets call
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
 
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_ZeroAccountingContextDecimals.selector);
+        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
     function test_WhenTokenDecimalsDoesNotMatchAccountingContext() external {
-        // it will revert JBMultiTerminal_ZeroAccountingContextDecimals
+        // it will revert JBMultiTerminal_AccountingContextDecimalsMismatch
 
         // mock call to JBProjects ownerOf(_projectId)
         bytes memory _projectsCall = abi.encodeCall(IERC721.ownerOf, (_projectId));
@@ -281,7 +281,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // mock token call
         mockExpect(address(someToken), abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
 
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_ZeroAccountingContextDecimals.selector);
+        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 

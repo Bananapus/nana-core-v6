@@ -301,5 +301,12 @@ contract JBSplits is JBControlled, IJBSplits {
 
         // Store the number of splits for the project, ruleset, and group.
         _splitCountOf[projectId][rulesetId][groupId] = numberOfSplits;
+
+        // Clean up stale storage slots if the new split count is less than the previous count.
+        // This zeroes out leftover packed data to reclaim gas via storage refunds.
+        for (uint256 i = numberOfSplits; i < numberOfCurrentSplits; i++) {
+            delete _packedSplitParts1Of[projectId][rulesetId][groupId][i];
+            delete _packedSplitParts2Of[projectId][rulesetId][groupId][i];
+        }
     }
 }

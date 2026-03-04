@@ -295,6 +295,11 @@ contract JBTokens is JBControlled, IJBTokens {
         // Save a reference to whether there a token exists.
         bool tokensWereClaimed = token != IJBToken(address(0));
 
+        // The total supply after minting can't exceed the maximum value storable in a uint208.
+        if (totalSupplyOf(projectId) + count > type(uint208).max) {
+            revert JBTokens_OverflowAlert(totalSupplyOf(projectId) + count, type(uint208).max);
+        }
+
         if (tokensWereClaimed) {
             // If tokens should be claimed, mint tokens into the holder's wallet.
             // slither-disable-next-line reentrancy-events
@@ -303,11 +308,6 @@ contract JBTokens is JBControlled, IJBTokens {
             // Otherwise, add the tokens to their credits and the credit supply.
             creditBalanceOf[holder][projectId] += count;
             totalCreditSupplyOf[projectId] += count;
-        }
-
-        // The total supply can't exceed the maximum value storable in a uint208.
-        if (totalSupplyOf(projectId) > type(uint208).max) {
-            revert JBTokens_OverflowAlert(totalSupplyOf(projectId), type(uint208).max);
         }
 
         emit Mint({

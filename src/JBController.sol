@@ -688,7 +688,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Get a reference to the project's pending reserved token balance.
         uint256 pendingReservedTokenBalance = pendingReservedTokenBalanceOf[projectId];
 
-        // Mint any pending reserved tokens before migrating.
+        // Revert if there are pending reserved tokens that should be sent before migrating.
         if (pendingReservedTokenBalance != 0) revert JBController_PendingReservedTokens(pendingReservedTokenBalance);
     }
 
