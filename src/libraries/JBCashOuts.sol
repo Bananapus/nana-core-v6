@@ -58,7 +58,7 @@ library JBCashOuts {
     /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
     /// @param cashOutTaxRate The current ruleset's cash out tax rate.
     /// @return count The minimum number of tokens to cash out.
-    function cashOutCountFor(
+    function minCashOutCountFor(
         uint256 surplus,
         uint256 desiredOutput,
         uint256 totalSupply,
