@@ -48,8 +48,8 @@ contract DeployPeriphery is Script, Sphinx {
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
-        sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum"];
-        sphinxConfig.testnets = ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia"];
+        sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum", "celo"];
+        sphinxConfig.testnets = ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia", "celo_sepolia"];
     }
 
     /// @notice Deploys the protocol.
@@ -135,6 +135,16 @@ contract DeployPeriphery is Script, Sphinx {
             else if (block.chainid == 421_614) {
                 source = AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165));
                 feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(source, 3600 seconds);
+            }
+            // Celo
+            else if (block.chainid == 42_220) {
+                source = AggregatorV3Interface(0x1FcD30A73D67639c1cD89ff5746E7585731c083B);
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}(
+                    source,
+                    3600 seconds,
+                    AggregatorV2V3Interface(0x4CD491Dc27C8B0BbD10D516A502856B786939d18),
+                    L2GracePeriod
+                );
             } else {
                 revert("Unsupported chain");
             }
@@ -259,6 +269,14 @@ contract DeployPeriphery is Script, Sphinx {
             usdcFeed = new JBChainlinkV3PriceFeed(
                 AggregatorV3Interface(address(0x0153002d20B96532C639313c2d54c3dA09109309)), 86_400 seconds
             );
+        } else if (block.chainid == 42_220) {
+            usdc = address(0xcebA9300f2b948710d2653dD7B07f33A8B32118C);
+            usdcFeed = new JBChainlinkV3SequencerPriceFeed({
+                feed: AggregatorV3Interface(0xc7A353BaE210aed958a1A2928b654938EC59DaB2),
+                threshold: 86_400 seconds,
+                sequencerFeed: AggregatorV2V3Interface(0x4CD491Dc27C8B0BbD10D516A502856B786939d18),
+                gracePeriod: L2GracePeriod
+            });
         } else {
             revert("Unsupported chain for USDC feed");
         }
