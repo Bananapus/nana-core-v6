@@ -93,7 +93,7 @@ contract JBSplits is JBControlled, IJBSplits {
         override
         returns (JBSplit[] memory splits)
     {
-        splits = _getStructsFor(projectId, rulesetId, groupId);
+        splits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
 
         // Use the default splits if there aren't any for the ruleset.
         if (splits.length == 0) {
@@ -224,7 +224,7 @@ contract JBSplits is JBControlled, IJBSplits {
             }
 
             // Set the splits for the group.
-            _setSplitsOf(projectId, rulesetId, splitGroup.groupId, splitGroup.splits);
+            _setSplitsOf({projectId: projectId, rulesetId: rulesetId, groupId: splitGroup.groupId, splits: splitGroup.splits});
         }
     }
 
@@ -241,7 +241,7 @@ contract JBSplits is JBControlled, IJBSplits {
     /// @param splits An array of splits to set.
     function _setSplitsOf(uint256 projectId, uint256 rulesetId, uint256 groupId, JBSplit[] memory splits) internal {
         // Get a reference to the current split structs within the project, ruleset, and group.
-        JBSplit[] memory currentSplits = _getStructsFor(projectId, rulesetId, groupId);
+        JBSplit[] memory currentSplits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
 
         // Keep a reference to the current number of splits within the group.
         uint256 numberOfCurrentSplits = currentSplits.length;
@@ -249,7 +249,7 @@ contract JBSplits is JBControlled, IJBSplits {
         // Check to see if all locked splits are included in the array of splits which is being set.
         for (uint256 i; i < numberOfCurrentSplits; i++) {
             // If not locked, continue.
-            if (block.timestamp < currentSplits[i].lockedUntil && !_includesLockedSplits(splits, currentSplits[i])) {
+            if (block.timestamp < currentSplits[i].lockedUntil && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})) {
                 revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
             }
         }

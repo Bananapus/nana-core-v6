@@ -171,7 +171,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (JBRulesetWithMetadata[] memory rulesets)
     {
         // Get the rulesets (without metadata).
-        JBRuleset[] memory baseRulesets = RULESETS.allOf(projectId, startingId, size);
+        JBRuleset[] memory baseRulesets =
+            RULESETS.allOf({projectId: projectId, startingId: startingId, size: size});
 
         // Keep a reference to the number of rulesets.
         uint256 numberOfRulesets = baseRulesets.length;
@@ -216,7 +217,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         override
         returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
     {
-        ruleset = RULESETS.getRulesetOf(projectId, rulesetId);
+        ruleset = RULESETS.getRulesetOf({projectId: projectId, rulesetId: rulesetId});
         metadata = ruleset.expandMetadata();
     }
 
@@ -309,7 +310,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param terminal The address to check.
     /// @return A flag indicating if the provided address is a terminal for the project.
     function _isTerminalOf(uint256 projectId, address terminal) internal view returns (bool) {
-        return DIRECTORY.isTerminalOf(projectId, IJBTerminal(terminal));
+        return DIRECTORY.isTerminalOf({projectId: projectId, terminal: IJBTerminal(terminal)});
     }
 
     /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.
@@ -598,14 +599,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
 
         // Set this contract as the project's controller in the directory.
-        DIRECTORY.setControllerOf(projectId, IERC165(this));
+        DIRECTORY.setControllerOf({projectId: projectId, controller: IERC165(this)});
 
         // Configure the terminals.
-        _configureTerminals(projectId, terminalConfigurations);
+        _configureTerminals({projectId: projectId, terminalConfigs: terminalConfigurations});
 
         // Queue the rulesets.
         // slither-disable-next-line reentrancy-events
-        uint256 rulesetId = _queueRulesets(projectId, rulesetConfigurations);
+        uint256 rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchProject({
             rulesetId: rulesetId,
@@ -663,14 +664,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
 
         // Set this contract as the project's controller in the directory.
-        DIRECTORY.setControllerOf(projectId, IERC165(this));
+        DIRECTORY.setControllerOf({projectId: projectId, controller: IERC165(this)});
 
         // Configure the terminals.
-        _configureTerminals(projectId, terminalConfigurations);
+        _configureTerminals({projectId: projectId, terminalConfigs: terminalConfigurations});
 
         // Queue the first ruleset.
         // slither-disable-next-line reentrancy-events
-        rulesetId = _queueRulesets(projectId, rulesetConfigurations);
+        rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
     }
@@ -800,7 +801,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // Queue the rulesets.
         // slither-disable-next-line reentrancy-events
-        rulesetId = _queueRulesets(projectId, rulesetConfigurations);
+        rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit QueueRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
     }
