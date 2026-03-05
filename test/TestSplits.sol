@@ -120,9 +120,7 @@ contract TestSplits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -272,11 +270,7 @@ contract TestSplits_Local is TestBaseWorkflow {
 
         // Mint tokens with reservedPercent enabled.
         _controller.mintTokensOf({
-            projectId: _projectId,
-            tokenCount: _amount,
-            beneficiary: _projectOwner,
-            memo: "",
-            useReservedPercent: true
+            projectId: _projectId, tokenCount: _amount, beneficiary: _projectOwner, memo: "", useReservedPercent: true
         });
 
         // Mock the primary terminal of the mock project.
@@ -358,9 +352,7 @@ contract TestSplits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});

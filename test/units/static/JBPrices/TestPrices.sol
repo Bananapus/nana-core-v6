@@ -18,7 +18,8 @@ contract TestPrices_Local is JBPricesSetup {
         super.pricesSetup();
     }
 
-    // ───────────────────── Helpers ─────────────────────
+    // ───────────────────── Helpers
+    // ─────────────────────
 
     /// @dev Sets a mock price feed directly into storage for a given project.
     function _storeFeed(uint256 projectId, uint256 pricing, uint256 unit_, address feed) internal {
@@ -28,7 +29,8 @@ contract TestPrices_Local is JBPricesSetup {
         vm.store(address(_prices), slot2, bytes32(uint256(uint160(feed))));
     }
 
-    // ───────────────────── Inverse precision tests ─────────────────────
+    // ───────────────────── Inverse precision tests
+    // ─────────────────────
 
     /// @notice Feed returns 1 (minimum non-zero price). Inverse should be 10^(2*decimals).
     function test_inversePrecision_smallPrice() external {
@@ -119,12 +121,11 @@ contract TestPrices_Local is JBPricesSetup {
 
         // Double-inverse should be approximately equal to original, but may lose precision.
         // This documents the precision loss from compounding inversions.
-        assertApproxEqRel(
-            doubleInverse, originalPrice, 0.01e18, "Double inverse should approximate original within 1%"
-        );
+        assertApproxEqRel(doubleInverse, originalPrice, 0.01e18, "Double inverse should approximate original within 1%");
     }
 
-    // ───────────────────── Feed immutability tests ─────────────────────
+    // ───────────────────── Feed immutability tests
+    // ─────────────────────
 
     /// @notice Adding a feed for an existing pair should revert.
     function test_feedImmutability_cannotReplace() external {
@@ -159,7 +160,8 @@ contract TestPrices_Local is JBPricesSetup {
         _prices.addPriceFeedFor(PROJECT_ID, _unitCurrency, _pricingCurrency, feed2);
     }
 
-    // ───────────────────── Default fallback tests ─────────────────────
+    // ───────────────────── Default fallback tests
+    // ─────────────────────
 
     /// @notice Project-specific feed takes priority over default.
     function test_defaultFallback_projectFeedTakesPriority() external {
@@ -189,7 +191,8 @@ contract TestPrices_Local is JBPricesSetup {
         assertEq(price, 5e17, "Should use inverse of default feed");
     }
 
-    // ───────────────────── Same currency ─────────────────────
+    // ───────────────────── Same currency
+    // ─────────────────────
 
     /// @notice pricePerUnitOf(X, X, decimals) == 10^decimals.
     function test_sameCurrency_returns1() external view {
@@ -200,7 +203,8 @@ contract TestPrices_Local is JBPricesSetup {
         assertEq(price6, 1e6, "Same currency at 6 decimals should return 1e6");
     }
 
-    // ───────────────────── Zero currency reverts ─────────────────────
+    // ───────────────────── Zero currency reverts
+    // ─────────────────────
 
     /// @notice Both zero pricing and zero unit currency should revert on addPriceFeedFor.
     function test_zeroCurrency_reverts() external {
@@ -215,7 +219,8 @@ contract TestPrices_Local is JBPricesSetup {
         _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, _pricingCurrency, 0, feed);
     }
 
-    // ───────────────────── BUG HYPOTHESIS: default blocks project-specific ─────────────────────
+    // ───────────────────── BUG HYPOTHESIS: default blocks project-specific
+    // ─────────────────────
 
     /// @notice BUG: Adding a default A->B feed blocks ANY project from adding their own A->B feed.
     /// This is overly restrictive — projects cannot use a different oracle for the same pair.
@@ -234,13 +239,12 @@ contract TestPrices_Local is JBPricesSetup {
         );
 
         // BUG CONFIRMED: This reverts because default feed blocks project-specific feeds.
-        vm.expectRevert(
-            abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, defaultFeed)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, defaultFeed));
         _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, projectFeed);
     }
 
-    // ───────────────────── Fuzz: valid feeds never overflow ─────────────────────
+    // ───────────────────── Fuzz: valid feeds never overflow
+    // ─────────────────────
 
     /// @notice Fuzz: pricePerUnitOf should never revert for valid feed values.
     function testFuzz_pricePerUnitOf_neverReverts_forValidFeed(uint256 price, uint8 decimals) external {

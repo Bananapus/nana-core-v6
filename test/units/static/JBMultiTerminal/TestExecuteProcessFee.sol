@@ -22,13 +22,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         // it will revert
 
         vm.expectRevert();
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _native,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _feeTerminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId,
+                token: _native,
+                amount: _defaultAmount,
+                beneficiary: _bene,
+                feeTerminal: _feeTerminal
+            });
     }
 
     function test_WhenFeeTerminalEQZeroAddress() external {
@@ -36,13 +37,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
 
         vm.prank(address(_terminal));
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_FeeTerminalNotFound.selector, _native));
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _native,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _invalidTerminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId,
+                token: _native,
+                amount: _defaultAmount,
+                beneficiary: _bene,
+                feeTerminal: _invalidTerminal
+            });
     }
 
     function test_WhenTokenIsErc20AndFeeTerminalIsExternal() external {
@@ -64,13 +66,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(address(_terminal));
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _usdc,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _feeTerminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId,
+                token: _usdc,
+                amount: _defaultAmount,
+                beneficiary: _bene,
+                feeTerminal: _feeTerminal
+            });
     }
 
     function test_WhenFeeTerminalEQItself() external {
@@ -102,13 +105,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(address(_terminal));
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _native,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _terminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId,
+                token: _native,
+                amount: _defaultAmount,
+                beneficiary: _bene,
+                feeTerminal: _terminal
+            });
     }
 
     function test_GivenTokenEQNATIVE_TOKEN() external {
@@ -125,13 +129,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(address(_terminal));
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _native,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _feeTerminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId,
+                token: _native,
+                amount: _defaultAmount,
+                beneficiary: _bene,
+                feeTerminal: _feeTerminal
+            });
     }
 
     function test_GivenTokenDNEQNATIVE_TOKENAndPayingItself() external {
@@ -163,12 +168,9 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(address(_terminal));
-        JBMultiTerminal(address(_terminal)).executeProcessFee({
-            projectId: _projectId,
-            token: _usdc,
-            amount: _defaultAmount,
-            beneficiary: _bene,
-            feeTerminal: _terminal
-        });
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+                projectId: _projectId, token: _usdc, amount: _defaultAmount, beneficiary: _bene, feeTerminal: _terminal
+            });
     }
 }

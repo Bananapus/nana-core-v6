@@ -95,7 +95,10 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
         IJBTerminal primaryTerminal = _primaryTerminalOf[projectId][token];
 
         // If a primary terminal for the token was explicitly set and it's one of the project's terminals, return it.
-        if (primaryTerminal != IJBTerminal(address(0)) && isTerminalOf({projectId: projectId, terminal: primaryTerminal})) {
+        if (
+            primaryTerminal != IJBTerminal(address(0))
+                && isTerminalOf({projectId: projectId, terminal: primaryTerminal})
+        ) {
             return primaryTerminal;
         }
 
@@ -211,7 +214,8 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // Prepare the new controller to receive the project.
         if (address(currentController) != address(0) && controller.supportsInterface(type(IJBMigratable).interfaceId)) {
-            IJBMigratable(address(controller)).beforeReceiveMigrationFrom({from: currentController, projectId: projectId});
+            IJBMigratable(address(controller))
+                .beforeReceiveMigrationFrom({from: currentController, projectId: projectId});
         }
 
         // Migrate if needed. The old controller's migrate() runs while the directory still points to it,
@@ -231,7 +235,8 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // Notify the new controller that migration is complete and it is now the active controller.
         if (address(currentController) != address(0) && controller.supportsInterface(type(IJBMigratable).interfaceId)) {
-            IJBMigratable(address(controller)).afterReceiveMigrationFrom({from: currentController, projectId: projectId});
+            IJBMigratable(address(controller))
+                .afterReceiveMigrationFrom({from: currentController, projectId: projectId});
         }
     }
 

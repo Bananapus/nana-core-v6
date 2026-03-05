@@ -54,20 +54,19 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
-        jbController().launchProjectFor({
-            owner: address(420),
-            projectUri: "feeCollector",
-            rulesetConfigurations: feeRulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        jbController()
+            .launchProjectFor({
+                owner: address(420),
+                projectUri: "feeCollector",
+                rulesetConfigurations: feeRulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Launch the test project (#2) with 50% cash out tax, no payout limit, no reserved rate
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -100,13 +99,14 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        projectId = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "testProject",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectId = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "testProject",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Deploy ERC20 so tokens can be tracked
         vm.prank(projectOwner);
@@ -136,11 +136,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
-        assertGe(
-            actualBalance,
-            recordedBalance,
-            "INV-TS-1: Terminal ETH balance must be >= recorded project balance"
-        );
+        assertGe(actualBalance, recordedBalance, "INV-TS-1: Terminal ETH balance must be >= recorded project balance");
     }
 
     /// @notice INV-TS-2: Reclaimable surplus <= current surplus, always.
@@ -150,43 +146,35 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        uint256 surplus = jbTerminalStore().currentSurplusOf({
-            terminal: address(jbMultiTerminal()),
-            projectId: projectId,
-            accountingContexts: contexts,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
+        uint256 surplus = jbTerminalStore()
+            .currentSurplusOf({
+                terminal: address(jbMultiTerminal()),
+                projectId: projectId,
+                accountingContexts: contexts,
+                decimals: 18,
+                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            });
 
         // Check reclaimable for half the supply
         uint256 halfSupply = totalSupply / 2;
         if (halfSupply == 0) return;
 
-        uint256 reclaimable = jbTerminalStore().currentReclaimableSurplusOf({
-            projectId: projectId,
-            cashOutCount: halfSupply,
-            totalSupply: totalSupply,
-            surplus: surplus
-        });
+        uint256 reclaimable = jbTerminalStore()
+            .currentReclaimableSurplusOf({
+                projectId: projectId, cashOutCount: halfSupply, totalSupply: totalSupply, surplus: surplus
+            });
 
-        assertLe(
-            reclaimable,
-            surplus,
-            "INV-TS-2: Reclaimable surplus must not exceed current surplus"
-        );
+        assertLe(reclaimable, surplus, "INV-TS-2: Reclaimable surplus must not exceed current surplus");
     }
 
     /// @notice INV-TS-3: Fee project (project #1) balance in the terminal increases monotonically.
     /// @dev We can only check that it's >= 0; true monotonicity requires tracking across calls,
     ///      which the handler ghost variables assist with.
     function invariant_TS3_feeProjectBalanceNonNegative() public view {
-        uint256 feeProjectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
 
         // Fee project balance should be non-negative (always true for uint, but conceptually
         // this checks that the fee project accumulates fees from cashouts).
@@ -198,8 +186,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     function invariant_TS4_terminalBalanceConservation() public view {
         uint256 projectBalance =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
-        uint256 feeProjectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         // The terminal's actual balance should equal the sum of all recorded project balances.
@@ -225,7 +212,8 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         // Strict equality breaks because fees redistribute between projects.
         assertGe(
             totalIn,
-            totalOut + projectBalance - jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN),
+            totalOut + projectBalance
+                - jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN),
             "INV-TS-5: Ghost conservation - funds in >= funds out + project balance (adjusted for fees)"
         );
     }

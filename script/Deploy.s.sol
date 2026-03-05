@@ -87,9 +87,7 @@ contract Deploy is Script, Sphinx {
             projects: projects,
             splits: splits,
             store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                directory: directory,
-                rulesets: rulesets,
-                prices: prices
+                directory: directory, rulesets: rulesets, prices: prices
             }),
             tokens: tokens,
             feelessAddresses: feeless,

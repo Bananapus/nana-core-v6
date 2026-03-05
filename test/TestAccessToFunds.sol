@@ -85,15 +85,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -119,9 +117,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _terminalConfigurations[0] =
@@ -235,11 +231,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
         assertEq(
             _tokens.totalBalanceOf(_projectOwner, _FEE_PROJECT_ID),
             mulDiv(
-                (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
-                    + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
-                _weight,
-                10 ** _NATIVE_DECIMALS
-            ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
+                    (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
+                        + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
+                    _weight,
+                    10 ** _NATIVE_DECIMALS
+                ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
         );
 
         // Cash out native tokens from the surplus using all of the `_beneficiary`'s tokens.
@@ -321,15 +317,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -355,9 +349,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _terminalConfigurations[0] =
                 JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -516,11 +508,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             assertEq(
                 _tokens.totalBalanceOf(_projectOwner, _FEE_PROJECT_ID),
                 mulDiv(
-                    (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
-                        + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
-                    _weight,
-                    10 ** _NATIVE_DECIMALS
-                ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
+                        (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
+                            + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
+                        _weight,
+                        10 ** _NATIVE_DECIMALS
+                    ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
             );
         }
 
@@ -606,15 +598,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -629,9 +619,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _terminalConfigurations[0] =
                 JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -643,7 +631,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 rulesetConfigurations: new JBRulesetConfig[](0), // No ruleset config will force revert when paid.
                 // Set the fee collecting terminal's native token accounting context if the test calls for doing so.
                 terminalConfigurations: _feeProjectAcceptsToken ? _terminalConfigurations : new JBTerminalConfig[](0), // Set
-                    // terminals to receive fees.
+                // terminals to receive fees.
                 memo: ""
             });
 
@@ -874,15 +862,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -908,9 +894,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _terminalConfigurations[0] =
                 JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -1047,11 +1031,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             assertEq(
                 _tokens.totalBalanceOf(_projectOwner, _FEE_PROJECT_ID),
                 mulDiv(
-                    (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
-                        + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
-                    _weight,
-                    10 ** _NATIVE_DECIMALS
-                ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
+                        (_nativeCurrencySurplusAllowance - _beneficiaryNativeBalance)
+                            + (_nativeCurrencyPayoutLimit - _projectOwnerNativeBalance),
+                        _weight,
+                        10 ** _NATIVE_DECIMALS
+                    ) * _metadata.reservedPercent / JBConstants.MAX_RESERVED_PERCENT
             );
         }
 
@@ -1154,8 +1138,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify payout limits.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](2);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _payoutLimits[1] =
                 JBCurrencyAmount({amount: _usdCurrencyPayoutLimit, currency: uint32(uint160(address(_usdcToken)))});
@@ -1163,11 +1146,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify surplus allowances.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](2);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
-            _surplusAllowances[1] =
-                JBCurrencyAmount({amount: _usdCurrencySurplusAllowance, currency: uint32(uint160(address(_usdcToken)))});
+            _surplusAllowances[1] = JBCurrencyAmount({
+                amount: _usdCurrencySurplusAllowance, currency: uint32(uint160(address(_usdcToken)))
+            });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
                 terminal: address(_terminal),
@@ -1190,14 +1173,10 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _tokensToAccept[1] = JBAccountingContext({
-                token: address(_usdcToken),
-                decimals: 6,
-                currency: uint32(uint160(address(_usdcToken)))
+                token: address(_usdcToken), decimals: 6, currency: uint32(uint160(address(_usdcToken)))
             });
             _terminalConfigurations[0] =
                 JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -1375,7 +1354,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
         } else if (
             _toNative(_usdCurrencySurplusAllowance) > 0
                 && _toNative(_usdCurrencySurplusAllowance + _usdCurrencyPayoutLimit) + _nativeCurrencyPayoutLimit
-                    + _nativeCurrencySurplusAllowance > _nativePayAmount
+                        + _nativeCurrencySurplusAllowance > _nativePayAmount
         ) {
             vm.expectRevert(
                 abi.encodeWithSelector(
@@ -1406,11 +1385,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
         // Check the collected balance if one is expected.
         if (
             _nativeCurrencySurplusAllowance + _nativeCurrencyPayoutLimit
-                + _toNative(_usdCurrencySurplusAllowance + _usdCurrencyPayoutLimit) <= _nativePayAmount
+                    + _toNative(_usdCurrencySurplusAllowance + _usdCurrencyPayoutLimit) <= _nativePayAmount
         ) {
             // Make sure the beneficiary received the funds and that they are no longer in the terminal.
             _beneficiaryNativeBalance += _toNative(_usdCurrencySurplusAllowance)
-                - mulDiv(_toNative(_usdCurrencySurplusAllowance), _terminal.FEE(), JBConstants.MAX_FEE);
+            - mulDiv(_toNative(_usdCurrencySurplusAllowance), _terminal.FEE(), JBConstants.MAX_FEE);
             assertEq(_beneficiary.balance, _beneficiaryNativeBalance);
             assertEq(
                 jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
@@ -1556,8 +1535,8 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                     && _usdCurrencyPayoutLimit > 0
             ) {
                 // Make sure the project owner received the funds that were paid out.
-                _projectOwnerNativeBalance += _toNative(_usdCurrencyPayoutLimit)
-                    - _toNative(_usdCurrencyPayoutLimit) * _terminal.FEE() / JBConstants.MAX_FEE;
+                _projectOwnerNativeBalance += _toNative(_usdCurrencyPayoutLimit) - _toNative(_usdCurrencyPayoutLimit)
+                * _terminal.FEE() / JBConstants.MAX_FEE;
                 assertEq(_projectOwner.balance, _projectOwnerNativeBalance);
                 assertEq(
                     jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
@@ -1568,10 +1547,10 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 // Make sure the fee was paid correctly.
                 assertEq(
                     jbTerminalStore().balanceOf(address(_terminal), _FEE_PROJECT_ID, JBConstants.NATIVE_TOKEN),
-                    (
-                        _nativeCurrencySurplusAllowance + _toNative(_usdCurrencySurplusAllowance)
-                            - _beneficiaryNativeBalance
-                    ) + (_nativeCurrencyPayoutLimit + _toNative(_usdCurrencyPayoutLimit) - _projectOwnerNativeBalance)
+                    (_nativeCurrencySurplusAllowance
+                            + _toNative(_usdCurrencySurplusAllowance)
+                            - _beneficiaryNativeBalance)
+                        + (_nativeCurrencyPayoutLimit + _toNative(_usdCurrencyPayoutLimit) - _projectOwnerNativeBalance)
                 );
                 assertEq(
                     address(_terminal).balance,
@@ -1582,7 +1561,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
 
         // Keep a reference to the remaining native token surplus.
         uint256 _nativeSurplus = _nativeCurrencyPayoutLimit + _toNative(_usdCurrencyPayoutLimit)
-            + _nativeCurrencySurplusAllowance + _toNative(_usdCurrencySurplusAllowance) >= _nativePayAmount
+                + _nativeCurrencySurplusAllowance + _toNative(_usdCurrencySurplusAllowance) >= _nativePayAmount
             ? 0
             : _nativePayAmount - _nativeCurrencyPayoutLimit - _toNative(_usdCurrencyPayoutLimit)
                 - _nativeCurrencySurplusAllowance - _toNative(_usdCurrencySurplusAllowance);
@@ -1690,7 +1669,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 _nativeReclaimAmount = mulDiv(
                     mulDiv(
                         _toNative(mulDiv(_usdcPayAmount, 10 ** _NATIVE_DECIMALS, 10 ** _usdcToken.decimals()))
-                            + _nativeSurplus,
+                        + _nativeSurplus,
                         _tokenCountToCashOutForNative,
                         _tokenSupply
                     ),
@@ -1811,8 +1790,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBCurrencyAmount[] memory _payoutLimits1 = new JBCurrencyAmount[](1);
             JBCurrencyAmount[] memory _payoutLimits2 = new JBCurrencyAmount[](1);
             _payoutLimits1[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _payoutLimits2[0] =
                 JBCurrencyAmount({amount: _usdCurrencyPayoutLimit, currency: uint32(uint160(address(_usdcToken)))});
@@ -1821,11 +1799,11 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBCurrencyAmount[] memory _surplusAllowances1 = new JBCurrencyAmount[](1);
             JBCurrencyAmount[] memory _surplusAllowances2 = new JBCurrencyAmount[](1);
             _surplusAllowances1[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
-            _surplusAllowances2[0] =
-                JBCurrencyAmount({amount: _usdCurrencySurplusAllowance, currency: uint32(uint160(address(_usdcToken)))});
+            _surplusAllowances2[0] = JBCurrencyAmount({
+                amount: _usdCurrencySurplusAllowance, currency: uint32(uint160(address(_usdcToken)))
+            });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
                 terminal: address(_terminal),
@@ -1856,28 +1834,20 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations2 = new JBTerminalConfig[](2);
             JBAccountingContext[] memory _tokensToAccept1 = new JBAccountingContext[](2);
             _tokensToAccept1[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             _tokensToAccept1[1] = JBAccountingContext({
-                token: address(_usdcToken),
-                decimals: 6,
-                currency: uint32(uint160(address(_usdcToken)))
+                token: address(_usdcToken), decimals: 6, currency: uint32(uint160(address(_usdcToken)))
             });
 
             JBAccountingContext[] memory _tokensToAccept2 = new JBAccountingContext[](1);
             _tokensToAccept2[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             JBAccountingContext[] memory _tokensToAccept3 = new JBAccountingContext[](1);
             _tokensToAccept3[0] = JBAccountingContext({
-                token: address(_usdcToken),
-                decimals: 6,
-                currency: uint32(uint160(address(_usdcToken)))
+                token: address(_usdcToken), decimals: 6, currency: uint32(uint160(address(_usdcToken)))
             });
 
             // Fee takes USDC and native token in same terminal.
@@ -2102,7 +2072,9 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                     mulDiv(
                         _nativeCurrencySurplusAllowance
                             + _toNative(
-                                mulDiv(_usdCurrencySurplusAllowance, 10 ** _NATIVE_DECIMALS, 10 ** _usdcToken.decimals())
+                                mulDiv(
+                                    _usdCurrencySurplusAllowance, 10 ** _NATIVE_DECIMALS, 10 ** _usdcToken.decimals()
+                                )
                             ) - _beneficiaryNativeBalance
                             - _toNative(
                                 mulDiv(_beneficiaryUsdcBalance, 10 ** _NATIVE_DECIMALS, 10 ** _usdcToken.decimals())
@@ -2448,15 +2420,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -2482,9 +2452,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _terminalConfigurations[0] =
@@ -2564,15 +2532,13 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             // Specify a payout limit.
             JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
             _payoutLimits[0] = JBCurrencyAmount({
-                amount: _nativeCurrencyPayoutLimit,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencyPayoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             // Specify a surplus allowance.
             JBCurrencyAmount[] memory _surplusAllowances = new JBCurrencyAmount[](1);
             _surplusAllowances[0] = JBCurrencyAmount({
-                amount: _nativeCurrencySurplusAllowance,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                amount: _nativeCurrencySurplusAllowance, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -2598,9 +2564,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
             JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
             _tokensToAccept[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
 
             _terminalConfigurations[0] =

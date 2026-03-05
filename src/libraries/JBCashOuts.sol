@@ -104,7 +104,11 @@ library JBCashOuts {
 
         while (lo < hi) {
             uint256 mid = lo + (hi - lo) / 2;
-            if (cashOutFrom({surplus: surplus, cashOutCount: mid, totalSupply: totalSupply, cashOutTaxRate: cashOutTaxRate}) >= desiredOutput) {
+            if (
+                cashOutFrom({
+                        surplus: surplus, cashOutCount: mid, totalSupply: totalSupply, cashOutTaxRate: cashOutTaxRate
+                    }) >= desiredOutput
+            ) {
                 hi = mid;
             } else {
                 lo = mid + 1;

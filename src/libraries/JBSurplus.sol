@@ -33,10 +33,7 @@ library JBSurplus {
         // Add the current surplus for each terminal.
         for (uint256 i; i < numberOfTerminals; i++) {
             surplus += terminals[i].currentSurplusOf({
-                projectId: projectId,
-                accountingContexts: accountingContexts,
-                decimals: decimals,
-                currency: currency
+                projectId: projectId, accountingContexts: accountingContexts, decimals: decimals, currency: currency
             });
         }
     }

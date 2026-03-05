@@ -23,7 +23,8 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         _thirdParty = makeAddr("thirdParty");
     }
 
-    // ───────────────────── ROOT cannot be forwarded ─────────────────────
+    // ───────────────────── ROOT cannot be forwarded
+    // ─────────────────────
 
     /// @notice An operator with ROOT on project N cannot set ROOT for another operator.
     function test_rootCannotBeForwarded() external {
@@ -33,8 +34,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_account);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
         );
 
         // Verify operator has ROOT.
@@ -54,12 +54,12 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
             )
         );
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _thirdParty, projectId: PROJECT_ID, permissionIds: rootForThird})
+            _account, JBPermissionsData({operator: _thirdParty, projectId: PROJECT_ID, permissionIds: rootForThird})
         );
     }
 
-    // ───────────────────── Wildcard cannot be set by operator ─────────────────────
+    // ───────────────────── Wildcard cannot be set by operator
+    // ─────────────────────
 
     /// @notice An operator with ROOT cannot set permissions for the wildcard project ID.
     function test_wildcardCannotBeSetByOperator() external {
@@ -69,8 +69,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_account);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
         );
 
         // Operator tries to set permissions on wildcard (project 0).
@@ -84,12 +83,12 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
             )
         );
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _thirdParty, projectId: 0, permissionIds: somePermission})
+            _account, JBPermissionsData({operator: _thirdParty, projectId: 0, permissionIds: somePermission})
         );
     }
 
-    // ───────────────────── ROOT grants all permissions ─────────────────────
+    // ───────────────────── ROOT grants all permissions
+    // ─────────────────────
 
     /// @notice Fuzz: ROOT holder always has permission for any ID (when includeRoot=true).
     function testFuzz_rootGrantsAllPermissions(uint8 permissionId) external {
@@ -101,8 +100,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_account);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
         );
 
         // Check any permissionId with includeRoot=true.
@@ -120,7 +118,8 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         }
     }
 
-    // ───────────────────── Permission ID boundaries ─────────────────────
+    // ───────────────────── Permission ID boundaries
+    // ─────────────────────
 
     /// @notice Permission 0 cannot be set.
     function test_permissionId0_cannotBeSet() external {
@@ -130,8 +129,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         vm.prank(_account);
         vm.expectRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: zeroPermission})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: zeroPermission})
         );
     }
 
@@ -142,13 +140,11 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_account);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: maxPermission})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: maxPermission})
         );
 
         assertTrue(
-            _permissions.hasPermission(_operator, _account, PROJECT_ID, 255, false, false),
-            "Permission 255 should work"
+            _permissions.hasPermission(_operator, _account, PROJECT_ID, 255, false, false), "Permission 255 should work"
         );
 
         // Permission 254 should NOT be set.
@@ -158,7 +154,8 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         );
     }
 
-    // ───────────────────── Replacement not additive ─────────────────────
+    // ───────────────────── Replacement not additive
+    // ─────────────────────
 
     /// @notice Setting new permissions replaces old ones (old permissions lost).
     function test_replacementNotAdditive() external {
@@ -171,9 +168,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
             _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: perm5})
         );
 
-        assertTrue(
-            _permissions.hasPermission(_operator, _account, PROJECT_ID, 5, false, false), "Should have perm 5"
-        );
+        assertTrue(_permissions.hasPermission(_operator, _account, PROJECT_ID, 5, false, false), "Should have perm 5");
 
         // Now set permission 10 — should REPLACE, not add to perm 5.
         uint8[] memory perm10 = new uint8[](1);
@@ -184,16 +179,15 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
             _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: perm10})
         );
 
-        assertTrue(
-            _permissions.hasPermission(_operator, _account, PROJECT_ID, 10, false, false), "Should have perm 10"
-        );
+        assertTrue(_permissions.hasPermission(_operator, _account, PROJECT_ID, 10, false, false), "Should have perm 10");
         assertFalse(
             _permissions.hasPermission(_operator, _account, PROJECT_ID, 5, false, false),
             "Perm 5 should be LOST after replacement"
         );
     }
 
-    // ───────────────────── Wildcard overrides project-specific ─────────────────────
+    // ───────────────────── Wildcard overrides project-specific
+    // ─────────────────────
 
     /// @notice Wildcard permission grants access to all projects.
     function test_wildcardOverridesProjectSpecific() external {
@@ -219,7 +213,8 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         );
     }
 
-    // ───────────────────── Bit integrity fuzz ─────────────────────
+    // ───────────────────── Bit integrity fuzz
+    // ─────────────────────
 
     /// @notice Fuzz: packed permissions maintain bit integrity through set/get cycle.
     function testFuzz_setPermissions_bitIntegrity(uint256 bitmap) external {
@@ -260,7 +255,8 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         assertFalse(((packed >> 0) & 1) == 1, "Bit 0 should never be set");
     }
 
-    // ───────────────────── ROOT operator can set non-ROOT permissions ─────────────────────
+    // ───────────────────── ROOT operator can set non-ROOT permissions
+    // ─────────────────────
 
     /// @notice ROOT operator CAN set non-ROOT permissions for others on the same project.
     function test_rootOperator_canSetNonRootPermissions() external {
@@ -270,8 +266,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_account);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
+            _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: rootPermissions})
         );
 
         // Operator sets non-ROOT permission for thirdParty — should succeed.
@@ -280,8 +275,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
 
         vm.prank(_operator);
         _permissions.setPermissionsFor(
-            _account,
-            JBPermissionsData({operator: _thirdParty, projectId: PROJECT_ID, permissionIds: nonRootPerm})
+            _account, JBPermissionsData({operator: _thirdParty, projectId: PROJECT_ID, permissionIds: nonRootPerm})
         );
 
         assertTrue(

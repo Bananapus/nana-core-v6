@@ -617,7 +617,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Get the distance from the current time to the start of the next possible ruleset.
         // If the simulated ruleset must not yet have started, the start time of the simulated ruleset must be in the
         // future.
-        uint256 mustStartAtOrAfter = !allowMidRuleset ? block.timestamp + 1 : baseRuleset.duration >= block.timestamp ? 1 : block.timestamp - baseRuleset.duration + 1;
+        uint256 mustStartAtOrAfter = !allowMidRuleset
+            ? block.timestamp + 1
+            : baseRuleset.duration >= block.timestamp ? 1 : block.timestamp - baseRuleset.duration + 1;
 
         // Calculate what the start time should be.
         uint256 start = deriveStartFrom({
@@ -783,9 +785,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // Make sure the approval hook supports the expected interface.
             try approvalHook.supportsInterface(type(IJBRulesetApprovalHook).interfaceId) returns (bool doesSupport) {
                 if (!doesSupport) revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // Contract exists at the
-                    // address but
-                    // with the
-                    // wrong interface
+                // address but
+                // with the
+                // wrong interface
             } catch {
                 revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // No ERC165 support
             }
@@ -798,7 +800,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 rulesetId = latestId >= block.timestamp ? latestId + 1 : block.timestamp;
 
         // Set up the ruleset by configuring intrinsic properties.
-        _configureIntrinsicPropertiesFor({projectId: projectId, rulesetId: rulesetId, weight: weight, mustStartAtOrAfter: mustStartAtOrAfter});
+        _configureIntrinsicPropertiesFor({
+            projectId: projectId, rulesetId: rulesetId, weight: weight, mustStartAtOrAfter: mustStartAtOrAfter
+        });
 
         // Efficiently stores the ruleset's user-defined properties.
         // If all user config properties are zero, no need to store anything as the default value will have the same
@@ -841,7 +845,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
     function updateRulesetWeightCache(uint256 projectId) external override {
         // Keep a reference to the struct for the latest queued ruleset.
         // The cached value will be based on this struct.
-        JBRuleset memory latestQueuedRuleset = _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId]});
+        JBRuleset memory latestQueuedRuleset =
+            _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId]});
 
         // Nothing to cache if the latest ruleset doesn't have a duration or a weight cut percent.
         // slither-disable-next-line incorrect-equality
@@ -885,10 +890,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         cache.weightCutMultiple = weightCutMultiple;
 
         emit WeightCacheUpdated({
-            projectId: projectId,
-            weight: cache.weight,
-            weightCutMultiple: weightCutMultiple,
-            caller: msg.sender
+            projectId: projectId, weight: cache.weight, weightCutMultiple: weightCutMultiple, caller: msg.sender
         });
     }
 
@@ -937,19 +939,17 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
         // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.
         if (
-            (
-                block.timestamp >= baseRuleset.start && approvalStatus != JBApprovalStatus.Approved
-                    && approvalStatus != JBApprovalStatus.Empty
-            )
-                || (
-                    block.timestamp < baseRuleset.start && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
-                        && approvalStatus != JBApprovalStatus.Approved
-                )
-                || (
-                    block.timestamp < baseRuleset.start && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
-                        && approvalStatus != JBApprovalStatus.Approved && approvalStatus != JBApprovalStatus.ApprovalExpected
-                        && approvalStatus != JBApprovalStatus.Empty
-                )
+            (block.timestamp >= baseRuleset.start
+                    && approvalStatus != JBApprovalStatus.Approved
+                    && approvalStatus != JBApprovalStatus.Empty)
+                || (block.timestamp < baseRuleset.start
+                    && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
+                    && approvalStatus != JBApprovalStatus.Approved)
+                || (block.timestamp < baseRuleset.start
+                    && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
+                    && approvalStatus != JBApprovalStatus.Approved
+                    && approvalStatus != JBApprovalStatus.ApprovalExpected
+                    && approvalStatus != JBApprovalStatus.Empty)
         ) {
             baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
         }
@@ -1054,10 +1054,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         latestRulesetIdOf[projectId] = rulesetId;
 
         emit RulesetInitialized({
-            rulesetId: rulesetId,
-            projectId: projectId,
-            basedOnId: baseRuleset.id,
-            caller: msg.sender
+            rulesetId: rulesetId, projectId: projectId, basedOnId: baseRuleset.id, caller: msg.sender
         });
     }
 

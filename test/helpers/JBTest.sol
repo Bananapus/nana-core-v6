@@ -88,6 +88,7 @@ contract JBTest is Test {
             metadata: 0
         });
     }
+
     function generateUnfriendlyRuleset() public view returns (JBRuleset memory) {
         JBRulesetMetadata memory _rulesMetadata = JBRulesetMetadata({
             reservedPercent: JBConstants.MAX_RESERVED_PERCENT,

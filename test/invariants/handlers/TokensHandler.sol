@@ -87,12 +87,7 @@ contract TokensHandler is Test {
         if (burnCount == 0) return;
 
         vm.prank(actor);
-        controller.burnTokensOf({
-            holder: actor,
-            projectId: projectId,
-            tokenCount: burnCount,
-            memo: ""
-        });
+        controller.burnTokensOf({holder: actor, projectId: projectId, tokenCount: burnCount, memo: ""});
     }
 
     /// @notice Claim credits as ERC20 tokens.
@@ -106,12 +101,7 @@ contract TokensHandler is Test {
         if (claimCount == 0) return;
 
         vm.prank(actor);
-        controller.claimTokensFor({
-            holder: actor,
-            projectId: projectId,
-            tokenCount: claimCount,
-            beneficiary: actor
-        });
+        controller.claimTokensFor({holder: actor, projectId: projectId, tokenCount: claimCount, beneficiary: actor});
     }
 
     /// @notice Transfer credits between actors.
@@ -130,12 +120,7 @@ contract TokensHandler is Test {
         _trackHolder(to);
 
         vm.prank(from);
-        controller.transferCreditsFrom({
-            holder: from,
-            projectId: projectId,
-            recipient: to,
-            creditCount: transferCount
-        });
+        controller.transferCreditsFrom({holder: from, projectId: projectId, recipient: to, creditCount: transferCount});
     }
 
     receive() external payable {}

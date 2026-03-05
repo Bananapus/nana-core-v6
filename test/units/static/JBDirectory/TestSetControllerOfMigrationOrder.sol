@@ -67,9 +67,8 @@ contract TestSetControllerOfMigrationOrder is JBDirectorySetup {
         MockNewController newController = new MockNewController();
 
         // Set the old controller in the directory's storage.
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(PROJECT_ID).depth(0).checked_write(
-            address(oldController)
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(PROJECT_ID).depth(0)
+            .checked_write(address(oldController));
 
         // Mock ownerOf to return this test contract as the project owner.
         mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (PROJECT_ID)), abi.encode(address(this)));

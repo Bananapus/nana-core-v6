@@ -58,9 +58,7 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -295,11 +293,7 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         // Shouldn't be able to set permission for wildcard project
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissions.JBPermissions_Unauthorized.selector,
-                zeroOwner,
-                address(this),
-                0,
-                JBPermissionIds.ROOT
+                JBPermissions.JBPermissions_Unauthorized.selector, zeroOwner, address(this), 0, JBPermissionIds.ROOT
             )
         );
         _permissions.setPermissionsFor(zeroOwner, permData2[0]);

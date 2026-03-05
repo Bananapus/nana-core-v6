@@ -162,13 +162,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency being priced by the feed.
     /// @param feed The price feed to add.
-    function addPriceFeed(
-        uint256 projectId,
-        uint256 pricingCurrency,
-        uint256 unitCurrency,
-        IJBPriceFeed feed
-    )
-        external;
+    function addPriceFeed(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed) external;
 
     /// @notice Burns a holder's project tokens or credits.
     /// @param holder The address whose tokens are being burned.

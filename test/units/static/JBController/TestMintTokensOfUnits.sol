@@ -73,11 +73,7 @@ contract TestMintTokensOfUnits_Local is JBControllerSetup {
         );
 
         _controller.mintTokensOf({
-            projectId: _projectId,
-            tokenCount: 1,
-            beneficiary: address(this),
-            memo: "",
-            useReservedPercent: true
+            projectId: _projectId, tokenCount: 1, beneficiary: address(this), memo: "", useReservedPercent: true
         });
     }
 

@@ -45,20 +45,19 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
 
     function equals(JBRuleset memory queued, JBRuleset memory stored) internal pure returns (bool) {
         // Just compare the output of hashing all fields packed.
-        return (
-            keccak256(
-                abi.encodePacked(
-                    queued.cycleNumber,
-                    queued.id,
-                    queued.basedOnId,
-                    queued.start,
-                    queued.duration,
-                    queued.weight,
-                    queued.weightCutPercent,
-                    queued.approvalHook,
-                    queued.metadata
+        return (keccak256(
+                    abi.encodePacked(
+                        queued.cycleNumber,
+                        queued.id,
+                        queued.basedOnId,
+                        queued.start,
+                        queued.duration,
+                        queued.weight,
+                        queued.weightCutPercent,
+                        queued.approvalHook,
+                        queued.metadata
+                    )
                 )
-            )
                 == keccak256(
                     abi.encodePacked(
                         stored.cycleNumber,
@@ -71,8 +70,7 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
                         stored.approvalHook,
                         stored.metadata
                     )
-                )
-        );
+                ));
     }
 
     function testLaunchProject() public {
@@ -91,9 +89,7 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -145,9 +141,7 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});

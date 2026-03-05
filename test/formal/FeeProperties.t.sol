@@ -42,9 +42,7 @@ contract FeeProperties is Test {
         uint256 feeCombined = JBFees.feeAmountFrom(uint256(a) + uint256(b), feePercent);
         uint256 feeSeparate = JBFees.feeAmountFrom(a, feePercent) + JBFees.feeAmountFrom(b, feePercent);
 
-        uint256 diff = feeCombined >= feeSeparate
-            ? feeCombined - feeSeparate
-            : feeSeparate - feeCombined;
+        uint256 diff = feeCombined >= feeSeparate ? feeCombined - feeSeparate : feeSeparate - feeCombined;
 
         assertLe(diff, 1, "Additivity: fee(a+b) and fee(a)+fee(b) should differ by at most 1 wei");
     }
@@ -52,8 +50,8 @@ contract FeeProperties is Test {
     // =========================================================================
     // Property 2: Return fee consistency (protocol never undercharges)
     // =========================================================================
-    /// @notice feeAmountResultingIn(netAmount, fee) >= feeAmountFrom(netAmount + feeAmountResultingIn(netAmount, fee), fee)
-    ///         The reverse fee is always >= the forward fee on the gross amount, ensuring
+    /// @notice feeAmountResultingIn(netAmount, fee) >= feeAmountFrom(netAmount + feeAmountResultingIn(netAmount, fee),
+    // fee) /         The reverse fee is always >= the forward fee on the gross amount, ensuring
     ///         the protocol never undercharges when returning held fees.
     function check_fee_returnConsistency(uint256 netAmount, uint256 feePercent) public pure {
         vm.assume(netAmount > 0 && netAmount <= type(uint128).max);
@@ -121,11 +119,7 @@ contract FeeProperties is Test {
 
         uint256 fee2 = JBFees.feeAmountResultingIn(net, feePercent);
 
-        assertGe(
-            net + fee2,
-            amount,
-            "Round trip: reconstructed gross should be >= original (never undercharge)"
-        );
+        assertGe(net + fee2, amount, "Round trip: reconstructed gross should be >= original (never undercharge)");
 
         uint256 maxOvershoot = MAX_FEE / (MAX_FEE - uint256(feePercent)) + 1;
         assertLe(
@@ -139,11 +133,7 @@ contract FeeProperties is Test {
     // Property 4: Partial return monotonicity
     // =========================================================================
     /// @notice feeAmountResultingIn(a, fee) <= feeAmountResultingIn(b, fee) when a <= b.
-    function check_fee_partialReturnMonotonicity(
-        uint256 a,
-        uint256 b,
-        uint256 feePercent
-    ) public pure {
+    function check_fee_partialReturnMonotonicity(uint256 a, uint256 b, uint256 feePercent) public pure {
         vm.assume(a > 0 && b > 0);
         vm.assume(a <= type(uint128).max && b <= type(uint128).max);
         vm.assume(a <= b);
@@ -155,11 +145,7 @@ contract FeeProperties is Test {
         assert(feeA <= feeB);
     }
 
-    function testFuzz_fee_partialReturnMonotonicity(
-        uint128 a,
-        uint128 b,
-        uint16 feePercent
-    ) public pure {
+    function testFuzz_fee_partialReturnMonotonicity(uint128 a, uint128 b, uint16 feePercent) public pure {
         vm.assume(a > 0 && b > 0);
         if (a > b) (a, b) = (b, a); // Ensure a <= b
         vm.assume(feePercent > 0 && feePercent < MAX_FEE);
@@ -200,11 +186,7 @@ contract FeeProperties is Test {
         assertLe(fee, heldFeeAmount, "Subtraction safety: fee should never exceed held amount");
 
         uint256 leftover = uint256(heldFeeAmount) - fee;
-        assertEq(
-            leftover + fee,
-            heldFeeAmount,
-            "Subtraction safety: leftover + fee should exactly equal held amount"
-        );
+        assertEq(leftover + fee, heldFeeAmount, "Subtraction safety: leftover + fee should exactly equal held amount");
     }
 
     // =========================================================================
@@ -257,14 +239,8 @@ contract FeeProperties is Test {
             splitFeeSum += JBFees.feeAmountFrom(splitAmount, feePercent);
         }
 
-        uint256 diff = singleFee >= splitFeeSum
-            ? singleFee - splitFeeSum
-            : splitFeeSum - singleFee;
+        uint256 diff = singleFee >= splitFeeSum ? singleFee - splitFeeSum : splitFeeSum - singleFee;
 
-        assertLe(
-            diff,
-            N,
-            "Multi-split accumulation: total rounding error should be bounded by N wei"
-        );
+        assertLe(diff, N, "Multi-split accumulation: total rounding error should be bounded by N wei");
     }
 }

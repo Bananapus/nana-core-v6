@@ -62,10 +62,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
 
         // Set up payout limit so fees are taken on payouts.
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] = JBCurrencyAmount({
-            amount: uint224(PAY_AMOUNT),
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
+        payoutLimits[0] =
+            JBCurrencyAmount({amount: uint224(PAY_AMOUNT), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
         JBFundAccessLimitGroup[] memory limitGroups = new JBFundAccessLimitGroup[](1);
         limitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(_terminal),
@@ -78,18 +76,19 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         // Terminal configs — both terminals accept native token.
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](2);
-        terminalConfigs[0] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
-        terminalConfigs[1] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal2)), accountingContextsToAccept: tokensToAccept});
+        terminalConfigs[0] =
+            JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
+        terminalConfigs[1] =
+            JBTerminalConfig({terminal: IJBTerminal(address(_terminal2)), accountingContextsToAccept: tokensToAccept});
 
         // Fee project (#1).
         JBTerminalConfig[] memory feeTerminalConfigs = new JBTerminalConfig[](1);
-        feeTerminalConfigs[0] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
+        feeTerminalConfigs[0] =
+            JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
 
         JBRulesetConfig[] memory feeRulesetConfig = new JBRulesetConfig[](1);
         feeRulesetConfig[0].mustStartAtOrAfter = 0;
@@ -148,7 +147,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         uint256 balanceBefore = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
 
         vm.prank(_projectOwner);
-        uint256 migrated = _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
+        uint256 migrated =
+            _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
 
         // Step 4: Verify old terminal has no balance but still has held fees.
         uint256 balanceAfter = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);

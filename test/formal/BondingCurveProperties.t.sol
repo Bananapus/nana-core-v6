@@ -27,7 +27,10 @@ contract BondingCurveProperties is Test {
         uint256 cashOutCount,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         // Bound inputs to valid ranges
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
@@ -43,7 +46,10 @@ contract BondingCurveProperties is Test {
         uint128 totalSupply,
         uint128 cashOutCount,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
@@ -63,7 +69,10 @@ contract BondingCurveProperties is Test {
         uint256 c2,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
         vm.assume(c1 > 0 && c2 > 0);
@@ -83,7 +92,10 @@ contract BondingCurveProperties is Test {
         uint128 c1,
         uint128 c2,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(c1 > 0 && c2 > 0);
@@ -101,11 +113,7 @@ contract BondingCurveProperties is Test {
     // Property 3: Full redemption — when c >= T, result is S (full surplus)
     // =========================================================================
     /// @notice When cashOutCount >= totalSupply, the full surplus is returned.
-    function check_cashOut_fullRedemption(
-        uint256 surplus,
-        uint256 totalSupply,
-        uint256 cashOutTaxRate
-    ) public pure {
+    function check_cashOut_fullRedemption(uint256 surplus, uint256 totalSupply, uint256 cashOutTaxRate) public pure {
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
         vm.assume(cashOutTaxRate <= MAX_TAX);
@@ -116,11 +124,7 @@ contract BondingCurveProperties is Test {
         assert(result == surplus);
     }
 
-    function testFuzz_cashOut_fullRedemption(
-        uint128 surplus,
-        uint128 totalSupply,
-        uint16 cashOutTaxRate
-    ) public pure {
+    function testFuzz_cashOut_fullRedemption(uint128 surplus, uint128 totalSupply, uint16 cashOutTaxRate) public pure {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutTaxRate < MAX_TAX); // Exclude max tax
@@ -133,11 +137,7 @@ contract BondingCurveProperties is Test {
     // Property 4: Max tax → zero reclaim
     // =========================================================================
     /// @notice When cashOutTaxRate == MAX_CASH_OUT_TAX_RATE, result is 0.
-    function check_cashOut_maxTaxIsZero(
-        uint256 surplus,
-        uint256 cashOutCount,
-        uint256 totalSupply
-    ) public pure {
+    function check_cashOut_maxTaxIsZero(uint256 surplus, uint256 cashOutCount, uint256 totalSupply) public pure {
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
@@ -146,11 +146,7 @@ contract BondingCurveProperties is Test {
         assert(result == 0);
     }
 
-    function testFuzz_cashOut_maxTaxIsZero(
-        uint128 surplus,
-        uint128 totalSupply,
-        uint128 cashOutCount
-    ) public pure {
+    function testFuzz_cashOut_maxTaxIsZero(uint128 surplus, uint128 totalSupply, uint128 cashOutCount) public pure {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
@@ -171,7 +167,10 @@ contract BondingCurveProperties is Test {
         uint256 b,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0 && surplus <= type(uint96).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint96).max);
         vm.assume(a > 0 && b > 0);
@@ -210,7 +209,10 @@ contract BondingCurveProperties is Test {
         uint96 a,
         uint96 b,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(a > 0 && b > 0);
@@ -230,11 +232,7 @@ contract BondingCurveProperties is Test {
         // Verify the weaker property: excess bounded by rounding tolerance (< 0.01%).
         if (firstResult + secondResult > singleResult) {
             uint256 excess = (firstResult + secondResult) - singleResult;
-            assertLe(
-                excess * 10_000,
-                singleResult,
-                "No-arbitrage: rounding excess should be < 0.01%"
-            );
+            assertLe(excess * 10_000, singleResult, "No-arbitrage: rounding excess should be < 0.01%");
         }
     }
 
@@ -282,7 +280,10 @@ contract BondingCurveProperties is Test {
         uint16 boolFlags, // Pack 14 bools into a uint16
         address dataHook,
         uint16 extraMetadata
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(reservedPercent <= 10_000);
         vm.assume(cashOutTaxRate <= 10_000);
         vm.assume(extraMetadata <= 0x3FFF);
@@ -344,7 +345,10 @@ contract BondingCurveProperties is Test {
         uint16 boolFlags, // Pack 14 bools into a uint16
         address dataHook,
         uint16 extraMetadata
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(reservedPercent <= 10_000);
         vm.assume(cashOutTaxRate <= 10_000);
         vm.assume(extraMetadata <= 0x3FFF);
@@ -388,11 +392,17 @@ contract BondingCurveProperties is Test {
         assertEq(result.allowTerminalMigration, original.allowTerminalMigration, "allowTerminalMigration mismatch");
         assertEq(result.allowSetTerminals, original.allowSetTerminals, "allowSetTerminals mismatch");
         assertEq(result.allowSetController, original.allowSetController, "allowSetController mismatch");
-        assertEq(result.allowAddAccountingContext, original.allowAddAccountingContext, "allowAddAccountingContext mismatch");
+        assertEq(
+            result.allowAddAccountingContext, original.allowAddAccountingContext, "allowAddAccountingContext mismatch"
+        );
         assertEq(result.allowAddPriceFeed, original.allowAddPriceFeed, "allowAddPriceFeed mismatch");
         assertEq(result.ownerMustSendPayouts, original.ownerMustSendPayouts, "ownerMustSendPayouts mismatch");
         assertEq(result.holdFees, original.holdFees, "holdFees mismatch");
-        assertEq(result.useTotalSurplusForCashOuts, original.useTotalSurplusForCashOuts, "useTotalSurplusForCashOuts mismatch");
+        assertEq(
+            result.useTotalSurplusForCashOuts,
+            original.useTotalSurplusForCashOuts,
+            "useTotalSurplusForCashOuts mismatch"
+        );
         assertEq(result.useDataHookForPay, original.useDataHookForPay, "useDataHookForPay mismatch");
         assertEq(result.useDataHookForCashOut, original.useDataHookForCashOut, "useDataHookForCashOut mismatch");
         assertEq(result.dataHook, original.dataHook, "dataHook mismatch");

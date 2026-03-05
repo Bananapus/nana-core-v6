@@ -30,12 +30,7 @@ contract RulesetsHandler is Test {
     bool public ghost_hasLaunched;
     uint256 public ghost_queueCount;
 
-    constructor(
-        IJBRulesets _rulesets,
-        IJBController _controller,
-        uint256 _projectId,
-        address _projectOwner
-    ) {
+    constructor(IJBRulesets _rulesets, IJBController _controller, uint256 _projectId, address _projectOwner) {
         rulesets = _rulesets;
         controller = _controller;
         projectId = _projectId;
@@ -89,11 +84,7 @@ contract RulesetsHandler is Test {
         });
 
         vm.prank(projectOwner);
-        try controller.queueRulesetsOf({
-            projectId: projectId,
-            rulesetConfigurations: configs,
-            memo: ""
-        }) {
+        try controller.queueRulesetsOf({projectId: projectId, rulesetConfigurations: configs, memo: ""}) {
             ghost_queueCount++;
         } catch {
             // May fail if not controller

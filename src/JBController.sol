@@ -171,8 +171,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (JBRulesetWithMetadata[] memory rulesets)
     {
         // Get the rulesets (without metadata).
-        JBRuleset[] memory baseRulesets =
-            RULESETS.allOf({projectId: projectId, startingId: startingId, size: size});
+        JBRuleset[] memory baseRulesets = RULESETS.allOf({projectId: projectId, startingId: startingId, size: size});
 
         // Keep a reference to the number of rulesets.
         uint256 numberOfRulesets = baseRulesets.length;
@@ -285,8 +284,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @return A flag indicating if the provided interface ID is supported.
     function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
         return interfaceId == type(IJBController).interfaceId || interfaceId == type(IJBProjectUriRegistry).interfaceId
-            || interfaceId == type(IJBDirectoryAccessControl).interfaceId || interfaceId == type(IJBMigratable).interfaceId
-            || interfaceId == type(IJBPermissioned).interfaceId || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IJBDirectoryAccessControl).interfaceId
+            || interfaceId == type(IJBMigratable).interfaceId || interfaceId == type(IJBPermissioned).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
     }
 
     //*********************************************************************//
@@ -373,9 +373,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.ADD_PRICE_FEED
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.ADD_PRICE_FEED
         });
 
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
@@ -384,10 +382,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (!ruleset.allowAddPriceFeed()) revert JBController_AddingPriceFeedNotAllowed(projectId);
 
         PRICES.addPriceFeedFor({
-            projectId: projectId,
-            pricingCurrency: pricingCurrency,
-            unitCurrency: unitCurrency,
-            feed: feed
+            projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
         });
     }
 
@@ -456,7 +451,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // There must be tokens to burn.
         if (tokenCount == 0) revert JBController_ZeroTokensToBurn();
 
-        emit BurnTokens({holder: holder, projectId: projectId, tokenCount: tokenCount, memo: memo, caller: _msgSender()});
+        emit BurnTokens({
+            holder: holder, projectId: projectId, tokenCount: tokenCount, memo: memo, caller: _msgSender()
+        });
 
         // Burn the tokens.
         TOKENS.burnFrom({holder: holder, projectId: projectId, count: tokenCount});
@@ -504,9 +501,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.DEPLOY_ERC20
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.DEPLOY_ERC20
         });
 
         // If a salt is provided, use it.
@@ -514,11 +509,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // Emit the event.
         emit DeployERC20({
-            projectId: projectId,
-            deployer: _msgSender(),
-            salt: salt,
-            saltHash: saltHash,
-            caller: _msgSender()
+            projectId: projectId, deployer: _msgSender(), salt: salt, saltHash: saltHash, caller: _msgSender()
         });
 
         // Deploy the ERC-20 token with the hashed salt.
@@ -609,11 +600,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         uint256 rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchProject({
-            rulesetId: rulesetId,
-            projectId: projectId,
-            projectUri: projectUri,
-            memo: memo,
-            caller: _msgSender()
+            rulesetId: rulesetId, projectId: projectId, projectUri: projectUri, memo: memo, caller: _msgSender()
         });
     }
 
@@ -748,8 +735,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         if (reservedPercent != JBConstants.MAX_RESERVED_PERCENT) {
             // Calculate the number of (non-reserved) tokens that will be minted to the beneficiary.
-            beneficiaryTokenCount =
-                mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
+            beneficiaryTokenCount = mulDiv(
+                tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT
+            );
 
             // Mint the tokens.
             // slither-disable-next-line reentrancy-benign,reentrancy-events,unused-return
@@ -832,9 +820,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.SET_SPLIT_GROUPS
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_SPLIT_GROUPS
         });
 
         // Set the split groups.
@@ -848,9 +834,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     function setTokenFor(uint256 projectId, IJBToken token) external override {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.SET_TOKEN
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN
         });
 
         // Get a reference to the current ruleset.
@@ -874,9 +858,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     function setUriOf(uint256 projectId, string calldata uri) external override {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.SET_PROJECT_URI
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_PROJECT_URI
         });
 
         // Set the project's metadata URI.
@@ -928,10 +910,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
             // Add the accounting contexts for the specified tokens.
-            terminalConfig.terminal.addAccountingContextsFor({
-                projectId: projectId,
-                accountingContexts: terminalConfig.accountingContextsToAccept
-            });
+            terminalConfig.terminal
+                .addAccountingContextsFor({
+                    projectId: projectId, accountingContexts: terminalConfig.accountingContextsToAccept
+                });
 
             // Add the terminal.
             terminals[i] = terminalConfig.terminal;
@@ -985,16 +967,12 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Set its split groups.
             SPLITS.setSplitGroupsOf({
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                splitGroups: rulesetConfig.splitGroups
+                projectId: projectId, rulesetId: ruleset.id, splitGroups: rulesetConfig.splitGroups
             });
 
             // Set its fund access limits.
             FUND_ACCESS_LIMITS.setFundAccessLimitsFor({
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                fundAccessLimitGroups: rulesetConfig.fundAccessLimitGroups
+                projectId: projectId, rulesetId: ruleset.id, fundAccessLimitGroups: rulesetConfig.fundAccessLimitGroups
             });
 
             // If this is the last configuration being queued, return the ruleset's ID.
@@ -1103,23 +1081,21 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     // Send the tokens to the split hook.
                     // slither-disable-next-line reentrancy-events
                     _sendTokens({
-                        projectId: projectId,
-                        tokenCount: splitTokenCount,
-                        recipient: address(split.hook),
-                        token: token
+                        projectId: projectId, tokenCount: splitTokenCount, recipient: address(split.hook), token: token
                     });
 
                     // slither-disable-next-line reentrancy-events
-                    split.hook.processSplitWith(
-                        JBSplitHookContext({
-                            token: address(token),
-                            amount: splitTokenCount,
-                            decimals: 18, // Hard-coded in `JBTokens`.
-                            projectId: projectId,
-                            groupId: groupId,
-                            split: split
-                        })
-                    );
+                    split.hook
+                        .processSplitWith(
+                            JBSplitHookContext({
+                                token: address(token),
+                                amount: splitTokenCount,
+                                decimals: 18, // Hard-coded in `JBTokens`.
+                                projectId: projectId,
+                                groupId: groupId,
+                                split: split
+                            })
+                        );
                     // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
                 } else {
                     // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message
@@ -1138,10 +1114,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             // Mint the tokens to the beneficiary.
                             // slither-disable-next-line reentrancy-events
                             _sendTokens({
-                                projectId: projectId,
-                                tokenCount: splitTokenCount,
-                                recipient: beneficiary,
-                                token: token
+                                projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
                             });
                         } else {
                             // Use the `projectId` in the pay metadata.
@@ -1156,7 +1129,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                                 splitTokenCount: splitTokenCount,
                                 beneficiary: beneficiary,
                                 metadata: metadata
-                            }) {} catch (bytes memory reason) {
+                            }) {}
+                            catch (bytes memory reason) {
                                 emit ReservedDistributionReverted({
                                     projectId: projectId,
                                     split: split,
@@ -1175,10 +1149,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     } else {
                         // If the split has no project Id, send to beneficiary.
                         _sendTokens({
-                            projectId: projectId,
-                            tokenCount: splitTokenCount,
-                            recipient: beneficiary,
-                            token: token
+                            projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
                         });
                     }
                 }
@@ -1208,10 +1179,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             IERC20(address(token)).safeTransfer({to: recipient, value: tokenCount});
         } else {
             TOKENS.transferCreditsFrom({
-                holder: address(this),
-                projectId: projectId,
-                recipient: recipient,
-                count: tokenCount
+                holder: address(this), projectId: projectId, recipient: recipient, count: tokenCount
             });
         }
     }
