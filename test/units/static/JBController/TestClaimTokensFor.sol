@@ -48,7 +48,11 @@ contract TestClaimTokensFor_Local is JBControllerSetup {
         // will revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _holder, address(this), _projectId, 11
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _holder,
+                address(this),
+                _projectId,
+                JBPermissionIds.CLAIM_TOKENS
             )
         );
         _controller.claimTokensFor(_holder, _projectId, _amount, _beneficiary);

@@ -38,7 +38,7 @@ contract Deploy is Script, Sphinx {
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    uint256 private CORE_DEPLOYMENT_NONCE = 1;
+    uint256 private CORE_DEPLOYMENT_NONCE = 6;
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
@@ -87,9 +87,7 @@ contract Deploy is Script, Sphinx {
             projects: projects,
             splits: splits,
             store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                directory: directory,
-                rulesets: rulesets,
-                prices: prices
+                directory: directory, rulesets: rulesets, prices: prices
             }),
             tokens: tokens,
             feelessAddresses: feeless,

@@ -61,7 +61,11 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 15
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_PRIMARY_TERMINAL
             )
         );
         _directory.setPrimaryTerminalOf(1, _token, _terminalToAdd);
@@ -89,9 +93,8 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
         whenCallerHasPermission
         givenValidAccountingContext
     {
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
         // mock erc165 call
         bytes memory _supportCall =
             abi.encodeCall(IERC165.supportsInterface, (type(IJBDirectoryAccessControl).interfaceId));
@@ -123,9 +126,8 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
     {
         // it should revert with SET_TERMINALS_NOT_ALLOWED
 
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
 
         // mock erc165 call
         bytes memory _supportCall =
@@ -140,7 +142,7 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
 
         mockExpect(address(_mockController), _allowedCall, _allowedReturn);
 
-        vm.expectRevert(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector, 1));
         _directory.setPrimaryTerminalOf(1, _token, _terminalToAdd);
     }
 
@@ -153,9 +155,8 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
         // it should set the terminal and emit AddTerminal
         // it should set the terminal as primary and emit SetPrimaryTerminal
 
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
         // mock erc165 call
         bytes memory _supportCall =
             abi.encodeCall(IERC165.supportsInterface, (type(IJBDirectoryAccessControl).interfaceId));

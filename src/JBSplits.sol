@@ -15,8 +15,8 @@ contract JBSplits is JBControlled, IJBSplits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBSplits_PreviousLockedSplitsNotIncluded(uint256 projectId, uint256 rulesetId);
     error JBSplits_TotalPercentExceeds100();
-    error JBSplits_PreviousLockedSplitsNotIncluded();
     error JBSplits_ZeroSplitPercent();
 
     //*********************************************************************//
@@ -93,7 +93,7 @@ contract JBSplits is JBControlled, IJBSplits {
         override
         returns (JBSplit[] memory splits)
     {
-        splits = _getStructsFor(projectId, rulesetId, groupId);
+        splits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
 
         // Use the default splits if there aren't any for the ruleset.
         if (splits.length == 0) {
@@ -191,7 +191,9 @@ contract JBSplits is JBControlled, IJBSplits {
     //*********************************************************************//
 
     /// @notice Sets a project's split groups.
-    /// @dev Only a project's controller can set its splits.
+    /// @dev Only a project's controller can set its splits, unless the first 160 bits of the group's ID match
+    /// `msg.sender`, in which case the caller can set its own splits. The remaining upper 96 bits are free for the
+    /// caller to use as sub-categorization.
     /// @dev The new split groups must include any currently set splits that are locked.
     /// @param projectId The ID of the project to set the split groups of.
     /// @param rulesetId The ID of the ruleset the split groups should be active in. Send
@@ -205,15 +207,26 @@ contract JBSplits is JBControlled, IJBSplits {
     )
         external
         override
-        onlyControllerOf(projectId)
     {
+        // Cache whether the controller check has already passed to avoid repeated external calls.
+        bool controllerChecked;
+
         // Set each grouped splits.
         for (uint256 i; i < splitGroups.length; i++) {
             // Get a reference to the grouped split being iterated on.
             JBSplitGroup memory splitGroup = splitGroups[i];
 
+            // Allow contracts to set splits in their own namespace (first 160 bits of groupId == msg.sender).
+            // Otherwise, require controller (checked once).
+            if (address(uint160(splitGroup.groupId)) != msg.sender && !controllerChecked) {
+                _onlyControllerOf(projectId);
+                controllerChecked = true;
+            }
+
             // Set the splits for the group.
-            _setSplitsOf(projectId, rulesetId, splitGroup.groupId, splitGroup.splits);
+            _setSplitsOf({
+                projectId: projectId, rulesetId: rulesetId, groupId: splitGroup.groupId, splits: splitGroup.splits
+            });
         }
     }
 
@@ -230,7 +243,7 @@ contract JBSplits is JBControlled, IJBSplits {
     /// @param splits An array of splits to set.
     function _setSplitsOf(uint256 projectId, uint256 rulesetId, uint256 groupId, JBSplit[] memory splits) internal {
         // Get a reference to the current split structs within the project, ruleset, and group.
-        JBSplit[] memory currentSplits = _getStructsFor(projectId, rulesetId, groupId);
+        JBSplit[] memory currentSplits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
 
         // Keep a reference to the current number of splits within the group.
         uint256 numberOfCurrentSplits = currentSplits.length;
@@ -238,8 +251,11 @@ contract JBSplits is JBControlled, IJBSplits {
         // Check to see if all locked splits are included in the array of splits which is being set.
         for (uint256 i; i < numberOfCurrentSplits; i++) {
             // If not locked, continue.
-            if (block.timestamp < currentSplits[i].lockedUntil && !_includesLockedSplits(splits, currentSplits[i])) {
-                revert JBSplits_PreviousLockedSplitsNotIncluded();
+            if (
+                block.timestamp < currentSplits[i].lockedUntil
+                    && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
+            ) {
+                revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
             }
         }
 
@@ -291,15 +307,18 @@ contract JBSplits is JBControlled, IJBSplits {
             }
 
             emit SetSplit({
-                projectId: projectId,
-                rulesetId: rulesetId,
-                groupId: groupId,
-                split: split,
-                caller: msg.sender
+                projectId: projectId, rulesetId: rulesetId, groupId: groupId, split: split, caller: msg.sender
             });
         }
 
         // Store the number of splits for the project, ruleset, and group.
         _splitCountOf[projectId][rulesetId][groupId] = numberOfSplits;
+
+        // Clean up stale storage slots if the new split count is less than the previous count.
+        // This zeroes out leftover packed data to reclaim gas via storage refunds.
+        for (uint256 i = numberOfSplits; i < numberOfCurrentSplits; i++) {
+            delete _packedSplitParts1Of[projectId][rulesetId][groupId][i];
+            delete _packedSplitParts2Of[projectId][rulesetId][groupId][i];
+        }
     }
 }

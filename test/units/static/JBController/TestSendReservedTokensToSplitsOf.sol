@@ -69,9 +69,8 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
 
     modifier whenTheProjectHasReservedTokensGtZero() {
         // Set some pending reserved token balance
-        stdstore.target(address(_controller)).sig("pendingReservedTokenBalanceOf(uint256)").with_key(_projectId).depth(
-            0
-        ).checked_write(1e18);
+        stdstore.target(address(_controller)).sig("pendingReservedTokenBalanceOf(uint256)").with_key(_projectId)
+            .depth(0).checked_write(1e18);
 
         _;
     }

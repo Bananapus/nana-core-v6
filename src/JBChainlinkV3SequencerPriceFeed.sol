@@ -13,10 +13,10 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
-        uint256 timestamp, uint256 gradePeriodTime, uint256 startedAt
-    );
     error JBChainlinkV3SequencerPriceFeed_InvalidRound();
+    error JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
+        uint256 timestamp, uint256 gracePeriodTime, uint256 startedAt
+    );
 
     //*********************************************************************//
     // ---------------- public stored immutable properties --------------- //
@@ -33,7 +33,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     //*********************************************************************//
 
     /// @param feed The Chainlink feed to report prices from.
-    /// @param threshold How many blocks old a price update may be.
+    /// @param threshold How many seconds old a price update may be.
     /// @param sequencerFeed The Chainlink feed to report sequencer status.
     /// @param gracePeriod How long the sequencer should have been re-active before returning prices.
     constructor(
@@ -49,7 +49,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
     /// @notice Gets the current price (per 1 unit) from the feed.

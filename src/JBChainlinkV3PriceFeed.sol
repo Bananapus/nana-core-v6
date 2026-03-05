@@ -27,7 +27,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     AggregatorV3Interface public immutable FEED;
 
     //*********************************************************************//
-    // --------------------- public stored properties -------------------- //
+    // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
 
     /// @notice How many seconds old a Chainlink price update is allowed to be before considered "stale".
@@ -45,7 +45,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
     /// @notice Gets the current price (per 1 unit) from the feed.
@@ -56,14 +56,14 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
         // slither-disable-next-line unused-return
         (, int256 price,, uint256 updatedAt,) = FEED.latestRoundData();
 
+        // Make sure the round is finished (check before stale price to avoid false stale on incomplete rounds).
+        // slither-disable-next-line incorrect-equality
+        if (updatedAt == 0) revert JBChainlinkV3PriceFeed_IncompleteRound();
+
         // Make sure the price's update threshold is met.
         if (block.timestamp > THRESHOLD + updatedAt) {
             revert JBChainlinkV3PriceFeed_StalePrice(block.timestamp, THRESHOLD, updatedAt);
         }
-
-        // Make sure the round is finished.
-        // slither-disable-next-line incorrect-equality
-        if (updatedAt == 0) revert JBChainlinkV3PriceFeed_IncompleteRound();
 
         // Make sure the price is positive.
         if (price <= 0) revert JBChainlinkV3PriceFeed_NegativePrice(price);

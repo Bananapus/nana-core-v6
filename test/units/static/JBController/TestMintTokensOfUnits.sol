@@ -68,14 +68,12 @@ contract TestMintTokensOfUnits_Local is JBControllerSetup {
             abi.encode(false)
         );
 
-        vm.expectRevert(JBController.JBController_MintNotAllowedAndNotTerminalOrHook.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(JBController.JBController_MintNotAllowedAndNotTerminalOrHook.selector, address(this))
+        );
 
         _controller.mintTokensOf({
-            projectId: _projectId,
-            tokenCount: 1,
-            beneficiary: address(this),
-            memo: "",
-            useReservedPercent: true
+            projectId: _projectId, tokenCount: 1, beneficiary: address(this), memo: "", useReservedPercent: true
         });
     }
 

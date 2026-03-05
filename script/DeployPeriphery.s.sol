@@ -38,12 +38,12 @@ contract DeployPeriphery is Script, Sphinx {
 
     address private TRUSTED_FORWARDER;
 
-    bytes32 private DEADLINES_SALT = keccak256("_JBDeadlines_");
-    bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEED");
+    bytes32 private DEADLINES_SALT = keccak256("_JBDeadlinesV6_");
+    bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEEDV6");
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    uint256 private CORE_DEPLOYMENT_NONCE = 1;
+    uint256 private CORE_DEPLOYMENT_NONCE = 6;
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
@@ -141,31 +141,34 @@ contract DeployPeriphery is Script, Sphinx {
         }
         require(address(feed) != address(0), "Invalid price feed");
 
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.USD,
-            unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            feed: feed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0,
+                pricingCurrency: JBCurrencyIds.USD,
+                unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                feed: feed
+            });
 
         // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
         // chains where Ether is the native asset. We *NEED* to update this when we deploy to a non-ether chain!
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.USD,
-            unitCurrency: JBCurrencyIds.ETH,
-            feed: feed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
+            });
 
         // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
         // NOTE: We need to refactor this the moment we add a chain where its native token is *NOT* ether.
         // As otherwise prices for the `NATIVE_TOKEN` will be incorrect!
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.ETH,
-            unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            feed: matchingPriceFeed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0,
+                pricingCurrency: JBCurrencyIds.ETH,
+                unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                feed: matchingPriceFeed
+            });
+
+        // Deploy the USDC/USD price feed.
+        _deployUSDCFeed(L2GracePeriod);
 
         // Deploy the JBDeadlines
         if (!_isDeployed(DEADLINES_SALT, type(JBDeadline3Hours).creationCode, "")) {
@@ -184,34 +187,93 @@ contract DeployPeriphery is Script, Sphinx {
             new JBDeadline7Days{salt: DEADLINES_SALT}();
         }
 
-        core.directory.setIsAllowedToSetFirstController(
-            address(
-                new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                    directory: core.directory,
-                    fundAccessLimits: core.fundAccess,
-                    prices: core.prices,
-                    permissions: core.permissions,
-                    projects: core.projects,
-                    rulesets: core.rulesets,
-                    splits: core.splits,
-                    tokens: core.tokens,
-                    omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                    trustedForwarder: TRUSTED_FORWARDER
-                })
-            ),
-            true
-        );
+        core.directory
+            .setIsAllowedToSetFirstController(
+                address(
+                    new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                        directory: core.directory,
+                        fundAccessLimits: core.fundAccess,
+                        prices: core.prices,
+                        permissions: core.permissions,
+                        projects: core.projects,
+                        rulesets: core.rulesets,
+                        splits: core.splits,
+                        tokens: core.tokens,
+                        omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
+                        trustedForwarder: TRUSTED_FORWARDER
+                    })
+                ),
+                true
+            );
     }
 
-    function _isDeployed(
-        bytes32 salt,
-        bytes memory creationCode,
-        bytes memory arguments
-    )
-        internal
-        view
-        returns (bool)
-    {
+    function _deployUSDCFeed(uint256 L2GracePeriod) internal {
+        IJBPriceFeed usdcFeed;
+        address usdc;
+
+        if (block.chainid == 1) {
+            usdc = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+            usdcFeed = new JBChainlinkV3PriceFeed(
+                AggregatorV3Interface(address(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6)), 86_400 seconds
+            );
+        } else if (block.chainid == 11_155_111) {
+            usdc = address(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
+            usdcFeed = new JBChainlinkV3PriceFeed(
+                AggregatorV3Interface(address(0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E)), 86_400 seconds
+            );
+        } else if (block.chainid == 10) {
+            usdc = address(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85);
+            usdcFeed = new JBChainlinkV3SequencerPriceFeed({
+                feed: AggregatorV3Interface(0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3),
+                threshold: 86_400 seconds,
+                sequencerFeed: AggregatorV2V3Interface(0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389),
+                gracePeriod: L2GracePeriod
+            });
+        } else if (block.chainid == 11_155_420) {
+            usdc = address(0x5fd84259d66Cd46123540766Be93DFE6D43130D7);
+            usdcFeed = new JBChainlinkV3PriceFeed(
+                AggregatorV3Interface(address(0x6e44e50E3cc14DD16e01C590DC1d7020cb36eD4C)), 86_400 seconds
+            );
+        } else if (block.chainid == 8453) {
+            usdc = address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+            usdcFeed = new JBChainlinkV3SequencerPriceFeed({
+                feed: AggregatorV3Interface(0x7e860098F58bBFC8648a4311b374B1D669a2bc6B),
+                threshold: 86_400 seconds,
+                sequencerFeed: AggregatorV2V3Interface(0xBCF85224fc0756B9Fa45aA7892530B47e10b6433),
+                gracePeriod: L2GracePeriod
+            });
+        } else if (block.chainid == 84_532) {
+            usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
+            usdcFeed = new JBChainlinkV3PriceFeed(
+                AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)), 86_400 seconds
+            );
+        } else if (block.chainid == 42_161) {
+            usdc = address(0xaf88d065e77c8cC2239327C5EDb3A432268e5831);
+            usdcFeed = new JBChainlinkV3SequencerPriceFeed({
+                feed: AggregatorV3Interface(0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3),
+                threshold: 86_400 seconds,
+                sequencerFeed: AggregatorV2V3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D),
+                gracePeriod: L2GracePeriod
+            });
+        } else if (block.chainid == 421_614) {
+            usdc = address(0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d);
+            usdcFeed = new JBChainlinkV3PriceFeed(
+                AggregatorV3Interface(address(0x0153002d20B96532C639313c2d54c3dA09109309)), 86_400 seconds
+            );
+        } else {
+            revert("Unsupported chain for USDC feed");
+        }
+
+        require(usdc.code.length > 0, "Invalid USDC address");
+        require(address(usdcFeed) != address(0), "Invalid USDC price feed");
+
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: uint32(uint160(usdc)), feed: usdcFeed
+            });
+    }
+
+    function _isDeployed(bytes32 salt, bytes memory creationCode, bytes memory arguments) internal view returns (bool) {
         address _deployedTo = vm.computeCreate2Address({
             salt: salt,
             initCodeHash: keccak256(abi.encodePacked(creationCode, arguments)),

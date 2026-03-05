@@ -40,7 +40,13 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBPermissioned.JBPermissioned_Unauthorized.selector, _holder, _bene, _projectId, 3)
+            abi.encodeWithSelector(
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _holder,
+                _bene,
+                _projectId,
+                JBPermissionIds.CASH_OUT_TOKENS
+            )
         );
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
@@ -158,7 +164,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMinTokensReclaimed.selector, 1e9, 1e18)
         );
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, ""); // minReclaimAmount
-            // = 1e18 but only 1e9 reclaimed
+        // = 1e18 but only 1e9 reclaimed
     }
 
     function test_GivenReclaimAmountGtZeroBeneficiaryIsNotFeelessAndCashOutRateDneqMAX_CASH_OUT_RATE()
@@ -257,7 +263,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
     {
         // it will pass the full amount to the hook and emit HookAfterRecordCashOut
 
-        
+
     } */
 
     function test_GivenDataHookReturnsCashOutHookSpecsHookIsFeelessAndTokenIsErc20()

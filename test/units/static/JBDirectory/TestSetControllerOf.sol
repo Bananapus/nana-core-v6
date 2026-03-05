@@ -20,9 +20,8 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
     }
 
     modifier whenCallerIsAllowedToSetFirstController() {
-        stdstore.target(address(_directory)).sig("isAllowedToSetFirstController(address)").with_key(address(this)).depth(
-            0
-        ).checked_write(true);
+        stdstore.target(address(_directory)).sig("isAllowedToSetFirstController(address)").with_key(address(this))
+            .depth(0).checked_write(true);
 
         stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(address(0));
 
@@ -38,9 +37,8 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
     modifier givenControllerIsAlreadySet() {
         address _bumController = makeAddr("bum");
 
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _bumController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_bumController);
 
         // mock erc165 call
         bytes memory _supportCall =
@@ -76,7 +74,11 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 13
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_CONTROLLER
             )
         );
         _directory.setControllerOf(1, IERC165(address(this)));
@@ -102,7 +104,7 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
         givenControllerIsAlreadySet
     {
         // it should revert
-        vm.expectRevert(JBDirectory.JBDirectory_SetControllerNotAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBDirectory.JBDirectory_SetControllerNotAllowed.selector, 1));
         _directory.setControllerOf(1, IERC165(address(this)));
     }
 
@@ -121,9 +123,8 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
     function test_GivenCurrentControllerIsSetAndMigrating() external givenProjectExists {
         address _bumController = makeAddr("bum");
 
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _bumController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_bumController);
 
         // mock ownerOf call
         bytes memory _ownerOfCall = abi.encodeCall(IERC721.ownerOf, (1));
@@ -155,6 +156,11 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
         mockExpect(
             address(this),
             abi.encodeCall(IJBMigratable.beforeReceiveMigrationFrom, (IERC165(address(_bumController)), 1)),
+            abi.encode("")
+        );
+        mockExpect(
+            address(this),
+            abi.encodeCall(IJBMigratable.afterReceiveMigrationFrom, (IERC165(address(_bumController)), 1)),
             abi.encode("")
         );
 

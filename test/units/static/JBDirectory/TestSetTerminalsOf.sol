@@ -26,9 +26,8 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
 
     modifier givenSetTerminalsAllowed() {
         // it should revert with revert SET_TERMINALS_NOT_ALLOWED()
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
 
         // mock erc165 call
         bytes memory _supportCall =
@@ -47,9 +46,8 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
 
     function test_GivenNotSetTerminalsAllowed() external whenCallerHasPermission {
         // it should revert with revert SET_TERMINALS_NOT_ALLOWED()
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
 
         // mock erc165 call
         bytes memory _supportCall =
@@ -68,7 +66,7 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);
         _terminals[0] = _terminalToAdd;
 
-        vm.expectRevert(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector, 1));
         _directory.setTerminalsOf(1, _terminals);
     }
 
@@ -94,7 +92,11 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 14
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_TERMINALS
             )
         );
         _directory.setTerminalsOf(1, _terminals);

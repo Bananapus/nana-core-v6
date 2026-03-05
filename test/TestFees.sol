@@ -140,9 +140,7 @@ contract TestFees_Local is TestBaseWorkflow {
 
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         _terminalConfigurations[0] =
@@ -591,8 +589,8 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount2 = paidOutFromProjectOne
-            - paidOutFromProjectOne * JBConstants.MAX_FEE / (_terminal.FEE() + JBConstants.MAX_FEE);
+        uint256 _feeAmount2 = paidOutFromProjectOne - paidOutFromProjectOne * JBConstants.MAX_FEE
+            / (_terminal.FEE() + JBConstants.MAX_FEE);
 
         // The payout happens as described in the example.
         uint256 _afterFee2 = paidOutFromProjectOne - _feeAmount2;

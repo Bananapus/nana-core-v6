@@ -68,7 +68,11 @@ contract TestDeployERC20For_Local is JBControllerSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _projectsCallReturn, address(this), _projectId, 7
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _projectsCallReturn,
+                address(this),
+                _projectId,
+                JBPermissionIds.DEPLOY_ERC20
             )
         );
         _controller.deployERC20For(_projectId, _name, _symbol, _salt);

@@ -29,6 +29,12 @@ base_sepolia = "${RPC_BASE_SEPOLIA}"
 fs_permissions = [{ access = "read", path = "./deployments/mainnet" }] # Get the deployment addresses for forking
 match_contract = "_Fork"
 
+[invariant]
+runs = 1024
+depth = 100
+fail_on_revert = false
+dictionary_weight = 40
+
 [fmt]
 number_underscore = "thousands"
 multiline_func_header = "all"

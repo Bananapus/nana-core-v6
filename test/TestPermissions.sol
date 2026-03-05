@@ -58,9 +58,7 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -196,7 +194,11 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         // Will revert attempting to set another projects token
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _projectOwner, address(this), 2, 8
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _projectOwner,
+                address(this),
+                2,
+                JBPermissionIds.SET_TOKEN
             )
         );
         _controller.setTokenFor(2, IJBToken(token));
@@ -253,7 +255,15 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         permData2[0] = JBPermissionsData({operator: address(0), projectId: _projectZero, permissionIds: permIds});
 
         // Shouldn't be able to forward root
-        vm.expectRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector,
+                zeroOwner,
+                address(this),
+                _projectZero,
+                JBPermissionIds.ROOT
+            )
+        );
         _permissions.setPermissionsFor(zeroOwner, permData2[0]);
     }
 
@@ -285,7 +295,11 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         permData2[0] = JBPermissionsData({operator: address(0), projectId: wildcardProjectId, permissionIds: permIds2});
 
         // Shouldn't be able to set permission for wildcard project
-        vm.expectRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector, zeroOwner, address(this), 0, JBPermissionIds.ROOT
+            )
+        );
         _permissions.setPermissionsFor(zeroOwner, permData2[0]);
     }
 }
