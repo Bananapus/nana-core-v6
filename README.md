@@ -1,6 +1,6 @@
 # nana-core-v6
 
-The core protocol contracts for Juicebox V5 on EVM. A flexible toolkit for launching and managing a treasury-backed token on Ethereum and L2s.
+The core protocol contracts for Juicebox V6 on EVM. A flexible toolkit for launching and managing a treasury-backed token on Ethereum and L2s.
 
 For full documentation, see [docs.juicebox.money](https://docs.juicebox.money/). If you have questions, reach out on [Discord](https://discord.com/invite/ErQYmth4dS).
 
@@ -45,7 +45,7 @@ Hooks are customizable contracts that plug into protocol flows:
 
 ## Architecture
 
-Juicebox V5 separates concerns across specialized contracts that coordinate through a central directory. Projects are represented as ERC-721 NFTs. Each project configures rulesets that dictate how payments, payouts, cash outs, and token minting behave over time.
+Juicebox V6 separates concerns across specialized contracts that coordinate through a central directory. Projects are represented as ERC-721 NFTs. Each project configures rulesets that dictate how payments, payouts, cash outs, and token minting behave over time.
 
 ### Core Contracts
 
@@ -54,11 +54,10 @@ Juicebox V5 separates concerns across specialized contracts that coordinate thro
 | `JBProjects` | ERC-721 registry of projects. Minting an NFT creates a project. |
 | `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. |
 | `JBDirectory` | Maps each project to its controller and terminals. Entry point for looking up where to interact with a project. |
-| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, and sending reserved tokens. |
+| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, launching and queuing rulesets, minting/burning tokens, and sending reserved tokens. |
 | `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, and manages surplus allowances. Charges a 2.5% fee on payouts and surplus usage. |
 | `JBTerminalStore` | Bookkeeping engine for all terminal inflows and outflows. Tracks balances, enforces payout limits and surplus allowances, and computes cash out reclaim amounts via a bonding curve. |
-| `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, and approval hook validation. |
-| `JBRulesets5_1` | V5.1 rulesets implementation with weight cache optimization for long-running projects with many cycles. |
+| `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, approval hook validation, and weight caching for long-running projects. |
 | `JBTokens` | Manages dual-balance token accounting (credits + ERC-20). Credits are minted by default; once an ERC-20 is deployed, credits can be claimed as tokens. |
 | `JBSplits` | Stores split configurations per project, ruleset, and group. Splits route percentages of payouts or reserved tokens to beneficiaries, projects, or hooks. |
 | `JBFundAccessLimits` | Stores payout limits and surplus allowances per project, ruleset, terminal, and token. Limits are denominated in configurable currencies. |
@@ -71,7 +70,7 @@ Juicebox V5 separates concerns across specialized contracts that coordinate thro
 | `JBERC20` | Cloneable ERC-20 with ERC20Votes and ERC20Permit. Deployed by `JBTokens` when a project calls `deployERC20For`. |
 | `JBChainlinkV3PriceFeed` | `IJBPriceFeed` backed by a Chainlink `AggregatorV3Interface` with staleness checks. |
 | `JBChainlinkV3SequencerPriceFeed` | Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime validation for Optimism/Arbitrum. |
-| `JBMatchingPriceFeed` | Returns 1:1 price. Used when two currencies are equivalent. |
+| `JBMatchingPriceFeed` | Returns 1:1 price (e.g. ETH/NATIVE_TOKEN on applicable chains). Lives in `src/periphery/`. |
 
 ### Utility Contracts
 
@@ -107,5 +106,7 @@ npm install
 | `forge build` | Compile contracts |
 | `forge test` | Run local tests |
 | `forge test -vvvv` | Run tests with full traces |
+| `forge fmt` | Format code |
+| `forge fmt --check` | Check formatting (CI lint) |
 | `FOUNDRY_PROFILE=fork forge test` | Run fork tests |
 | `forge coverage --match-path "./src/*.sol"` | Generate coverage report |
