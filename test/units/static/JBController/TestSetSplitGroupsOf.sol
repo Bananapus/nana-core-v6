@@ -51,7 +51,11 @@ contract TestSetSplitGroupsOf_Local is JBControllerSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerOfReturn, address(this), _projectId, 17
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerOfReturn,
+                address(this),
+                _projectId,
+                JBPermissionIds.SET_SPLIT_GROUPS
             )
         );
         _controller.setSplitGroupsOf(_projectId, _rulesetId, _splitGroups);

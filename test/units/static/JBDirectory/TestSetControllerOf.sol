@@ -74,7 +74,11 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 13
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_CONTROLLER
             )
         );
         _directory.setControllerOf(1, IERC165(address(this)));

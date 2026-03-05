@@ -40,7 +40,13 @@ contract TestSetUriOf_Local is JBControllerSetup {
         mockExpect(address(permissions), _permissionsCall, _permissionsReturned);
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 6)
+            abi.encodeWithSelector(
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_PROJECT_URI
+            )
         );
         _controller.setUriOf(1, "Not Juicay");
     }

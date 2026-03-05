@@ -147,7 +147,11 @@ contract TestTransferCreditsFrom_Local is JBControllerSetup {
         // will revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _holder, address(this), _projectId, 12
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _holder,
+                address(this),
+                _projectId,
+                JBPermissionIds.TRANSFER_CREDITS
             )
         );
         _controller.transferCreditsFrom(_holder, _projectId, _beneficiary, _amount);

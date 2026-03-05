@@ -194,7 +194,11 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         // Will revert attempting to set another projects token
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _projectOwner, address(this), 2, 8
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _projectOwner,
+                address(this),
+                2,
+                JBPermissionIds.SET_TOKEN
             )
         );
         _controller.setTokenFor(2, IJBToken(token));

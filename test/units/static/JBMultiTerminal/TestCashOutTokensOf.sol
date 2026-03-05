@@ -40,7 +40,13 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBPermissioned.JBPermissioned_Unauthorized.selector, _holder, _bene, _projectId, 3)
+            abi.encodeWithSelector(
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _holder,
+                _bene,
+                _projectId,
+                JBPermissionIds.CASH_OUT_TOKENS
+            )
         );
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
