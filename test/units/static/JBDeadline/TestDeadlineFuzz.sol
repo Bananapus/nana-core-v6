@@ -160,6 +160,9 @@ contract TestDeadlineFuzz_Local is JBTest {
         duration = bound(duration, 1, 365 days);
         JBDeadline d = new JBDeadline(duration);
 
+        // Ensure block.timestamp >= duration to avoid underflow.
+        vm.warp(duration + 1);
+
         uint48 start = uint48(block.timestamp + 1);
         uint48 queuedAt = uint48(block.timestamp - duration);
 
