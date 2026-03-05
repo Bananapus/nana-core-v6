@@ -72,6 +72,6 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
         view
     {
         if (alsoGrantAccessIf) return;
-        _requirePermissionFrom(account, projectId, permissionId);
+        _requirePermissionFrom({account: account, projectId: projectId, permissionId: permissionId});
     }
 }
