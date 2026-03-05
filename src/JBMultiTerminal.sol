@@ -69,7 +69,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
-    error JBMultiTerminal_TerminalTokensIncompatible(address expected, address actual);
+    error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
     error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
     error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
@@ -708,7 +708,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // The terminal being migrated to must accept the same token as this terminal.
         if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
-            revert JBMultiTerminal_TerminalTokensIncompatible({expected: token, actual: address(0)});
+            revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
 
         // Record the migration in the store.

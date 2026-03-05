@@ -150,7 +150,11 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.CASH_OUT_TOKENS;
 
         vm.prank(alice);
-        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector, projectOwner, alice, 0, JBPermissionIds.ROOT
+            )
+        );
         jbPermissions().setPermissionsFor(
             projectOwner,
             JBPermissionsData({operator: bob, projectId: 0, permissionIds: perms})
@@ -167,7 +171,15 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.ROOT;
 
         vm.prank(alice);
-        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector,
+                projectOwner,
+                alice,
+                uint64(projectId2),
+                JBPermissionIds.ROOT
+            )
+        );
         jbPermissions().setPermissionsFor(
             projectOwner,
             JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})

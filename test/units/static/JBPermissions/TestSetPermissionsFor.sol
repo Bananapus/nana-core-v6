@@ -17,7 +17,11 @@ contract TestSetPermissionsFor_Local is JBPermissionsSetup {
         // it will revert UNAUTHORIZED
         JBPermissionsData memory emptyData;
 
-        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector, _account, address(this), 0, JBPermissionIds.ROOT
+            )
+        );
         _permissions.setPermissionsFor(_account, emptyData);
     }
 

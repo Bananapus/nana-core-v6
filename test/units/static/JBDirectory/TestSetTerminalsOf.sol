@@ -68,7 +68,7 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);
         _terminals[0] = _terminalToAdd;
 
-        vm.expectPartialRevert(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector, 1));
         _directory.setTerminalsOf(1, _terminals);
     }
 

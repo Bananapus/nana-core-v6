@@ -52,7 +52,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         bytes memory _currentOfReturn = abi.encode(_returnedRuleset);
         mockExpect(address(rulesets), _currentOfCall, _currentOfReturn);
 
-        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_RulesetNotFound.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_RulesetNotFound.selector, _projectId));
         _store.recordPaymentFrom({
             payer: address(this),
             amount: _tokenAmount,

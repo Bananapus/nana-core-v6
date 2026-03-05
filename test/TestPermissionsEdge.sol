@@ -48,7 +48,11 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         rootForThird[0] = JBPermissionIds.ROOT;
 
         vm.prank(_operator);
-        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector, _account, _operator, PROJECT_ID, JBPermissionIds.ROOT
+            )
+        );
         _permissions.setPermissionsFor(
             _account,
             JBPermissionsData({operator: _thirdParty, projectId: PROJECT_ID, permissionIds: rootForThird})
@@ -74,7 +78,11 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         somePermission[0] = 5; // Some non-ROOT permission.
 
         vm.prank(_operator);
-        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissions.JBPermissions_Unauthorized.selector, _account, _operator, 0, JBPermissionIds.ROOT
+            )
+        );
         _permissions.setPermissionsFor(
             _account,
             JBPermissionsData({operator: _thirdParty, projectId: 0, permissionIds: somePermission})

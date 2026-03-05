@@ -140,7 +140,7 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
 
         mockExpect(address(_mockController), _allowedCall, _allowedReturn);
 
-        vm.expectPartialRevert(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBDirectory.JBDirectory_SetTerminalsNotAllowed.selector, 1));
         _directory.setPrimaryTerminalOf(1, _token, _terminalToAdd);
     }
 

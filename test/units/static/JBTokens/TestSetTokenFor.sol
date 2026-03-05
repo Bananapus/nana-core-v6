@@ -26,7 +26,7 @@ contract TestSetTokenFor_Local is JBTokensSetup {
     function test_WhenTokenIsTheZeroAddress() external whenCallerIsControllerOfProject {
         // it will revert EMPTY_TOKEN
 
-        vm.expectPartialRevert(JBTokens.JBTokens_EmptyToken.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBTokens.JBTokens_EmptyToken.selector, _projectId));
         _tokens.setTokenFor(_projectId, IJBToken(address(0)));
     }
 
