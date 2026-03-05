@@ -50,6 +50,13 @@ interface IJBPayoutTerminal is IJBTerminal {
         address caller
     );
 
+    /// @notice Sends a project's payouts to its payout split group according to its ruleset's payout limits.
+    /// @param projectId The ID of the project to send payouts for.
+    /// @param token The token being paid out.
+    /// @param amount The total amount of tokens to pay out.
+    /// @param currency The currency the amount is denominated in.
+    /// @param minTokensPaidOut The minimum number of terminal tokens expected to be paid out.
+    /// @return amountPaidOut The total amount paid out.
     function sendPayoutsOf(
         uint256 projectId,
         address token,
@@ -59,6 +66,17 @@ interface IJBPayoutTerminal is IJBTerminal {
     )
         external
         returns (uint256 amountPaidOut);
+
+    /// @notice Uses a project's surplus allowance to send funds to a beneficiary.
+    /// @param projectId The ID of the project to use the surplus allowance of.
+    /// @param token The token being paid out.
+    /// @param amount The amount of the surplus allowance to use.
+    /// @param currency The currency the amount is denominated in.
+    /// @param minTokensPaidOut The minimum number of terminal tokens expected to be paid out.
+    /// @param beneficiary The address to send the funds to.
+    /// @param feeBeneficiary The address that will receive any project tokens minted from fees.
+    /// @param memo A memo to pass along to the emitted event.
+    /// @return netAmountPaidOut The net amount paid out to the beneficiary after fees.
     function useAllowanceOf(
         uint256 projectId,
         address token,

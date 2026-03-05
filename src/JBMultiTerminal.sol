@@ -61,19 +61,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     error JBMultiTerminal_AccountingContextAlreadySet(address token);
+    error JBMultiTerminal_AccountingContextDecimalsMismatch();
     error JBMultiTerminal_AddingAccountingContextNotAllowed();
-    error JBMultiTerminal_FeeTerminalNotFound();
+    error JBMultiTerminal_FeeTerminalNotFound(address token);
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
-    error JBMultiTerminal_TerminalTokensIncompatible();
+    error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
     error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
     error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
     error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
-    error JBMultiTerminal_AccountingContextDecimalsMismatch();
     error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
@@ -654,7 +654,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         require(msg.sender == address(this));
 
         if (address(feeTerminal) == address(0)) {
-            revert JBMultiTerminal_FeeTerminalNotFound();
+            revert JBMultiTerminal_FeeTerminalNotFound(token);
         }
 
         // Send the projectId in the metadata.
@@ -708,7 +708,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // The terminal being migrated to must accept the same token as this terminal.
         if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
-            revert JBMultiTerminal_TerminalTokensIncompatible();
+            revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
 
         // Record the migration in the store.

@@ -54,20 +54,20 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBController_AddingPriceFeedNotAllowed();
+    error JBController_AddingPriceFeedNotAllowed(uint256 projectId);
     error JBController_CreditTransfersPaused();
     error JBController_InvalidCashOutTaxRate(uint256 rate, uint256 limit);
     error JBController_InvalidReservedPercent(uint256 percent, uint256 limit);
-    error JBController_MintNotAllowedAndNotTerminalOrHook();
+    error JBController_MintNotAllowedAndNotTerminalOrHook(address caller);
     error JBController_NoReservedTokens();
     error JBController_OnlyDirectory(address sender, IJBDirectory directory);
     error JBController_PendingReservedTokens(uint256 pendingReservedTokenBalance);
-    error JBController_RulesetsAlreadyLaunched();
+    error JBController_RulesetsAlreadyLaunched(uint256 projectId);
     error JBController_RulesetsArrayEmpty();
-    error JBController_RulesetSetTokenNotAllowed();
+    error JBController_RulesetSetTokenNotAllowed(uint256 projectId);
+    error JBController_TerminalTokensNotTransferred();
     error JBController_ZeroTokensToBurn();
     error JBController_ZeroTokensToMint();
-    error JBController_TerminalTokensNotTransferred();
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
@@ -95,7 +95,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     IJBTokens public immutable override TOKENS;
 
     /// @notice The address of the contract that manages omnichain ruleset ops.
-    address public immutable OMNICHAIN_RULESET_OPERATOR;
+    address public immutable override OMNICHAIN_RULESET_OPERATOR;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
@@ -380,7 +380,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
         // Make sure the project's ruleset allows adding price feeds.
-        if (!ruleset.allowAddPriceFeed()) revert JBController_AddingPriceFeedNotAllowed();
+        if (!ruleset.allowAddPriceFeed()) revert JBController_AddingPriceFeedNotAllowed(projectId);
 
         PRICES.addPriceFeedFor({
             projectId: projectId,
@@ -659,7 +659,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // If the project has already had rulesets, use `queueRulesetsOf(...)` instead.
         if (RULESETS.latestRulesetIdOf(projectId) > 0) {
-            revert JBController_RulesetsAlreadyLaunched();
+            revert JBController_RulesetsAlreadyLaunched(projectId);
         }
 
         // Set this contract as the project's controller in the directory.
@@ -740,7 +740,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             ruleset.id != 0 && !ruleset.allowOwnerMinting() && !_isTerminalOf(projectId, _msgSender())
                 && _msgSender() != address(ruleset.dataHook())
                 && !_hasDataHookMintPermissionFor(projectId, ruleset, _msgSender())
-        ) revert JBController_MintNotAllowedAndNotTerminalOrHook();
+        ) revert JBController_MintNotAllowedAndNotTerminalOrHook(_msgSender());
 
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
@@ -859,7 +859,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (ruleset.id == 0) ruleset = _upcomingRulesetOf(projectId);
 
         // If owner minting is disabled for the ruleset, the owner cannot change the token.
-        if (!ruleset.allowSetCustomToken()) revert JBController_RulesetSetTokenNotAllowed();
+        if (!ruleset.allowSetCustomToken()) revert JBController_RulesetSetTokenNotAllowed(projectId);
 
         TOKENS.setTokenFor({projectId: projectId, token: token});
     }

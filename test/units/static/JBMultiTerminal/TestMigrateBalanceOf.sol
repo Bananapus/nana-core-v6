@@ -73,7 +73,11 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
             abi.encode(_context)
         );
 
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_TerminalTokensIncompatible.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_TerminalTokensIncompatible.selector, _projectId, _native, _newTerminal
+            )
+        );
         _terminal.migrateBalanceOf({projectId: _projectId, token: _native, to: _newTerminal});
     }
 

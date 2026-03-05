@@ -23,11 +23,11 @@ contract JBRulesets is JBControlled, IJBRulesets {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBRulesets_InvalidWeightCutPercent(uint256 percent);
     error JBRulesets_InvalidRulesetApprovalHook(IJBRulesetApprovalHook hook);
     error JBRulesets_InvalidRulesetDuration(uint256 duration, uint256 limit);
     error JBRulesets_InvalidRulesetEndTime(uint256 timestamp, uint256 limit);
     error JBRulesets_InvalidWeight(uint256 weight, uint256 limit);
+    error JBRulesets_InvalidWeightCutPercent(uint256 percent);
     error JBRulesets_WeightCacheRequired(uint256 projectId);
 
     //*********************************************************************//

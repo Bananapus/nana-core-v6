@@ -66,7 +66,11 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         JBSplitGroup[] memory newGroups = new JBSplitGroup[](1);
         newGroups[0] = JBSplitGroup({groupId: GROUP_ID, splits: newSplits});
 
-        vm.expectRevert(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A
+            )
+        );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, newGroups);
     }
 
@@ -150,7 +154,11 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         JBSplitGroup[] memory reducedGroups = new JBSplitGroup[](1);
         reducedGroups[0] = JBSplitGroup({groupId: GROUP_ID, splits: reducedSplits});
 
-        vm.expectRevert(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A
+            )
+        );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, reducedGroups);
     }
 

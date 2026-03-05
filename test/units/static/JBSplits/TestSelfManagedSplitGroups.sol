@@ -295,7 +295,11 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         groups[0] = JBSplitGroup({groupId: groupId, splits: newSplits});
 
         vm.prank(caller);
-        vm.expectRevert(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, _projectId, _rulesetId
+            )
+        );
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 

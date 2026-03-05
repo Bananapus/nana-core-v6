@@ -13,10 +13,10 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBChainlinkV3SequencerPriceFeed_InvalidRound();
     error JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
         uint256 timestamp, uint256 gracePeriodTime, uint256 startedAt
     );
-    error JBChainlinkV3SequencerPriceFeed_InvalidRound();
 
     //*********************************************************************//
     // ---------------- public stored immutable properties --------------- //
@@ -49,7 +49,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
     /// @notice Gets the current price (per 1 unit) from the feed.

@@ -38,7 +38,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
     error JBTerminalStore_InsufficientTokens(uint256 count, uint256 totalSupply);
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
-    error JBTerminalStore_RulesetNotFound();
+    error JBTerminalStore_RulesetNotFound(uint256 projectId);
     error JBTerminalStore_RulesetPaymentPaused();
     error JBTerminalStore_TerminalMigrationNotAllowed();
     error JBTerminalStore_Uint224Overflow(uint256 value);
@@ -639,7 +639,7 @@ contract JBTerminalStore is IJBTerminalStore {
         ruleset = RULESETS.currentOf(projectId);
 
         // The project must have a ruleset.
-        if (ruleset.cycleNumber == 0) revert JBTerminalStore_RulesetNotFound();
+        if (ruleset.cycleNumber == 0) revert JBTerminalStore_RulesetNotFound(projectId);
 
         // The ruleset must not have payments paused.
         if (ruleset.pausePay()) revert JBTerminalStore_RulesetPaymentPaused();

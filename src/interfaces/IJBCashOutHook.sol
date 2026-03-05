@@ -8,8 +8,7 @@ import {JBAfterCashOutRecordedContext} from "./../structs/JBAfterCashOutRecorded
 /// @notice Hook called after a terminal's `cashOutTokensOf(...)` logic completes (if passed by the ruleset's data
 /// hook).
 interface IJBCashOutHook is IERC165 {
-    /// @notice This function is called by the terminal's `cashOutTokensOf(...)` function after the cash out has been
-    /// recorded in the terminal store.
+    /// @notice Called by the terminal after a cash out has been recorded in the terminal store.
     /// @dev Critical business logic should be protected by appropriate access control.
     /// @param context The context passed in by the terminal, as a `JBAfterCashOutRecordedContext` struct.
     function afterCashOutRecordedWith(JBAfterCashOutRecordedContext calldata context) external payable;
