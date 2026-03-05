@@ -15,7 +15,7 @@ library JBRulesetMetadataResolver {
     }
 
     function baseCurrency(JBRuleset memory ruleset) internal pure returns (uint32) {
-        // Currency is a number 0-4294967296.
+        // Currency is a number 0-4294967295.
         return uint32(ruleset.metadata >> 36);
     }
 
@@ -95,7 +95,7 @@ library JBRulesetMetadataResolver {
         // cash out tax rate is a number 0-10000.
         packed |= uint256(rulesetMetadata.cashOutTaxRate) << 20;
         // base currency in bits 36-67 (32 bits).
-        // base currency is a number 0-16777215.
+        // base currency is a number 0-4294967295.
         packed |= uint256(rulesetMetadata.baseCurrency) << 36;
         // pause pay in bit 68.
         if (rulesetMetadata.pausePay) packed |= 1 << 68;
@@ -115,7 +115,7 @@ library JBRulesetMetadataResolver {
         if (rulesetMetadata.allowAddAccountingContext) packed |= 1 << 75;
         // allow add price feed in bit 76.
         if (rulesetMetadata.allowAddPriceFeed) packed |= 1 << 76;
-        // allow controller migration in bit 77.
+        // owner must send payouts in bit 77.
         if (rulesetMetadata.ownerMustSendPayouts) packed |= 1 << 77;
         // hold fees in bit 78.
         if (rulesetMetadata.holdFees) packed |= 1 << 78;

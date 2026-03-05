@@ -87,7 +87,7 @@ contract TestSetSplitGroupsOf_Local is JBSplitsSetup {
         // outer structure
         _splitsGroup[0] = JBSplitGroup({groupId: 0, splits: _splitsArray});
 
-        vm.expectRevert(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector);
+        vm.expectPartialRevert(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector);
         _splits.setSplitGroupsOf(_projectId, _rulesetId, _splitsGroup);
     }
 

@@ -15,8 +15,8 @@ contract JBSplits is JBControlled, IJBSplits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBSplits_PreviousLockedSplitsNotIncluded(uint256 projectId, uint256 rulesetId);
     error JBSplits_TotalPercentExceeds100();
-    error JBSplits_PreviousLockedSplitsNotIncluded();
     error JBSplits_ZeroSplitPercent();
 
     //*********************************************************************//
@@ -250,7 +250,7 @@ contract JBSplits is JBControlled, IJBSplits {
         for (uint256 i; i < numberOfCurrentSplits; i++) {
             // If not locked, continue.
             if (block.timestamp < currentSplits[i].lockedUntil && !_includesLockedSplits(splits, currentSplits[i])) {
-                revert JBSplits_PreviousLockedSplitsNotIncluded();
+                revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
             }
         }
 

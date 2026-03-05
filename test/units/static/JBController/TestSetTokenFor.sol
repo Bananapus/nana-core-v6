@@ -192,7 +192,7 @@ contract TestSetTokenFor_Local is JBControllerSetup {
         bytes memory _currentRulesetCall = abi.encodeCall(IJBRulesets.currentOf, (1));
         mockExpect(address(rulesets), _currentRulesetCall, abi.encode(ruleset));
 
-        vm.expectRevert(JBController.JBController_RulesetSetTokenNotAllowed.selector);
+        vm.expectPartialRevert(JBController.JBController_RulesetSetTokenNotAllowed.selector);
         _controller.setTokenFor(_projectId, _token);
     }
 

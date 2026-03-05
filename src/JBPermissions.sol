@@ -17,7 +17,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     error JBPermissions_CantSetRootPermissionForWildcardProject();
     error JBPermissions_NoZeroPermission();
     error JBPermissions_PermissionIdOutOfBounds(uint256 permissionId);
-    error JBPermissions_Unauthorized();
+    error JBPermissions_Unauthorized(address account, address operator, uint256 projectId, uint256 permissionId);
 
     //*********************************************************************//
     // ------------------------- public constants ------------------------ //
@@ -51,7 +51,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     constructor(address trustedForwarder) ERC2771Context(trustedForwarder) {}
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
     /// @notice Check if an operator has a specific permission for a specific address and project ID.
@@ -241,7 +241,14 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
                             includeWildcardProjectId: true
                         })
                 )
-        ) revert JBPermissions_Unauthorized();
+        ) {
+            revert JBPermissions_Unauthorized({
+                account: account,
+                operator: msgSender,
+                projectId: permissionsData.projectId,
+                permissionId: JBPermissionIds.ROOT
+            });
+        }
 
         // Store the new value.
         permissionsOf[permissionsData.operator][account][permissionsData.projectId] = packed;

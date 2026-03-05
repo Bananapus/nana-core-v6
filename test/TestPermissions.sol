@@ -253,7 +253,7 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         permData2[0] = JBPermissionsData({operator: address(0), projectId: _projectZero, permissionIds: permIds});
 
         // Shouldn't be able to forward root
-        vm.expectRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
         _permissions.setPermissionsFor(zeroOwner, permData2[0]);
     }
 
@@ -285,7 +285,7 @@ contract TestPermissions_Local is TestBaseWorkflow, JBTest {
         permData2[0] = JBPermissionsData({operator: address(0), projectId: wildcardProjectId, permissionIds: permIds2});
 
         // Shouldn't be able to set permission for wildcard project
-        vm.expectRevert(JBPermissions.JBPermissions_Unauthorized.selector);
+        vm.expectPartialRevert(JBPermissions.JBPermissions_Unauthorized.selector);
         _permissions.setPermissionsFor(zeroOwner, permData2[0]);
     }
 }

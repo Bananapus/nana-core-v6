@@ -37,7 +37,15 @@ contract JBDeadline is IJBRulesetApprovalHook {
     /// @notice The approval status of a given ruleset.
     /// @param ruleset ruleset to check the status of.
     /// @return The ruleset's approval status.
-    function approvalStatusOf(uint256, JBRuleset memory ruleset) public view override returns (JBApprovalStatus) {
+    function approvalStatusOf(
+        uint256, /* projectId */
+        JBRuleset memory ruleset
+    )
+        public
+        view
+        override
+        returns (JBApprovalStatus)
+    {
         // The ruleset ID is the timestamp at which the ruleset was queued.
         // If the provided `rulesetId` timestamp is after the start timestamp, the ruleset has `Failed`.
         if (ruleset.id > ruleset.start) return JBApprovalStatus.Failed;

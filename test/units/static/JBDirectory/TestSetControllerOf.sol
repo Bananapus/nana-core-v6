@@ -102,7 +102,7 @@ contract TestSetControllerOf_Local is JBDirectorySetup {
         givenControllerIsAlreadySet
     {
         // it should revert
-        vm.expectRevert(JBDirectory.JBDirectory_SetControllerNotAllowed.selector);
+        vm.expectPartialRevert(JBDirectory.JBDirectory_SetControllerNotAllowed.selector);
         _directory.setControllerOf(1, IERC165(address(this)));
     }
 

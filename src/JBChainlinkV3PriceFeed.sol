@@ -27,7 +27,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     AggregatorV3Interface public immutable FEED;
 
     //*********************************************************************//
-    // --------------------- public stored properties -------------------- //
+    // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
 
     /// @notice How many seconds old a Chainlink price update is allowed to be before considered "stale".
@@ -45,7 +45,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
     /// @notice Gets the current price (per 1 unit) from the feed.
