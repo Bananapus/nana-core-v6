@@ -1,4 +1,4 @@
-# nana-core-v5
+# nana-core-v6
 
 The core protocol contracts for Juicebox V5 on EVM. A flexible toolkit for launching and managing a treasury-backed token on Ethereum and L2s.
 
@@ -27,7 +27,7 @@ Payments mint credits (or ERC-20 tokens if deployed) for the payer. Credits and 
 
 ### Permissions
 
-`JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions (see [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v5/blob/main/src/JBPermissionIds.sol) for the full list of 30 permission IDs used across the protocol).
+`JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions (see [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v6/blob/main/src/JBPermissionIds.sol) for the full list of 30 permission IDs used across the protocol).
 
 ### Hooks
 
