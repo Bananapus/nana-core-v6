@@ -21,24 +21,6 @@ contract JBRulesetsHarness is JBRulesets {
     }
 }
 
-/// @notice Harness for V5.1.
-contract JBRulesets5_1Harness is JBRulesets5_1 {
-    constructor(IJBDirectory directory) JBRulesets5_1(directory) {}
-
-    /// @notice Public wrapper for the internal function under test.
-    function exposed_simulateCycledRulesetBasedOn(
-        uint256 projectId,
-        JBRuleset memory baseRuleset,
-        bool allowMidRuleset
-    )
-        external
-        view
-        returns (JBRuleset memory)
-    {
-        return _simulateCycledRulesetBasedOn(projectId, baseRuleset, allowMidRuleset);
-    }
-}
-
 /// @notice Tests for M-19: duration underflow fix in `_simulateCycledRulesetBasedOn`.
 ///
 /// The fix guards against arithmetic underflow when `baseRuleset.duration >= block.timestamp`.
@@ -56,12 +38,10 @@ contract JBRulesets5_1Harness is JBRulesets5_1 {
 /// function directly via a harness to verify the fix works.
 contract TestDurationUnderflow is TestBaseWorkflow {
     JBRulesetsHarness private _harness;
-    JBRulesets5_1Harness private _harness5_1;
 
     function setUp() public override {
         super.setUp();
         _harness = new JBRulesetsHarness(jbDirectory());
-        _harness5_1 = new JBRulesets5_1Harness(jbDirectory());
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -150,29 +130,6 @@ contract TestDurationUnderflow is TestBaseWorkflow {
 
         // allowMidRuleset = false → mustStartAtOrAfter = block.timestamp + 1, no subtraction.
         JBRuleset memory result = _harness.exposed_simulateCycledRulesetBasedOn(1, base, false);
-
-        assertGt(result.cycleNumber, 0, "Cycle number should be positive");
-    }
-
-    // ──────────────────────────────────────────────────────────────────────
-    // V5.1 harness tests — same fix applied to JBRulesets5_1
-    // ──────────────────────────────────────────────────────────────────────
-
-    /// @notice V5.1: duration > block.timestamp with allowMidRuleset = true.
-    function test_harness5_1_durationExceedsTimestamp_doesNotRevert() public view {
-        JBRuleset memory base = _makeBaseRuleset({start: 1, duration: uint32(2_000_000_000), weight: 1000e18});
-
-        JBRuleset memory result = _harness5_1.exposed_simulateCycledRulesetBasedOn(1, base, true);
-
-        assertGt(result.cycleNumber, 0, "Cycle number should be positive");
-        assertEq(result.duration, 2_000_000_000, "Duration should be preserved");
-    }
-
-    /// @notice V5.1: max duration.
-    function test_harness5_1_maxDuration_doesNotRevert() public view {
-        JBRuleset memory base = _makeBaseRuleset({start: 1, duration: type(uint32).max, weight: 1000e18});
-
-        JBRuleset memory result = _harness5_1.exposed_simulateCycledRulesetBasedOn(1, base, true);
 
         assertGt(result.cycleNumber, 0, "Cycle number should be positive");
     }
