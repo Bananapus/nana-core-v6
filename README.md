@@ -27,7 +27,7 @@ Payments mint credits (or ERC-20 tokens if deployed) for the payer. Credits and 
 
 ### Permissions
 
-`JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions (see [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v6/blob/main/src/JBPermissionIds.sol) for the full list of 30 permission IDs used across the protocol).
+`JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions (see [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v6/blob/main/src/JBPermissionIds.sol) for the full list of 34 permission IDs used across the protocol).
 
 ### Hooks
 
