@@ -619,7 +619,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Queue a project's initial rulesets and set up terminals for it. Projects which already have rulesets
     /// should use `queueRulesetsOf(...)`.
     /// @dev Each operation within this transaction can be done in sequence separately.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `QUEUE_RULESETS`.
+    /// @dev Can only be called by the project's owner or an address with the owner's permission to `LAUNCH_RULESETS`.
     /// @param projectId The ID of the project to launch rulesets for.
     /// @param rulesetConfigurations The rulesets to queue.
     /// @param terminalConfigurations The terminals to set up.
@@ -645,7 +645,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         _requirePermissionAllowingOverrideFrom({
             account: PROJECTS.ownerOf(projectId),
             projectId: projectId,
-            permissionId: JBPermissionIds.QUEUE_RULESETS,
+            permissionId: JBPermissionIds.LAUNCH_RULESETS,
             alsoGrantAccessIf: sender == OMNICHAIN_RULESET_OPERATOR
         });
 
