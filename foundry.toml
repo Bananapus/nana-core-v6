@@ -9,20 +9,6 @@ match_contract = "_Local"
 [profile.ci_sizes]
 optimizer_runs = 200
 
-[profile.fork]
-match_contract = "_Fork"
-fs_permissions = [{ access = "read", path = "./deployments/mainnet" }]
-
-[rpc_endpoints]
-ethereum = "${RPC_ETHEREUM_MAINNET}"
-optimism = "${RPC_OPTIMISM_MAINNET}"
-arbitrum = "${RPC_ARBITRUM_MAINNET}"
-base = "${RPC_BASE_MAINNET}"
-ethereum_sepolia = "${RPC_ETHEREUM_SEPOLIA}"
-optimism_sepolia = "${RPC_OPTIMISM_SEPOLIA}"
-arbitrum_sepolia = "${RPC_ARBITRUM_SEPOLIA}"
-base_sepolia = "${RPC_BASE_SEPOLIA}"
-
 [fuzz]
 runs = 4096
 
