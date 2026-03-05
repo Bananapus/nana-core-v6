@@ -1,4 +1,4 @@
-# nana-core-v5
+# nana-core-v6
 
 ## Purpose
 
@@ -45,7 +45,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `addToBalanceOf(uint256 projectId, address token, uint256 amount, bool shouldReturnHeldFees, string memo, bytes metadata)` | `JBMultiTerminal` | Adds funds to a project's balance without minting tokens. Can unlock held fees. |
 | `migrateBalanceOf(uint256 projectId, address token, IJBTerminal to)` | `JBMultiTerminal` | Migrates a project's token balance to another terminal. Requires `allowTerminalMigration`. |
 | `currentOf(uint256 projectId)` | `JBRulesets` | Returns the currently active ruleset with decayed weight and correct cycle number. |
-| `queueFor(uint256 projectId, uint32 duration, uint112 weight, uint32 weightCutPercent, IJBRulesetApprovalHook approvalHook, uint48 mustStartAtOrAfter, uint256 metadata)` | `JBRulesets` | Queues a new ruleset. Only callable by the project's controller. |
+| `queueFor(uint256 projectId, uint256 duration, uint256 weight, uint256 weightCutPercent, IJBRulesetApprovalHook approvalHook, uint256 metadata, uint256 mustStartAtOrAfter)` | `JBRulesets` | Queues a new ruleset. Only callable by the project's controller. |
 | `setPermissionsFor(address account, JBPermissionsData permissionsData)` | `JBPermissions` | Grants or revokes operator permissions. ROOT operators can set non-ROOT permissions. |
 | `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | `JBPrices` | Registers a price feed. Project ID 0 sets protocol-wide defaults (owner-only). |
 | `pricePerUnitOf(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, uint256 decimals)` | `JBPrices` | Returns the price of 1 `unitCurrency` in `pricingCurrency`. Checks project-specific, inverse, then default feeds. |
@@ -57,7 +57,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |-------------|------------|---------|
 | `JBRuleset` | `cycleNumber (uint48)`, `id (uint48)`, `basedOnId (uint48)`, `start (uint48)`, `duration (uint32)`, `weight (uint112)`, `weightCutPercent (uint32)`, `approvalHook`, `metadata (uint256)` | `currentOf()`, `recordPaymentFrom()`, `recordCashOutFor()` return values |
 | `JBRulesetConfig` | `mustStartAtOrAfter (uint48)`, `duration (uint32)`, `weight (uint112)`, `weightCutPercent (uint32)`, `approvalHook`, `metadata (JBRulesetMetadata)`, `splitGroups[]`, `fundAccessLimitGroups[]` | `launchProjectFor()`, `queueRulesetsOf()` input |
-| `JBRulesetMetadata` | `reservedPercent (uint16)`, `cashOutTaxRate (uint16)`, `baseCurrency (uint32)`, `pausePay`, `pauseCreditTransfers`, `allowOwnerMinting`, `allowCustomToken`, `allowTerminalMigration`, `allowSetTerminals`, `allowSetController`, `allowAddAccountingContext`, `allowAddPriceFeed`, `ownerMustSendPayouts`, `holdFees`, `useTotalSurplusForCashOuts`, `useDataHookForPay`, `useDataHookForCashOut`, `dataHook (address)`, `metadata (uint16)` | Packed into `JBRuleset.metadata` |
+| `JBRulesetMetadata` | `reservedPercent (uint16)`, `cashOutTaxRate (uint16)`, `baseCurrency (uint32)`, `pausePay`, `pauseCreditTransfers`, `allowOwnerMinting`, `allowSetCustomToken`, `allowTerminalMigration`, `allowSetTerminals`, `allowSetController`, `allowAddAccountingContext`, `allowAddPriceFeed`, `ownerMustSendPayouts`, `holdFees`, `useTotalSurplusForCashOuts`, `useDataHookForPay`, `useDataHookForCashOut`, `dataHook (address)`, `metadata (uint16)` | Packed into `JBRuleset.metadata` |
 | `JBSplit` | `percent (uint32)`, `projectId (uint64)`, `beneficiary (address payable)`, `preferAddToBalance`, `lockedUntil (uint48)`, `hook (IJBSplitHook)` | `splitsOf()`, `setSplitGroupsOf()` |
 | `JBSplitGroup` | `groupId (uint256)`, `splits (JBSplit[])` | `JBRulesetConfig.splitGroups`, `setSplitGroupsOf()` |
 | `JBAccountingContext` | `token (address)`, `decimals (uint8)`, `currency (uint32)` | Terminal token accounting, surplus/reclaim calculations |
