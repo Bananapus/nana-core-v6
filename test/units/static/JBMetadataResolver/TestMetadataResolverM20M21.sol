@@ -51,7 +51,10 @@ contract M20M21Harness {
                 allCorrect = false;
                 break;
             }
-            if (keccak256(abi.encodePacked(bytes32(abi.decode(data, (uint256))))) != keccak256(abi.encodePacked(expectedValues[i]))) {
+            if (
+                keccak256(abi.encodePacked(bytes32(abi.decode(data, (uint256)))))
+                    != keccak256(abi.encodePacked(expectedValues[i]))
+            ) {
                 allCorrect = false;
                 break;
             }
@@ -105,9 +108,8 @@ contract TestMetadataResolverM20M21 is JBTest {
         expectedValues[1] = bytes32(val2);
         expectedValues[2] = bytes32(val3);
 
-        bool allCorrect = harness.addAndVerifyAll(
-            metadata, id3, abi.encodePacked(bytes32(val3)), allIds, expectedValues
-        );
+        bool allCorrect =
+            harness.addAndVerifyAll(metadata, id3, abi.encodePacked(bytes32(val3)), allIds, expectedValues);
 
         assertTrue(allCorrect, "All entries should be retrievable after addToMetadata");
     }
@@ -115,13 +117,8 @@ contract TestMetadataResolverM20M21 is JBTest {
     /// @notice Test with 4 sequential addToMetadata calls, each exercising _sliceBytes.
     /// More entries = more start > 0 cases = more chances for memory corruption.
     function test_M20_multipleSequentialAdds() external view {
-        bytes4[5] memory ids = [
-            bytes4(0x11111111),
-            bytes4(0x22222222),
-            bytes4(0x33333333),
-            bytes4(0x44444444),
-            bytes4(0x55555555)
-        ];
+        bytes4[5] memory ids =
+            [bytes4(0x11111111), bytes4(0x22222222), bytes4(0x33333333), bytes4(0x44444444), bytes4(0x55555555)];
         uint256[5] memory vals = [uint256(100), uint256(200), uint256(300), uint256(400), uint256(500)];
 
         // Start with 1 entry via createMetadata

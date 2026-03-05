@@ -58,20 +58,19 @@ contract JBERC20Inheritance_Local is JBERC20, TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: _tokensToAccept});
 
-        uint256 projectId = jbController().launchProjectFor({
-            owner: _projectOwner,
-            projectUri: "myIPFSHash",
-            rulesetConfigurations: _rulesetConfig,
-            terminalConfigurations: _terminalConfigurations,
-            memo: ""
-        });
+        uint256 projectId = jbController()
+            .launchProjectFor({
+                owner: _projectOwner,
+                projectUri: "myIPFSHash",
+                rulesetConfigurations: _rulesetConfig,
+                terminalConfigurations: _terminalConfigurations,
+                memo: ""
+            });
 
         // Configure a token.
         vm.prank(_projectOwner);

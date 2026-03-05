@@ -169,7 +169,9 @@ contract Phase3Handler is Test {
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
             metadata: ""
-        }) returns (uint256 reclaimAmount) {
+        }) returns (
+            uint256 reclaimAmount
+        ) {
             ghost_totalCashedOut[projectId2] += reclaimAmount;
             ghost_actorExtracted[actor][projectId2] += reclaimAmount;
             ghost_globalOutflows += reclaimAmount;
@@ -197,7 +199,9 @@ contract Phase3Handler is Test {
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
             metadata: ""
-        }) returns (uint256 reclaimAmount) {
+        }) returns (
+            uint256 reclaimAmount
+        ) {
             ghost_totalCashedOut[projectId3] += reclaimAmount;
             ghost_actorExtracted[actor][projectId3] += reclaimAmount;
             ghost_globalOutflows += reclaimAmount;
@@ -220,7 +224,9 @@ contract Phase3Handler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOut[projectId2] += amountPaidOut;
             // Track actual ETH that left the terminal, not the gross recorded amount.
             // The fee stays in the terminal (paid to project #1 via internal _pay).
@@ -247,7 +253,9 @@ contract Phase3Handler is Test {
             beneficiary: payable(projectOwner),
             feeBeneficiary: payable(projectOwner),
             memo: ""
-        }) returns (uint256 netAmountPaidOut) {
+        }) returns (
+            uint256 netAmountPaidOut
+        ) {
             ghost_totalAllowanceUsed[projectId2] += netAmountPaidOut;
             ghost_globalOutflows += netAmountPaidOut;
             callCount_useAllowance2++;
@@ -301,7 +309,12 @@ contract Phase3Handler is Test {
 
         vm.prank(actor);
         try terminal.addToBalanceOf{value: amount}(
-            projectId2, JBConstants.NATIVE_TOKEN, amount, true, "", "" // shouldReturnHeldFees = true
+            projectId2,
+            JBConstants.NATIVE_TOKEN,
+            amount,
+            true,
+            "",
+            "" // shouldReturnHeldFees = true
         ) {
             ghost_totalAddedToBalance[projectId2] += amount;
             ghost_globalInflows += amount;
@@ -327,7 +340,12 @@ contract Phase3Handler is Test {
 
         vm.prank(actor);
         try terminal.addToBalanceOf{value: amount}(
-            projectId2, JBConstants.NATIVE_TOKEN, amount, false, "", "" // shouldReturnHeldFees = false
+            projectId2,
+            JBConstants.NATIVE_TOKEN,
+            amount,
+            false,
+            "",
+            "" // shouldReturnHeldFees = false
         ) {
             ghost_totalAddedToBalance[projectId2] += amount;
             ghost_globalInflows += amount;

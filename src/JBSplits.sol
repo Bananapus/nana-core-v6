@@ -224,7 +224,9 @@ contract JBSplits is JBControlled, IJBSplits {
             }
 
             // Set the splits for the group.
-            _setSplitsOf({projectId: projectId, rulesetId: rulesetId, groupId: splitGroup.groupId, splits: splitGroup.splits});
+            _setSplitsOf({
+                projectId: projectId, rulesetId: rulesetId, groupId: splitGroup.groupId, splits: splitGroup.splits
+            });
         }
     }
 
@@ -249,7 +251,10 @@ contract JBSplits is JBControlled, IJBSplits {
         // Check to see if all locked splits are included in the array of splits which is being set.
         for (uint256 i; i < numberOfCurrentSplits; i++) {
             // If not locked, continue.
-            if (block.timestamp < currentSplits[i].lockedUntil && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})) {
+            if (
+                block.timestamp < currentSplits[i].lockedUntil
+                    && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
+            ) {
                 revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
             }
         }
@@ -302,11 +307,7 @@ contract JBSplits is JBControlled, IJBSplits {
             }
 
             emit SetSplit({
-                projectId: projectId,
-                rulesetId: rulesetId,
-                groupId: groupId,
-                split: split,
-                caller: msg.sender
+                projectId: projectId, rulesetId: rulesetId, groupId: groupId, split: split, caller: msg.sender
             });
         }
 

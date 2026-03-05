@@ -29,10 +29,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         // JBRulesets return calldata
@@ -54,11 +51,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_RulesetNotFound.selector, _projectId));
         _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
     }
 
@@ -67,10 +60,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -116,11 +106,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         vm.expectRevert(JBTerminalStore.JBTerminalStore_RulesetPaymentPaused.selector);
         _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
     }
 
@@ -136,10 +122,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -205,11 +188,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(_dataHook), _beforePayCall, _beforePayReturn);
 
         (, uint256 tokenCount,) = _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
 
         assertEq(tokenCount, 1e18 / 2);
@@ -223,10 +202,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -299,11 +275,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
             )
         );
         _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
     }
 
@@ -315,10 +287,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -384,11 +353,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(_dataHook), _beforePayCall, _beforePayReturn);
 
         (, uint256 tokenCount,) = _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
 
         assertEq(tokenCount, 0);
@@ -399,10 +364,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -451,11 +413,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         _spec[0] = JBPayHookSpecification({hook: _payHook, amount: _defaultValue / 2, metadata: ""});
 
         (, uint256 tokenCount,) = _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
 
         assertEq(tokenCount, 1e18);
@@ -466,10 +424,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
 
         // call params
         JBTokenAmount memory _tokenAmount = JBTokenAmount({
-            token: address(_token),
-            value: _defaultValue,
-            decimals: _defaultDecimals,
-            currency: _currency
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
         });
 
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
@@ -545,11 +500,7 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         uint256 expectedCount = mulDiv(_defaultValue, 1e18 / 2, 2e18);
 
         (, uint256 tokenCount,) = _store.recordPaymentFrom({
-            payer: address(this),
-            amount: _tokenAmount,
-            projectId: _projectId,
-            beneficiary: address(this),
-            metadata: ""
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
         });
 
         assertEq(tokenCount, expectedCount);

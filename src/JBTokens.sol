@@ -261,12 +261,7 @@ contract JBTokens is JBControlled, IJBTokens {
         projectIdOf[token] = projectId;
 
         emit DeployERC20({
-            projectId: projectId,
-            token: token,
-            name: name,
-            symbol: symbol,
-            salt: salt,
-            caller: msg.sender
+            projectId: projectId, token: token, name: name, symbol: symbol, salt: salt, caller: msg.sender
         });
 
         // Initialize the token.
@@ -311,11 +306,7 @@ contract JBTokens is JBControlled, IJBTokens {
         }
 
         emit Mint({
-            holder: holder,
-            projectId: projectId,
-            count: count,
-            tokensWereClaimed: tokensWereClaimed,
-            caller: msg.sender
+            holder: holder, projectId: projectId, count: count, tokensWereClaimed: tokensWereClaimed, caller: msg.sender
         });
     }
 
@@ -379,11 +370,7 @@ contract JBTokens is JBControlled, IJBTokens {
         creditBalanceOf[recipient][projectId] += count;
 
         emit TransferCredits({
-            holder: holder,
-            projectId: projectId,
-            recipient: recipient,
-            count: count,
-            caller: msg.sender
+            holder: holder, projectId: projectId, recipient: recipient, count: count, caller: msg.sender
         });
     }
 }

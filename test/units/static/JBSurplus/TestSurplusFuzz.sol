@@ -17,7 +17,12 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
         JBAccountingContext[] memory,
         uint256,
         uint256
-    ) external view override returns (uint256) {
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
         return surplusAmount;
     }
 
@@ -26,12 +31,47 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
     }
 
     // Stub implementations for IJBTerminal
-    function accountingContextForTokenOf(uint256, address) external pure override returns (JBAccountingContext memory) {}
+    function accountingContextForTokenOf(uint256, address)
+        external
+        pure
+        override
+        returns (JBAccountingContext memory)
+    {}
     function accountingContextsOf(uint256) external pure override returns (JBAccountingContext[] memory) {}
     function addAccountingContextsFor(uint256, JBAccountingContext[] calldata) external override {}
-    function addToBalanceOf(uint256, address, uint256, bool, string calldata, bytes calldata) external payable override {}
-    function migrateBalanceOf(uint256, address, IJBTerminal) external override returns (uint256) { return 0; }
-    function pay(uint256, address, uint256, address, uint256, string calldata, bytes calldata) external payable override returns (uint256) { return 0; }
+    function addToBalanceOf(
+        uint256,
+        address,
+        uint256,
+        bool,
+        string calldata,
+        bytes calldata
+    )
+        external
+        payable
+        override
+    {}
+
+    function migrateBalanceOf(uint256, address, IJBTerminal) external override returns (uint256) {
+        return 0;
+    }
+
+    function pay(
+        uint256,
+        address,
+        uint256,
+        address,
+        uint256,
+        string calldata,
+        bytes calldata
+    )
+        external
+        payable
+        override
+        returns (uint256)
+    {
+        return 0;
+    }
 }
 
 /// @notice Fuzz tests for the JBSurplus library.

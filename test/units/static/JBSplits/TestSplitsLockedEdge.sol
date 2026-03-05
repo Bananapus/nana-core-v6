@@ -46,7 +46,8 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         });
     }
 
-    // ───────────────────── Lock enforcement within same ruleset ─────────────────────
+    // ───────────────────── Lock enforcement within same ruleset
+    // ─────────────────────
 
     /// @notice Removing a locked split within the same rulesetId should revert.
     function test_lockEnforcement_withinSameRuleset() external {
@@ -67,14 +68,13 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         newGroups[0] = JBSplitGroup({groupId: GROUP_ID, splits: newSplits});
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A
-            )
+            abi.encodeWithSelector(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A)
         );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, newGroups);
     }
 
-    // ───────────────────── Lock DOES NOT carry across rulesets ─────────────────────
+    // ───────────────────── Lock DOES NOT carry across rulesets
+    // ─────────────────────
 
     /// @notice DESIGN ISSUE: Locked splits in rulesetId A don't constrain rulesetId B.
     /// A project owner can bypass a lock by queuing a new ruleset without the split.
@@ -105,7 +105,8 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         assertEq(rulesetsB[0].beneficiary, address(0xDEAD), "Locked split bypassed via new rulesetId");
     }
 
-    // ───────────────────── Lock extension allowed ─────────────────────
+    // ───────────────────── Lock extension allowed
+    // ─────────────────────
 
     /// @notice Extending lockedUntil to a later time should succeed.
     function test_lockExtension_allowed() external {
@@ -133,7 +134,8 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         assertEq(result[0].lockedUntil, extendedLock, "Lock should be extended");
     }
 
-    // ───────────────────── Lock reduction blocked ─────────────────────
+    // ───────────────────── Lock reduction blocked
+    // ─────────────────────
 
     /// @notice Reducing lockedUntil (while still locked) should revert.
     function test_lockReduction_blocked() external {
@@ -155,14 +157,13 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         reducedGroups[0] = JBSplitGroup({groupId: GROUP_ID, splits: reducedSplits});
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A
-            )
+            abi.encodeWithSelector(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A)
         );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, reducedGroups);
     }
 
-    // ───────────────────── Lock expired allows removal ─────────────────────
+    // ───────────────────── Lock expired allows removal
+    // ─────────────────────
 
     /// @notice After lockedUntil passes, split can be removed.
     function test_lockExpired_canRemove() external {
@@ -191,7 +192,8 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         assertEq(result[0].beneficiary, address(0xDEAD), "Expired lock allows removal");
     }
 
-    // ───────────────────── Percent validation ─────────────────────
+    // ───────────────────── Percent validation
+    // ─────────────────────
 
     /// @notice Total percent > SPLITS_TOTAL_PERCENT should revert.
     function test_percentExceeds100_reverts() external {
@@ -218,7 +220,8 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, groups);
     }
 
-    // ───────────────────── Hook and beneficiary edge cases ─────────────────────
+    // ───────────────────── Hook and beneficiary edge cases
+    // ─────────────────────
 
     /// @notice Arbitrary address as hook is accepted (no interface check).
     function test_hookAddress_notValidated() external {

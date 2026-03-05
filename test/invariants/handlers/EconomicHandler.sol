@@ -173,7 +173,9 @@ contract EconomicHandler is Test {
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
             metadata: ""
-        }) returns (uint256 reclaimAmount) {
+        }) returns (
+            uint256 reclaimAmount
+        ) {
             ghost_totalCashedOutA += reclaimAmount;
             actorCashedOutA[actor] += reclaimAmount;
             callCount_cashOutA++;
@@ -198,7 +200,9 @@ contract EconomicHandler is Test {
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
             metadata: ""
-        }) returns (uint256 reclaimAmount) {
+        }) returns (
+            uint256 reclaimAmount
+        ) {
             ghost_totalCashedOutB += reclaimAmount;
             callCount_cashOutB++;
         } catch {}
@@ -222,7 +226,9 @@ contract EconomicHandler is Test {
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
             metadata: ""
-        }) returns (uint256 reclaimAmount) {
+        }) returns (
+            uint256 reclaimAmount
+        ) {
             ghost_totalCashedOutC += reclaimAmount;
             callCount_cashOutC++;
         } catch {}
@@ -245,7 +251,9 @@ contract EconomicHandler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOutA += amountPaidOut;
             callCount_sendPayoutsA++;
 
@@ -271,7 +279,9 @@ contract EconomicHandler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOutB += amountPaidOut;
             callCount_sendPayoutsB++;
         } catch {}
@@ -291,7 +301,9 @@ contract EconomicHandler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOutC += amountPaidOut;
             callCount_sendPayoutsC++;
         } catch {}
@@ -304,9 +316,7 @@ contract EconomicHandler is Test {
         vm.deal(actor, amount);
 
         vm.prank(actor);
-        try terminal.addToBalanceOf{value: amount}(
-            projectA, JBConstants.NATIVE_TOKEN, amount, false, "", ""
-        ) {
+        try terminal.addToBalanceOf{value: amount}(projectA, JBConstants.NATIVE_TOKEN, amount, false, "", "") {
             ghost_totalAddedToBalanceA += amount;
             callCount_addToBalanceA++;
         } catch {}

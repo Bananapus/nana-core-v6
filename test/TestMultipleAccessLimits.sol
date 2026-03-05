@@ -86,14 +86,10 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] = JBAccountingContext({
-            token: address(usdcToken()),
-            decimals: 6,
-            currency: uint32(uint160(address(usdcToken())))
+            token: address(usdcToken()), decimals: 6, currency: uint32(uint160(address(usdcToken())))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: __terminal, accountingContextsToAccept: _tokensToAccept});
@@ -176,7 +172,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         uint256 _usdAmountAvailableToPayout = mulDiv(
             _nativePayAmount - _nativePayoutLimit, // native token value
             10 ** 18, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount.value`'s fidelity as possible
-                // when converting.
+            // when converting.
             _prices.pricePerUnitOf({
                 projectId: _projectId,
                 pricingCurrency: _nativeCurrency,
@@ -263,9 +259,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: __terminal, accountingContextsToAccept: _tokensToAccept});
@@ -317,14 +311,10 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] = JBAccountingContext({
-            token: address(usdcToken()),
-            decimals: 6,
-            currency: uint32(uint160(address(usdcToken())))
+            token: address(usdcToken()), decimals: 6, currency: uint32(uint160(address(usdcToken())))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: __terminal, accountingContextsToAccept: _tokensToAccept});
@@ -382,14 +372,10 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] = JBAccountingContext({
-            token: address(usdcToken()),
-            decimals: 6,
-            currency: uint32(uint160(address(usdcToken())))
+            token: address(usdcToken()), decimals: 6, currency: uint32(uint160(address(usdcToken())))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: __terminal, accountingContextsToAccept: _tokensToAccept});
@@ -438,9 +424,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] =
             JBAccountingContext({token: address(usdcToken()), decimals: 6, currency: JBCurrencyIds.USD});
@@ -514,12 +498,9 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         uint256 _amountPaidOut = mulDiv(
             1_800_000_000,
             10 ** 18, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount.value`'s fidelity as possible
-                // when converting.
+            // when converting.
             _prices.pricePerUnitOf({
-                projectId: 1,
-                pricingCurrency: JBCurrencyIds.USD,
-                unitCurrency: _nativeCurrency,
-                decimals: 18
+                projectId: 1, pricingCurrency: JBCurrencyIds.USD, unitCurrency: _nativeCurrency, decimals: 18
             })
         );
 
@@ -560,14 +541,10 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] = JBAccountingContext({
-            token: address(usdcToken()),
-            decimals: 6,
-            currency: uint32(uint160(address(usdcToken())))
+            token: address(usdcToken()), decimals: 6, currency: uint32(uint160(address(usdcToken())))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: __terminal, accountingContextsToAccept: _tokensToAccept});
@@ -620,7 +597,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         uint256 _amountPaidOut = mulDiv(
             3_000_000_000,
             10 ** 18, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount.value`'s fidelity as possible
-                // when converting.
+            // when converting.
             _prices.pricePerUnitOf({
                 projectId: 1,
                 pricingCurrency: uint32(uint160(address(usdcToken()))),

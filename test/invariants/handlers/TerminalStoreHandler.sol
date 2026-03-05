@@ -116,7 +116,9 @@ contract TerminalStoreHandler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOut += amountPaidOut;
         } catch {
             // Payout may fail if there's no payout limit configured

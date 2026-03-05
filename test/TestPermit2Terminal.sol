@@ -79,14 +79,10 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _tokensToAccept[1] = JBAccountingContext({
-            token: address(usdcToken()),
-            decimals: 6,
-            currency: uint32(uint160(address(usdcToken())))
+            token: address(usdcToken()), decimals: 6, currency: uint32(uint160(address(usdcToken())))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -130,10 +126,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc),
-            amount: uint160(_coins),
-            expiration: uint48(_expiration),
-            nonce: 0
+            token: address(_usdc), amount: uint160(_coins), expiration: uint48(_expiration), nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -198,10 +191,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc),
-            amount: uint160(_coins),
-            expiration: uint48(_expiration),
-            nonce: 0
+            token: address(_usdc), amount: uint160(_coins), expiration: uint48(_expiration), nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -256,10 +246,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc),
-            amount: _permitAmount,
-            expiration: _expiration,
-            nonce: 0
+            token: address(_usdc), amount: _permitAmount, expiration: _expiration, nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -269,11 +256,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
         bytes memory sig = getPermitSignature(permit, fromPrivateKey, DOMAIN_SEPARATOR);
 
         JBSingleAllowance({
-            sigDeadline: _sigDeadline,
-            amount: _permitAmount,
-            expiration: _expiration,
-            nonce: _nonce,
-            signature: sig
+            sigDeadline: _sigDeadline, amount: _permitAmount, expiration: _expiration, nonce: _nonce, signature: sig
         });
 
         vm.expectRevert(

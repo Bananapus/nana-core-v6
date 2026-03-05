@@ -58,9 +58,7 @@ contract TestTokenFlow_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -79,7 +77,9 @@ contract TestTokenFlow_Local is TestBaseWorkflow {
 
         if (_issueToken) {
             // Issue an ERC-20 token for project.
-            _controller.deployERC20For({projectId: _projectId, name: "TestName", symbol: "TestSymbol", salt: bytes32(0)});
+            _controller.deployERC20For({
+                projectId: _projectId, name: "TestName", symbol: "TestSymbol", salt: bytes32(0)
+            });
         } else {
             // Create a new `IJBToken` and change it's owner to the `JBTokens` contract.
             IJBToken _newToken = IJBToken(Clones.clone(address(new JBERC20())));
@@ -130,10 +130,7 @@ contract TestTokenFlow_Local is TestBaseWorkflow {
         vm.stopPrank();
         vm.prank(_beneficiary);
         _controller.burnTokensOf({
-            holder: _beneficiary,
-            projectId: _projectId,
-            tokenCount: _burnAmount,
-            memo: "Burn memo"
+            holder: _beneficiary, projectId: _projectId, tokenCount: _burnAmount, memo: "Burn memo"
         });
 
         // Make sure the total balance of tokens is updated.

@@ -52,20 +52,19 @@ contract RulesetsInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
-        projectId = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "rulesetsTest",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectId = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "rulesetsTest",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Deploy handler
         handler = new RulesetsHandler(jbRulesets(), jbController(), projectId, projectOwner);
@@ -94,11 +93,7 @@ contract RulesetsInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBRuleset memory current = jbRulesets().currentOf(projectId);
 
         // The current cycle number should be >= 1 (first cycle).
-        assertGe(
-            uint256(current.cycleNumber),
-            1,
-            "INV-RS-2: cycleNumber must be >= 1"
-        );
+        assertGe(uint256(current.cycleNumber), 1, "INV-RS-2: cycleNumber must be >= 1");
     }
 
     /// @notice INV-RS-3: Weight is always within valid bounds.
@@ -107,11 +102,7 @@ contract RulesetsInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBRuleset memory current = jbRulesets().currentOf(projectId);
 
         // Weight should fit in uint112 (it's stored as uint112, so this is a sanity check).
-        assertLe(
-            uint256(current.weight),
-            uint256(type(uint112).max),
-            "INV-RS-3: weight must fit in uint112"
-        );
+        assertLe(uint256(current.weight), uint256(type(uint112).max), "INV-RS-3: weight must fit in uint112");
     }
 
     /// @notice INV-RS-4: Ruleset start timestamp is always <= block.timestamp.
@@ -119,10 +110,6 @@ contract RulesetsInvariant_Local is StdInvariant, TestBaseWorkflow {
     function invariant_RS4_rulesetStartNotFuture() public view {
         JBRuleset memory current = jbRulesets().currentOf(projectId);
 
-        assertLe(
-            uint256(current.start),
-            block.timestamp,
-            "INV-RS-4: current ruleset start must be <= block.timestamp"
-        );
+        assertLe(uint256(current.start), block.timestamp, "INV-RS-4: current ruleset start must be <= block.timestamp");
     }
 }

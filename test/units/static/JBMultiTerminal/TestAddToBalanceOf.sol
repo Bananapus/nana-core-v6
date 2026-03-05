@@ -334,10 +334,7 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc),
-            amount: uint160(payAmount),
-            expiration: uint48(expiration),
-            nonce: 0
+            token: address(_usdc), amount: uint160(payAmount), expiration: uint48(expiration), nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -347,11 +344,7 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         bytes memory sig = getPermitSignature(permit, fromPrivateKey, DOMAIN_SEPARATOR);
 
         JBSingleAllowance memory permitData = JBSingleAllowance({
-            sigDeadline: deadline,
-            amount: uint160(1),
-            expiration: uint48(expiration),
-            nonce: uint48(0),
-            signature: sig
+            sigDeadline: deadline, amount: uint160(1), expiration: uint48(expiration), nonce: uint48(0), signature: sig
         });
 
         // Setup: prepare data for metadata helper.
@@ -425,7 +418,7 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         );
 
         vm.startPrank(from);
-        
+
         _terminal.addToBalanceOf({
             projectId: _projectId,
             token: _usdc,
