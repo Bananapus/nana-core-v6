@@ -112,15 +112,14 @@ contract TestDeadlineFuzz_Local is JBTest {
     }
 
     /// @notice If gap >= DURATION and deadline passed, always Approved.
-    function testFuzz_sufficientGap_deadlinePassed_approved(uint256 gapExtra) external view {
+    function testFuzz_sufficientGap_deadlinePassed_approved(uint256 gapExtra) external {
         // gap = DURATION + gapExtra (always >= DURATION)
         gapExtra = bound(gapExtra, 0, 365 days);
         uint256 gap = DURATION + gapExtra;
 
-        // start = block.timestamp (deadline already passed since block.timestamp + DURATION >= start)
+        // Warp to a timestamp large enough so that start >= gap always holds.
+        vm.warp(gap + 1);
         uint48 start = uint48(block.timestamp);
-        // Ensure queuedAt doesn't underflow
-        vm.assume(start >= gap);
         uint48 queuedAt = start - uint48(gap);
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});
