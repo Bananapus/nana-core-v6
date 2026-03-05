@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {JBPermissionIds} from "@bananapus/permission-ids-v5/src/JBPermissionIds.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -619,7 +619,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Queue a project's initial rulesets and set up terminals for it. Projects which already have rulesets
     /// should use `queueRulesetsOf(...)`.
     /// @dev Each operation within this transaction can be done in sequence separately.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `QUEUE_RULESETS`.
+    /// @dev Can only be called by the project's owner or an address with the owner's permission to `LAUNCH_RULESETS`.
     /// @param projectId The ID of the project to launch rulesets for.
     /// @param rulesetConfigurations The rulesets to queue.
     /// @param terminalConfigurations The terminals to set up.
@@ -645,7 +645,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         _requirePermissionAllowingOverrideFrom({
             account: PROJECTS.ownerOf(projectId),
             projectId: projectId,
-            permissionId: JBPermissionIds.QUEUE_RULESETS,
+            permissionId: JBPermissionIds.LAUNCH_RULESETS,
             alsoGrantAccessIf: sender == OMNICHAIN_RULESET_OPERATOR
         });
 
