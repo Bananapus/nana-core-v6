@@ -602,7 +602,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         DIRECTORY.setControllerOf({projectId: projectId, controller: IERC165(this)});
 
         // Configure the terminals.
-        _configureTerminals({projectId: projectId, terminalConfigs: terminalConfigurations});
+        _configureTerminals({projectId: projectId, terminalConfigurations: terminalConfigurations});
 
         // Queue the rulesets.
         // slither-disable-next-line reentrancy-events
@@ -667,7 +667,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         DIRECTORY.setControllerOf({projectId: projectId, controller: IERC165(this)});
 
         // Configure the terminals.
-        _configureTerminals({projectId: projectId, terminalConfigs: terminalConfigurations});
+        _configureTerminals({projectId: projectId, terminalConfigurations: terminalConfigurations});
 
         // Queue the first ruleset.
         // slither-disable-next-line reentrancy-events
@@ -918,14 +918,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Set up a project's terminals.
     /// @param projectId The ID of the project to set up terminals for.
-    /// @param terminalConfigs The terminals to set up.
-    function _configureTerminals(uint256 projectId, JBTerminalConfig[] calldata terminalConfigs) internal {
+    /// @param terminalConfigurations The terminals to set up.
+    function _configureTerminals(uint256 projectId, JBTerminalConfig[] calldata terminalConfigurations) internal {
         // Initialize an array of terminals to populate.
-        IJBTerminal[] memory terminals = new IJBTerminal[](terminalConfigs.length);
+        IJBTerminal[] memory terminals = new IJBTerminal[](terminalConfigurations.length);
 
-        for (uint256 i; i < terminalConfigs.length; i++) {
+        for (uint256 i; i < terminalConfigurations.length; i++) {
             // Set the terminal configuration being iterated on.
-            JBTerminalConfig memory terminalConfig = terminalConfigs[i];
+            JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
             // Add the accounting contexts for the specified tokens.
             terminalConfig.terminal.addAccountingContextsFor({
@@ -938,7 +938,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
 
         // Set the terminals in the directory.
-        if (terminalConfigs.length > 0) {
+        if (terminalConfigurations.length > 0) {
             DIRECTORY.setTerminalsOf({projectId: projectId, terminals: terminals});
         }
     }
