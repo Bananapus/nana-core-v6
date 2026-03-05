@@ -64,6 +64,7 @@ contract TestDeadlineFuzz_Local is JBTest {
 
     /// @notice Ruleset with enough gap and deadline passed returns Approved.
     function test_gapSufficient_deadlinePassed_isApproved() external {
+        vm.warp(DURATION + 100); // ensure timestamp is large enough to avoid underflow
         uint48 start = uint48(block.timestamp + 1); // start is very soon
         uint48 queued = start - uint48(DURATION) - 1; // plenty of gap
 
