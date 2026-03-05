@@ -27,7 +27,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         // mock permission call
         bytes memory _call = abi.encodeCall(
-            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.QUEUE_RULESETS, true, true)
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.LAUNCH_RULESETS, true, true)
         );
         mockExpect(address(permissions), _call, abi.encode(false));
         _;
@@ -111,7 +111,13 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
         JBRulesetConfig[] memory _rulesetConfigs = new JBRulesetConfig[](1);
 
         vm.expectRevert(
-            abi.encodeWithSelector(JBPermissioned.JBPermissioned_Unauthorized.selector, address(1), address(this), 1, 2)
+            abi.encodeWithSelector(
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                address(1),
+                address(this),
+                1,
+                JBPermissionIds.LAUNCH_RULESETS
+            )
         );
 
         _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
@@ -198,7 +204,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
         _controller.launchRulesetsFor(_projectId, _rulesetConfigs, _terminalConfigs, "");
     }
 
-    function test_GivenCallerOnlyHasQueuePermission() external {
+    function test_GivenCallerOnlyHasLaunchPermission() external {
         // it should revert
 
         // mock ownerOf call
@@ -207,13 +213,13 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         mockExpect(address(projects), _ownerOfCall, abi.encode(_ownerData));
 
-        // mock permission call
+        // mock permission call - caller has LAUNCH_RULESETS
         bytes memory _call = abi.encodeCall(
-            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.QUEUE_RULESETS, true, true)
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.LAUNCH_RULESETS, true, true)
         );
         mockExpect(address(permissions), _call, abi.encode(true));
 
-        // SET_TERMINALS
+        // SET_TERMINALS - caller does NOT have this
         bytes memory _call3 = abi.encodeCall(
             IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.SET_TERMINALS, true, true)
         );
@@ -225,7 +231,11 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 14
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_TERMINALS
             )
         );
 
@@ -241,9 +251,9 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         mockExpect(address(projects), _ownerOfCall, _ownerData);
 
-        // mock permission call
+        // mock permission call - caller has LAUNCH_RULESETS
         bytes memory _call = abi.encodeCall(
-            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.QUEUE_RULESETS, true, true)
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.LAUNCH_RULESETS, true, true)
         );
         mockExpect(address(permissions), _call, abi.encode(true));
 

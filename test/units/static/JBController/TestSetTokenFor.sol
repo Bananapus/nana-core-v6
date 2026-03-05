@@ -215,7 +215,11 @@ contract TestSetTokenFor_Local is JBControllerSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerOfReturn, address(this), _projectId, 8
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerOfReturn,
+                address(this),
+                _projectId,
+                JBPermissionIds.SET_TOKEN
             )
         );
         _controller.setTokenFor(_projectId, _token);

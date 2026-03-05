@@ -33,7 +33,11 @@ contract TestBurnTokensOf_Local is JBControllerSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _holder, address(this), _projectId, 10
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _holder,
+                address(this),
+                _projectId,
+                JBPermissionIds.BURN_TOKENS
             )
         );
         _controller.burnTokensOf(_holder, _projectId, _validCount, _memo);

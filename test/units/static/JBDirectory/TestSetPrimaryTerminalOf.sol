@@ -61,7 +61,11 @@ contract TestSetPrimaryTerminalOf_Local is JBDirectorySetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPermissioned.JBPermissioned_Unauthorized.selector, _ownerData, address(this), 1, 15
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_PRIMARY_TERMINAL
             )
         );
         _directory.setPrimaryTerminalOf(1, _token, _terminalToAdd);
