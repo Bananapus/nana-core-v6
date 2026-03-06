@@ -52,6 +52,9 @@ contract TestPriceFeed_Local is JBTest {
     uint256 constant THRESHOLD = 1 hours;
 
     function setUp() external {
+        // Foundry defaults block.timestamp to 1, which causes underflow in stale-price tests.
+        vm.warp(THRESHOLD + 1 days);
+
         mockFeed = new MockAggregator();
         mockFeed.setDecimals(8);
         mockFeed.setPrice(200_000_000_000); // $2000 with 8 decimals

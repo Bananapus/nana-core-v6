@@ -13,6 +13,9 @@ contract TestDeadlineFuzz_Local is JBTest {
     uint256 constant DURATION = 3 days;
 
     function setUp() external {
+        // Foundry defaults block.timestamp to 1, which causes underflow in tests
+        // that subtract DURATION from timestamp-derived values.
+        vm.warp(DURATION + 1 days);
         deadline = new JBDeadline(DURATION);
     }
 
@@ -112,15 +115,14 @@ contract TestDeadlineFuzz_Local is JBTest {
     }
 
     /// @notice If gap >= DURATION and deadline passed, always Approved.
-    function testFuzz_sufficientGap_deadlinePassed_approved(uint256 gapExtra) external view {
+    function testFuzz_sufficientGap_deadlinePassed_approved(uint256 gapExtra) external {
         // gap = DURATION + gapExtra (always >= DURATION)
         gapExtra = bound(gapExtra, 0, 365 days);
         uint256 gap = DURATION + gapExtra;
 
-        // start = block.timestamp (deadline already passed since block.timestamp + DURATION >= start)
+        // Warp to a timestamp large enough so that start >= gap always holds.
+        vm.warp(gap + 1);
         uint48 start = uint48(block.timestamp);
-        // Ensure queuedAt doesn't underflow
-        vm.assume(start >= gap);
         uint48 queuedAt = start - uint48(gap);
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});
@@ -131,8 +133,8 @@ contract TestDeadlineFuzz_Local is JBTest {
     /// @notice Status monotonically transitions: ApprovalExpected -> Approved as time advances.
     function testFuzz_statusMonotonic(uint48 gap) external {
         gap = uint48(bound(uint256(gap), DURATION, type(uint32).max));
-        // Ensure arithmetic doesn't overflow uint48
-        uint48 start = uint48(bound(uint256(block.timestamp) + 2 * DURATION + 100, gap, type(uint48).max));
+        // Cap start to leave room for `start + 1000` without overflowing uint48.
+        uint48 start = uint48(bound(uint256(block.timestamp) + 2 * DURATION + 100, gap, type(uint48).max - 1000));
         uint48 queuedAt = start - gap;
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});
@@ -159,6 +161,9 @@ contract TestDeadlineFuzz_Local is JBTest {
     function testFuzz_differentDurations(uint256 duration) external {
         duration = bound(duration, 1, 365 days);
         JBDeadline d = new JBDeadline(duration);
+
+        // Ensure block.timestamp >= duration to avoid underflow.
+        vm.warp(duration + 1);
 
         uint48 start = uint48(block.timestamp + 1);
         uint48 queuedAt = uint48(block.timestamp - duration);

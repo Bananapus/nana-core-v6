@@ -55,6 +55,9 @@ contract TestJBRulesetsUnits_Local is JBTest {
     }
 
     function setUp() public {
+        // Foundry defaults block.timestamp to 1, which causes underflow in tests using past timestamps.
+        vm.warp(7 days);
+
         // Mock contracts and label them
         _directory = IJBDirectory(makeAddr("JBDirectory"));
         _permissions = IJBPermissions(makeAddr("JBPermissions"));
