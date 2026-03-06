@@ -13,6 +13,9 @@ contract TestDeadlineFuzz_Local is JBTest {
     uint256 constant DURATION = 3 days;
 
     function setUp() external {
+        // Foundry defaults block.timestamp to 1, which causes underflow in tests
+        // that subtract DURATION from timestamp-derived values.
+        vm.warp(DURATION + 1 days);
         deadline = new JBDeadline(DURATION);
     }
 
@@ -130,8 +133,8 @@ contract TestDeadlineFuzz_Local is JBTest {
     /// @notice Status monotonically transitions: ApprovalExpected -> Approved as time advances.
     function testFuzz_statusMonotonic(uint48 gap) external {
         gap = uint48(bound(uint256(gap), DURATION, type(uint32).max));
-        // Ensure arithmetic doesn't overflow uint48
-        uint48 start = uint48(bound(uint256(block.timestamp) + 2 * DURATION + 100, gap, type(uint48).max));
+        // Cap start to leave room for `start + 1000` without overflowing uint48.
+        uint48 start = uint48(bound(uint256(block.timestamp) + 2 * DURATION + 100, gap, type(uint48).max - 1000));
         uint48 queuedAt = start - gap;
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});

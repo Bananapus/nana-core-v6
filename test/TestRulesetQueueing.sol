@@ -20,6 +20,9 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
     function setUp() public override {
         super.setUp();
 
+        // Foundry defaults block.timestamp to 1, which causes underflow in tests using past timestamps.
+        vm.warp(7 days);
+
         _terminal = jbMultiTerminal();
         _controller = jbController();
 
