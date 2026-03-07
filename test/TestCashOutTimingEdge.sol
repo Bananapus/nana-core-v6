@@ -4,7 +4,7 @@ pragma solidity ^0.8.6;
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 import {JBCashOuts} from "../src/libraries/JBCashOuts.sol";
 
-/// @notice Edge case tests for cross-ruleset cash outs and pending reserves inflation (H-4).
+/// @notice Edge case tests for cross-ruleset cash outs and pending reserves inflation.
 /// Demonstrates that pending reserved tokens inflate totalSupply in cash-out calculations,
 /// systematically undervaluing cash-outs until reserves are distributed.
 contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
@@ -92,7 +92,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         _controller.deployERC20For(_projectId, "Test", "TST", bytes32(0));
     }
 
-    /// @notice H-4 CONFIRMATION: Pending reserves inflate totalSupply, reducing cash-out value.
+    /// @notice Pending reserves inflate totalSupply, reducing cash-out value.
     /// When reserves exist but haven't been distributed, totalTokenSupplyWithReservedTokensOf
     /// includes them in the denominator, making each token worth less.
     function test_pendingReserves_inflateSupply_reduceCashOut() external {
@@ -134,8 +134,8 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
             surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, cashOutTaxRate: 5000
         });
 
-        // H-4 CONFIRMED: Cash-out with pending reserves is LESS than without.
-        assertLt(reclaimWithInflation, reclaimWithoutInflation, "H-4: Pending reserves reduce cash-out value");
+        // Cash-out with pending reserves is LESS than without.
+        assertLt(reclaimWithInflation, reclaimWithoutInflation, "Pending reserves reduce cash-out value");
 
         // Quantify the impact.
         uint256 lostValue = reclaimWithoutInflation - reclaimWithInflation;
@@ -177,7 +177,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         assertEq(totalAfter, totalBefore, "Total supply unchanged after distribution");
 
         // Cash-out value should be the same since total didn't change.
-        // The fix for H-4 would be: don't include pending reserves in totalSupply.
+        // One approach: don't include pending reserves in totalSupply.
         uint256 reclaimAfter = JBCashOuts.cashOutFrom({
             surplus: surplus, cashOutCount: payerTokens, totalSupply: totalAfter, cashOutTaxRate: 5000
         });

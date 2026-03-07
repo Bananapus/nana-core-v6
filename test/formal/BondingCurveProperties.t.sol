@@ -192,7 +192,7 @@ contract BondingCurveProperties is Test {
         uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, cashOutTaxRate);
 
         // NOTE: Strict subadditivity (firstResult + secondResult <= singleResult) was proven to be
-        // violated due to mulDiv rounding accumulation (FV-1 in AUDIT_FINDINGS.md).
+        // violated due to mulDiv rounding accumulation.
         // The violation is bounded by rounding precision and is economically insignificant (~0.00001%).
         // We verify the weaker property: the excess is bounded by rounding tolerance.
         if (firstResult + secondResult > singleResult) {
@@ -228,7 +228,7 @@ contract BondingCurveProperties is Test {
 
         uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, cashOutTaxRate);
 
-        // NOTE: Strict subadditivity violated due to mulDiv rounding (FV-1 in AUDIT_FINDINGS.md).
+        // NOTE: Strict subadditivity violated due to mulDiv rounding.
         // Verify the weaker property: excess bounded by rounding tolerance (< 0.01%).
         if (firstResult + secondResult > singleResult) {
             uint256 excess = (firstResult + secondResult) - singleResult;

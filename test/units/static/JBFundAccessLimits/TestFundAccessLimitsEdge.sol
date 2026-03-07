@@ -52,7 +52,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         // Query all limits — should have 2 entries now (both with currency=1, amount=1000).
         JBCurrencyAmount[] memory allLimits = limits.payoutLimitsOf(PROJECT_ID, RULESET_ID, TERMINAL, TOKEN);
 
-        // BUG CONFIRMED: Two entries instead of one.
+        // Two entries instead of one.
         assertEq(allLimits.length, 2, "BUG: Limits accumulated instead of being replaced");
         assertEq(allLimits[0].amount, 1000, "First accumulated limit");
         assertEq(allLimits[1].amount, 1000, "Second accumulated limit");

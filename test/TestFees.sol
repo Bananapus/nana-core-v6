@@ -481,7 +481,7 @@ contract TestFees_Local is TestBaseWorkflow {
         assertEq(_persistingFee.length, 1);
     }
 
-    function test_AuditFinding4POC() external {
+    function test_doubleFeeEdgeCase() external {
         vm.skip(true);
 
         // Setup: Pay the zero project so the terminal has balance of 1 eth from another project.
@@ -537,10 +537,10 @@ contract TestFees_Local is TestBaseWorkflow {
         // Check the unlock timestamp
         assertEq(_checkOgFee[0].unlockTimestamp, block.timestamp + 2_419_200);
 
-        // Audit Example correctly asserts that the fee amount is 1 ETH
+        // The fee amount is 1 ETH
         assertEq(_checkOgFee[0].amount, _nativeDistLimit);
 
-        // Audit Example correctly asserts that the projects balance in terminal store will be zero.
+        // The project's balance in terminal store will be zero.
         uint256 project2BalanceStore =
             jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(project2BalanceStore, 0);
