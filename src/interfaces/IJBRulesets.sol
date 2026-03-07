@@ -145,7 +145,9 @@ interface IJBRulesets {
         external
         returns (JBRuleset memory ruleset);
 
-    /// @notice Updates the weight cache for a project to allow efficient weight derivation over many cycles.
+    /// @notice Updates the weight cache for a specific ruleset to allow efficient weight derivation over many cycles.
     /// @param projectId The ID of the project to update the weight cache for.
-    function updateRulesetWeightCache(uint256 projectId) external;
+    /// @param rulesetId The ID of the ruleset to update the cache for. This should be the ruleset that currentOf()
+    /// actually uses, which may differ from latestRulesetIdOf if the latest was rejected by an approval hook.
+    function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external;
 }

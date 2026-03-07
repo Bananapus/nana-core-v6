@@ -550,10 +550,10 @@ contract TestJBRulesetsUnits_Local is JBTest {
         // Update the weight cache incrementally — each call advances by at most 20,000 cycles.
         // With 20,000 cycles and 10% weight cut per cycle, weight reaches 0 well before 20,000 cycles.
         // First call: advances cache by up to 20,000 cycles (weight decays to 0).
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, _rulesets.latestRulesetIdOf(_projectId));
 
         // Second call during the same block should mirror the previous (cache already covers current time).
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, _rulesets.latestRulesetIdOf(_projectId));
     }
 
     function test_QueueForApprovalHookDNSupportInterface() external {

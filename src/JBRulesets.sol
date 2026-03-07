@@ -840,50 +840,53 @@ contract JBRulesets is JBControlled, IJBRulesets {
         return _getStructFor({projectId: projectId, rulesetId: rulesetId});
     }
 
-    /// @notice Cache the value of the ruleset weight.
+    /// @notice Cache the value of the ruleset weight for a specific ruleset.
+    /// @dev The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected
+    /// by an approval hook, `currentOf()` falls back to the base ruleset — callers should pass that base ruleset's
+    /// ID,
+    /// not the rejected latest.
     /// @param projectId The ID of the project having its ruleset weight cached.
-    function updateRulesetWeightCache(uint256 projectId) external override {
-        // Keep a reference to the struct for the latest queued ruleset.
-        // The cached value will be based on this struct.
-        JBRuleset memory latestQueuedRuleset =
-            _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId]});
+    /// @param rulesetId The ID of the ruleset to update the cache for.
+    function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
+        // Get the target ruleset.
+        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
 
-        // Nothing to cache if the latest ruleset doesn't have a duration or a weight cut percent.
+        // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
         // slither-disable-next-line incorrect-equality
-        if (latestQueuedRuleset.duration == 0 || latestQueuedRuleset.weightCutPercent == 0) return;
+        if (targetRuleset.duration == 0 || targetRuleset.weightCutPercent == 0) return;
 
         // Get a reference to the current cache.
-        JBRulesetWeightCache storage cache = _weightCacheOf[projectId][latestQueuedRuleset.id];
+        JBRulesetWeightCache storage cache = _weightCacheOf[projectId][targetRuleset.id];
 
         // Determine the largest start timestamp the cache can be filled to.
         // Cap the advance to the cache lookup threshold per call to stay within the iteration limit in
         // deriveWeightFrom.
         // Multiple calls are needed to advance the cache for large cycle gaps.
-        uint256 maxStart = latestQueuedRuleset.start
-            + (cache.weightCutMultiple + _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD) * latestQueuedRuleset.duration;
+        uint256 maxStart = targetRuleset.start + (cache.weightCutMultiple + _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD)
+            * targetRuleset.duration;
 
         // Determine the start timestamp to derive a weight from for the cache.
         uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;
 
         // The difference between the start of the latest queued ruleset and the start of the ruleset we're caching the
         // weight of.
-        uint256 startDistance = start - latestQueuedRuleset.start;
+        uint256 startDistance = start - targetRuleset.start;
 
         // Calculate the weight cut multiple.
         uint168 weightCutMultiple;
         unchecked {
-            weightCutMultiple = uint168(startDistance / latestQueuedRuleset.duration);
+            weightCutMultiple = uint168(startDistance / targetRuleset.duration);
         }
 
         // Store the new values.
         cache.weight = uint112(
             deriveWeightFrom({
                 projectId: projectId,
-                baseRulesetStart: latestQueuedRuleset.start,
-                baseRulesetDuration: latestQueuedRuleset.duration,
-                baseRulesetWeight: latestQueuedRuleset.weight,
-                baseRulesetWeightCutPercent: latestQueuedRuleset.weightCutPercent,
-                baseRulesetCacheId: latestQueuedRuleset.id,
+                baseRulesetStart: targetRuleset.start,
+                baseRulesetDuration: targetRuleset.duration,
+                baseRulesetWeight: targetRuleset.weight,
+                baseRulesetWeightCutPercent: targetRuleset.weightCutPercent,
+                baseRulesetCacheId: targetRuleset.id,
                 start: start
             })
         );
