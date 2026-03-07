@@ -155,8 +155,9 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         try PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: thirdParty, projectId: projectId, permissionIds: rootPerms})
         ) {
-            // Should not reach here.
-        } catch {
+        // Should not reach here.
+        }
+        catch {
             rootForwardBlocked++;
         }
     }
@@ -190,8 +191,9 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         try PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: thirdParty, projectId: 0, permissionIds: somePerms})
         ) {
-            // Should not reach here.
-        } catch {
+        // Should not reach here.
+        }
+        catch {
             wildcardSetBlocked++;
         }
     }
@@ -338,18 +340,9 @@ contract PermissionsBitPackingTest is Test {
         );
 
         // Each set ID should return true.
-        assertTrue(
-            perms.hasPermission(operator, account, projectId, id1, false, false),
-            "id1 should be set"
-        );
-        assertTrue(
-            perms.hasPermission(operator, account, projectId, id2, false, false),
-            "id2 should be set"
-        );
-        assertTrue(
-            perms.hasPermission(operator, account, projectId, id3, false, false),
-            "id3 should be set"
-        );
+        assertTrue(perms.hasPermission(operator, account, projectId, id1, false, false), "id1 should be set");
+        assertTrue(perms.hasPermission(operator, account, projectId, id2, false, false), "id2 should be set");
+        assertTrue(perms.hasPermission(operator, account, projectId, id3, false, false), "id3 should be set");
 
         // Verify the packed value has exactly the right bits.
         uint256 packed = perms.permissionsOf(operator, account, projectId);
@@ -377,10 +370,7 @@ contract PermissionsBitPackingTest is Test {
         check3[0] = 5;
         check3[1] = 10;
         check3[2] = 200;
-        assertTrue(
-            perms.hasPermissions(operator, account, projectId, check3, false, false),
-            "All three should pass"
-        );
+        assertTrue(perms.hasPermissions(operator, account, projectId, check3, false, false), "All three should pass");
 
         // Missing one (15 not set) -> false.
         uint256[] memory check4 = new uint256[](4);
