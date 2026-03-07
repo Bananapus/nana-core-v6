@@ -106,6 +106,6 @@ contract RulesetsHandler is Test {
 
     /// @notice Update the weight cache for the project.
     function updateWeightCache() public {
-        try rulesets.updateRulesetWeightCache(projectId) {} catch {}
+        try rulesets.updateRulesetWeightCache(projectId, rulesets.latestRulesetIdOf(projectId)) {} catch {}
     }
 }

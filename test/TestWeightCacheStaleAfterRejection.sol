@@ -25,8 +25,8 @@ contract AlwaysRejectApprovalHook is IJBRulesetApprovalHook {
 /// the base ruleset, but that base ruleset's cache could never be updated — causing
 /// deriveWeightFrom() to revert with WeightCacheRequired after >20,000 cycles.
 ///
-/// The fix makes updateRulesetWeightCache() walk back through rejected rulesets to find
-/// the effective base ruleset that currentOf() actually uses, and updates its cache.
+/// The fix adds a rulesetId parameter to updateRulesetWeightCache() so callers can
+/// specify exactly which ruleset's cache to update — typically the one currentOf() uses.
 contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
     IJBController private _controller;
     IJBRulesets private _rulesets;
@@ -148,9 +148,10 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
         // Warp beyond the 20,000-cycle cache threshold.
         vm.warp(block.timestamp + 20_001);
 
-        // Before the fix, currentOf() would revert here with WeightCacheRequired.
-        // After the fix, updateRulesetWeightCache walks back to A and updates A's cache.
-        _rulesets.updateRulesetWeightCache(_projectId);
+        // Before the fix, updateRulesetWeightCache only accepted projectId and always updated
+        // latestRulesetIdOf — which is the rejected B. A's cache could never be updated.
+        // After the fix, the caller passes the rulesetId of the active base ruleset (A).
+        _rulesets.updateRulesetWeightCache(_projectId, initial.id);
 
         // Now currentOf() should succeed because A's cache is populated.
         JBRuleset memory afterFix = _rulesets.currentOf(_projectId);
@@ -165,6 +166,9 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
     function test_weightCache_progressiveCachingForRejectedLatest() public {
         _projectId = _launchProject();
 
+        // Capture the base ruleset (A) ID before warping — after the warp, currentOf() would revert.
+        uint256 baseRulesetId = _rulesets.currentOf(_projectId).id;
+
         // Queue a rejected ruleset.
         vm.prank(_projectOwner);
         _controller.queueRulesetsOf({projectId: _projectId, rulesetConfigurations: _buildRejectedConfig(), memo: ""});
@@ -173,11 +177,11 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
         vm.warp(block.timestamp + 50_001);
 
         // First cache update covers up to 20k cycles.
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, baseRulesetId);
         // Second covers up to 40k.
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, baseRulesetId);
         // Third covers up to 50k.
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, baseRulesetId);
 
         // currentOf() should now work.
         JBRuleset memory current = _rulesets.currentOf(_projectId);
@@ -253,6 +257,9 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
             metadata: ""
         });
 
+        // Capture the base ruleset (A) ID before queuing a rejected one.
+        uint256 baseRulesetId = _rulesets.currentOf(_projectId).id;
+
         // Queue a rejected ruleset.
         vm.prank(_projectOwner);
         _controller.queueRulesetsOf({projectId: _projectId, rulesetConfigurations: _buildRejectedConfig(), memo: ""});
@@ -260,8 +267,8 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
         // Warp beyond 20k cycles.
         vm.warp(block.timestamp + 20_001);
 
-        // Update the cache (fix: this now updates A's cache, not B's).
-        _rulesets.updateRulesetWeightCache(_projectId);
+        // Update the cache for the active base ruleset (A), not the rejected latest (B).
+        _rulesets.updateRulesetWeightCache(_projectId, baseRulesetId);
 
         // Payments should succeed after cache update.
         vm.deal(payer, 1 ether);

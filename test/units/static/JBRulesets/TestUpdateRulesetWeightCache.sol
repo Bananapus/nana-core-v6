@@ -48,7 +48,7 @@ contract TestUpdateRulesetWeightCache_Local is JBRulesetsSetup {
     function test_WhenLatestRulesetOfProjectDurationOrWeightCutPercentEQZero() external {
         // it will return without updating
 
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, _rulesets.latestRulesetIdOf(_projectId));
     }
 
     function test_WhenLatestRulesetHasProperDurationAndWeightCutPercent() external {
@@ -86,6 +86,6 @@ contract TestUpdateRulesetWeightCache_Local is JBRulesetsSetup {
             mustStartAtOrAfter: _mustStartAt
         });
 
-        _rulesets.updateRulesetWeightCache(_projectId);
+        _rulesets.updateRulesetWeightCache(_projectId, _rulesets.latestRulesetIdOf(_projectId));
     }
 }

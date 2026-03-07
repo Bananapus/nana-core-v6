@@ -840,26 +840,16 @@ contract JBRulesets is JBControlled, IJBRulesets {
         return _getStructFor({projectId: projectId, rulesetId: rulesetId});
     }
 
-    /// @notice Cache the value of the ruleset weight.
+    /// @notice Cache the value of the ruleset weight for a specific ruleset.
+    /// @dev The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected
+    /// by an approval hook, `currentOf()` falls back to the base ruleset — callers should pass that base ruleset's
+    /// ID,
+    /// not the rejected latest.
     /// @param projectId The ID of the project having its ruleset weight cached.
-    function updateRulesetWeightCache(uint256 projectId) external override {
-        // Start from the latest queued ruleset.
-        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId]});
-
-        // If the latest ruleset was rejected by its approval hook, walk back to the base ruleset
-        // that currentOf() would actually use. Without this, the cache for the active base ruleset
-        // can never be updated, causing deriveWeightFrom to revert with WeightCacheRequired after
-        // >20,000 cycles — permanently DoSing the project.
-        {
-            JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: targetRuleset});
-            while (
-                approvalStatus != JBApprovalStatus.Approved && approvalStatus != JBApprovalStatus.Empty
-                    && targetRuleset.basedOnId != 0
-            ) {
-                targetRuleset = _getStructFor({projectId: projectId, rulesetId: targetRuleset.basedOnId});
-                approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: targetRuleset});
-            }
-        }
+    /// @param rulesetId The ID of the ruleset to update the cache for.
+    function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
+        // Get the target ruleset.
+        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
 
         // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
         // slither-disable-next-line incorrect-equality
