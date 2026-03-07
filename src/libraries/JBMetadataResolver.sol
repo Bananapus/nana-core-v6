@@ -123,7 +123,7 @@ library JBMetadataResolver {
         // Pad as needed - inlined for gas saving
         uint256 paddedLength =
             newMetadata.length % WORD_SIZE == 0 ? newMetadata.length : (newMetadata.length / WORD_SIZE + 1) * WORD_SIZE;
-        assembly {
+        assembly ("memory-safe") {
             mstore(newMetadata, paddedLength)
         }
 
@@ -135,7 +135,7 @@ library JBMetadataResolver {
         // Pad as needed
         paddedLength =
             newMetadata.length % WORD_SIZE == 0 ? newMetadata.length : (newMetadata.length / WORD_SIZE + 1) * WORD_SIZE;
-        assembly {
+        assembly ("memory-safe") {
             mstore(newMetadata, paddedLength)
         }
 
@@ -146,7 +146,7 @@ library JBMetadataResolver {
         paddedLength =
             newMetadata.length % WORD_SIZE == 0 ? newMetadata.length : (newMetadata.length / WORD_SIZE + 1) * WORD_SIZE;
 
-        assembly {
+        assembly ("memory-safe") {
             mstore(newMetadata, paddedLength)
         }
     }
@@ -192,7 +192,7 @@ library JBMetadataResolver {
         uint256 paddedLength = metadata.length % JBMetadataResolver.WORD_SIZE == 0
             ? metadata.length
             : (metadata.length / JBMetadataResolver.WORD_SIZE + 1) * JBMetadataResolver.WORD_SIZE;
-        assembly {
+        assembly ("memory-safe") {
             mstore(metadata, paddedLength)
         }
 
@@ -206,7 +206,7 @@ library JBMetadataResolver {
                 ? metadata.length
                 : (metadata.length / JBMetadataResolver.WORD_SIZE + 1) * JBMetadataResolver.WORD_SIZE;
 
-            assembly {
+            assembly ("memory-safe") {
                 mstore(metadata, paddedLength)
             }
         }
@@ -231,7 +231,7 @@ library JBMetadataResolver {
             uint256 currentOffset = uint256(uint8(metadata[i + ID_SIZE]));
 
             bytes4 parsedId;
-            assembly {
+            assembly ("memory-safe") {
                 parsedId := mload(add(add(metadata, 0x20), i))
             }
 
@@ -279,7 +279,7 @@ library JBMetadataResolver {
         pure
         returns (bytes memory slicedBytes)
     {
-        assembly {
+        assembly ("memory-safe") {
             let length := sub(end, start)
 
             // M-20: Allocate memory at freemem — round up to 32-byte boundary so subsequent
