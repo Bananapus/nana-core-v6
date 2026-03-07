@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import {JBRuleset} from "src/structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "src/structs/JBRulesetMetadata.sol";
