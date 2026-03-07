@@ -115,7 +115,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 
 ```solidity
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity 0.8.26;
 
 import {IJBController} from "@bananapus/core-v6/src/interfaces/IJBController.sol";
 import {IJBDirectory} from "@bananapus/core-v6/src/interfaces/IJBDirectory.sol";
