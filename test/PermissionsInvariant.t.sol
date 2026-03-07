@@ -14,7 +14,7 @@ import {JBPermissionsData} from "../src/structs/JBPermissionsData.sol";
 /// @notice Stateful handler for JBPermissions invariant testing.
 ///         Randomly sets, revokes, and checks permissions while tracking expected state.
 contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
-    JBPermissions public immutable permissions;
+    JBPermissions public immutable PERMISSIONS;
 
     address[] public accounts;
     address[] public operators;
@@ -34,7 +34,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
     uint256 public wildcardSetBlocked;
 
     constructor() {
-        permissions = new JBPermissions(address(0));
+        PERMISSIONS = new JBPermissions(address(0));
 
         accounts.push(makeAddr("accountA"));
         accounts.push(makeAddr("accountB"));
@@ -94,7 +94,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
 
         // Account sets permissions for itself.
         vm.prank(account);
-        permissions.setPermissionsFor(
+        PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: finalIds})
         );
 
@@ -121,7 +121,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         uint8[] memory emptyIds = new uint8[](0);
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: emptyIds})
         );
 
@@ -142,7 +142,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         rootPerms[0] = 1; // ROOT
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: rootPerms})
         );
 
@@ -152,7 +152,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
 
         // Now operator tries to forward ROOT to thirdParty.
         vm.prank(operator);
-        try permissions.setPermissionsFor(
+        try PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: thirdParty, projectId: projectId, permissionIds: rootPerms})
         ) {
             // Should not reach here.
@@ -175,7 +175,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         rootPerms[0] = 1;
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: rootPerms})
         );
 
@@ -187,7 +187,7 @@ contract PermissionsHandler is CommonBase, StdCheats, StdUtils {
         somePerms[0] = 5;
 
         vm.prank(operator);
-        try permissions.setPermissionsFor(
+        try PERMISSIONS.setPermissionsFor(
             account, JBPermissionsData({operator: thirdParty, projectId: 0, permissionIds: somePerms})
         ) {
             // Should not reach here.
@@ -216,7 +216,7 @@ contract PermissionsInvariantTest is Test {
 
     /// @notice Packed permissions in storage always match what was last set.
     function invariant_packedMatchesExpected() public view {
-        JBPermissions perms = handler.permissions();
+        JBPermissions perms = handler.PERMISSIONS();
 
         // Check all (operator, account, projectId) combinations.
         for (uint256 o; o < 3; o++) {
@@ -237,7 +237,7 @@ contract PermissionsInvariantTest is Test {
 
     /// @notice Bit 0 is never set in any stored permissions.
     function invariant_bit0NeverSet() public view {
-        JBPermissions perms = handler.permissions();
+        JBPermissions perms = handler.PERMISSIONS();
 
         for (uint256 o; o < 3; o++) {
             for (uint256 a; a < 3; a++) {
@@ -274,7 +274,7 @@ contract PermissionsInvariantTest is Test {
 
     /// @notice hasPermission returns true iff the bit is set (no false positives/negatives).
     function invariant_hasPermissionMatchesBits() public view {
-        JBPermissions perms = handler.permissions();
+        JBPermissions perms = handler.PERMISSIONS();
 
         // Spot-check a few permission IDs across all triples.
         uint256[5] memory checkIds = [uint256(1), 2, 5, 42, 255];
@@ -303,20 +303,20 @@ contract PermissionsInvariantTest is Test {
 /// @notice Formal property tests for JBPermissions bit-packing roundtrip
 ///         and hasPermissions batch logic.
 contract PermissionsBitPackingTest is Test {
-    JBPermissions permissions;
+    JBPermissions perms;
 
     address account = makeAddr("account");
     address operator = makeAddr("operator");
     uint56 projectId = 7;
 
     function setUp() public {
-        permissions = new JBPermissions(address(0));
+        perms = new JBPermissions(address(0));
     }
 
     /// @notice hasPermissions with an empty array returns true (vacuous truth).
     function test_hasPermissions_emptyArray_returnsTrue() public view {
         uint256[] memory empty = new uint256[](0);
-        bool result = permissions.hasPermissions(operator, account, projectId, empty, false, false);
+        bool result = perms.hasPermissions(operator, account, projectId, empty, false, false);
         assertTrue(result, "Empty permission array should return true (vacuous truth)");
     }
 
@@ -333,26 +333,26 @@ contract PermissionsBitPackingTest is Test {
         ids[2] = id3;
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        perms.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: ids})
         );
 
         // Each set ID should return true.
         assertTrue(
-            permissions.hasPermission(operator, account, projectId, id1, false, false),
+            perms.hasPermission(operator, account, projectId, id1, false, false),
             "id1 should be set"
         );
         assertTrue(
-            permissions.hasPermission(operator, account, projectId, id2, false, false),
+            perms.hasPermission(operator, account, projectId, id2, false, false),
             "id2 should be set"
         );
         assertTrue(
-            permissions.hasPermission(operator, account, projectId, id3, false, false),
+            perms.hasPermission(operator, account, projectId, id3, false, false),
             "id3 should be set"
         );
 
         // Verify the packed value has exactly the right bits.
-        uint256 packed = permissions.permissionsOf(operator, account, projectId);
+        uint256 packed = perms.permissionsOf(operator, account, projectId);
         uint256 expectedPacked = (uint256(1) << id1) | (uint256(1) << id2) | (uint256(1) << id3);
         assertEq(packed, expectedPacked, "Packed value should exactly match OR of set bits");
 
@@ -368,28 +368,28 @@ contract PermissionsBitPackingTest is Test {
         ids[2] = 200;
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        perms.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: ids})
         );
 
-        // All three set → true.
+        // All three set -> true.
         uint256[] memory check3 = new uint256[](3);
         check3[0] = 5;
         check3[1] = 10;
         check3[2] = 200;
         assertTrue(
-            permissions.hasPermissions(operator, account, projectId, check3, false, false),
+            perms.hasPermissions(operator, account, projectId, check3, false, false),
             "All three should pass"
         );
 
-        // Missing one (15 not set) → false.
+        // Missing one (15 not set) -> false.
         uint256[] memory check4 = new uint256[](4);
         check4[0] = 5;
         check4[1] = 10;
         check4[2] = 200;
         check4[3] = 15;
         assertFalse(
-            permissions.hasPermissions(operator, account, projectId, check4, false, false),
+            perms.hasPermissions(operator, account, projectId, check4, false, false),
             "Missing permission 15 should fail batch check"
         );
     }
@@ -406,7 +406,7 @@ contract PermissionsBitPackingTest is Test {
         emit IJBPermissions.OperatorPermissionsSet(operator, account, projectId, ids, expectedPacked, account);
 
         vm.prank(account);
-        permissions.setPermissionsFor(
+        perms.setPermissionsFor(
             account, JBPermissionsData({operator: operator, projectId: projectId, permissionIds: ids})
         );
     }
