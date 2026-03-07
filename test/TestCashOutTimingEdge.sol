@@ -92,7 +92,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         _controller.deployERC20For(_projectId, "Test", "TST", bytes32(0));
     }
 
-    /// @notice CONFIRMATION: Pending reserves inflate totalSupply, reducing cash-out value.
+    /// @notice Pending reserves inflate totalSupply, reducing cash-out value.
     /// When reserves exist but haven't been distributed, totalTokenSupplyWithReservedTokensOf
     /// includes them in the denominator, making each token worth less.
     function test_pendingReserves_inflateSupply_reduceCashOut() external {
@@ -134,7 +134,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
             surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, cashOutTaxRate: 5000
         });
 
-        // CONFIRMED: Cash-out with pending reserves is LESS than without.
+        // Cash-out with pending reserves is LESS than without.
         assertLt(reclaimWithInflation, reclaimWithoutInflation, "Pending reserves reduce cash-out value");
 
         // Quantify the impact.
@@ -177,7 +177,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         assertEq(totalAfter, totalBefore, "Total supply unchanged after distribution");
 
         // Cash-out value should be the same since total didn't change.
-        // The fix would be: don't include pending reserves in totalSupply.
+        // One approach: don't include pending reserves in totalSupply.
         uint256 reclaimAfter = JBCashOuts.cashOutFrom({
             surplus: surplus, cashOutCount: payerTokens, totalSupply: totalAfter, cashOutTaxRate: 5000
         });

@@ -238,7 +238,7 @@ contract TestPrices_Local is JBPricesSetup {
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (PROJECT_ID)), abi.encode(address(this))
         );
 
-        // BUG CONFIRMED: This reverts because default feed blocks project-specific feeds.
+        // This reverts because default feed blocks project-specific feeds.
         vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, defaultFeed));
         _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, projectFeed);
     }

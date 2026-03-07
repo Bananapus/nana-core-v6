@@ -116,7 +116,7 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         });
     }
 
-    /// @notice CONFIRMED: Pay → distribute payouts (holds fees) → migrate → fees stranded.
+    /// @notice Pay → distribute payouts (holds fees) → migrate → fees stranded.
     function test_migration_heldFeesStranded() external {
         // Step 1: Pay the project.
         _terminal.pay{value: PAY_AMOUNT}({
