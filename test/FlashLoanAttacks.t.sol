@@ -262,13 +262,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Test 5: C-5 variant — addToBalance → cashOut(0) with totalSupply==0
+    //  Test 5: C-5 regression — cashOut(0) with totalSupply==0 must return 0
     // ═══════════════════════════════════════════════════════════════════
 
-    /// @notice C-5 KNOWN FINDING: cashOut(0) with totalSupply==0 returns the entire surplus.
-    /// @dev This is the known C-5 critical finding from the audit. When totalSupply==0 and
-    /// cashOutCount==0, the cashOut formula returns the full surplus to the caller.
-    /// This test documents the finding and verifies it's present in V5 (fixed in V5.1).
+    /// @notice C-5 was a V5 audit finding where cashOut(0) with totalSupply==0 returned the entire surplus.
+    /// @dev In V5, `cashOutCount >= totalSupply` (0 >= 0) was true and returned the full surplus before
+    /// checking for zero cashOutCount. Fixed since V5.1: `JBCashOuts.cashOutFrom` returns 0 when
+    /// cashOutCount==0 (line 31) before reaching the `cashOutCount >= totalSupply` check (line 37).
+    /// This test verifies the fix holds.
     function test_C5_variant_addToBalance_zeroCashOut() public {
         // Add to balance when no tokens exist
         vm.deal(address(0xD000), 5 ether);
@@ -282,7 +283,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             metadata: new bytes(0)
         });
 
-        // C-5: cashOut(0) with totalSupply==0 returns full surplus
+        // cashOut(0) with totalSupply==0 must reclaim nothing.
         address attacker = address(0xA77AC0);
         vm.prank(attacker);
         uint256 reclaimAmount = jbMultiTerminal()
@@ -296,13 +297,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
                 metadata: new bytes(0)
             });
 
-        // C-5: This SHOULD be 0, but the bug allows extraction of entire surplus.
-        // Documenting the known critical finding.
-        if (reclaimAmount > 0) {
-            emit log_named_uint("C-5 CONFIRMED: cashOut(0) extracted surplus", reclaimAmount);
-        }
-        // Test passes either way to document behavior
-        assertTrue(true, "C-5 documented");
+        assertEq(reclaimAmount, 0, "C-5 regression: cashOut(0) must return 0");
     }
 
     // ═══════════════════════════════════════════════════════════════════
