@@ -1,4 +1,4 @@
-# nana-core-v6
+# Juicebox Core
 
 ## Purpose
 

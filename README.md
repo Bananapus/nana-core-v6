@@ -1,4 +1,4 @@
-# nana-core-v6
+# Juicebox Core
 
 The core protocol contracts for Juicebox V6 on EVM. A flexible toolkit for launching and managing a treasury-backed token on Ethereum and L2s.
 
