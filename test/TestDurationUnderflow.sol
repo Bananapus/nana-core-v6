@@ -21,7 +21,7 @@ contract JBRulesetsHarness is JBRulesets {
     }
 }
 
-/// @notice Tests for M-19: duration underflow fix in `_simulateCycledRulesetBasedOn`.
+/// @notice Tests for duration underflow fix in `_simulateCycledRulesetBasedOn`.
 ///
 /// The fix guards against arithmetic underflow when `baseRuleset.duration >= block.timestamp`.
 /// Without the fix, `block.timestamp - baseRuleset.duration + 1` wraps around to ~2^256,

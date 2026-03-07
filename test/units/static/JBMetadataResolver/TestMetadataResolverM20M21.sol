@@ -62,7 +62,7 @@ contract M20M21Harness {
     }
 }
 
-/// @notice Tests for M-20 (_sliceBytes over-copy) and M-21 (addToMetadata offset overflow).
+/// @notice Tests for _sliceBytes over-copy and addToMetadata offset overflow.
 contract TestMetadataResolverM20M21 is JBTest {
     M20M21Harness harness;
 
@@ -71,13 +71,13 @@ contract TestMetadataResolverM20M21 is JBTest {
     }
 
     //*********************************************************************//
-    // --- M-20: _sliceBytes memory over-copy --------------------------- //
+    // --- _sliceBytes memory over-copy --------------------------------- //
     //*********************************************************************//
 
     /// @notice Verifies that addToMetadata preserves all entries when adding to metadata with
     /// multiple existing entries. The _sliceBytes call at line 129 uses start > 0, which on
     /// the buggy code would over-copy and corrupt subsequent memory operations.
-    function test_M20_addToMetadataPreservesAllEntries() external view {
+    function test_addToMetadataPreservesAllEntries() external view {
         bytes4 id1 = bytes4(0x11111111);
         bytes4 id2 = bytes4(0x22222222);
         bytes4 id3 = bytes4(0x33333333);
@@ -116,7 +116,7 @@ contract TestMetadataResolverM20M21 is JBTest {
 
     /// @notice Test with 4 sequential addToMetadata calls, each exercising _sliceBytes.
     /// More entries = more start > 0 cases = more chances for memory corruption.
-    function test_M20_multipleSequentialAdds() external view {
+    function test_multipleSequentialAdds() external view {
         bytes4[5] memory ids =
             [bytes4(0x11111111), bytes4(0x22222222), bytes4(0x33333333), bytes4(0x44444444), bytes4(0x55555555)];
         uint256[5] memory vals = [uint256(100), uint256(200), uint256(300), uint256(400), uint256(500)];
@@ -144,7 +144,7 @@ contract TestMetadataResolverM20M21 is JBTest {
     /// @notice Verify that getDataFor returns the exact expected length for non-first entries.
     /// On buggy code, _sliceBytes copies more than needed, but the returned length should still
     /// be correct. This test verifies both length and content.
-    function test_M20_getDataForReturnsCorrectLength() external view {
+    function test_getDataForReturnsCorrectLength() external view {
         bytes4 id1 = bytes4(0xAAAAAAAA);
         bytes4 id2 = bytes4(0xBBBBBBBB);
 
@@ -172,14 +172,14 @@ contract TestMetadataResolverM20M21 is JBTest {
     }
 
     //*********************************************************************//
-    // --- M-21: addToMetadata offset overflow -------------------------- //
+    // --- addToMetadata offset overflow -------------------------------- //
     //*********************************************************************//
 
     /// @notice Verifies that addToMetadata reverts when the new offset would exceed 255.
     /// Uses 6 entries (table = 1 word, 30 bytes) with data totaling 253 words → total 255 words.
     /// Adding a 7th entry via addToMetadata forces the table from 1→2 words, incrementing all
     /// offsets by 1. This pushes newOffset from 255 to 256, triggering the overflow check.
-    function test_M21_addToMetadataRevertsOnOffsetOverflow() external {
+    function test_addToMetadataRevertsOnOffsetOverflow() external {
         // 6 entries: table = ceil(6*5/32) = 1 word. firstOffset = 2.
         // 5 entries × 42 words + 1 entry × 43 words = 253 words of data.
         // Total = 1 (reserved) + 1 (table) + 253 (data) = 255 words.
@@ -213,7 +213,7 @@ contract TestMetadataResolverM20M21 is JBTest {
     /// @notice Verifies that addToMetadata works when the offset is exactly at the boundary (255).
     /// Same 6-entry table expansion setup but with 1 less data word (total 254 words),
     /// so the expanded offset is exactly 255 — the maximum valid value.
-    function test_M21_addToMetadataSucceedsAtBoundary() external view {
+    function test_addToMetadataSucceedsAtBoundary() external view {
         // 6 entries × 42 words each = 252 words of data.
         // Total = 1 (reserved) + 1 (table) + 252 (data) = 254 words.
         bytes4[] memory ids = new bytes4[](6);

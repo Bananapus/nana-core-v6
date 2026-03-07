@@ -262,15 +262,15 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Test 5: C-5 regression — cashOut(0) with totalSupply==0 must return 0
+    //  Test 5: Regression — cashOut(0) with totalSupply==0 must return 0
     // ═══════════════════════════════════════════════════════════════════
 
-    /// @notice C-5 was a V5 audit finding where cashOut(0) with totalSupply==0 returned the entire surplus.
+    /// @notice Regression test: cashOut(0) with totalSupply==0 previously returned the entire surplus.
     /// @dev In V5, `cashOutCount >= totalSupply` (0 >= 0) was true and returned the full surplus before
     /// checking for zero cashOutCount. Fixed since V5.1: `JBCashOuts.cashOutFrom` returns 0 when
     /// cashOutCount==0 (line 31) before reaching the `cashOutCount >= totalSupply` check (line 37).
     /// This test verifies the fix holds.
-    function test_C5_variant_addToBalance_zeroCashOut() public {
+    function test_variant_addToBalance_zeroCashOut() public {
         // Add to balance when no tokens exist
         vm.deal(address(0xD000), 5 ether);
         vm.prank(address(0xD000));
@@ -297,7 +297,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
                 metadata: new bytes(0)
             });
 
-        assertEq(reclaimAmount, 0, "C-5 regression: cashOut(0) must return 0");
+        assertEq(reclaimAmount, 0, "Regression: cashOut(0) must return 0");
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -350,11 +350,11 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Test 8: H-4 reserved token inflation — cashOut timing
+    //  Test 8: Reserved token inflation — cashOut timing
     // ═══════════════════════════════════════════════════════════════════
 
     function test_reservedTokenInflation_cashOutTiming() public {
-        // Launch a project with 20% reserved to test H-4
+        // Launch a project with 20% reserved to test inflation
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
         rulesetConfig[0].mustStartAtOrAfter = 0;
         rulesetConfig[0].duration = 0;

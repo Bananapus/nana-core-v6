@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 
-/// @notice Confirms M-16: held fees are stranded when a terminal migrates.
+/// @notice Confirms held fees are stranded when a terminal migrates.
 /// The migration calls addToBalanceOf with shouldReturnHeldFees: false,
 /// leaving held fees in the old terminal with no balance to process them.
 contract TestMigrationHeldFees_Local is TestBaseWorkflow {
@@ -116,7 +116,7 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         });
     }
 
-    /// @notice M-16 CONFIRMED: Pay → distribute payouts (holds fees) → migrate → fees stranded.
+    /// @notice CONFIRMED: Pay → distribute payouts (holds fees) → migrate → fees stranded.
     function test_migration_heldFeesStranded() external {
         // Step 1: Pay the project.
         _terminal.pay{value: PAY_AMOUNT}({
@@ -156,7 +156,7 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
 
         // Held fees still exist in old terminal.
         JBFee[] memory feesAfterMigration = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
-        assertEq(feesAfterMigration.length, heldFees.length, "M-16: Held fees remain in old terminal");
+        assertEq(feesAfterMigration.length, heldFees.length, "Held fees remain in old terminal");
     }
 
     /// @notice Process held fees FIRST, then migrate — correct approach.
@@ -244,6 +244,6 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         // The fee processing attempted but the terminal has no actual ETH.
         // The _recordAddedBalanceFor in the catch block inflates the store balance
         // without actual funds — this is a phantom balance.
-        // This documents the M-16 issue: either fees are lost OR phantom balances are created.
+        // This documents the issue: either fees are lost OR phantom balances are created.
     }
 }

@@ -22,7 +22,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
     }
 }
 
-    /// @notice Mock approval hook that always reverts (for DoS testing — H-3 confirmation).
+    /// @notice Mock approval hook that always reverts (for DoS testing).
     contract RevertingApprovalHook is IJBRulesetApprovalHook {
         uint256 public constant override DURATION = 3 days;
 
@@ -296,10 +296,10 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
             assertGt(current.cycleNumber, 1, "Should have rolled over multiple cycles");
         }
 
-        /// @notice H-3 FIX VERIFICATION: Reverting approval hook no longer causes DoS.
+        /// @notice FIX VERIFICATION: Reverting approval hook no longer causes DoS.
         /// The try/catch in _approvalStatusOf catches the revert and returns Failed status,
         /// so currentOf succeeds and falls back to the previous ruleset.
-        function test_approvalHook_revert_causesDoS_H3() external {
+        function test_approvalHook_revert_causesDoS() external {
             RevertingApprovalHook revertHook = new RevertingApprovalHook();
 
             uint256 pid = _launchProject(FOURTEEN_DAYS, INITIAL_WEIGHT, 0, IJBRulesetApprovalHook(address(revertHook)));
@@ -310,7 +310,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
             // Warp past current cycle so the queued one is checked.
             vm.warp(block.timestamp + FOURTEEN_DAYS);
 
-            // H-3 FIX: The reverting hook is caught by try/catch, treated as Failed.
+            // FIX: The reverting hook is caught by try/catch, treated as Failed.
             // currentOf succeeds and falls back to the original ruleset (weight not doubled).
             JBRuleset memory current = _rulesets.currentOf(pid);
             assertGt(current.id, 0, "currentOf should succeed, not revert");
