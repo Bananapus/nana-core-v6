@@ -3,8 +3,8 @@ pragma solidity ^0.8.0;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {JBRuleset} from "./../structs/JBRuleset.sol";
 import {JBApprovalStatus} from "./../enums/JBApprovalStatus.sol";
+import {JBRuleset} from "./../structs/JBRuleset.sol";
 
 /// @notice Determines whether the next ruleset in a project's queue is approved or rejected.
 /// @dev Project rulesets are stored in a queue. Rulesets take effect after the previous ruleset in the queue ends, and

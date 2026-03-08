@@ -3,9 +3,9 @@ pragma solidity 0.8.26;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {JBRuleset} from "./structs/JBRuleset.sol";
 import {JBApprovalStatus} from "./enums/JBApprovalStatus.sol";
 import {IJBRulesetApprovalHook} from "./interfaces/IJBRulesetApprovalHook.sol";
+import {JBRuleset} from "./structs/JBRuleset.sol";
 
 /// @notice `JBDeadline` is a ruleset approval hook which rejects rulesets if they are not queued at least `duration`
 /// seconds before the current ruleset ends. In other words, rulesets must be queued before the deadline to take effect.

@@ -58,6 +58,88 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     constructor(IJBDirectory directory) JBControlled(directory) {}
 
     //*********************************************************************//
+    // ---------------------- external transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Sets limits on the amount of funds a project can access from its terminals during a ruleset.
+    /// @dev Only a project's controller can set its fund access limits.
+    /// @dev Payout limits and surplus allowances must be specified in strictly increasing order (by currency) to
+    /// prevent duplicates.
+    /// @param projectId The ID of the project whose fund access limits are being set.
+    /// @param rulesetId The ID of the ruleset that the limits will apply within.
+    /// @param fundAccessLimitGroups An array containing payout limits and surplus allowances for each payment terminal.
+    /// Amounts are fixed point numbers using the same number of decimals as the associated terminal.
+    function setFundAccessLimitsFor(
+        uint256 projectId,
+        uint256 rulesetId,
+        JBFundAccessLimitGroup[] calldata fundAccessLimitGroups
+    )
+        external
+        override
+        onlyControllerOf(projectId)
+    {
+        // Save the number of fund access limit groups.
+        uint256 numberOfFundAccessLimitGroups = fundAccessLimitGroups.length;
+
+        // Set payout limits if there are any.
+        for (uint256 i; i < numberOfFundAccessLimitGroups; i++) {
+            // Set the limits being iterated on.
+            JBFundAccessLimitGroup calldata fundAccessLimitGroup = fundAccessLimitGroups[i];
+
+            // Keep a reference to the number of payout limits.
+            uint256 numberOfPayoutLimits = fundAccessLimitGroup.payoutLimits.length;
+
+            // Iterate through each payout limit to validate and store them.
+            for (uint256 j; j < numberOfPayoutLimits; j++) {
+                // Set the payout limit being iterated on.
+                JBCurrencyAmount calldata payoutLimit = fundAccessLimitGroup.payoutLimits[j];
+
+                // Make sure the payout limits are passed in strictly increasing order (sorted by currency) to prevent
+                // duplicates.
+                if (j != 0 && payoutLimit.currency <= fundAccessLimitGroup.payoutLimits[j - 1].currency) {
+                    revert JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering();
+                }
+
+                // Set the payout limit if there is one.
+                if (payoutLimit.amount > 0) {
+                    _packedPayoutLimitsDataOf[projectId][rulesetId][fundAccessLimitGroup.terminal][fundAccessLimitGroup.token].push(
+                        uint256(payoutLimit.amount) | (uint256(payoutLimit.currency) << 224)
+                    );
+                }
+            }
+
+            // Keep a reference to the number of surplus allowances.
+            uint256 numberOfSurplusAllowances = fundAccessLimitGroup.surplusAllowances.length;
+
+            // Iterate through each surplus allowance to validate and store them.
+            for (uint256 j; j < numberOfSurplusAllowances; j++) {
+                // Set the surplus allowance being iterated on.
+                JBCurrencyAmount calldata surplusAllowance = fundAccessLimitGroup.surplusAllowances[j];
+
+                // Make sure the surplus allowances are passed in strictly increasing order (sorted by currency) to
+                // prevent duplicates.
+                if (j != 0 && surplusAllowance.currency <= fundAccessLimitGroup.surplusAllowances[j - 1].currency) {
+                    revert JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering();
+                }
+
+                // Set the surplus allowance if there is one.
+                if (surplusAllowance.amount > 0) {
+                    _packedSurplusAllowancesDataOf[projectId][rulesetId][fundAccessLimitGroup.terminal][fundAccessLimitGroup.token].push(
+                        uint256(surplusAllowance.amount) | (uint256(surplusAllowance.currency) << 224)
+                    );
+                }
+            }
+
+            emit SetFundAccessLimits({
+                rulesetId: rulesetId,
+                projectId: projectId,
+                fundAccessLimitGroup: fundAccessLimitGroup,
+                caller: msg.sender
+            });
+        }
+    }
+
+    //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
@@ -220,88 +302,6 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             // The limit is in bits 0-223. The currency is in bits 224-255.
             surplusAllowances[i] = JBCurrencyAmount({
                 currency: uint32(packedSurplusAllowanceData >> 224), amount: uint224(packedSurplusAllowanceData)
-            });
-        }
-    }
-
-    //*********************************************************************//
-    // --------------------- external transactions ----------------------- //
-    //*********************************************************************//
-
-    /// @notice Sets limits on the amount of funds a project can access from its terminals during a ruleset.
-    /// @dev Only a project's controller can set its fund access limits.
-    /// @dev Payout limits and surplus allowances must be specified in strictly increasing order (by currency) to
-    /// prevent duplicates.
-    /// @param projectId The ID of the project whose fund access limits are being set.
-    /// @param rulesetId The ID of the ruleset that the limits will apply within.
-    /// @param fundAccessLimitGroups An array containing payout limits and surplus allowances for each payment terminal.
-    /// Amounts are fixed point numbers using the same number of decimals as the associated terminal.
-    function setFundAccessLimitsFor(
-        uint256 projectId,
-        uint256 rulesetId,
-        JBFundAccessLimitGroup[] calldata fundAccessLimitGroups
-    )
-        external
-        override
-        onlyControllerOf(projectId)
-    {
-        // Save the number of fund access limit groups.
-        uint256 numberOfFundAccessLimitGroups = fundAccessLimitGroups.length;
-
-        // Set payout limits if there are any.
-        for (uint256 i; i < numberOfFundAccessLimitGroups; i++) {
-            // Set the limits being iterated on.
-            JBFundAccessLimitGroup calldata fundAccessLimitGroup = fundAccessLimitGroups[i];
-
-            // Keep a reference to the number of payout limits.
-            uint256 numberOfPayoutLimits = fundAccessLimitGroup.payoutLimits.length;
-
-            // Iterate through each payout limit to validate and store them.
-            for (uint256 j; j < numberOfPayoutLimits; j++) {
-                // Set the payout limit being iterated on.
-                JBCurrencyAmount calldata payoutLimit = fundAccessLimitGroup.payoutLimits[j];
-
-                // Make sure the payout limits are passed in strictly increasing order (sorted by currency) to prevent
-                // duplicates.
-                if (j != 0 && payoutLimit.currency <= fundAccessLimitGroup.payoutLimits[j - 1].currency) {
-                    revert JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering();
-                }
-
-                // Set the payout limit if there is one.
-                if (payoutLimit.amount > 0) {
-                    _packedPayoutLimitsDataOf[projectId][rulesetId][fundAccessLimitGroup.terminal][fundAccessLimitGroup.token].push(
-                        uint256(payoutLimit.amount) | (uint256(payoutLimit.currency) << 224)
-                    );
-                }
-            }
-
-            // Keep a reference to the number of surplus allowances.
-            uint256 numberOfSurplusAllowances = fundAccessLimitGroup.surplusAllowances.length;
-
-            // Iterate through each surplus allowance to validate and store them.
-            for (uint256 j; j < numberOfSurplusAllowances; j++) {
-                // Set the surplus allowance being iterated on.
-                JBCurrencyAmount calldata surplusAllowance = fundAccessLimitGroup.surplusAllowances[j];
-
-                // Make sure the surplus allowances are passed in strictly increasing order (sorted by currency) to
-                // prevent duplicates.
-                if (j != 0 && surplusAllowance.currency <= fundAccessLimitGroup.surplusAllowances[j - 1].currency) {
-                    revert JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering();
-                }
-
-                // Set the surplus allowance if there is one.
-                if (surplusAllowance.amount > 0) {
-                    _packedSurplusAllowancesDataOf[projectId][rulesetId][fundAccessLimitGroup.terminal][fundAccessLimitGroup.token].push(
-                        uint256(surplusAllowance.amount) | (uint256(surplusAllowance.currency) << 224)
-                    );
-                }
-            }
-
-            emit SetFundAccessLimits({
-                rulesetId: rulesetId,
-                projectId: projectId,
-                fundAccessLimitGroup: fundAccessLimitGroup,
-                caller: msg.sender
             });
         }
     }

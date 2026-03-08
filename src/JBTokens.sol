@@ -71,47 +71,6 @@ contract JBTokens is JBControlled, IJBTokens {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice The total balance a holder has for a specified project, including both tokens and token credits.
-    /// @param holder The holder to get a balance for.
-    /// @param projectId The project to get the `holder`'s balance for.
-    /// @return balance The combined token and token credit balance of the `holder`.
-    function totalBalanceOf(address holder, uint256 projectId) external view override returns (uint256 balance) {
-        // Get a reference to the holder's credits for the project.
-        balance = creditBalanceOf[holder][projectId];
-
-        // Get a reference to the project's current token.
-        IJBToken token = tokenOf[projectId];
-
-        // If the project has a current token, add the holder's balance to the total.
-        if (token != IJBToken(address(0))) {
-            balance += token.balanceOf(holder);
-        }
-    }
-
-    //*********************************************************************//
-    // --------------------------- public views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice The total supply for a specific project, including both tokens and token credits.
-    /// @param projectId The ID of the project to get the total supply of.
-    /// @return totalSupply The total supply of the project's tokens and token credits.
-    function totalSupplyOf(uint256 projectId) public view override returns (uint256 totalSupply) {
-        // Get a reference to the total supply of the project's credits
-        totalSupply = totalCreditSupplyOf[projectId];
-
-        // Get a reference to the project's current token.
-        IJBToken token = tokenOf[projectId];
-
-        // If the project has a current token, add its total supply to the total.
-        if (token != IJBToken(address(0))) {
-            totalSupply += token.totalSupply();
-        }
-    }
-
-    //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
@@ -372,5 +331,46 @@ contract JBTokens is JBControlled, IJBTokens {
         emit TransferCredits({
             holder: holder, projectId: projectId, recipient: recipient, count: count, caller: msg.sender
         });
+    }
+
+    //*********************************************************************//
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice The total balance a holder has for a specified project, including both tokens and token credits.
+    /// @param holder The holder to get a balance for.
+    /// @param projectId The project to get the `holder`'s balance for.
+    /// @return balance The combined token and token credit balance of the `holder`.
+    function totalBalanceOf(address holder, uint256 projectId) external view override returns (uint256 balance) {
+        // Get a reference to the holder's credits for the project.
+        balance = creditBalanceOf[holder][projectId];
+
+        // Get a reference to the project's current token.
+        IJBToken token = tokenOf[projectId];
+
+        // If the project has a current token, add the holder's balance to the total.
+        if (token != IJBToken(address(0))) {
+            balance += token.balanceOf(holder);
+        }
+    }
+
+    //*********************************************************************//
+    // --------------------------- public views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice The total supply for a specific project, including both tokens and token credits.
+    /// @param projectId The ID of the project to get the total supply of.
+    /// @return totalSupply The total supply of the project's tokens and token credits.
+    function totalSupplyOf(uint256 projectId) public view override returns (uint256 totalSupply) {
+        // Get a reference to the total supply of the project's credits
+        totalSupply = totalCreditSupplyOf[projectId];
+
+        // Get a reference to the project's current token.
+        IJBToken token = tokenOf[projectId];
+
+        // If the project has a current token, add its total supply to the total.
+        if (token != IJBToken(address(0))) {
+            totalSupply += token.totalSupply();
+        }
     }
 }

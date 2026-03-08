@@ -4,7 +4,6 @@ evm_version = 'paris'
 optimizer_runs = 200
 libs = ["node_modules", "lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
-match_contract = "_Local"
 
 [profile.ci_sizes]
 optimizer_runs = 200

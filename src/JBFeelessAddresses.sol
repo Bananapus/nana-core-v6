@@ -27,18 +27,6 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     constructor(address owner) Ownable(owner) {}
 
     //*********************************************************************//
-    // -------------------------- public views --------------------------- //
-    //*********************************************************************//
-
-    /// @notice Indicates whether this contract adheres to the specified interface.
-    /// @dev See {IERC165-supportsInterface}.
-    /// @param interfaceId The ID of the interface to check for adherence to.
-    /// @return A flag indicating if the provided interface ID is supported.
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IJBFeelessAddresses).interfaceId || interfaceId == type(IERC165).interfaceId;
-    }
-
-    //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
@@ -50,5 +38,17 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
         isFeeless[addr] = flag;
 
         emit SetFeelessAddress({addr: addr, isFeeless: flag, caller: _msgSender()});
+    }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice Indicates whether this contract adheres to the specified interface.
+    /// @dev See {IERC165-supportsInterface}.
+    /// @param interfaceId The ID of the interface to check for adherence to.
+    /// @return A flag indicating if the provided interface ID is supported.
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IJBFeelessAddresses).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }

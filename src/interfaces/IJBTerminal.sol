@@ -9,16 +9,47 @@ import {JBAfterPayRecordedContext} from "../structs/JBAfterPayRecordedContext.so
 
 /// @notice A terminal that accepts payments and can be migrated.
 interface IJBTerminal is IERC165 {
+    /// @notice Funds were added to a project's balance.
+    /// @param projectId The ID of the project that received the funds.
+    /// @param amount The amount of tokens added.
+    /// @param returnedFees The amount of fees returned.
+    /// @param memo A memo associated with the addition.
+    /// @param metadata Extra metadata associated with the addition.
+    /// @param caller The address that added the funds.
     event AddToBalance(
         uint256 indexed projectId, uint256 amount, uint256 returnedFees, string memo, bytes metadata, address caller
     );
+
+    /// @notice A pay hook was called after a payment was recorded.
+    /// @param hook The pay hook that was called.
+    /// @param context The context passed to the hook.
+    /// @param specificationAmount The amount specified for the hook.
+    /// @param caller The address that called the pay function.
     event HookAfterRecordPay(
         IJBPayHook indexed hook, JBAfterPayRecordedContext context, uint256 specificationAmount, address caller
     );
 
+    /// @notice A project's balance was migrated to another terminal.
+    /// @param projectId The ID of the project that was migrated.
+    /// @param token The token that was migrated.
+    /// @param to The terminal the balance was migrated to.
+    /// @param amount The amount of tokens migrated.
+    /// @param caller The address that called the migrate function.
     event MigrateTerminal(
         uint256 indexed projectId, address indexed token, IJBTerminal indexed to, uint256 amount, address caller
     );
+
+    /// @notice A payment was made to a project.
+    /// @param rulesetId The ID of the ruleset during the payment.
+    /// @param rulesetCycleNumber The cycle number of the ruleset during the payment.
+    /// @param projectId The ID of the project that received the payment.
+    /// @param payer The address that made the payment.
+    /// @param beneficiary The address that received the project tokens.
+    /// @param amount The amount of tokens paid.
+    /// @param newlyIssuedTokenCount The number of project tokens minted.
+    /// @param memo A memo associated with the payment.
+    /// @param metadata Extra metadata associated with the payment.
+    /// @param caller The address that called the pay function.
     event Pay(
         uint256 indexed rulesetId,
         uint256 indexed rulesetCycleNumber,
@@ -31,6 +62,11 @@ interface IJBTerminal is IERC165 {
         bytes metadata,
         address caller
     );
+
+    /// @notice An accounting context was set for a project's token.
+    /// @param projectId The ID of the project the accounting context was set for.
+    /// @param context The accounting context that was set.
+    /// @param caller The address that set the accounting context.
     event SetAccountingContext(uint256 indexed projectId, JBAccountingContext context, address caller);
 
     /// @notice Returns the accounting context for a project's token.

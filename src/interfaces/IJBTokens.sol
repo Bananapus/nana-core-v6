@@ -5,9 +5,13 @@ import {IJBToken} from "./IJBToken.sol";
 
 /// @notice Manages minting, burning, and balances of projects' tokens and token credits.
 interface IJBTokens {
-    event DeployERC20(
-        uint256 indexed projectId, IJBToken indexed token, string name, string symbol, bytes32 salt, address caller
-    );
+    /// @notice Tokens or credits were burned from a holder's balance.
+    /// @param holder The address whose tokens were burned.
+    /// @param projectId The ID of the project whose tokens were burned.
+    /// @param count The number of tokens burned.
+    /// @param creditBalance The holder's remaining credit balance after the burn.
+    /// @param tokenBalance The holder's remaining token balance after the burn.
+    /// @param caller The address that called the burn function.
     event Burn(
         address indexed holder,
         uint256 indexed projectId,
@@ -16,6 +20,14 @@ interface IJBTokens {
         uint256 tokenBalance,
         address caller
     );
+
+    /// @notice Credits were claimed as ERC-20 tokens.
+    /// @param holder The address whose credits were claimed.
+    /// @param projectId The ID of the project whose tokens were claimed.
+    /// @param creditBalance The holder's remaining credit balance after the claim.
+    /// @param count The number of tokens claimed.
+    /// @param beneficiary The address that received the claimed tokens.
+    /// @param caller The address that called the claim function.
     event ClaimTokens(
         address indexed holder,
         uint256 indexed projectId,
@@ -24,10 +36,40 @@ interface IJBTokens {
         address beneficiary,
         address caller
     );
+
+    /// @notice An ERC-20 token was deployed for a project.
+    /// @param projectId The ID of the project the token was deployed for.
+    /// @param token The deployed token.
+    /// @param name The token's name.
+    /// @param symbol The token's symbol.
+    /// @param salt The salt used for deterministic deployment.
+    /// @param caller The address that deployed the token.
+    event DeployERC20(
+        uint256 indexed projectId, IJBToken indexed token, string name, string symbol, bytes32 salt, address caller
+    );
+
+    /// @notice Tokens or credits were minted for a holder.
+    /// @param holder The address that received the minted tokens.
+    /// @param projectId The ID of the project whose tokens were minted.
+    /// @param count The number of tokens minted.
+    /// @param tokensWereClaimed Whether the tokens were claimed as ERC-20 tokens.
+    /// @param caller The address that called the mint function.
     event Mint(
         address indexed holder, uint256 indexed projectId, uint256 count, bool tokensWereClaimed, address caller
     );
+
+    /// @notice A project's token was set.
+    /// @param projectId The ID of the project whose token was set.
+    /// @param token The token that was set.
+    /// @param caller The address that set the token.
     event SetToken(uint256 indexed projectId, IJBToken indexed token, address caller);
+
+    /// @notice Credits were transferred from one holder to another.
+    /// @param holder The address that transferred the credits.
+    /// @param projectId The ID of the project whose credits were transferred.
+    /// @param recipient The address that received the credits.
+    /// @param count The number of credits transferred.
+    /// @param caller The address that called the transfer function.
     event TransferCredits(
         address indexed holder, uint256 indexed projectId, address indexed recipient, uint256 count, address caller
     );
@@ -48,16 +90,16 @@ interface IJBTokens {
     /// @return The project's token.
     function tokenOf(uint256 projectId) external view returns (IJBToken);
 
-    /// @notice Returns the total credit supply for a project.
-    /// @param projectId The ID of the project to get the total credit supply of.
-    /// @return The total credit supply.
-    function totalCreditSupplyOf(uint256 projectId) external view returns (uint256);
-
     /// @notice Returns the total balance (tokens + credits) for a holder and project.
     /// @param holder The address to get the total balance of.
     /// @param projectId The ID of the project to get the total balance for.
     /// @return balance The combined token and credit balance.
     function totalBalanceOf(address holder, uint256 projectId) external view returns (uint256 balance);
+
+    /// @notice Returns the total credit supply for a project.
+    /// @param projectId The ID of the project to get the total credit supply of.
+    /// @return The total credit supply.
+    function totalCreditSupplyOf(uint256 projectId) external view returns (uint256);
 
     /// @notice Returns the total supply (tokens + credits) for a project.
     /// @param projectId The ID of the project to get the total supply of.

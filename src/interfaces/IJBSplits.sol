@@ -6,6 +6,12 @@ import {JBSplitGroup} from "./../structs/JBSplitGroup.sol";
 
 /// @notice Stores and manages splits for each project.
 interface IJBSplits {
+    /// @notice A split was set for a project.
+    /// @param projectId The ID of the project the split was set for.
+    /// @param rulesetId The ID of the ruleset the split is active in.
+    /// @param groupId The ID of the split group.
+    /// @param split The split that was set.
+    /// @param caller The address that set the split.
     event SetSplit(
         uint256 indexed projectId, uint256 indexed rulesetId, uint256 indexed groupId, JBSplit split, address caller
     );

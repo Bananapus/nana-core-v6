@@ -1,15 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {IJBRulesetApprovalHook} from "./IJBRulesetApprovalHook.sol";
 import {JBApprovalStatus} from "./../enums/JBApprovalStatus.sol";
 import {JBRuleset} from "./../structs/JBRuleset.sol";
-import {IJBRulesetApprovalHook} from "./IJBRulesetApprovalHook.sol";
 
 /// @notice Manages rulesets and queuing for projects.
 interface IJBRulesets {
+    /// @notice A ruleset was initialized from a base ruleset.
+    /// @param rulesetId The ID of the initialized ruleset.
+    /// @param projectId The ID of the project the ruleset belongs to.
+    /// @param basedOnId The ID of the base ruleset the new ruleset was derived from.
+    /// @param caller The address that initialized the ruleset.
     event RulesetInitialized(
         uint256 indexed rulesetId, uint256 indexed projectId, uint256 indexed basedOnId, address caller
     );
+
+    /// @notice A ruleset was queued for a project.
+    /// @param rulesetId The ID of the queued ruleset.
+    /// @param projectId The ID of the project the ruleset was queued for.
+    /// @param duration The duration of the ruleset in seconds.
+    /// @param weight The weight of the ruleset.
+    /// @param weightCutPercent The percent by which the weight decreases each cycle.
+    /// @param approvalHook The approval hook for the ruleset.
+    /// @param metadata The packed ruleset metadata.
+    /// @param mustStartAtOrAfter The earliest time the ruleset can start.
+    /// @param caller The address that queued the ruleset.
     event RulesetQueued(
         uint256 indexed rulesetId,
         uint256 indexed projectId,
@@ -22,12 +38,26 @@ interface IJBRulesets {
         address caller
     );
 
+    /// @notice A ruleset's weight cache was updated.
+    /// @param projectId The ID of the project whose weight cache was updated.
+    /// @param weight The cached weight value.
+    /// @param weightCutMultiple The weight cut multiple used for caching.
+    /// @param caller The address that updated the weight cache.
     event WeightCacheUpdated(uint256 projectId, uint112 weight, uint256 weightCutMultiple, address caller);
 
-    /// @notice Returns the ID of the latest ruleset queued for a project.
-    /// @param projectId The ID of the project to get the latest ruleset ID of.
-    /// @return The latest ruleset ID.
-    function latestRulesetIdOf(uint256 projectId) external view returns (uint256);
+    /// @notice Returns an array of rulesets for a project, sorted from latest to earliest.
+    /// @param projectId The ID of the project to get rulesets of.
+    /// @param startingId The ID of the ruleset to begin with. If 0, the latest ruleset is used.
+    /// @param size The maximum number of rulesets to return.
+    /// @return rulesets The array of rulesets.
+    function allOf(
+        uint256 projectId,
+        uint256 startingId,
+        uint256 size
+    )
+        external
+        view
+        returns (JBRuleset[] memory rulesets);
 
     /// @notice Returns the approval status of the latest queued ruleset relative to the current ruleset.
     /// @param projectId The ID of the project to check.
@@ -38,21 +68,6 @@ interface IJBRulesets {
     /// @param projectId The ID of the project to get the current ruleset of.
     /// @return ruleset The current ruleset.
     function currentOf(uint256 projectId) external view returns (JBRuleset memory ruleset);
-
-    /// @notice Derives the cycle number from the base ruleset's parameters and a given start time.
-    /// @param baseRulesetCycleNumber The cycle number of the base ruleset.
-    /// @param baseRulesetStart The start time of the base ruleset.
-    /// @param baseRulesetDuration The duration of the base ruleset.
-    /// @param start The start time to derive the cycle number for.
-    /// @return The derived cycle number.
-    function deriveCycleNumberFrom(
-        uint256 baseRulesetCycleNumber,
-        uint256 baseRulesetStart,
-        uint256 baseRulesetDuration,
-        uint256 start
-    )
-        external
-        returns (uint256);
 
     /// @notice Derives the start time from the base ruleset's parameters.
     /// @param baseRulesetStart The start time of the base ruleset.
@@ -105,24 +120,30 @@ interface IJBRulesets {
         view
         returns (JBRuleset memory ruleset, JBApprovalStatus approvalStatus);
 
-    /// @notice Returns an array of rulesets for a project, sorted from latest to earliest.
-    /// @param projectId The ID of the project to get rulesets of.
-    /// @param startingId The ID of the ruleset to begin with. If 0, the latest ruleset is used.
-    /// @param size The maximum number of rulesets to return.
-    /// @return rulesets The array of rulesets.
-    function allOf(
-        uint256 projectId,
-        uint256 startingId,
-        uint256 size
-    )
-        external
-        view
-        returns (JBRuleset[] memory rulesets);
+    /// @notice Returns the ID of the latest ruleset queued for a project.
+    /// @param projectId The ID of the project to get the latest ruleset ID of.
+    /// @return The latest ruleset ID.
+    function latestRulesetIdOf(uint256 projectId) external view returns (uint256);
 
     /// @notice Returns the upcoming ruleset for a project.
     /// @param projectId The ID of the project to get the upcoming ruleset of.
     /// @return ruleset The upcoming ruleset.
     function upcomingOf(uint256 projectId) external view returns (JBRuleset memory ruleset);
+
+    /// @notice Derives the cycle number from the base ruleset's parameters and a given start time.
+    /// @param baseRulesetCycleNumber The cycle number of the base ruleset.
+    /// @param baseRulesetStart The start time of the base ruleset.
+    /// @param baseRulesetDuration The duration of the base ruleset.
+    /// @param start The start time to derive the cycle number for.
+    /// @return The derived cycle number.
+    function deriveCycleNumberFrom(
+        uint256 baseRulesetCycleNumber,
+        uint256 baseRulesetStart,
+        uint256 baseRulesetDuration,
+        uint256 start
+    )
+        external
+        returns (uint256);
 
     /// @notice Queues a new ruleset for a project.
     /// @param projectId The ID of the project to queue the ruleset for.

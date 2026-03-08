@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {JBPermissionsData} from "./structs/JBPermissionsData.sol";
@@ -52,59 +52,62 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     constructor(address trustedForwarder) ERC2771Context(trustedForwarder) {}
 
     //*********************************************************************//
-    // -------------------------- public views --------------------------- //
+    // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Check if an operator has a specific permission for a specific address and project ID.
-    /// @param operator The operator to check.
-    /// @param account The account being operated on behalf of.
-    /// @param projectId The project ID that the operator has permission to operate under. 0 represents all projects.
-    /// @param permissionId The permission ID to check for.
-    /// @param includeRoot A flag indicating if the return value should default to true if the operator has the ROOT
-    /// permission.
-    /// @param includeWildcardProjectId A flag indicating if the return value should return true if the operator has the
-    /// specified permission on the wildcard project ID.
-    /// @return A flag indicating whether the operator has the specified permission.
-    function hasPermission(
-        address operator,
-        address account,
-        uint256 projectId,
-        uint256 permissionId,
-        bool includeRoot,
-        bool includeWildcardProjectId
-    )
-        public
-        view
-        override
-        returns (bool)
-    {
-        // Indexes above 255 don't exist
-        if (permissionId > 255) revert JBPermissions_PermissionIdOutOfBounds(permissionId);
+    /// @notice Sets permissions for an operator.
+    /// @dev Only an address can give permissions to or revoke permissions from its operators.
+    /// @param account The account setting its operators' permissions.
+    /// @param permissionsData The data which specifies the permissions the operator is being given.
+    function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
+        // Pack the permission IDs into a uint256.
+        uint256 packed = _packedPermissions(permissionsData.permissionIds);
 
-        // If the ROOT permission is set and should be included, return true.
+        // Make sure the 0 permission is not set.
+        if (_includesPermission({permissions: packed, permissionId: 0})) revert JBPermissions_NoZeroPermission();
+
+        // Cache the sender.
+        address msgSender = _msgSender();
+
+        // Enforce permissions. ROOT operators are allowed to set permissions so long as they are not setting another
+        // ROOT permission or setting permissions for a wildcard project ID.
         if (
-            includeRoot
-                && (_includesPermission({
-                        permissions: permissionsOf[operator][account][projectId], permissionId: JBPermissionIds.ROOT
-                    })
-                    || (includeWildcardProjectId
-                        && _includesPermission({
-                            permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
-                            permissionId: JBPermissionIds.ROOT
-                        })))
+            msgSender != account
+                && (_includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
+                    || permissionsData.projectId == WILDCARD_PROJECT_ID
+                    || !hasPermission({
+                        operator: msgSender,
+                        account: account,
+                        projectId: permissionsData.projectId,
+                        permissionId: JBPermissionIds.ROOT,
+                        includeRoot: true,
+                        includeWildcardProjectId: true
+                    }))
         ) {
-            return true;
+            revert JBPermissions_Unauthorized({
+                account: account,
+                operator: msgSender,
+                projectId: permissionsData.projectId,
+                permissionId: JBPermissionIds.ROOT
+            });
         }
 
-        // Otherwise return the t/f flag of the specified id.
-        return _includesPermission({
-                permissions: permissionsOf[operator][account][projectId], permissionId: permissionId
-            })
-            || (includeWildcardProjectId
-                && _includesPermission({
-                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID], permissionId: permissionId
-                }));
+        // Store the new value.
+        permissionsOf[permissionsData.operator][account][permissionsData.projectId] = packed;
+
+        emit OperatorPermissionsSet({
+            operator: permissionsData.operator,
+            account: account,
+            projectId: permissionsData.projectId,
+            permissionIds: permissionsData.permissionIds,
+            packed: packed,
+            caller: msgSender
+        });
     }
+
+    //*********************************************************************//
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
 
     /// @notice Check if an operator has all of the specified permissions for a specific address and project ID.
     /// @param operator The operator to check.
@@ -172,6 +175,61 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     }
 
     //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice Check if an operator has a specific permission for a specific address and project ID.
+    /// @param operator The operator to check.
+    /// @param account The account being operated on behalf of.
+    /// @param projectId The project ID that the operator has permission to operate under. 0 represents all projects.
+    /// @param permissionId The permission ID to check for.
+    /// @param includeRoot A flag indicating if the return value should default to true if the operator has the ROOT
+    /// permission.
+    /// @param includeWildcardProjectId A flag indicating if the return value should return true if the operator has the
+    /// specified permission on the wildcard project ID.
+    /// @return A flag indicating whether the operator has the specified permission.
+    function hasPermission(
+        address operator,
+        address account,
+        uint256 projectId,
+        uint256 permissionId,
+        bool includeRoot,
+        bool includeWildcardProjectId
+    )
+        public
+        view
+        override
+        returns (bool)
+    {
+        // Indexes above 255 don't exist
+        if (permissionId > 255) revert JBPermissions_PermissionIdOutOfBounds(permissionId);
+
+        // If the ROOT permission is set and should be included, return true.
+        if (
+            includeRoot
+                && (_includesPermission({
+                        permissions: permissionsOf[operator][account][projectId], permissionId: JBPermissionIds.ROOT
+                    })
+                    || (includeWildcardProjectId
+                        && _includesPermission({
+                            permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
+                            permissionId: JBPermissionIds.ROOT
+                        })))
+        ) {
+            return true;
+        }
+
+        // Otherwise return the t/f flag of the specified id.
+        return _includesPermission({
+                permissions: permissionsOf[operator][account][projectId], permissionId: permissionId
+            })
+            || (includeWildcardProjectId
+                && _includesPermission({
+                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID], permissionId: permissionId
+                }));
+    }
+
+    //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
@@ -194,59 +252,5 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
             // Turn on the bit at the ID.
             packed |= 1 << permissionId;
         }
-    }
-
-    //*********************************************************************//
-    // ---------------------- external transactions ---------------------- //
-    //*********************************************************************//
-
-    /// @notice Sets permissions for an operator.
-    /// @dev Only an address can give permissions to or revoke permissions from its operators.
-    /// @param account The account setting its operators' permissions.
-    /// @param permissionsData The data which specifies the permissions the operator is being given.
-    function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
-        // Pack the permission IDs into a uint256.
-        uint256 packed = _packedPermissions(permissionsData.permissionIds);
-
-        // Make sure the 0 permission is not set.
-        if (_includesPermission({permissions: packed, permissionId: 0})) revert JBPermissions_NoZeroPermission();
-
-        // Cache the sender.
-        address msgSender = _msgSender();
-
-        // Enforce permissions. ROOT operators are allowed to set permissions so long as they are not setting another
-        // ROOT permission or setting permissions for a wildcard project ID.
-        if (
-            msgSender != account
-                && (_includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
-                    || permissionsData.projectId == WILDCARD_PROJECT_ID
-                    || !hasPermission({
-                        operator: msgSender,
-                        account: account,
-                        projectId: permissionsData.projectId,
-                        permissionId: JBPermissionIds.ROOT,
-                        includeRoot: true,
-                        includeWildcardProjectId: true
-                    }))
-        ) {
-            revert JBPermissions_Unauthorized({
-                account: account,
-                operator: msgSender,
-                projectId: permissionsData.projectId,
-                permissionId: JBPermissionIds.ROOT
-            });
-        }
-
-        // Store the new value.
-        permissionsOf[permissionsData.operator][account][permissionsData.projectId] = packed;
-
-        emit OperatorPermissionsSet({
-            operator: permissionsData.operator,
-            account: account,
-            projectId: permissionsData.projectId,
-            permissionIds: permissionsData.permissionIds,
-            packed: packed,
-            caller: msgSender
-        });
     }
 }

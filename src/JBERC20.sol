@@ -39,44 +39,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {}
 
     //*********************************************************************//
-    // -------------------------- public views --------------------------- //
-    //*********************************************************************//
-
-    /// @notice The balance of the given address.
-    /// @param account The account to get the balance of.
-    /// @return The number of tokens owned by the `account`, as a fixed point number with 18 decimals.
-    function balanceOf(address account) public view override(ERC20, IJBToken) returns (uint256) {
-        return super.balanceOf(account);
-    }
-
-    /// @notice This token can only be added to a project when its created by the `JBTokens` contract.
-    function canBeAddedTo(uint256) external pure override returns (bool) {
-        return false;
-    }
-
-    /// @notice The number of decimals used for this token's fixed point accounting.
-    /// @return The number of decimals.
-    function decimals() public view override(ERC20, IJBToken) returns (uint8) {
-        return super.decimals();
-    }
-
-    /// @notice The token's name.
-    function name() public view virtual override returns (string memory) {
-        return _name;
-    }
-
-    /// @notice The token's symbol.
-    function symbol() public view virtual override returns (string memory) {
-        return _symbol;
-    }
-
-    /// @notice The total supply of this ERC20 i.e. the total number of tokens in existence.
-    /// @return The total supply of this ERC20, as a fixed point number.
-    function totalSupply() public view override(ERC20, IJBToken) returns (uint256) {
-        return super.totalSupply();
-    }
-
-    //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
@@ -115,13 +77,55 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
         _transferOwnership(owner);
     }
 
+    //*********************************************************************//
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice This token can only be added to a project when its created by the `JBTokens` contract.
+    function canBeAddedTo(uint256) external pure override returns (bool) {
+        return false;
+    }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice The balance of the given address.
+    /// @param account The account to get the balance of.
+    /// @return The number of tokens owned by the `account`, as a fixed point number with 18 decimals.
+    function balanceOf(address account) public view override(ERC20, IJBToken) returns (uint256) {
+        return super.balanceOf(account);
+    }
+
+    /// @notice The number of decimals used for this token's fixed point accounting.
+    /// @return The number of decimals.
+    function decimals() public view override(ERC20, IJBToken) returns (uint8) {
+        return super.decimals();
+    }
+
+    /// @notice The token's name.
+    function name() public view virtual override returns (string memory) {
+        return _name;
+    }
+
     /// @notice Required override.
     function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
 
+    /// @notice The token's symbol.
+    function symbol() public view virtual override returns (string memory) {
+        return _symbol;
+    }
+
+    /// @notice The total supply of this ERC20 i.e. the total number of tokens in existence.
+    /// @return The total supply of this ERC20, as a fixed point number.
+    function totalSupply() public view override(ERC20, IJBToken) returns (uint256) {
+        return super.totalSupply();
+    }
+
     //*********************************************************************//
-    // ------------------------ internal functions ----------------------- //
+    // ---------------------- internal transactions ---------------------- //
     //*********************************************************************//
 
     /// @notice Required override.

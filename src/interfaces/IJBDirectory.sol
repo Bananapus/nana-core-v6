@@ -8,12 +8,37 @@ import {IJBTerminal} from "./IJBTerminal.sol";
 
 /// @notice Tracks the terminals and the controller used by each project.
 interface IJBDirectory {
+    /// @notice A terminal was added to a project.
+    /// @param projectId The ID of the project the terminal was added to.
+    /// @param terminal The terminal that was added.
+    /// @param caller The address that added the terminal.
     event AddTerminal(uint256 indexed projectId, IJBTerminal indexed terminal, address caller);
+
+    /// @notice A project's controller was set.
+    /// @param projectId The ID of the project whose controller was set.
+    /// @param controller The controller that was set.
+    /// @param caller The address that set the controller.
     event SetController(uint256 indexed projectId, IERC165 indexed controller, address caller);
+
+    /// @notice An address's permission to set a project's first controller was updated.
+    /// @param addr The address whose permission was updated.
+    /// @param isAllowed Whether the address is allowed to set a project's first controller.
+    /// @param caller The address that updated the permission.
     event SetIsAllowedToSetFirstController(address indexed addr, bool indexed isAllowed, address caller);
+
+    /// @notice A project's primary terminal for a token was set.
+    /// @param projectId The ID of the project whose primary terminal was set.
+    /// @param token The token the primary terminal was set for.
+    /// @param terminal The terminal that was set as primary.
+    /// @param caller The address that set the primary terminal.
     event SetPrimaryTerminal(
         uint256 indexed projectId, address indexed token, IJBTerminal indexed terminal, address caller
     );
+
+    /// @notice A project's terminals were set.
+    /// @param projectId The ID of the project whose terminals were set.
+    /// @param terminals The terminals that were set.
+    /// @param caller The address that set the terminals.
     event SetTerminals(uint256 indexed projectId, IJBTerminal[] terminals, address caller);
 
     /// @notice Mints ERC-721s that represent project ownership and transfers.
