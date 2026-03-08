@@ -44,6 +44,14 @@ contract DeployPeriphery is Script, Sphinx {
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
     uint256 private CORE_DEPLOYMENT_NONCE = 6;
+
+    /// @notice The address of the omnichain ruleset operator contract (e.g. JBOmnichainDeployer).
+    /// @dev TRUST ASSUMPTION: This address is granted implicit permission to launch rulesets, set terminals, and queue
+    /// rulesets on any project via the JBController (bypassing normal JBPermissions checks). A compromised or
+    /// incorrect operator address could manipulate any project's rulesets across chains.
+    /// @dev This address should correspond to the deterministic CREATE2 deployment of the omnichain deployer contract
+    /// from the nana-omnichain-deployers-v6 repository. Verify it matches the deployed address on all target chains
+    /// before running this script.
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
@@ -66,6 +74,9 @@ contract DeployPeriphery is Script, Sphinx {
     }
 
     function deploy() public sphinx {
+        // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above.
+        require(OMNICHAIN_RULESET_OPERATOR != address(0), "Omnichain ruleset operator not set");
+
         // Deploy the ETH/USD price feed.
         IJBPriceFeed feed;
 
