@@ -150,210 +150,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice Get an array of a project's rulesets (with metadata) up to a maximum array size, sorted from latest to
-    /// earliest.
-    /// @param projectId The ID of the project to get the rulesets of.
-    /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result. If the
-    /// `startingId` is 0, passed, the project's latest ruleset will be used.
-    /// @param size The maximum number of rulesets to return.
-    /// @return rulesets The array of rulesets with their metadata.
-    function allRulesetsOf(
-        uint256 projectId,
-        uint256 startingId,
-        uint256 size
-    )
-        external
-        view
-        override
-        returns (JBRulesetWithMetadata[] memory rulesets)
-    {
-        // Get the rulesets (without metadata).
-        JBRuleset[] memory baseRulesets = RULESETS.allOf({projectId: projectId, startingId: startingId, size: size});
-
-        // Keep a reference to the number of rulesets.
-        uint256 numberOfRulesets = baseRulesets.length;
-
-        // Initialize the array being returned.
-        rulesets = new JBRulesetWithMetadata[](numberOfRulesets);
-
-        // Populate the array with rulesets AND their metadata.
-        for (uint256 i; i < numberOfRulesets; i++) {
-            // Set the ruleset being iterated on.
-            JBRuleset memory baseRuleset = baseRulesets[i];
-
-            // Set the returned value.
-            rulesets[i] = JBRulesetWithMetadata({ruleset: baseRuleset, metadata: baseRuleset.expandMetadata()});
-        }
-    }
-
-    /// @notice A project's currently active ruleset and its metadata.
-    /// @param projectId The ID of the project to get the current ruleset of.
-    /// @return ruleset The current ruleset's struct.
-    /// @return metadata The current ruleset's metadata.
-    function currentRulesetOf(uint256 projectId)
-        external
-        view
-        override
-        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
-    {
-        ruleset = _currentRulesetOf(projectId);
-        metadata = ruleset.expandMetadata();
-    }
-
-    /// @notice Get the `JBRuleset` and `JBRulesetMetadata` corresponding to the specified `rulesetId`.
-    /// @param projectId The ID of the project the ruleset belongs to.
-    /// @return ruleset The ruleset's struct.
-    /// @return metadata The ruleset's metadata.
-    function getRulesetOf(
-        uint256 projectId,
-        uint256 rulesetId
-    )
-        external
-        view
-        override
-        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
-    {
-        ruleset = RULESETS.getRulesetOf({projectId: projectId, rulesetId: rulesetId});
-        metadata = ruleset.expandMetadata();
-    }
-
-    /// @notice Gets the latest ruleset queued for a project, its approval status, and its metadata.
-    /// @dev The 'latest queued ruleset' is the ruleset initialized furthest in the future (at the end of the ruleset
-    /// queue).
-    /// @param projectId The ID of the project to get the latest ruleset of.
-    /// @return ruleset The struct for the project's latest queued ruleset.
-    /// @return metadata The ruleset's metadata.
-    /// @return approvalStatus The ruleset's approval status.
-    function latestQueuedRulesetOf(uint256 projectId)
-        external
-        view
-        override
-        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata, JBApprovalStatus approvalStatus)
-    {
-        (ruleset, approvalStatus) = RULESETS.latestQueuedOf(projectId);
-        metadata = ruleset.expandMetadata();
-    }
-
-    /// @notice Check whether the project's terminals can currently be set.
-    /// @param projectId The ID of the project to check.
-    /// @return A `bool` which is true if the project allows terminals to be set.
-    function setTerminalsAllowed(uint256 projectId) external view returns (bool) {
-        return _currentRulesetOf(projectId).expandMetadata().allowSetTerminals;
-    }
-
-    /// @notice Check whether the project's controller can currently be set.
-    /// @param projectId The ID of the project to check.
-    /// @return A `bool` which is true if the project allows controllers to be set.
-    function setControllerAllowed(uint256 projectId) external view returns (bool) {
-        return _currentRulesetOf(projectId).expandMetadata().allowSetController;
-    }
-
-    /// @notice Gets the a project token's total supply, including pending reserved tokens.
-    /// @param projectId The ID of the project to get the total token supply of.
-    /// @return The total supply of the project's token, including pending reserved tokens.
-    function totalTokenSupplyWithReservedTokensOf(uint256 projectId) external view override returns (uint256) {
-        // Add the reserved tokens to the total supply.
-        return TOKENS.totalSupplyOf(projectId) + pendingReservedTokenBalanceOf[projectId];
-    }
-
-    /// @notice A project's next ruleset along with its metadata.
-    /// @dev If an upcoming ruleset isn't found, returns an empty ruleset with all properties set to 0.
-    /// @param projectId The ID of the project to get the next ruleset of.
-    /// @return ruleset The upcoming ruleset's struct.
-    /// @return metadata The upcoming ruleset's metadata.
-    function upcomingRulesetOf(uint256 projectId)
-        external
-        view
-        override
-        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
-    {
-        ruleset = _upcomingRulesetOf(projectId);
-        metadata = ruleset.expandMetadata();
-    }
-
-    //*********************************************************************//
-    // -------------------------- public views --------------------------- //
-    //*********************************************************************//
-
-    /// @notice Indicates whether this contract adheres to the specified interface.
-    /// @dev See {IERC165-supportsInterface}.
-    /// @param interfaceId The ID of the interface to check for adherence to.
-    /// @return A flag indicating if the provided interface ID is supported.
-    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IJBController).interfaceId || interfaceId == type(IJBProjectUriRegistry).interfaceId
-            || interfaceId == type(IJBDirectoryAccessControl).interfaceId
-            || interfaceId == type(IJBMigratable).interfaceId || interfaceId == type(IJBPermissioned).interfaceId
-            || interfaceId == type(IERC165).interfaceId;
-    }
-
-    //*********************************************************************//
-    // -------------------------- internal views ------------------------- //
-    //*********************************************************************//
-
-    /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
-    function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
-        return super._contextSuffixLength();
-    }
-
-    /// @notice The project's current ruleset.
-    /// @param projectId The ID of the project to check.
-    /// @return The project's current ruleset.
-    function _currentRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
-        return RULESETS.currentOf(projectId);
-    }
-
-    /// @notice Indicates whether the provided address is a terminal for the project.
-    /// @param projectId The ID of the project to check.
-    /// @param terminal The address to check.
-    /// @return A flag indicating if the provided address is a terminal for the project.
-    function _isTerminalOf(uint256 projectId, address terminal) internal view returns (bool) {
-        return DIRECTORY.isTerminalOf({projectId: projectId, terminal: IJBTerminal(terminal)});
-    }
-
-    /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.
-    /// @param projectId The ID of the project to check.
-    /// @param ruleset The ruleset to check.
-    /// @param addr The address to check.
-    /// @return A flag indicating if the provided address has mint permission for the project.
-    function _hasDataHookMintPermissionFor(
-        uint256 projectId,
-        JBRuleset memory ruleset,
-        address addr
-    )
-        internal
-        view
-        returns (bool)
-    {
-        address dataHook = ruleset.dataHook();
-
-        return dataHook != address(0)
-            && IJBRulesetDataHook(dataHook).hasMintPermissionFor({projectId: projectId, ruleset: ruleset, addr: addr});
-    }
-
-    /// @notice The calldata. Preferred to use over `msg.data`.
-    /// @return calldata The `msg.data` of this call.
-    function _msgData() internal view override(ERC2771Context, Context) returns (bytes calldata) {
-        return ERC2771Context._msgData();
-    }
-
-    /// @notice The message's sender. Preferred to use over `msg.sender`.
-    /// @return sender The address which sent this call.
-    function _msgSender() internal view override(ERC2771Context, Context) returns (address sender) {
-        return ERC2771Context._msgSender();
-    }
-
-    /// @notice The project's upcoming ruleset.
-    /// @param projectId The ID of the project to check.
-    /// @return The project's upcoming ruleset.
-    function _upcomingRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
-        return RULESETS.upcomingOf(projectId);
-    }
-
-    //*********************************************************************//
-    // --------------------- external transactions ----------------------- //
+    // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
     /// @notice Add a price feed for a project.
@@ -386,6 +183,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
     }
 
+    /// @notice Called after this controller has been set as the project's controller in the directory.
+    /// @dev Can only be called by the directory.
+    /// @param from The controller being migrated from.
+    /// @param projectId The ID of the project that migrated to this controller.
+    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external override {
+        from; // Suppress unused variable warning.
+        projectId; // Suppress unused variable warning.
+
+        // Make sure the sender is the directory.
+        if (_msgSender() != address(DIRECTORY)) revert JBController_OnlyDirectory(_msgSender(), DIRECTORY);
+    }
+
     /// @notice Prepares this controller to receive a project being migrated from another controller.
     /// @dev This controller should not be the project's controller yet.
     /// @param from The controller being migrated from.
@@ -410,18 +219,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             // slither-disable-next-line unused-return
             IJBController(address(from)).sendReservedTokensToSplitsOf(projectId);
         }
-    }
-
-    /// @notice Called after this controller has been set as the project's controller in the directory.
-    /// @dev Can only be called by the directory.
-    /// @param from The controller being migrated from.
-    /// @param projectId The ID of the project that migrated to this controller.
-    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external override {
-        from; // Suppress unused variable warning.
-        projectId; // Suppress unused variable warning.
-
-        // Make sure the sender is the directory.
-        if (_msgSender() != address(DIRECTORY)) revert JBController_OnlyDirectory(_msgSender(), DIRECTORY);
     }
 
     /// @notice Burns a project's tokens or credits from the specific holder's balance.
@@ -895,7 +692,147 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     //*********************************************************************//
-    // ------------------------ internal functions ----------------------- //
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice Get an array of a project's rulesets (with metadata) up to a maximum array size, sorted from latest to
+    /// earliest.
+    /// @param projectId The ID of the project to get the rulesets of.
+    /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result. If the
+    /// `startingId` is 0, passed, the project's latest ruleset will be used.
+    /// @param size The maximum number of rulesets to return.
+    /// @return rulesets The array of rulesets with their metadata.
+    function allRulesetsOf(
+        uint256 projectId,
+        uint256 startingId,
+        uint256 size
+    )
+        external
+        view
+        override
+        returns (JBRulesetWithMetadata[] memory rulesets)
+    {
+        // Get the rulesets (without metadata).
+        JBRuleset[] memory baseRulesets = RULESETS.allOf({projectId: projectId, startingId: startingId, size: size});
+
+        // Keep a reference to the number of rulesets.
+        uint256 numberOfRulesets = baseRulesets.length;
+
+        // Initialize the array being returned.
+        rulesets = new JBRulesetWithMetadata[](numberOfRulesets);
+
+        // Populate the array with rulesets AND their metadata.
+        for (uint256 i; i < numberOfRulesets; i++) {
+            // Set the ruleset being iterated on.
+            JBRuleset memory baseRuleset = baseRulesets[i];
+
+            // Set the returned value.
+            rulesets[i] = JBRulesetWithMetadata({ruleset: baseRuleset, metadata: baseRuleset.expandMetadata()});
+        }
+    }
+
+    /// @notice A project's currently active ruleset and its metadata.
+    /// @param projectId The ID of the project to get the current ruleset of.
+    /// @return ruleset The current ruleset's struct.
+    /// @return metadata The current ruleset's metadata.
+    function currentRulesetOf(uint256 projectId)
+        external
+        view
+        override
+        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
+    {
+        ruleset = _currentRulesetOf(projectId);
+        metadata = ruleset.expandMetadata();
+    }
+
+    /// @notice Get the `JBRuleset` and `JBRulesetMetadata` corresponding to the specified `rulesetId`.
+    /// @param projectId The ID of the project the ruleset belongs to.
+    /// @return ruleset The ruleset's struct.
+    /// @return metadata The ruleset's metadata.
+    function getRulesetOf(
+        uint256 projectId,
+        uint256 rulesetId
+    )
+        external
+        view
+        override
+        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
+    {
+        ruleset = RULESETS.getRulesetOf({projectId: projectId, rulesetId: rulesetId});
+        metadata = ruleset.expandMetadata();
+    }
+
+    /// @notice Gets the latest ruleset queued for a project, its approval status, and its metadata.
+    /// @dev The 'latest queued ruleset' is the ruleset initialized furthest in the future (at the end of the ruleset
+    /// queue).
+    /// @param projectId The ID of the project to get the latest ruleset of.
+    /// @return ruleset The struct for the project's latest queued ruleset.
+    /// @return metadata The ruleset's metadata.
+    /// @return approvalStatus The ruleset's approval status.
+    function latestQueuedRulesetOf(uint256 projectId)
+        external
+        view
+        override
+        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata, JBApprovalStatus approvalStatus)
+    {
+        (ruleset, approvalStatus) = RULESETS.latestQueuedOf(projectId);
+        metadata = ruleset.expandMetadata();
+    }
+
+    /// @notice Check whether the project's controller can currently be set.
+    /// @param projectId The ID of the project to check.
+    /// @return A `bool` which is true if the project allows controllers to be set.
+    function setControllerAllowed(uint256 projectId) external view returns (bool) {
+        return _currentRulesetOf(projectId).expandMetadata().allowSetController;
+    }
+
+    /// @notice Check whether the project's terminals can currently be set.
+    /// @param projectId The ID of the project to check.
+    /// @return A `bool` which is true if the project allows terminals to be set.
+    function setTerminalsAllowed(uint256 projectId) external view returns (bool) {
+        return _currentRulesetOf(projectId).expandMetadata().allowSetTerminals;
+    }
+
+    /// @notice Gets the a project token's total supply, including pending reserved tokens.
+    /// @param projectId The ID of the project to get the total token supply of.
+    /// @return The total supply of the project's token, including pending reserved tokens.
+    function totalTokenSupplyWithReservedTokensOf(uint256 projectId) external view override returns (uint256) {
+        // Add the reserved tokens to the total supply.
+        return TOKENS.totalSupplyOf(projectId) + pendingReservedTokenBalanceOf[projectId];
+    }
+
+    /// @notice A project's next ruleset along with its metadata.
+    /// @dev If an upcoming ruleset isn't found, returns an empty ruleset with all properties set to 0.
+    /// @param projectId The ID of the project to get the next ruleset of.
+    /// @return ruleset The upcoming ruleset's struct.
+    /// @return metadata The upcoming ruleset's metadata.
+    function upcomingRulesetOf(uint256 projectId)
+        external
+        view
+        override
+        returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata)
+    {
+        ruleset = _upcomingRulesetOf(projectId);
+        metadata = ruleset.expandMetadata();
+    }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice Indicates whether this contract adheres to the specified interface.
+    /// @dev See {IERC165-supportsInterface}.
+    /// @param interfaceId The ID of the interface to check for adherence to.
+    /// @return A flag indicating if the provided interface ID is supported.
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IJBController).interfaceId || interfaceId == type(IJBProjectUriRegistry).interfaceId
+            || interfaceId == type(IJBDirectoryAccessControl).interfaceId
+            || interfaceId == type(IJBMigratable).interfaceId || interfaceId == type(IJBPermissioned).interfaceId
+            || interfaceId == type(IERC165).interfaceId;
+    }
+
+    //*********************************************************************//
+    // ---------------------- internal transactions ---------------------- //
     //*********************************************************************//
 
     /// @notice Set up a project's terminals.
@@ -980,57 +917,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 rulesetId = ruleset.id;
             }
         }
-    }
-
-    /// @notice Sends pending reserved tokens to the project's reserved token splits.
-    /// @dev If the project has no reserved token splits, or if they don't add up to 100%, leftover tokens are sent to
-    /// the project's owner.
-    /// @param projectId The ID of the project to send reserved tokens for.
-    /// @return tokenCount The amount of reserved tokens minted and sent.
-    function _sendReservedTokensToSplitsOf(uint256 projectId) internal returns (uint256 tokenCount) {
-        // Get a reference to the number of tokens that need to be minted.
-        tokenCount = pendingReservedTokenBalanceOf[projectId];
-
-        // Revert if there are no pending reserved tokens
-        if (tokenCount == 0) revert JBController_NoReservedTokens();
-
-        // Get the ruleset to read the reserved percent from.
-        JBRuleset memory ruleset = _currentRulesetOf(projectId);
-
-        // Get a reference to the project's owner.
-        address owner = PROJECTS.ownerOf(projectId);
-
-        // Reset the pending reserved token balance.
-        pendingReservedTokenBalanceOf[projectId] = 0;
-
-        // Mint the tokens to this contract.
-        IJBToken token = TOKENS.mintFor({holder: address(this), projectId: projectId, count: tokenCount});
-
-        // Send reserved tokens to splits and get a reference to the amount left after the splits have all been paid.
-        uint256 leftoverTokenCount = tokenCount == 0
-            ? 0
-            : _sendReservedTokensToSplitGroupOf({
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                groupId: JBSplitGroupIds.RESERVED_TOKENS,
-                tokenCount: tokenCount,
-                token: token
-            });
-
-        // Mint any leftover tokens to the project owner.
-        if (leftoverTokenCount > 0) {
-            _sendTokens({projectId: projectId, tokenCount: leftoverTokenCount, recipient: owner, token: token});
-        }
-
-        emit SendReservedTokensToSplits({
-            rulesetId: ruleset.id,
-            rulesetCycleNumber: ruleset.cycleNumber,
-            projectId: projectId,
-            owner: owner,
-            tokenCount: tokenCount,
-            leftoverAmount: leftoverTokenCount,
-            caller: _msgSender()
-        });
     }
 
     /// @notice Send project tokens to a split group.
@@ -1169,6 +1055,57 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
+    /// @notice Sends pending reserved tokens to the project's reserved token splits.
+    /// @dev If the project has no reserved token splits, or if they don't add up to 100%, leftover tokens are sent to
+    /// the project's owner.
+    /// @param projectId The ID of the project to send reserved tokens for.
+    /// @return tokenCount The amount of reserved tokens minted and sent.
+    function _sendReservedTokensToSplitsOf(uint256 projectId) internal returns (uint256 tokenCount) {
+        // Get a reference to the number of tokens that need to be minted.
+        tokenCount = pendingReservedTokenBalanceOf[projectId];
+
+        // Revert if there are no pending reserved tokens
+        if (tokenCount == 0) revert JBController_NoReservedTokens();
+
+        // Get the ruleset to read the reserved percent from.
+        JBRuleset memory ruleset = _currentRulesetOf(projectId);
+
+        // Get a reference to the project's owner.
+        address owner = PROJECTS.ownerOf(projectId);
+
+        // Reset the pending reserved token balance.
+        pendingReservedTokenBalanceOf[projectId] = 0;
+
+        // Mint the tokens to this contract.
+        IJBToken token = TOKENS.mintFor({holder: address(this), projectId: projectId, count: tokenCount});
+
+        // Send reserved tokens to splits and get a reference to the amount left after the splits have all been paid.
+        uint256 leftoverTokenCount = tokenCount == 0
+            ? 0
+            : _sendReservedTokensToSplitGroupOf({
+                projectId: projectId,
+                rulesetId: ruleset.id,
+                groupId: JBSplitGroupIds.RESERVED_TOKENS,
+                tokenCount: tokenCount,
+                token: token
+            });
+
+        // Mint any leftover tokens to the project owner.
+        if (leftoverTokenCount > 0) {
+            _sendTokens({projectId: projectId, tokenCount: leftoverTokenCount, recipient: owner, token: token});
+        }
+
+        emit SendReservedTokensToSplits({
+            rulesetId: ruleset.id,
+            rulesetCycleNumber: ruleset.cycleNumber,
+            projectId: projectId,
+            owner: owner,
+            tokenCount: tokenCount,
+            leftoverAmount: leftoverTokenCount,
+            caller: _msgSender()
+        });
+    }
+
     /// @notice Send tokens from this contract to a recipient.
     /// @param projectId The ID of the project the tokens belong to.
     /// @param tokenCount The number of tokens to send.
@@ -1182,5 +1119,68 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 holder: address(this), projectId: projectId, recipient: recipient, count: tokenCount
             });
         }
+    }
+
+    //*********************************************************************//
+    // -------------------------- internal views ------------------------- //
+    //*********************************************************************//
+
+    /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
+    function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
+        return super._contextSuffixLength();
+    }
+
+    /// @notice The project's current ruleset.
+    /// @param projectId The ID of the project to check.
+    /// @return The project's current ruleset.
+    function _currentRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
+        return RULESETS.currentOf(projectId);
+    }
+
+    /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.
+    /// @param projectId The ID of the project to check.
+    /// @param ruleset The ruleset to check.
+    /// @param addr The address to check.
+    /// @return A flag indicating if the provided address has mint permission for the project.
+    function _hasDataHookMintPermissionFor(
+        uint256 projectId,
+        JBRuleset memory ruleset,
+        address addr
+    )
+        internal
+        view
+        returns (bool)
+    {
+        address dataHook = ruleset.dataHook();
+
+        return dataHook != address(0)
+            && IJBRulesetDataHook(dataHook).hasMintPermissionFor({projectId: projectId, ruleset: ruleset, addr: addr});
+    }
+
+    /// @notice Indicates whether the provided address is a terminal for the project.
+    /// @param projectId The ID of the project to check.
+    /// @param terminal The address to check.
+    /// @return A flag indicating if the provided address is a terminal for the project.
+    function _isTerminalOf(uint256 projectId, address terminal) internal view returns (bool) {
+        return DIRECTORY.isTerminalOf({projectId: projectId, terminal: IJBTerminal(terminal)});
+    }
+
+    /// @notice The calldata. Preferred to use over `msg.data`.
+    /// @return calldata The `msg.data` of this call.
+    function _msgData() internal view override(ERC2771Context, Context) returns (bytes calldata) {
+        return ERC2771Context._msgData();
+    }
+
+    /// @notice The message's sender. Preferred to use over `msg.sender`.
+    /// @return sender The address which sent this call.
+    function _msgSender() internal view override(ERC2771Context, Context) returns (address sender) {
+        return ERC2771Context._msgSender();
+    }
+
+    /// @notice The project's upcoming ruleset.
+    /// @param projectId The ID of the project to check.
+    /// @return The project's upcoming ruleset.
+    function _upcomingRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
+        return RULESETS.upcomingOf(projectId);
     }
 }

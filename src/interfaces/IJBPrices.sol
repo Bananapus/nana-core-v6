@@ -6,6 +6,12 @@ import {IJBProjects} from "./IJBProjects.sol";
 
 /// @notice Manages price feeds and provides unit prices for currency conversions.
 interface IJBPrices {
+    /// @notice A price feed was added for a project's currency pair.
+    /// @param projectId The ID of the project the price feed was added for.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency being priced by the feed.
+    /// @param feed The price feed that was added.
+    /// @param caller The address that added the price feed.
     event AddPriceFeed(
         uint256 indexed projectId,
         uint256 indexed pricingCurrency,

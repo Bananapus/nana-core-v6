@@ -21,16 +21,16 @@ interface IJBToken {
     /// @return The total supply.
     function totalSupply() external view returns (uint256);
 
+    /// @notice Burns tokens from an account.
+    /// @param account The address to burn tokens from.
+    /// @param amount The amount of tokens to burn.
+    function burn(address account, uint256 amount) external;
+
     /// @notice Initializes the token with a name, symbol, and owner.
     /// @param name The token's name.
     /// @param symbol The token's symbol.
     /// @param owner The token contract's owner.
     function initialize(string memory name, string memory symbol, address owner) external;
-
-    /// @notice Burns tokens from an account.
-    /// @param account The address to burn tokens from.
-    /// @param amount The amount of tokens to burn.
-    function burn(address account, uint256 amount) external;
 
     /// @notice Mints tokens to an account.
     /// @param account The address to mint tokens to.

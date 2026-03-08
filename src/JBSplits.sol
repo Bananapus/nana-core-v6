@@ -72,121 +72,6 @@ contract JBSplits is JBControlled, IJBSplits {
     constructor(IJBDirectory directory) JBControlled(directory) {}
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice Get the split structs for the specified project ID, within the specified ruleset, for the specified
-    /// group. The splits stored at ruleset 0 are used by default during a ruleset if the splits for the specific
-    /// ruleset aren't set.
-    /// @dev If splits aren't found at the given `rulesetId`, they'll be sought in the FALLBACK_RULESET_ID of 0.
-    /// @param projectId The ID of the project to get splits for.
-    /// @param rulesetId An identifier within which the returned splits should be considered active.
-    /// @param groupId The identifying group of the splits.
-    /// @return splits An array of all splits for the project.
-    function splitsOf(
-        uint256 projectId,
-        uint256 rulesetId,
-        uint256 groupId
-    )
-        external
-        view
-        override
-        returns (JBSplit[] memory splits)
-    {
-        splits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
-
-        // Use the default splits if there aren't any for the ruleset.
-        if (splits.length == 0) {
-            splits = _getStructsFor({projectId: projectId, rulesetId: FALLBACK_RULESET_ID, groupId: groupId});
-        }
-    }
-
-    //*********************************************************************//
-    // -------------------------- internal views ------------------------- //
-    //*********************************************************************//
-
-    /// @notice Unpack an array of `JBSplit` structs for all of the splits in a group, given project, ruleset, and group
-    /// IDs.
-    /// @param projectId The ID of the project the splits belong to.
-    /// @param rulesetId The ID of the ruleset the group of splits should be considered active within.
-    /// @param groupId The ID of the group to get the splits structs of.
-    /// @return splits The split structs, as an array of `JBSplit`s.
-    function _getStructsFor(
-        uint256 projectId,
-        uint256 rulesetId,
-        uint256 groupId
-    )
-        internal
-        view
-        returns (JBSplit[] memory)
-    {
-        // Get a reference to the number of splits that need to be added to the returned array.
-        uint256 splitCount = _splitCountOf[projectId][rulesetId][groupId];
-
-        // Initialize an array to be returned that has the appropriate length.
-        JBSplit[] memory splits = new JBSplit[](splitCount);
-
-        // Loop through each split and unpack the values into structs.
-        for (uint256 i; i < splitCount; i++) {
-            // Get a reference to the first part of the split's packed data.
-            uint256 packedSplitPart1 = _packedSplitParts1Of[projectId][rulesetId][groupId][i];
-
-            // Populate the split struct.
-            JBSplit memory split;
-
-            // `percent` in bits 0-31.
-            split.percent = uint32(packedSplitPart1);
-            // `projectId` in bits 32-95.
-            split.projectId = uint64(packedSplitPart1 >> 32);
-            // `beneficiary` in bits 96-255.
-            split.beneficiary = payable(address(uint160(packedSplitPart1 >> 96)));
-
-            // Get a reference to the second part of the split's packed data.
-            uint256 packedSplitPart2 = _packedSplitParts2Of[projectId][rulesetId][groupId][i];
-
-            // If there's anything in it, unpack.
-            if (packedSplitPart2 > 0) {
-                // `preferAddToBalance` in bit 0.
-                split.preferAddToBalance = packedSplitPart2 & 1 == 1;
-                // `lockedUntil` in bits 1-48.
-                split.lockedUntil = uint48(packedSplitPart2 >> 1);
-                // `hook` in bits 49-208.
-                split.hook = IJBSplitHook(address(uint160(packedSplitPart2 >> 49)));
-            }
-
-            // Add the split to the value being returned.
-            splits[i] = split;
-        }
-
-        return splits;
-    }
-
-    /// @notice Determine if the provided splits array includes the locked split.
-    /// @param splits The array of splits to check within.
-    /// @param lockedSplit The locked split.
-    /// @return A flag indicating if the `lockedSplit` is contained in the `splits`.
-    function _includesLockedSplits(JBSplit[] memory splits, JBSplit memory lockedSplit) internal pure returns (bool) {
-        // Keep a reference to the number of splits.
-        uint256 numberOfSplits = splits.length;
-
-        for (uint256 i; i < numberOfSplits; i++) {
-            // Set the split being iterated on.
-            JBSplit memory split = splits[i];
-
-            // Check for sameness.
-            if (
-                // Allow the lock to be extended.
-                split.percent == lockedSplit.percent && split.beneficiary == lockedSplit.beneficiary
-                    && split.hook == lockedSplit.hook && split.projectId == lockedSplit.projectId
-                    && split.preferAddToBalance == lockedSplit.preferAddToBalance
-                    && split.lockedUntil >= lockedSplit.lockedUntil
-            ) return true;
-        }
-
-        return false;
-    }
-
-    //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
@@ -231,7 +116,37 @@ contract JBSplits is JBControlled, IJBSplits {
     }
 
     //*********************************************************************//
-    // ------------------------ internal functions ----------------------- //
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice Get the split structs for the specified project ID, within the specified ruleset, for the specified
+    /// group. The splits stored at ruleset 0 are used by default during a ruleset if the splits for the specific
+    /// ruleset aren't set.
+    /// @dev If splits aren't found at the given `rulesetId`, they'll be sought in the FALLBACK_RULESET_ID of 0.
+    /// @param projectId The ID of the project to get splits for.
+    /// @param rulesetId An identifier within which the returned splits should be considered active.
+    /// @param groupId The identifying group of the splits.
+    /// @return splits An array of all splits for the project.
+    function splitsOf(
+        uint256 projectId,
+        uint256 rulesetId,
+        uint256 groupId
+    )
+        external
+        view
+        override
+        returns (JBSplit[] memory splits)
+    {
+        splits = _getStructsFor({projectId: projectId, rulesetId: rulesetId, groupId: groupId});
+
+        // Use the default splits if there aren't any for the ruleset.
+        if (splits.length == 0) {
+            splits = _getStructsFor({projectId: projectId, rulesetId: FALLBACK_RULESET_ID, groupId: groupId});
+        }
+    }
+
+    //*********************************************************************//
+    // ---------------------- internal transactions ---------------------- //
     //*********************************************************************//
 
     /// @notice Sets the splits for a group given a project, ruleset, and group ID.
@@ -320,5 +235,90 @@ contract JBSplits is JBControlled, IJBSplits {
             delete _packedSplitParts1Of[projectId][rulesetId][groupId][i];
             delete _packedSplitParts2Of[projectId][rulesetId][groupId][i];
         }
+    }
+
+    //*********************************************************************//
+    // -------------------------- internal views ------------------------- //
+    //*********************************************************************//
+
+    /// @notice Unpack an array of `JBSplit` structs for all of the splits in a group, given project, ruleset, and group
+    /// IDs.
+    /// @param projectId The ID of the project the splits belong to.
+    /// @param rulesetId The ID of the ruleset the group of splits should be considered active within.
+    /// @param groupId The ID of the group to get the splits structs of.
+    /// @return splits The split structs, as an array of `JBSplit`s.
+    function _getStructsFor(
+        uint256 projectId,
+        uint256 rulesetId,
+        uint256 groupId
+    )
+        internal
+        view
+        returns (JBSplit[] memory)
+    {
+        // Get a reference to the number of splits that need to be added to the returned array.
+        uint256 splitCount = _splitCountOf[projectId][rulesetId][groupId];
+
+        // Initialize an array to be returned that has the appropriate length.
+        JBSplit[] memory splits = new JBSplit[](splitCount);
+
+        // Loop through each split and unpack the values into structs.
+        for (uint256 i; i < splitCount; i++) {
+            // Get a reference to the first part of the split's packed data.
+            uint256 packedSplitPart1 = _packedSplitParts1Of[projectId][rulesetId][groupId][i];
+
+            // Populate the split struct.
+            JBSplit memory split;
+
+            // `percent` in bits 0-31.
+            split.percent = uint32(packedSplitPart1);
+            // `projectId` in bits 32-95.
+            split.projectId = uint64(packedSplitPart1 >> 32);
+            // `beneficiary` in bits 96-255.
+            split.beneficiary = payable(address(uint160(packedSplitPart1 >> 96)));
+
+            // Get a reference to the second part of the split's packed data.
+            uint256 packedSplitPart2 = _packedSplitParts2Of[projectId][rulesetId][groupId][i];
+
+            // If there's anything in it, unpack.
+            if (packedSplitPart2 > 0) {
+                // `preferAddToBalance` in bit 0.
+                split.preferAddToBalance = packedSplitPart2 & 1 == 1;
+                // `lockedUntil` in bits 1-48.
+                split.lockedUntil = uint48(packedSplitPart2 >> 1);
+                // `hook` in bits 49-208.
+                split.hook = IJBSplitHook(address(uint160(packedSplitPart2 >> 49)));
+            }
+
+            // Add the split to the value being returned.
+            splits[i] = split;
+        }
+
+        return splits;
+    }
+
+    /// @notice Determine if the provided splits array includes the locked split.
+    /// @param splits The array of splits to check within.
+    /// @param lockedSplit The locked split.
+    /// @return A flag indicating if the `lockedSplit` is contained in the `splits`.
+    function _includesLockedSplits(JBSplit[] memory splits, JBSplit memory lockedSplit) internal pure returns (bool) {
+        // Keep a reference to the number of splits.
+        uint256 numberOfSplits = splits.length;
+
+        for (uint256 i; i < numberOfSplits; i++) {
+            // Set the split being iterated on.
+            JBSplit memory split = splits[i];
+
+            // Check for sameness.
+            if (
+                // Allow the lock to be extended.
+                split.percent == lockedSplit.percent && split.beneficiary == lockedSplit.beneficiary
+                    && split.hook == lockedSplit.hook && split.projectId == lockedSplit.projectId
+                    && split.preferAddToBalance == lockedSplit.preferAddToBalance
+                    && split.lockedUntil >= lockedSplit.lockedUntil
+            ) return true;
+        }
+
+        return false;
     }
 }

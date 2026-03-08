@@ -6,6 +6,11 @@ import {JBFundAccessLimitGroup} from "./../structs/JBFundAccessLimitGroup.sol";
 
 /// @notice Stores fund access limits (payout limits and surplus allowances) for each project.
 interface IJBFundAccessLimits {
+    /// @notice Fund access limits were set for a project's ruleset.
+    /// @param rulesetId The ID of the ruleset the limits apply within.
+    /// @param projectId The ID of the project the limits were set for.
+    /// @param fundAccessLimitGroup The fund access limit group that was set.
+    /// @param caller The address that set the fund access limits.
     event SetFundAccessLimits(
         uint256 indexed rulesetId,
         uint256 indexed projectId,

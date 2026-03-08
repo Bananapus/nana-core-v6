@@ -7,6 +7,10 @@ import {IJBTerminal} from "./IJBTerminal.sol";
 
 /// @notice A terminal that supports Permit2 token approvals.
 interface IJBPermitTerminal is IJBTerminal {
+    /// @notice A Permit2 allowance approval failed.
+    /// @param token The token the approval was attempted for.
+    /// @param owner The owner of the tokens.
+    /// @param reason The failure reason.
     event Permit2AllowanceFailed(address indexed token, address indexed owner, bytes reason);
 
     /// @notice The Permit2 contract used for token approvals.

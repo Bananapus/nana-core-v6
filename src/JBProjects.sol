@@ -47,6 +47,37 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     }
 
     //*********************************************************************//
+    // ---------------------- external transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Sets the address of the resolver used to retrieve the tokenURI of projects.
+    /// @param resolver The address of the new resolver.
+    function setTokenUriResolver(IJBTokenUriResolver resolver) external override onlyOwner {
+        // Store the new resolver.
+        tokenUriResolver = resolver;
+
+        emit SetTokenUriResolver({resolver: resolver, caller: _msgSender()});
+    }
+
+    //*********************************************************************//
+    // ----------------------- public transactions ----------------------- //
+    //*********************************************************************//
+
+    /// @notice Create a new project for the specified owner, which mints an NFT (ERC-721) into their wallet.
+    /// @dev Anyone can create a project on an owner's behalf.
+    /// @param owner The address that will be the owner of the project.
+    /// @return projectId The token ID of the newly created project.
+    function createFor(address owner) public override returns (uint256 projectId) {
+        // Increment the count, which will be used as the ID.
+        projectId = ++count;
+
+        emit Create({projectId: projectId, owner: owner, caller: _msgSender()});
+
+        // Mint the project.
+        _safeMint(owner, projectId);
+    }
+
+    //*********************************************************************//
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
@@ -91,36 +122,5 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     /// @return sender The address which sent this call.
     function _msgSender() internal view override(ERC2771Context, Context) returns (address sender) {
         return ERC2771Context._msgSender();
-    }
-
-    //*********************************************************************//
-    // ---------------------- external transactions ---------------------- //
-    //*********************************************************************//
-
-    /// @notice Sets the address of the resolver used to retrieve the tokenURI of projects.
-    /// @param resolver The address of the new resolver.
-    function setTokenUriResolver(IJBTokenUriResolver resolver) external override onlyOwner {
-        // Store the new resolver.
-        tokenUriResolver = resolver;
-
-        emit SetTokenUriResolver({resolver: resolver, caller: _msgSender()});
-    }
-
-    //*********************************************************************//
-    // ---------------------- public transactions ---------------------- //
-    //*********************************************************************//
-
-    /// @notice Create a new project for the specified owner, which mints an NFT (ERC-721) into their wallet.
-    /// @dev Anyone can create a project on an owner's behalf.
-    /// @param owner The address that will be the owner of the project.
-    /// @return projectId The token ID of the newly created project.
-    function createFor(address owner) public override returns (uint256 projectId) {
-        // Increment the count, which will be used as the ID.
-        projectId = ++count;
-
-        emit Create({projectId: projectId, owner: owner, caller: _msgSender()});
-
-        // Mint the project.
-        _safeMint(owner, projectId);
     }
 }

@@ -29,42 +29,6 @@ interface IJBTerminalStore {
     /// @return The balance.
     function balanceOf(address terminal, uint256 projectId, address token) external view returns (uint256);
 
-    /// @notice Returns the amount of payout limit used by a terminal for a project in a given cycle.
-    /// @param terminal The terminal to get the used payout limit of.
-    /// @param projectId The ID of the project.
-    /// @param token The token the payout limit is denominated in.
-    /// @param rulesetCycleNumber The cycle number to get the used payout limit for.
-    /// @param currency The currency the payout limit is denominated in.
-    /// @return The amount of payout limit used.
-    function usedPayoutLimitOf(
-        address terminal,
-        uint256 projectId,
-        address token,
-        uint256 rulesetCycleNumber,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
-
-    /// @notice Returns the amount of surplus allowance used by a terminal for a project in a given ruleset.
-    /// @param terminal The terminal to get the used surplus allowance of.
-    /// @param projectId The ID of the project.
-    /// @param token The token the surplus allowance is denominated in.
-    /// @param rulesetId The ID of the ruleset to get the used surplus allowance for.
-    /// @param currency The currency the surplus allowance is denominated in.
-    /// @return The amount of surplus allowance used.
-    function usedSurplusAllowanceOf(
-        address terminal,
-        uint256 projectId,
-        address token,
-        uint256 rulesetId,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
-
     /// @notice Returns the reclaimable surplus for a project given a cash-out count, total supply, and surplus.
     /// @param projectId The ID of the project.
     /// @param cashOutCount The number of tokens being cashed out.
@@ -133,11 +97,74 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
+    /// @notice Returns the amount of payout limit used by a terminal for a project in a given cycle.
+    /// @param terminal The terminal to get the used payout limit of.
+    /// @param projectId The ID of the project.
+    /// @param token The token the payout limit is denominated in.
+    /// @param rulesetCycleNumber The cycle number to get the used payout limit for.
+    /// @param currency The currency the payout limit is denominated in.
+    /// @return The amount of payout limit used.
+    function usedPayoutLimitOf(
+        address terminal,
+        uint256 projectId,
+        address token,
+        uint256 rulesetCycleNumber,
+        uint256 currency
+    )
+        external
+        view
+        returns (uint256);
+
+    /// @notice Returns the amount of surplus allowance used by a terminal for a project in a given ruleset.
+    /// @param terminal The terminal to get the used surplus allowance of.
+    /// @param projectId The ID of the project.
+    /// @param token The token the surplus allowance is denominated in.
+    /// @param rulesetId The ID of the ruleset to get the used surplus allowance for.
+    /// @param currency The currency the surplus allowance is denominated in.
+    /// @return The amount of surplus allowance used.
+    function usedSurplusAllowanceOf(
+        address terminal,
+        uint256 projectId,
+        address token,
+        uint256 rulesetId,
+        uint256 currency
+    )
+        external
+        view
+        returns (uint256);
+
     /// @notice Records a balance addition for a project.
     /// @param projectId The ID of the project.
     /// @param token The token being added.
     /// @param amount The amount being added.
     function recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) external;
+
+    /// @notice Records a cash out from a project.
+    /// @param holder The address cashing out.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param cashOutCount The number of project tokens being cashed out.
+    /// @param accountingContext The accounting context of the token being reclaimed.
+    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param metadata Extra data to pass along to the data hook.
+    /// @return ruleset The project's current ruleset.
+    /// @return reclaimAmount The amount reclaimed.
+    /// @return cashOutTaxRate The cash out tax rate applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function recordCashOutFor(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        JBAccountingContext calldata accountingContext,
+        JBAccountingContext[] calldata balanceAccountingContexts,
+        bytes calldata metadata
+    )
+        external
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        );
 
     /// @notice Records a payment to a project.
     /// @param payer The address of the payer.
@@ -173,33 +200,6 @@ interface IJBTerminalStore {
     )
         external
         returns (JBRuleset memory ruleset, uint256 amountPaidOut);
-
-    /// @notice Records a cash out from a project.
-    /// @param holder The address cashing out.
-    /// @param projectId The ID of the project being cashed out from.
-    /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param accountingContext The accounting context of the token being reclaimed.
-    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
-    /// @param metadata Extra data to pass along to the data hook.
-    /// @return ruleset The project's current ruleset.
-    /// @return reclaimAmount The amount reclaimed.
-    /// @return cashOutTaxRate The cash out tax rate applied.
-    /// @return hookSpecifications Any cash out hook specifications from the data hook.
-    function recordCashOutFor(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
-        bytes calldata metadata
-    )
-        external
-        returns (
-            JBRuleset memory ruleset,
-            uint256 reclaimAmount,
-            uint256 cashOutTaxRate,
-            JBCashOutHookSpecification[] memory hookSpecifications
-        );
 
     /// @notice Records a terminal migration for a project.
     /// @param projectId The ID of the project being migrated.

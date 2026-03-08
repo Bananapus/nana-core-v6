@@ -110,8 +110,9 @@ contract TestDurationUnderflow is TestBaseWorkflow {
     }
 
     /// @notice Normal case: duration < block.timestamp. No underflow even without the fix.
-    function test_harness_normalDuration_noUnderflow() public view {
-        // block_timestamp = 1643802347 >> 7 days. Normal case.
+    function test_harness_normalDuration_noUnderflow() public {
+        // Warp to a realistic timestamp so that `block.timestamp - 30 days` doesn't underflow.
+        vm.warp(1_643_802_347);
         JBRuleset memory base =
             _makeBaseRuleset({start: uint48(block.timestamp - 30 days), duration: uint32(7 days), weight: 1000e18});
 

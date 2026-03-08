@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {ERC2771Context, Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ERC2771Context, Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 
 import {JBControlled} from "./abstract/JBControlled.sol";
@@ -77,6 +77,73 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         ERC2771Context(trustedForwarder)
     {
         PROJECTS = projects;
+    }
+
+    //*********************************************************************//
+    // ---------------------- external transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Add a price feed for the `unitCurrency`, priced in terms of the `pricingCurrency`.
+    /// @dev Price feeds can only be added, not modified or removed. Once a feed is set for a currency pair (in either
+    /// direction), it is permanent for that project ID. Recovery from a misconfigured feed requires deploying a new
+    /// JBPrices contract.
+    /// @dev This contract's owner can add protocol-wide default price feed by passing a `projectId` of 0.
+    /// @param projectId The ID of the project to add a feed for. If `projectId` is 0, add a protocol-wide default price
+    /// feed.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency being priced by the feed.
+    /// @param feed The address of the price feed to add.
+    function addPriceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        external
+        override
+    {
+        // Ensure default price feeds can only be set by this contract's owner, and that other `projectId`s can only be
+        // set by the controller
+        projectId == DEFAULT_PROJECT_ID ? _checkOwner() : _onlyControllerOf(projectId);
+
+        // Make sure the pricing currency isn't 0.
+        if (pricingCurrency == 0) revert JBPrices_ZeroPricingCurrency();
+
+        // Make sure the unit currency isn't 0.
+        if (unitCurrency == 0) revert JBPrices_ZeroUnitCurrency();
+
+        // Make sure there isn't already a default price feed for the pair or its inverse.
+        if (
+            priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
+                || priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
+        ) {
+            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
+                    != IJBPriceFeed(address(0))
+                    ? priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
+                    : priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency]);
+        }
+
+        // Make sure this project doesn't already have a price feed for the pair or its inverse.
+        if (
+            priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
+                || priceFeedFor[projectId][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
+        ) {
+            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[projectId][pricingCurrency][unitCurrency]
+                    != IJBPriceFeed(address(0))
+                    ? priceFeedFor[projectId][pricingCurrency][unitCurrency]
+                    : priceFeedFor[projectId][unitCurrency][pricingCurrency]);
+        }
+
+        // Store the feed.
+        priceFeedFor[projectId][pricingCurrency][unitCurrency] = feed;
+
+        emit AddPriceFeed({
+            projectId: projectId,
+            pricingCurrency: pricingCurrency,
+            unitCurrency: unitCurrency,
+            feed: feed,
+            caller: _msgSender()
+        });
     }
 
     //*********************************************************************//
@@ -156,72 +223,5 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     /// @return sender The address which sent this call.
     function _msgSender() internal view override(ERC2771Context, Context) returns (address sender) {
         return ERC2771Context._msgSender();
-    }
-
-    //*********************************************************************//
-    // ---------------------- external transactions ---------------------- //
-    //*********************************************************************//
-
-    /// @notice Add a price feed for the `unitCurrency`, priced in terms of the `pricingCurrency`.
-    /// @dev Price feeds can only be added, not modified or removed. Once a feed is set for a currency pair (in either
-    /// direction), it is permanent for that project ID. Recovery from a misconfigured feed requires deploying a new
-    /// JBPrices contract.
-    /// @dev This contract's owner can add protocol-wide default price feed by passing a `projectId` of 0.
-    /// @param projectId The ID of the project to add a feed for. If `projectId` is 0, add a protocol-wide default price
-    /// feed.
-    /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
-    /// @param feed The address of the price feed to add.
-    function addPriceFeedFor(
-        uint256 projectId,
-        uint256 pricingCurrency,
-        uint256 unitCurrency,
-        IJBPriceFeed feed
-    )
-        external
-        override
-    {
-        // Ensure default price feeds can only be set by this contract's owner, and that other `projectId`s can only be
-        // set by the controller
-        projectId == DEFAULT_PROJECT_ID ? _checkOwner() : _onlyControllerOf(projectId);
-
-        // Make sure the pricing currency isn't 0.
-        if (pricingCurrency == 0) revert JBPrices_ZeroPricingCurrency();
-
-        // Make sure the unit currency isn't 0.
-        if (unitCurrency == 0) revert JBPrices_ZeroUnitCurrency();
-
-        // Make sure there isn't already a default price feed for the pair or its inverse.
-        if (
-            priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                || priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
-        ) {
-            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
-                    != IJBPriceFeed(address(0))
-                    ? priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
-                    : priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency]);
-        }
-
-        // Make sure this project doesn't already have a price feed for the pair or its inverse.
-        if (
-            priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                || priceFeedFor[projectId][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
-        ) {
-            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[projectId][pricingCurrency][unitCurrency]
-                    != IJBPriceFeed(address(0))
-                    ? priceFeedFor[projectId][pricingCurrency][unitCurrency]
-                    : priceFeedFor[projectId][unitCurrency][pricingCurrency]);
-        }
-
-        // Store the feed.
-        priceFeedFor[projectId][pricingCurrency][unitCurrency] = feed;
-
-        emit AddPriceFeed({
-            projectId: projectId,
-            pricingCurrency: pricingCurrency,
-            unitCurrency: unitCurrency,
-            feed: feed,
-            caller: _msgSender()
-        });
     }
 }

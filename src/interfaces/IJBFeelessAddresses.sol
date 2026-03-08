@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 
 /// @notice Tracks addresses that are exempt from fees.
 interface IJBFeelessAddresses {
+    /// @notice An address's feeless status was set.
+    /// @param addr The address whose feeless status was set.
+    /// @param isFeeless Whether the address is feeless.
+    /// @param caller The address that set the feeless status.
     event SetFeelessAddress(address indexed addr, bool indexed isFeeless, address caller);
 
     /// @notice Returns whether the specified address is feeless.

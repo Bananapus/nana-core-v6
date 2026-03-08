@@ -27,14 +27,49 @@ import {JBTerminalConfig} from "./../structs/JBTerminalConfig.sol";
 /// @notice Coordinates rulesets and project tokens, and is the entry point for most operations related to rulesets and
 /// project tokens.
 interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessControl {
+    /// @notice Tokens were burned from a holder's balance.
+    /// @param holder The address whose tokens were burned.
+    /// @param projectId The ID of the project whose tokens were burned.
+    /// @param tokenCount The number of tokens burned.
+    /// @param memo A memo associated with the burn.
+    /// @param caller The address that called the burn function.
     event BurnTokens(
         address indexed holder, uint256 indexed projectId, uint256 tokenCount, string memo, address caller
     );
+
+    /// @notice An ERC-20 token was deployed for a project.
+    /// @param projectId The ID of the project the token was deployed for.
+    /// @param deployer The address that deployed the token.
+    /// @param salt The salt used for deterministic deployment.
+    /// @param saltHash The hash of the salt.
+    /// @param caller The address that called the deploy function.
     event DeployERC20(
         uint256 indexed projectId, address indexed deployer, bytes32 salt, bytes32 saltHash, address caller
     );
+
+    /// @notice A project was launched with its initial rulesets and terminals.
+    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param projectId The ID of the newly created project.
+    /// @param projectUri The metadata URI of the project.
+    /// @param memo A memo associated with the launch.
+    /// @param caller The address that called the launch function.
     event LaunchProject(uint256 rulesetId, uint256 projectId, string projectUri, string memo, address caller);
+
+    /// @notice Rulesets were launched for an existing project.
+    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param projectId The ID of the project.
+    /// @param memo A memo associated with the launch.
+    /// @param caller The address that called the launch function.
     event LaunchRulesets(uint256 rulesetId, uint256 projectId, string memo, address caller);
+
+    /// @notice Tokens were minted for a beneficiary.
+    /// @param beneficiary The address that received the minted tokens.
+    /// @param projectId The ID of the project whose tokens were minted.
+    /// @param tokenCount The total number of tokens minted, including reserved tokens.
+    /// @param beneficiaryTokenCount The number of tokens minted for the beneficiary.
+    /// @param memo A memo associated with the mint.
+    /// @param reservedPercent The reserved percent applied to the mint.
+    /// @param caller The address that called the mint function.
     event MintTokens(
         address indexed beneficiary,
         uint256 indexed projectId,
@@ -44,11 +79,37 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         uint256 reservedPercent,
         address caller
     );
+
+    /// @notice A project was prepared for migration from another controller.
+    /// @param projectId The ID of the project being prepared for migration.
+    /// @param from The controller the project is being migrated from.
+    /// @param caller The address that called the prep migration function.
     event PrepMigration(uint256 indexed projectId, address from, address caller);
+
+    /// @notice Rulesets were queued for a project.
+    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param projectId The ID of the project.
+    /// @param memo A memo associated with the queue operation.
+    /// @param caller The address that called the queue function.
     event QueueRulesets(uint256 rulesetId, uint256 projectId, string memo, address caller);
+
+    /// @notice A reserved token distribution to a split reverted.
+    /// @param projectId The ID of the project.
+    /// @param split The split that the distribution reverted for.
+    /// @param tokenCount The number of tokens that failed to distribute.
+    /// @param reason The revert reason.
+    /// @param caller The address that called the distribution function.
     event ReservedDistributionReverted(
         uint256 indexed projectId, JBSplit split, uint256 tokenCount, bytes reason, address caller
     );
+
+    /// @notice Reserved tokens were sent to a specific split.
+    /// @param projectId The ID of the project.
+    /// @param rulesetId The ID of the ruleset during the distribution.
+    /// @param groupId The ID of the split group.
+    /// @param split The split that received the tokens.
+    /// @param tokenCount The number of tokens sent to the split.
+    /// @param caller The address that called the distribution function.
     event SendReservedTokensToSplit(
         uint256 indexed projectId,
         uint256 indexed rulesetId,
@@ -57,6 +118,15 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         uint256 tokenCount,
         address caller
     );
+
+    /// @notice Reserved tokens were distributed to a project's splits.
+    /// @param rulesetId The ID of the ruleset during the distribution.
+    /// @param rulesetCycleNumber The cycle number of the ruleset.
+    /// @param projectId The ID of the project.
+    /// @param owner The project's owner.
+    /// @param tokenCount The total number of reserved tokens distributed.
+    /// @param leftoverAmount The number of tokens left over after distribution.
+    /// @param caller The address that called the distribution function.
     event SendReservedTokensToSplits(
         uint256 indexed rulesetId,
         uint256 indexed rulesetCycleNumber,
@@ -66,6 +136,11 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         uint256 leftoverAmount,
         address caller
     );
+
+    /// @notice A project's metadata URI was set.
+    /// @param projectId The ID of the project.
+    /// @param uri The metadata URI that was set.
+    /// @param caller The address that called the set URI function.
     event SetUri(uint256 indexed projectId, string uri, address caller);
 
     /// @notice The directory of terminals and controllers for projects.
@@ -73,6 +148,9 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice The contract that stores fund access limits for each project.
     function FUND_ACCESS_LIMITS() external view returns (IJBFundAccessLimits);
+
+    /// @notice The address of the contract that manages omnichain ruleset ops.
+    function OMNICHAIN_RULESET_OPERATOR() external view returns (address);
 
     /// @notice The contract that stores prices for each project.
     function PRICES() external view returns (IJBPrices);
@@ -88,9 +166,6 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice The contract that manages token minting and burning.
     function TOKENS() external view returns (IJBTokens);
-
-    /// @notice The address of the contract that manages omnichain ruleset ops.
-    function OMNICHAIN_RULESET_OPERATOR() external view returns (address);
 
     /// @notice Returns an array of a project's rulesets with metadata, sorted from latest to earliest.
     /// @param projectId The ID of the project to get the rulesets of.

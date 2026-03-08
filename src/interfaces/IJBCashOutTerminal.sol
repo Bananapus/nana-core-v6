@@ -7,13 +7,17 @@ import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedCo
 
 /// @notice A terminal that can be cashed out from.
 interface IJBCashOutTerminal is IJBTerminal {
-    event HookAfterRecordCashOut(
-        IJBCashOutHook indexed hook,
-        JBAfterCashOutRecordedContext context,
-        uint256 specificationAmount,
-        uint256 fee,
-        address caller
-    );
+    /// @notice A cash out was processed for a project.
+    /// @param rulesetId The ID of the ruleset during the cash out.
+    /// @param rulesetCycleNumber The cycle number of the ruleset during the cash out.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param holder The address whose tokens were cashed out.
+    /// @param beneficiary The address that received the reclaimed funds.
+    /// @param cashOutCount The number of tokens cashed out.
+    /// @param cashOutTaxRate The cash out tax rate applied.
+    /// @param reclaimAmount The amount of funds reclaimed.
+    /// @param metadata Extra metadata associated with the cash out.
+    /// @param caller The address that called the cash out function.
     event CashOutTokens(
         uint256 indexed rulesetId,
         uint256 indexed rulesetCycleNumber,
@@ -24,6 +28,20 @@ interface IJBCashOutTerminal is IJBTerminal {
         uint256 cashOutTaxRate,
         uint256 reclaimAmount,
         bytes metadata,
+        address caller
+    );
+
+    /// @notice A cash out hook was called after a cash out was recorded.
+    /// @param hook The cash out hook that was called.
+    /// @param context The context passed to the hook.
+    /// @param specificationAmount The amount specified for the hook.
+    /// @param fee The fee taken from the hook's amount.
+    /// @param caller The address that called the cash out function.
+    event HookAfterRecordCashOut(
+        IJBCashOutHook indexed hook,
+        JBAfterCashOutRecordedContext context,
+        uint256 specificationAmount,
+        uint256 fee,
         address caller
     );
 

@@ -19,7 +19,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     );
 
     //*********************************************************************//
-    // ---------------- public stored immutable properties --------------- //
+    // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
     /// @notice How long the sequencer must be re-active in order to return a price.

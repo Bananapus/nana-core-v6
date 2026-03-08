@@ -20,15 +20,11 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     error JBChainlinkV3PriceFeed_StalePrice(uint256 timestamp, uint256 threshold, uint256 updatedAt);
 
     //*********************************************************************//
-    // ---------------- public stored immutable properties --------------- //
+    // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
     /// @notice The Chainlink feed that prices are reported from.
     AggregatorV3Interface public immutable FEED;
-
-    //*********************************************************************//
-    // ---------------- public immutable stored properties --------------- //
-    //*********************************************************************//
 
     /// @notice How many seconds old a Chainlink price update is allowed to be before considered "stale".
     uint256 public immutable THRESHOLD;

@@ -5,6 +5,13 @@ import {JBPermissionsData} from "./../structs/JBPermissionsData.sol";
 
 /// @notice Stores permissions for all addresses and operators.
 interface IJBPermissions {
+    /// @notice Permissions were set for an operator on behalf of an account.
+    /// @param operator The operator whose permissions were set.
+    /// @param account The account the permissions are for.
+    /// @param projectId The project ID the permissions are scoped to.
+    /// @param permissionIds The permission IDs that were set.
+    /// @param packed The packed permissions bitmap.
+    /// @param caller The address that set the permissions.
     event OperatorPermissionsSet(
         address indexed operator,
         address indexed account,
@@ -16,13 +23,6 @@ interface IJBPermissions {
 
     /// @notice The project ID considered a wildcard, granting permissions to all projects.
     function WILDCARD_PROJECT_ID() external view returns (uint256);
-
-    /// @notice Returns the packed permissions that an operator has for an account and project.
-    /// @param operator The address of the operator.
-    /// @param account The address of the account being operated on behalf of.
-    /// @param projectId The project ID the permissions are scoped to. 0 is a wildcard for all projects.
-    /// @return The packed permissions as a uint256 bitmap.
-    function permissionsOf(address operator, address account, uint256 projectId) external view returns (uint256);
 
     /// @notice Checks if an operator has a specific permission for an account and project.
     /// @param operator The operator to check.
@@ -63,6 +63,13 @@ interface IJBPermissions {
         external
         view
         returns (bool);
+
+    /// @notice Returns the packed permissions that an operator has for an account and project.
+    /// @param operator The address of the operator.
+    /// @param account The address of the account being operated on behalf of.
+    /// @param projectId The project ID the permissions are scoped to. 0 is a wildcard for all projects.
+    /// @return The packed permissions as a uint256 bitmap.
+    function permissionsOf(address operator, address account, uint256 projectId) external view returns (uint256);
 
     /// @notice Sets permissions for an operator on behalf of an account.
     /// @param account The account setting its operator's permissions.

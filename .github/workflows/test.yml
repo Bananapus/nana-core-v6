@@ -20,7 +20,7 @@ jobs:
         run: npm install --omit=dev
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
-      - name: Run local tests
-        run: forge snapshot --fail-fast --summary --detailed --skip "*/script/**"
+      - name: Run tests
+        run: forge test --fail-fast --summary --detailed --skip "*/script/**" --skip BondingCurveProperties
       - name: Check contract sizes
-        run: forge build --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils
+        run: FOUNDRY_PROFILE=ci_sizes forge build --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils

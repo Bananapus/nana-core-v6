@@ -83,6 +83,193 @@ contract JBRulesets is JBControlled, IJBRulesets {
     constructor(IJBDirectory directory) JBControlled(directory) {}
 
     //*********************************************************************//
+    // ---------------------- external transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Queues the upcoming approvable ruleset for the specified project.
+    /// @dev Only a project's current controller can queue its rulesets.
+    /// @param projectId The ID of the project to queue the ruleset for.
+    /// @param duration The number of seconds the ruleset lasts for, after which a new ruleset starts.
+    /// - A `duration` of 0 means this ruleset will remain active until the project owner queues a new ruleset. That new
+    /// ruleset will start immediately.
+    /// - A ruleset with a non-zero `duration` applies until the duration ends – any newly queued rulesets will be
+    /// *queued* to take effect afterwards.
+    /// - If a duration ends and no new rulesets are queued, the ruleset rolls over to a new ruleset with the same rules
+    /// (except for a new `start` timestamp and a cut `weight`).
+    /// @param weight A fixed point number with 18 decimals that contracts can use to base arbitrary calculations on.
+    /// Payment terminals generally use this to determine how many tokens should be minted when the project is paid.
+    /// @param weightCutPercent A fraction (out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`) to reduce the next ruleset's
+    /// `weight`
+    /// by.
+    /// - If a ruleset specifies a non-zero `weight`, the `weightCutPercent` does not apply.
+    /// - If the `weightCutPercent` is 0, the `weight` stays the same.
+    /// - If the `weightCutPercent` is 10% of `JBConstants.MAX_WEIGHT_CUT_PERCENT`, next ruleset's `weight` will be 90%
+    /// of the
+    /// current
+    /// one.
+    /// @param approvalHook A contract which dictates whether a proposed ruleset should be accepted or rejected. It can
+    /// be used to constrain a project owner's ability to change ruleset parameters over time.
+    /// @param metadata Arbitrary extra data to associate with this ruleset. This metadata is not used by `JBRulesets`.
+    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
+    /// timestamp.
+    /// @return The struct of the new ruleset.
+    function queueFor(
+        uint256 projectId,
+        uint256 duration,
+        uint256 weight,
+        uint256 weightCutPercent,
+        IJBRulesetApprovalHook approvalHook,
+        uint256 metadata,
+        uint256 mustStartAtOrAfter
+    )
+        external
+        override
+        onlyControllerOf(projectId)
+        returns (JBRuleset memory)
+    {
+        // Duration must fit in a uint32.
+        if (duration > type(uint32).max) revert JBRulesets_InvalidRulesetDuration(duration, type(uint32).max);
+
+        // Weight cut percent must be less than or equal to 100%.
+        if (weightCutPercent > JBConstants.MAX_WEIGHT_CUT_PERCENT) {
+            revert JBRulesets_InvalidWeightCutPercent(weightCutPercent);
+        }
+
+        // Weight must fit into a uint112.
+        if (weight > type(uint112).max) revert JBRulesets_InvalidWeight(weight, type(uint112).max);
+
+        // If the start date is not set, set it to be the current timestamp.
+        if (mustStartAtOrAfter == 0) {
+            mustStartAtOrAfter = block.timestamp;
+        }
+
+        // Make sure the min start date fits in a uint48, and that the start date of the following ruleset will also fit
+        // within the max.
+        if (mustStartAtOrAfter + duration > type(uint48).max) {
+            revert JBRulesets_InvalidRulesetEndTime(mustStartAtOrAfter + duration, type(uint48).max);
+        }
+
+        // Approval hook should be a valid contract, supporting the correct interface
+        if (approvalHook != IJBRulesetApprovalHook(address(0))) {
+            // Revert if there isn't a contract at the address
+            if (address(approvalHook).code.length == 0) revert JBRulesets_InvalidRulesetApprovalHook(approvalHook);
+
+            // Make sure the approval hook supports the expected interface.
+            try approvalHook.supportsInterface(type(IJBRulesetApprovalHook).interfaceId) returns (bool doesSupport) {
+                if (!doesSupport) revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // Contract exists at the
+                // address but
+                // with the
+                // wrong interface
+            } catch {
+                revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // No ERC165 support
+            }
+        }
+
+        // Get a reference to the latest ruleset's ID.
+        uint256 latestId = latestRulesetIdOf[projectId];
+
+        // The new rulesetId timestamp is now, or an increment from now if the current timestamp is taken.
+        uint256 rulesetId = latestId >= block.timestamp ? latestId + 1 : block.timestamp;
+
+        // Set up the ruleset by configuring intrinsic properties.
+        _configureIntrinsicPropertiesFor({
+            projectId: projectId, rulesetId: rulesetId, weight: weight, mustStartAtOrAfter: mustStartAtOrAfter
+        });
+
+        // Efficiently stores the ruleset's user-defined properties.
+        // If all user config properties are zero, no need to store anything as the default value will have the same
+        // outcome.
+        if (approvalHook != IJBRulesetApprovalHook(address(0)) || duration > 0 || weightCutPercent > 0) {
+            // approval hook in bits 0-159 bytes.
+            uint256 packed = uint160(address(approvalHook));
+
+            // duration in bits 160-191 bytes.
+            packed |= duration << 160;
+
+            // weightCutPercent in bits 192-223 bytes.
+            packed |= weightCutPercent << 192;
+
+            // Set in storage.
+            _packedUserPropertiesOf[projectId][rulesetId] = packed;
+        }
+
+        // Set the metadata if needed.
+        if (metadata > 0) _metadataOf[projectId][rulesetId] = metadata;
+
+        emit RulesetQueued({
+            rulesetId: rulesetId,
+            projectId: projectId,
+            duration: duration,
+            weight: weight,
+            weightCutPercent: weightCutPercent,
+            approvalHook: approvalHook,
+            metadata: metadata,
+            mustStartAtOrAfter: mustStartAtOrAfter,
+            caller: msg.sender
+        });
+
+        // Return the struct for the new ruleset's ID.
+        return _getStructFor({projectId: projectId, rulesetId: rulesetId});
+    }
+
+    /// @notice Cache the value of the ruleset weight for a specific ruleset.
+    /// @dev The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected
+    /// by an approval hook, `currentOf()` falls back to the base ruleset — callers should pass that base ruleset's
+    /// ID,
+    /// not the rejected latest.
+    /// @param projectId The ID of the project having its ruleset weight cached.
+    /// @param rulesetId The ID of the ruleset to update the cache for.
+    function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
+        // Get the target ruleset.
+        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+
+        // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
+        // slither-disable-next-line incorrect-equality
+        if (targetRuleset.duration == 0 || targetRuleset.weightCutPercent == 0) return;
+
+        // Get a reference to the current cache.
+        JBRulesetWeightCache storage cache = _weightCacheOf[projectId][targetRuleset.id];
+
+        // Determine the largest start timestamp the cache can be filled to.
+        // Cap the advance to the cache lookup threshold per call to stay within the iteration limit in
+        // deriveWeightFrom.
+        // Multiple calls are needed to advance the cache for large cycle gaps.
+        uint256 maxStart = targetRuleset.start + (cache.weightCutMultiple + _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD)
+            * targetRuleset.duration;
+
+        // Determine the start timestamp to derive a weight from for the cache.
+        uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;
+
+        // The difference between the start of the latest queued ruleset and the start of the ruleset we're caching the
+        // weight of.
+        uint256 startDistance = start - targetRuleset.start;
+
+        // Calculate the weight cut multiple.
+        uint168 weightCutMultiple;
+        unchecked {
+            weightCutMultiple = uint168(startDistance / targetRuleset.duration);
+        }
+
+        // Store the new values.
+        cache.weight = uint112(
+            deriveWeightFrom({
+                projectId: projectId,
+                baseRulesetStart: targetRuleset.start,
+                baseRulesetDuration: targetRuleset.duration,
+                baseRulesetWeight: targetRuleset.weight,
+                baseRulesetWeightCutPercent: targetRuleset.weightCutPercent,
+                baseRulesetCacheId: targetRuleset.id,
+                start: start
+            })
+        );
+        cache.weightCutMultiple = weightCutMultiple;
+
+        emit WeightCacheUpdated({
+            projectId: projectId, weight: cache.weight, weightCutMultiple: weightCutMultiple, caller: msg.sender
+        });
+    }
+
+    //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
@@ -495,6 +682,203 @@ contract JBRulesets is JBControlled, IJBRulesets {
     }
 
     //*********************************************************************//
+    // ---------------------- internal transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Updates the latest ruleset for this project if it exists. If there is no ruleset, initializes one.
+    /// @param projectId The ID of the project to update the latest ruleset for.
+    /// @param rulesetId The timestamp of when the ruleset was queued.
+    /// @param weight The weight to store in the queued ruleset.
+    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
+    /// timestamp.
+    function _configureIntrinsicPropertiesFor(
+        uint256 projectId,
+        uint256 rulesetId,
+        uint256 weight,
+        uint256 mustStartAtOrAfter
+    )
+        internal
+    {
+        // Keep a reference to the project's latest ruleset's ID.
+        uint256 latestId = latestRulesetIdOf[projectId];
+
+        // If the project doesn't have a ruleset yet, initialize one.
+        // slither-disable-next-line incorrect-equality
+        if (latestId == 0) {
+            // Use an empty ruleset as the base.
+            return _initializeRulesetFor({
+                projectId: projectId,
+                baseRuleset: _getStructFor({projectId: 0, rulesetId: 0}),
+                rulesetId: rulesetId,
+                mustStartAtOrAfter: mustStartAtOrAfter,
+                weight: weight
+            });
+        }
+
+        // Get a reference to the latest ruleset's struct.
+        JBRuleset memory baseRuleset = _getStructFor({projectId: projectId, rulesetId: latestId});
+
+        // Get a reference to the approval status.
+        JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: baseRuleset});
+
+        // If the base ruleset has started but wasn't approved if a approval hook exists
+        // OR it hasn't started but is currently approved
+        // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
+        // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.
+        if (
+            (block.timestamp >= baseRuleset.start
+                    && approvalStatus != JBApprovalStatus.Approved
+                    && approvalStatus != JBApprovalStatus.Empty)
+                || (block.timestamp < baseRuleset.start
+                    && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
+                    && approvalStatus != JBApprovalStatus.Approved)
+                || (block.timestamp < baseRuleset.start
+                    && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
+                    && approvalStatus != JBApprovalStatus.Approved
+                    && approvalStatus != JBApprovalStatus.ApprovalExpected
+                    && approvalStatus != JBApprovalStatus.Empty)
+        ) {
+            baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
+        }
+
+        // Make sure the ruleset starts after the base ruleset.
+        if (baseRuleset.start > mustStartAtOrAfter) mustStartAtOrAfter = baseRuleset.start;
+
+        // The time when the duration of the base ruleset's approval hook has finished.
+        // If the provided ruleset has no approval hook, return 0 (no constraint on start time).
+        uint256 timestampAfterApprovalHook;
+        if (baseRuleset.approvalHook != IJBRulesetApprovalHook(address(0))) {
+            try baseRuleset.approvalHook.DURATION() returns (uint256 duration) {
+                timestampAfterApprovalHook = rulesetId + duration;
+            } catch {
+                // If DURATION() reverts, treat as no approval hook constraint.
+                timestampAfterApprovalHook = 0;
+            }
+        }
+
+        _initializeRulesetFor({
+            projectId: projectId,
+            baseRuleset: baseRuleset,
+            rulesetId: rulesetId,
+            // Can only start after the approval hook.
+            mustStartAtOrAfter: timestampAfterApprovalHook > mustStartAtOrAfter
+                ? timestampAfterApprovalHook
+                : mustStartAtOrAfter,
+            weight: weight
+        });
+    }
+
+    /// @notice Initializes a ruleset with the specified properties.
+    /// @param projectId The ID of the project to initialize the ruleset for.
+    /// @param baseRuleset The ruleset struct to base the newly initialized one on.
+    /// @param rulesetId The `rulesetId` for the ruleset being initialized.
+    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
+    /// timestamp.
+    /// @param weight The weight to give the newly initialized ruleset.
+    function _initializeRulesetFor(
+        uint256 projectId,
+        JBRuleset memory baseRuleset,
+        uint256 rulesetId,
+        uint256 mustStartAtOrAfter,
+        uint256 weight
+    )
+        internal
+    {
+        // If there is no base, initialize a first ruleset.
+        // slither-disable-next-line incorrect-equality
+        if (baseRuleset.cycleNumber == 0) {
+            // Set fresh intrinsic properties.
+            _packAndStoreIntrinsicPropertiesOf({
+                rulesetId: rulesetId,
+                projectId: projectId,
+                rulesetCycleNumber: 1,
+                weight: weight,
+                basedOnId: baseRuleset.id,
+                start: mustStartAtOrAfter
+            });
+        } else {
+            // Derive the correct next start time from the base.
+            uint256 start = deriveStartFrom({
+                baseRulesetStart: baseRuleset.start,
+                baseRulesetDuration: baseRuleset.duration,
+                mustStartAtOrAfter: mustStartAtOrAfter
+            });
+
+            // A weight of 1 is a special case that represents inheriting the cut weight of the previous
+            // ruleset.
+            weight = weight == 1
+                ? deriveWeightFrom({
+                    projectId: projectId,
+                    baseRulesetStart: baseRuleset.start,
+                    baseRulesetDuration: baseRuleset.duration,
+                    baseRulesetWeight: baseRuleset.weight,
+                    baseRulesetWeightCutPercent: baseRuleset.weightCutPercent,
+                    baseRulesetCacheId: baseRuleset.id,
+                    start: start
+                })
+                : weight;
+
+            // Derive the correct ruleset cycle number.
+            uint256 rulesetCycleNumber = deriveCycleNumberFrom({
+                baseRulesetCycleNumber: baseRuleset.cycleNumber,
+                baseRulesetStart: baseRuleset.start,
+                baseRulesetDuration: baseRuleset.duration,
+                start: start
+            });
+
+            // Update the intrinsic properties.
+            _packAndStoreIntrinsicPropertiesOf({
+                rulesetId: rulesetId,
+                projectId: projectId,
+                rulesetCycleNumber: rulesetCycleNumber,
+                weight: weight,
+                basedOnId: baseRuleset.id,
+                start: start
+            });
+        }
+
+        // Set the project's latest ruleset configuration.
+        latestRulesetIdOf[projectId] = rulesetId;
+
+        emit RulesetInitialized({
+            rulesetId: rulesetId, projectId: projectId, basedOnId: baseRuleset.id, caller: msg.sender
+        });
+    }
+
+    /// @notice Efficiently stores the provided intrinsic properties of a ruleset.
+    /// @param rulesetId The `rulesetId` of the ruleset to pack and store for.
+    /// @param projectId The ID of the project the ruleset belongs to.
+    /// @param rulesetCycleNumber The cycle number of the ruleset.
+    /// @param weight The weight of the ruleset.
+    /// @param basedOnId The `rulesetId` of the ruleset this ruleset was based on.
+    /// @param start The start time of this ruleset.
+    function _packAndStoreIntrinsicPropertiesOf(
+        uint256 rulesetId,
+        uint256 projectId,
+        uint256 rulesetCycleNumber,
+        uint256 weight,
+        uint256 basedOnId,
+        uint256 start
+    )
+        internal
+    {
+        // `weight` in bits 0-111.
+        uint256 packed = weight;
+
+        // `basedOnId` in bits 112-159.
+        packed |= basedOnId << 112;
+
+        // `start` in bits 160-207.
+        packed |= start << 160;
+
+        // cycle number in bits 208-255.
+        packed |= rulesetCycleNumber << 208;
+
+        // Store the packed value.
+        _packedIntrinsicPropertiesOf[projectId][rulesetId] = packed;
+    }
+
+    //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
@@ -708,389 +1092,5 @@ contract JBRulesets is JBControlled, IJBRulesets {
         if (baseRuleset.duration != 0 && block.timestamp < ruleset.start - baseRuleset.duration) {
             return 0;
         }
-    }
-
-    //*********************************************************************//
-    // ---------------------- external transactions ---------------------- //
-    //*********************************************************************//
-
-    /// @notice Queues the upcoming approvable ruleset for the specified project.
-    /// @dev Only a project's current controller can queue its rulesets.
-    /// @param projectId The ID of the project to queue the ruleset for.
-    /// @param duration The number of seconds the ruleset lasts for, after which a new ruleset starts.
-    /// - A `duration` of 0 means this ruleset will remain active until the project owner queues a new ruleset. That new
-    /// ruleset will start immediately.
-    /// - A ruleset with a non-zero `duration` applies until the duration ends – any newly queued rulesets will be
-    /// *queued* to take effect afterwards.
-    /// - If a duration ends and no new rulesets are queued, the ruleset rolls over to a new ruleset with the same rules
-    /// (except for a new `start` timestamp and a cut `weight`).
-    /// @param weight A fixed point number with 18 decimals that contracts can use to base arbitrary calculations on.
-    /// Payment terminals generally use this to determine how many tokens should be minted when the project is paid.
-    /// @param weightCutPercent A fraction (out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`) to reduce the next ruleset's
-    /// `weight`
-    /// by.
-    /// - If a ruleset specifies a non-zero `weight`, the `weightCutPercent` does not apply.
-    /// - If the `weightCutPercent` is 0, the `weight` stays the same.
-    /// - If the `weightCutPercent` is 10% of `JBConstants.MAX_WEIGHT_CUT_PERCENT`, next ruleset's `weight` will be 90%
-    /// of the
-    /// current
-    /// one.
-    /// @param approvalHook A contract which dictates whether a proposed ruleset should be accepted or rejected. It can
-    /// be used to constrain a project owner's ability to change ruleset parameters over time.
-    /// @param metadata Arbitrary extra data to associate with this ruleset. This metadata is not used by `JBRulesets`.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
-    /// @return The struct of the new ruleset.
-    function queueFor(
-        uint256 projectId,
-        uint256 duration,
-        uint256 weight,
-        uint256 weightCutPercent,
-        IJBRulesetApprovalHook approvalHook,
-        uint256 metadata,
-        uint256 mustStartAtOrAfter
-    )
-        external
-        override
-        onlyControllerOf(projectId)
-        returns (JBRuleset memory)
-    {
-        // Duration must fit in a uint32.
-        if (duration > type(uint32).max) revert JBRulesets_InvalidRulesetDuration(duration, type(uint32).max);
-
-        // Weight cut percent must be less than or equal to 100%.
-        if (weightCutPercent > JBConstants.MAX_WEIGHT_CUT_PERCENT) {
-            revert JBRulesets_InvalidWeightCutPercent(weightCutPercent);
-        }
-
-        // Weight must fit into a uint112.
-        if (weight > type(uint112).max) revert JBRulesets_InvalidWeight(weight, type(uint112).max);
-
-        // If the start date is not set, set it to be the current timestamp.
-        if (mustStartAtOrAfter == 0) {
-            mustStartAtOrAfter = block.timestamp;
-        }
-
-        // Make sure the min start date fits in a uint48, and that the start date of the following ruleset will also fit
-        // within the max.
-        if (mustStartAtOrAfter + duration > type(uint48).max) {
-            revert JBRulesets_InvalidRulesetEndTime(mustStartAtOrAfter + duration, type(uint48).max);
-        }
-
-        // Approval hook should be a valid contract, supporting the correct interface
-        if (approvalHook != IJBRulesetApprovalHook(address(0))) {
-            // Revert if there isn't a contract at the address
-            if (address(approvalHook).code.length == 0) revert JBRulesets_InvalidRulesetApprovalHook(approvalHook);
-
-            // Make sure the approval hook supports the expected interface.
-            try approvalHook.supportsInterface(type(IJBRulesetApprovalHook).interfaceId) returns (bool doesSupport) {
-                if (!doesSupport) revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // Contract exists at the
-                // address but
-                // with the
-                // wrong interface
-            } catch {
-                revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // No ERC165 support
-            }
-        }
-
-        // Get a reference to the latest ruleset's ID.
-        uint256 latestId = latestRulesetIdOf[projectId];
-
-        // The new rulesetId timestamp is now, or an increment from now if the current timestamp is taken.
-        uint256 rulesetId = latestId >= block.timestamp ? latestId + 1 : block.timestamp;
-
-        // Set up the ruleset by configuring intrinsic properties.
-        _configureIntrinsicPropertiesFor({
-            projectId: projectId, rulesetId: rulesetId, weight: weight, mustStartAtOrAfter: mustStartAtOrAfter
-        });
-
-        // Efficiently stores the ruleset's user-defined properties.
-        // If all user config properties are zero, no need to store anything as the default value will have the same
-        // outcome.
-        if (approvalHook != IJBRulesetApprovalHook(address(0)) || duration > 0 || weightCutPercent > 0) {
-            // approval hook in bits 0-159 bytes.
-            uint256 packed = uint160(address(approvalHook));
-
-            // duration in bits 160-191 bytes.
-            packed |= duration << 160;
-
-            // weightCutPercent in bits 192-223 bytes.
-            packed |= weightCutPercent << 192;
-
-            // Set in storage.
-            _packedUserPropertiesOf[projectId][rulesetId] = packed;
-        }
-
-        // Set the metadata if needed.
-        if (metadata > 0) _metadataOf[projectId][rulesetId] = metadata;
-
-        emit RulesetQueued({
-            rulesetId: rulesetId,
-            projectId: projectId,
-            duration: duration,
-            weight: weight,
-            weightCutPercent: weightCutPercent,
-            approvalHook: approvalHook,
-            metadata: metadata,
-            mustStartAtOrAfter: mustStartAtOrAfter,
-            caller: msg.sender
-        });
-
-        // Return the struct for the new ruleset's ID.
-        return _getStructFor({projectId: projectId, rulesetId: rulesetId});
-    }
-
-    /// @notice Cache the value of the ruleset weight for a specific ruleset.
-    /// @dev The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected
-    /// by an approval hook, `currentOf()` falls back to the base ruleset — callers should pass that base ruleset's
-    /// ID,
-    /// not the rejected latest.
-    /// @param projectId The ID of the project having its ruleset weight cached.
-    /// @param rulesetId The ID of the ruleset to update the cache for.
-    function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
-        // Get the target ruleset.
-        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-
-        // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
-        // slither-disable-next-line incorrect-equality
-        if (targetRuleset.duration == 0 || targetRuleset.weightCutPercent == 0) return;
-
-        // Get a reference to the current cache.
-        JBRulesetWeightCache storage cache = _weightCacheOf[projectId][targetRuleset.id];
-
-        // Determine the largest start timestamp the cache can be filled to.
-        // Cap the advance to the cache lookup threshold per call to stay within the iteration limit in
-        // deriveWeightFrom.
-        // Multiple calls are needed to advance the cache for large cycle gaps.
-        uint256 maxStart = targetRuleset.start + (cache.weightCutMultiple + _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD)
-            * targetRuleset.duration;
-
-        // Determine the start timestamp to derive a weight from for the cache.
-        uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;
-
-        // The difference between the start of the latest queued ruleset and the start of the ruleset we're caching the
-        // weight of.
-        uint256 startDistance = start - targetRuleset.start;
-
-        // Calculate the weight cut multiple.
-        uint168 weightCutMultiple;
-        unchecked {
-            weightCutMultiple = uint168(startDistance / targetRuleset.duration);
-        }
-
-        // Store the new values.
-        cache.weight = uint112(
-            deriveWeightFrom({
-                projectId: projectId,
-                baseRulesetStart: targetRuleset.start,
-                baseRulesetDuration: targetRuleset.duration,
-                baseRulesetWeight: targetRuleset.weight,
-                baseRulesetWeightCutPercent: targetRuleset.weightCutPercent,
-                baseRulesetCacheId: targetRuleset.id,
-                start: start
-            })
-        );
-        cache.weightCutMultiple = weightCutMultiple;
-
-        emit WeightCacheUpdated({
-            projectId: projectId, weight: cache.weight, weightCutMultiple: weightCutMultiple, caller: msg.sender
-        });
-    }
-
-    //*********************************************************************//
-    // ------------------------ internal functions ----------------------- //
-    //*********************************************************************//
-
-    /// @notice Updates the latest ruleset for this project if it exists. If there is no ruleset, initializes one.
-    /// @param projectId The ID of the project to update the latest ruleset for.
-    /// @param rulesetId The timestamp of when the ruleset was queued.
-    /// @param weight The weight to store in the queued ruleset.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
-    function _configureIntrinsicPropertiesFor(
-        uint256 projectId,
-        uint256 rulesetId,
-        uint256 weight,
-        uint256 mustStartAtOrAfter
-    )
-        internal
-    {
-        // Keep a reference to the project's latest ruleset's ID.
-        uint256 latestId = latestRulesetIdOf[projectId];
-
-        // If the project doesn't have a ruleset yet, initialize one.
-        // slither-disable-next-line incorrect-equality
-        if (latestId == 0) {
-            // Use an empty ruleset as the base.
-            return _initializeRulesetFor({
-                projectId: projectId,
-                baseRuleset: _getStructFor({projectId: 0, rulesetId: 0}),
-                rulesetId: rulesetId,
-                mustStartAtOrAfter: mustStartAtOrAfter,
-                weight: weight
-            });
-        }
-
-        // Get a reference to the latest ruleset's struct.
-        JBRuleset memory baseRuleset = _getStructFor({projectId: projectId, rulesetId: latestId});
-
-        // Get a reference to the approval status.
-        JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: baseRuleset});
-
-        // If the base ruleset has started but wasn't approved if a approval hook exists
-        // OR it hasn't started but is currently approved
-        // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
-        // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.
-        if (
-            (block.timestamp >= baseRuleset.start
-                    && approvalStatus != JBApprovalStatus.Approved
-                    && approvalStatus != JBApprovalStatus.Empty)
-                || (block.timestamp < baseRuleset.start
-                    && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
-                    && approvalStatus != JBApprovalStatus.Approved)
-                || (block.timestamp < baseRuleset.start
-                    && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
-                    && approvalStatus != JBApprovalStatus.Approved
-                    && approvalStatus != JBApprovalStatus.ApprovalExpected
-                    && approvalStatus != JBApprovalStatus.Empty)
-        ) {
-            baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
-        }
-
-        // Make sure the ruleset starts after the base ruleset.
-        if (baseRuleset.start > mustStartAtOrAfter) mustStartAtOrAfter = baseRuleset.start;
-
-        // The time when the duration of the base ruleset's approval hook has finished.
-        // If the provided ruleset has no approval hook, return 0 (no constraint on start time).
-        uint256 timestampAfterApprovalHook;
-        if (baseRuleset.approvalHook != IJBRulesetApprovalHook(address(0))) {
-            try baseRuleset.approvalHook.DURATION() returns (uint256 duration) {
-                timestampAfterApprovalHook = rulesetId + duration;
-            } catch {
-                // If DURATION() reverts, treat as no approval hook constraint.
-                timestampAfterApprovalHook = 0;
-            }
-        }
-
-        _initializeRulesetFor({
-            projectId: projectId,
-            baseRuleset: baseRuleset,
-            rulesetId: rulesetId,
-            // Can only start after the approval hook.
-            mustStartAtOrAfter: timestampAfterApprovalHook > mustStartAtOrAfter
-                ? timestampAfterApprovalHook
-                : mustStartAtOrAfter,
-            weight: weight
-        });
-    }
-
-    /// @notice Initializes a ruleset with the specified properties.
-    /// @param projectId The ID of the project to initialize the ruleset for.
-    /// @param baseRuleset The ruleset struct to base the newly initialized one on.
-    /// @param rulesetId The `rulesetId` for the ruleset being initialized.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
-    /// @param weight The weight to give the newly initialized ruleset.
-    function _initializeRulesetFor(
-        uint256 projectId,
-        JBRuleset memory baseRuleset,
-        uint256 rulesetId,
-        uint256 mustStartAtOrAfter,
-        uint256 weight
-    )
-        internal
-    {
-        // If there is no base, initialize a first ruleset.
-        // slither-disable-next-line incorrect-equality
-        if (baseRuleset.cycleNumber == 0) {
-            // Set fresh intrinsic properties.
-            _packAndStoreIntrinsicPropertiesOf({
-                rulesetId: rulesetId,
-                projectId: projectId,
-                rulesetCycleNumber: 1,
-                weight: weight,
-                basedOnId: baseRuleset.id,
-                start: mustStartAtOrAfter
-            });
-        } else {
-            // Derive the correct next start time from the base.
-            uint256 start = deriveStartFrom({
-                baseRulesetStart: baseRuleset.start,
-                baseRulesetDuration: baseRuleset.duration,
-                mustStartAtOrAfter: mustStartAtOrAfter
-            });
-
-            // A weight of 1 is a special case that represents inheriting the cut weight of the previous
-            // ruleset.
-            weight = weight == 1
-                ? deriveWeightFrom({
-                    projectId: projectId,
-                    baseRulesetStart: baseRuleset.start,
-                    baseRulesetDuration: baseRuleset.duration,
-                    baseRulesetWeight: baseRuleset.weight,
-                    baseRulesetWeightCutPercent: baseRuleset.weightCutPercent,
-                    baseRulesetCacheId: baseRuleset.id,
-                    start: start
-                })
-                : weight;
-
-            // Derive the correct ruleset cycle number.
-            uint256 rulesetCycleNumber = deriveCycleNumberFrom({
-                baseRulesetCycleNumber: baseRuleset.cycleNumber,
-                baseRulesetStart: baseRuleset.start,
-                baseRulesetDuration: baseRuleset.duration,
-                start: start
-            });
-
-            // Update the intrinsic properties.
-            _packAndStoreIntrinsicPropertiesOf({
-                rulesetId: rulesetId,
-                projectId: projectId,
-                rulesetCycleNumber: rulesetCycleNumber,
-                weight: weight,
-                basedOnId: baseRuleset.id,
-                start: start
-            });
-        }
-
-        // Set the project's latest ruleset configuration.
-        latestRulesetIdOf[projectId] = rulesetId;
-
-        emit RulesetInitialized({
-            rulesetId: rulesetId, projectId: projectId, basedOnId: baseRuleset.id, caller: msg.sender
-        });
-    }
-
-    /// @notice Efficiently stores the provided intrinsic properties of a ruleset.
-    /// @param rulesetId The `rulesetId` of the ruleset to pack and store for.
-    /// @param projectId The ID of the project the ruleset belongs to.
-    /// @param rulesetCycleNumber The cycle number of the ruleset.
-    /// @param weight The weight of the ruleset.
-    /// @param basedOnId The `rulesetId` of the ruleset this ruleset was based on.
-    /// @param start The start time of this ruleset.
-    function _packAndStoreIntrinsicPropertiesOf(
-        uint256 rulesetId,
-        uint256 projectId,
-        uint256 rulesetCycleNumber,
-        uint256 weight,
-        uint256 basedOnId,
-        uint256 start
-    )
-        internal
-    {
-        // `weight` in bits 0-111.
-        uint256 packed = weight;
-
-        // `basedOnId` in bits 112-159.
-        packed |= basedOnId << 112;
-
-        // `start` in bits 160-207.
-        packed |= start << 160;
-
-        // cycle number in bits 208-255.
-        packed |= rulesetCycleNumber << 208;
-
-        // Store the packed value.
-        _packedIntrinsicPropertiesOf[projectId][rulesetId] = packed;
     }
 }

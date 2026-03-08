@@ -132,323 +132,6 @@ contract JBTerminalStore is IJBTerminalStore {
     }
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given project's
-    /// tokens based on its current ruleset and the given total project token supply and total terminal token surplus.
-    /// @param projectId The ID of the project whose project tokens would be cashed out.
-    /// @param cashOutCount The number of project tokens that would be cashed out, as a fixed point number with 18
-    /// decimals.
-    /// @param totalSupply The total project token supply, as a fixed point number with 18 decimals.
-    /// @param surplus The total terminal token surplus amount, as a fixed point number.
-    /// @return The number of surplus terminal tokens that would be reclaimed, as a fixed point number with the same
-    /// number of decimals as the provided `surplus`.
-    function currentReclaimableSurplusOf(
-        uint256 projectId,
-        uint256 cashOutCount,
-        uint256 totalSupply,
-        uint256 surplus
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        // If there's no surplus, nothing can be reclaimed.
-        if (surplus == 0) return 0;
-
-        // Can't cash out more tokens than are in the total supply.
-        if (cashOutCount > totalSupply) return 0;
-
-        // Get a reference to the project's current ruleset.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
-        // Return the amount of surplus terminal tokens that would be reclaimed.
-        return JBCashOuts.cashOutFrom({
-            surplus: surplus,
-            cashOutCount: cashOutCount,
-            totalSupply: totalSupply,
-            cashOutTaxRate: ruleset.cashOutTaxRate()
-        });
-    }
-
-    /// @notice Returns the number of surplus terminal tokens that would be reclaimed from a terminal by cashing out a
-    /// given number of tokens, based on the total token supply and total surplus.
-    /// @dev The returned amount in terms of the specified `terminal`'s base currency.
-    /// @dev The returned amount is represented as a fixed point number with the same amount of decimals as the
-    /// specified terminal.
-    /// @param projectId The ID of the project whose tokens would be cashed out.
-    /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
-    /// @param terminals The terminals that would be cashed out from. If this is an empty array, surplus within all
-    /// the project's terminals are considered.
-    /// @param accountingContexts The accounting contexts of the surplus terminal tokens that would be reclaimed. Pass
-    /// an empty array to use all of the project's accounting contexts.
-    /// @param decimals The number of decimals to include in the resulting fixed point number.
-    /// @param currency The currency that the resulting number will be in terms of.
-    /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount`
-    /// tokens.
-    function currentReclaimableSurplusOf(
-        uint256 projectId,
-        uint256 cashOutCount,
-        IJBTerminal[] calldata terminals,
-        JBAccountingContext[] calldata accountingContexts,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        // Get a reference to the project's current ruleset.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
-        // Get the current surplus amount.
-        // If a terminal wasn't provided, use the total surplus across all terminals. Otherwise,
-        // get the `terminal`'s surplus.
-        uint256 currentSurplus = JBSurplus.currentSurplusOf({
-            projectId: projectId,
-            terminals: terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId),
-            accountingContexts: accountingContexts,
-            decimals: decimals,
-            currency: currency
-        });
-
-        // If there's no surplus, nothing can be reclaimed.
-        if (currentSurplus == 0) return 0;
-
-        // Get the project token's total supply.
-        uint256 totalSupply =
-            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
-
-        // Can't cash out more tokens than are in the total supply.
-        if (cashOutCount > totalSupply) return 0;
-
-        // Return the amount of surplus terminal tokens that would be reclaimed.
-        return JBCashOuts.cashOutFrom({
-            surplus: currentSurplus,
-            cashOutCount: cashOutCount,
-            totalSupply: totalSupply,
-            cashOutTaxRate: ruleset.cashOutTaxRate()
-        });
-    }
-
-    /// @notice Gets the current surplus amount in a terminal for a specified project.
-    /// @dev The surplus is the amount of funds a project has in a terminal in excess of its payout limit.
-    /// @dev The surplus is represented as a fixed point number with the same amount of decimals as the specified
-    /// terminal.
-    /// @param terminal The terminal the surplus is being calculated for.
-    /// @param projectId The ID of the project to get surplus for.
-    /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
-    /// being calculated.
-    /// @param currency The currency the resulting amount should be in terms of.
-    /// @param decimals The number of decimals to expect in the resulting fixed point number.
-    /// @return The current surplus amount the project has in the specified terminal.
-    function currentSurplusOf(
-        address terminal,
-        uint256 projectId,
-        JBAccountingContext[] calldata accountingContexts,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        // Return the surplus during the project's current ruleset.
-        return _surplusFrom({
-            terminal: terminal,
-            projectId: projectId,
-            accountingContexts: accountingContexts,
-            ruleset: RULESETS.currentOf(projectId),
-            targetDecimals: decimals,
-            targetCurrency: currency
-        });
-    }
-
-    /// @notice Gets the current surplus amount for a specified project across all terminals.
-    /// @param projectId The ID of the project to get the total surplus for.
-    /// @param decimals The number of decimals that the fixed point surplus should include.
-    /// @param currency The currency that the total surplus should be in terms of.
-    /// @return The current total surplus amount that the project has across all terminals.
-    function currentTotalSurplusOf(
-        uint256 projectId,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        return JBSurplus.currentSurplusOf({
-            projectId: projectId,
-            terminals: DIRECTORY.terminalsOf(projectId),
-            accountingContexts: new JBAccountingContext[](0),
-            decimals: decimals,
-            currency: currency
-        });
-    }
-
-    //*********************************************************************//
-    // -------------------------- internal views ------------------------- //
-    //*********************************************************************//
-
-    /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting
-    /// contexts.
-    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
-    /// various payout limits.
-    /// @param terminal The terminal the surplus is being calculated for.
-    /// @param projectId The ID of the project to get the surplus for.
-    /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
-    /// being calculated.
-    /// @param ruleset The ID of the ruleset to base the surplus on.
-    /// @param targetDecimals The number of decimals to include in the resulting fixed point number.
-    /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
-    /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with
-    /// `targetDecimals` decimals.
-    function _surplusFrom(
-        address terminal,
-        uint256 projectId,
-        JBAccountingContext[] memory accountingContexts,
-        JBRuleset memory ruleset,
-        uint256 targetDecimals,
-        uint256 targetCurrency
-    )
-        internal
-        view
-        returns (uint256 surplus)
-    {
-        // Keep a reference to the number of tokens being iterated on.
-        uint256 numberOfTokenAccountingContexts = accountingContexts.length;
-
-        // Add payout limits from each token.
-        for (uint256 i; i < numberOfTokenAccountingContexts; i++) {
-            uint256 tokenSurplus = _tokenSurplusFrom({
-                terminal: terminal,
-                projectId: projectId,
-                accountingContext: accountingContexts[i],
-                ruleset: ruleset,
-                targetDecimals: targetDecimals,
-                targetCurrency: targetCurrency
-            });
-            // Increment the surplus with any remaining balance.
-            if (tokenSurplus > 0) surplus += tokenSurplus;
-        }
-    }
-
-    /// @notice Get a project's surplus amount of a specific token in a given terminal as measured by a given ruleset
-    /// (one specific accounting context).
-    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
-    /// the payout limits.
-    /// @param terminal The terminal the surplus is being calculated for.
-    /// @param projectId The ID of the project to get the surplus of.
-    /// @param accountingContext The accounting context of the token whose balance should contribute to the surplus
-    /// being measured.
-    /// @param ruleset The ID of the ruleset to base the surplus calculation on.
-    /// @param targetDecimals The number of decimals to include in the resulting fixed point number.
-    /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
-    /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with
-    /// `targetDecimals` decimals.
-    function _tokenSurplusFrom(
-        address terminal,
-        uint256 projectId,
-        JBAccountingContext memory accountingContext,
-        JBRuleset memory ruleset,
-        uint256 targetDecimals,
-        uint256 targetCurrency
-    )
-        internal
-        view
-        returns (uint256 surplus)
-    {
-        // Keep a reference to the balance.
-        surplus = balanceOf[terminal][projectId][accountingContext.token];
-
-        // If needed, adjust the decimals of the fixed point number to have the correct decimals.
-        surplus = accountingContext.decimals == targetDecimals
-            ? surplus
-            : JBFixedPointNumber.adjustDecimals({
-                value: surplus, decimals: accountingContext.decimals, targetDecimals: targetDecimals
-            });
-
-        // Add up all the balances.
-        surplus = (surplus == 0 || accountingContext.currency == targetCurrency)
-            ? surplus
-            : mulDiv(
-                surplus,
-                10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                // `_payoutLimitRemaining`'s fidelity as possible when converting.
-                PRICES.pricePerUnitOf({
-                    projectId: projectId,
-                    pricingCurrency: accountingContext.currency,
-                    unitCurrency: targetCurrency,
-                    decimals: _MAX_FIXED_POINT_FIDELITY
-                })
-            );
-
-        // Get a reference to the payout limit during the ruleset for the token.
-        JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
-            .FUND_ACCESS_LIMITS()
-            .payoutLimitsOf({
-                projectId: projectId, rulesetId: ruleset.id, terminal: address(terminal), token: accountingContext.token
-            });
-
-        // Keep a reference to the number of payout limits being iterated on.
-        uint256 numberOfPayoutLimits = payoutLimits.length;
-
-        // Loop through each payout limit to determine the cumulative normalized payout limit remaining.
-        for (uint256 i; i < numberOfPayoutLimits; i++) {
-            JBCurrencyAmount memory payoutLimit = payoutLimits[i];
-
-            // Set the payout limit value to the amount still available to pay out during the ruleset.
-            {
-                uint256 remaining = payoutLimit.amount
-                    - usedPayoutLimitOf[
-                        terminal
-                    ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
-                if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
-                payoutLimit.amount = uint224(remaining);
-            }
-
-            // Adjust the decimals of the fixed point number if needed to have the correct decimals.
-            if (accountingContext.decimals != targetDecimals) {
-                uint256 adjusted = JBFixedPointNumber.adjustDecimals({
-                    value: payoutLimit.amount, decimals: accountingContext.decimals, targetDecimals: targetDecimals
-                });
-                if (adjusted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(adjusted);
-                payoutLimit.amount = uint224(adjusted);
-            }
-
-            // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
-            if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
-                uint256 converted = mulDiv(
-                    payoutLimit.amount,
-                    10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                    // `payoutLimitRemaining`'s fidelity as possible when converting.
-                    PRICES.pricePerUnitOf({
-                        projectId: projectId,
-                        pricingCurrency: payoutLimit.currency,
-                        unitCurrency: targetCurrency,
-                        decimals: _MAX_FIXED_POINT_FIDELITY
-                    })
-                );
-                if (converted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(converted);
-                payoutLimit.amount = uint224(converted);
-            }
-
-            // Decrement from the balance until it reaches zero.
-            if (surplus > payoutLimit.amount) {
-                surplus -= payoutLimit.amount;
-            } else {
-                return 0;
-            }
-        }
-    }
-
-    //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
@@ -903,6 +586,323 @@ contract JBTerminalStore is IJBTerminalStore {
         // Make sure the new used amount is within the allowance.
         if (newUsedSurplusAllowanceOf > surplusAllowance || surplusAllowance == 0) {
             revert JBTerminalStore_InadequateControllerAllowance(newUsedSurplusAllowanceOf, surplusAllowance);
+        }
+    }
+
+    //*********************************************************************//
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given project's
+    /// tokens based on its current ruleset and the given total project token supply and total terminal token surplus.
+    /// @param projectId The ID of the project whose project tokens would be cashed out.
+    /// @param cashOutCount The number of project tokens that would be cashed out, as a fixed point number with 18
+    /// decimals.
+    /// @param totalSupply The total project token supply, as a fixed point number with 18 decimals.
+    /// @param surplus The total terminal token surplus amount, as a fixed point number.
+    /// @return The number of surplus terminal tokens that would be reclaimed, as a fixed point number with the same
+    /// number of decimals as the provided `surplus`.
+    function currentReclaimableSurplusOf(
+        uint256 projectId,
+        uint256 cashOutCount,
+        uint256 totalSupply,
+        uint256 surplus
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        // If there's no surplus, nothing can be reclaimed.
+        if (surplus == 0) return 0;
+
+        // Can't cash out more tokens than are in the total supply.
+        if (cashOutCount > totalSupply) return 0;
+
+        // Get a reference to the project's current ruleset.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
+        // Return the amount of surplus terminal tokens that would be reclaimed.
+        return JBCashOuts.cashOutFrom({
+            surplus: surplus,
+            cashOutCount: cashOutCount,
+            totalSupply: totalSupply,
+            cashOutTaxRate: ruleset.cashOutTaxRate()
+        });
+    }
+
+    /// @notice Returns the number of surplus terminal tokens that would be reclaimed from a terminal by cashing out a
+    /// given number of tokens, based on the total token supply and total surplus.
+    /// @dev The returned amount in terms of the specified `terminal`'s base currency.
+    /// @dev The returned amount is represented as a fixed point number with the same amount of decimals as the
+    /// specified terminal.
+    /// @param projectId The ID of the project whose tokens would be cashed out.
+    /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
+    /// @param terminals The terminals that would be cashed out from. If this is an empty array, surplus within all
+    /// the project's terminals are considered.
+    /// @param accountingContexts The accounting contexts of the surplus terminal tokens that would be reclaimed. Pass
+    /// an empty array to use all of the project's accounting contexts.
+    /// @param decimals The number of decimals to include in the resulting fixed point number.
+    /// @param currency The currency that the resulting number will be in terms of.
+    /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount`
+    /// tokens.
+    function currentReclaimableSurplusOf(
+        uint256 projectId,
+        uint256 cashOutCount,
+        IJBTerminal[] calldata terminals,
+        JBAccountingContext[] calldata accountingContexts,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        // Get a reference to the project's current ruleset.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
+        // Get the current surplus amount.
+        // If a terminal wasn't provided, use the total surplus across all terminals. Otherwise,
+        // get the `terminal`'s surplus.
+        uint256 currentSurplus = JBSurplus.currentSurplusOf({
+            projectId: projectId,
+            terminals: terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId),
+            accountingContexts: accountingContexts,
+            decimals: decimals,
+            currency: currency
+        });
+
+        // If there's no surplus, nothing can be reclaimed.
+        if (currentSurplus == 0) return 0;
+
+        // Get the project token's total supply.
+        uint256 totalSupply =
+            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
+
+        // Can't cash out more tokens than are in the total supply.
+        if (cashOutCount > totalSupply) return 0;
+
+        // Return the amount of surplus terminal tokens that would be reclaimed.
+        return JBCashOuts.cashOutFrom({
+            surplus: currentSurplus,
+            cashOutCount: cashOutCount,
+            totalSupply: totalSupply,
+            cashOutTaxRate: ruleset.cashOutTaxRate()
+        });
+    }
+
+    /// @notice Gets the current surplus amount in a terminal for a specified project.
+    /// @dev The surplus is the amount of funds a project has in a terminal in excess of its payout limit.
+    /// @dev The surplus is represented as a fixed point number with the same amount of decimals as the specified
+    /// terminal.
+    /// @param terminal The terminal the surplus is being calculated for.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
+    /// being calculated.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @return The current surplus amount the project has in the specified terminal.
+    function currentSurplusOf(
+        address terminal,
+        uint256 projectId,
+        JBAccountingContext[] calldata accountingContexts,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        // Return the surplus during the project's current ruleset.
+        return _surplusFrom({
+            terminal: terminal,
+            projectId: projectId,
+            accountingContexts: accountingContexts,
+            ruleset: RULESETS.currentOf(projectId),
+            targetDecimals: decimals,
+            targetCurrency: currency
+        });
+    }
+
+    /// @notice Gets the current surplus amount for a specified project across all terminals.
+    /// @param projectId The ID of the project to get the total surplus for.
+    /// @param decimals The number of decimals that the fixed point surplus should include.
+    /// @param currency The currency that the total surplus should be in terms of.
+    /// @return The current total surplus amount that the project has across all terminals.
+    function currentTotalSurplusOf(
+        uint256 projectId,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return JBSurplus.currentSurplusOf({
+            projectId: projectId,
+            terminals: DIRECTORY.terminalsOf(projectId),
+            accountingContexts: new JBAccountingContext[](0),
+            decimals: decimals,
+            currency: currency
+        });
+    }
+
+    //*********************************************************************//
+    // -------------------------- internal views ------------------------- //
+    //*********************************************************************//
+
+    /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting
+    /// contexts.
+    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
+    /// various payout limits.
+    /// @param terminal The terminal the surplus is being calculated for.
+    /// @param projectId The ID of the project to get the surplus for.
+    /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
+    /// being calculated.
+    /// @param ruleset The ID of the ruleset to base the surplus on.
+    /// @param targetDecimals The number of decimals to include in the resulting fixed point number.
+    /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
+    /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with
+    /// `targetDecimals` decimals.
+    function _surplusFrom(
+        address terminal,
+        uint256 projectId,
+        JBAccountingContext[] memory accountingContexts,
+        JBRuleset memory ruleset,
+        uint256 targetDecimals,
+        uint256 targetCurrency
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
+        // Keep a reference to the number of tokens being iterated on.
+        uint256 numberOfTokenAccountingContexts = accountingContexts.length;
+
+        // Add payout limits from each token.
+        for (uint256 i; i < numberOfTokenAccountingContexts; i++) {
+            uint256 tokenSurplus = _tokenSurplusFrom({
+                terminal: terminal,
+                projectId: projectId,
+                accountingContext: accountingContexts[i],
+                ruleset: ruleset,
+                targetDecimals: targetDecimals,
+                targetCurrency: targetCurrency
+            });
+            // Increment the surplus with any remaining balance.
+            if (tokenSurplus > 0) surplus += tokenSurplus;
+        }
+    }
+
+    /// @notice Get a project's surplus amount of a specific token in a given terminal as measured by a given ruleset
+    /// (one specific accounting context).
+    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
+    /// the payout limits.
+    /// @param terminal The terminal the surplus is being calculated for.
+    /// @param projectId The ID of the project to get the surplus of.
+    /// @param accountingContext The accounting context of the token whose balance should contribute to the surplus
+    /// being measured.
+    /// @param ruleset The ID of the ruleset to base the surplus calculation on.
+    /// @param targetDecimals The number of decimals to include in the resulting fixed point number.
+    /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
+    /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with
+    /// `targetDecimals` decimals.
+    function _tokenSurplusFrom(
+        address terminal,
+        uint256 projectId,
+        JBAccountingContext memory accountingContext,
+        JBRuleset memory ruleset,
+        uint256 targetDecimals,
+        uint256 targetCurrency
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
+        // Keep a reference to the balance.
+        surplus = balanceOf[terminal][projectId][accountingContext.token];
+
+        // If needed, adjust the decimals of the fixed point number to have the correct decimals.
+        surplus = accountingContext.decimals == targetDecimals
+            ? surplus
+            : JBFixedPointNumber.adjustDecimals({
+                value: surplus, decimals: accountingContext.decimals, targetDecimals: targetDecimals
+            });
+
+        // Add up all the balances.
+        surplus = (surplus == 0 || accountingContext.currency == targetCurrency)
+            ? surplus
+            : mulDiv(
+                surplus,
+                10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                // `_payoutLimitRemaining`'s fidelity as possible when converting.
+                PRICES.pricePerUnitOf({
+                    projectId: projectId,
+                    pricingCurrency: accountingContext.currency,
+                    unitCurrency: targetCurrency,
+                    decimals: _MAX_FIXED_POINT_FIDELITY
+                })
+            );
+
+        // Get a reference to the payout limit during the ruleset for the token.
+        JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
+            .FUND_ACCESS_LIMITS()
+            .payoutLimitsOf({
+                projectId: projectId, rulesetId: ruleset.id, terminal: address(terminal), token: accountingContext.token
+            });
+
+        // Keep a reference to the number of payout limits being iterated on.
+        uint256 numberOfPayoutLimits = payoutLimits.length;
+
+        // Loop through each payout limit to determine the cumulative normalized payout limit remaining.
+        for (uint256 i; i < numberOfPayoutLimits; i++) {
+            JBCurrencyAmount memory payoutLimit = payoutLimits[i];
+
+            // Set the payout limit value to the amount still available to pay out during the ruleset.
+            {
+                uint256 remaining = payoutLimit.amount
+                    - usedPayoutLimitOf[
+                        terminal
+                    ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
+                if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
+                payoutLimit.amount = uint224(remaining);
+            }
+
+            // Adjust the decimals of the fixed point number if needed to have the correct decimals.
+            if (accountingContext.decimals != targetDecimals) {
+                uint256 adjusted = JBFixedPointNumber.adjustDecimals({
+                    value: payoutLimit.amount, decimals: accountingContext.decimals, targetDecimals: targetDecimals
+                });
+                if (adjusted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(adjusted);
+                payoutLimit.amount = uint224(adjusted);
+            }
+
+            // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
+            if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
+                uint256 converted = mulDiv(
+                    payoutLimit.amount,
+                    10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                    // `payoutLimitRemaining`'s fidelity as possible when converting.
+                    PRICES.pricePerUnitOf({
+                        projectId: projectId,
+                        pricingCurrency: payoutLimit.currency,
+                        unitCurrency: targetCurrency,
+                        decimals: _MAX_FIXED_POINT_FIDELITY
+                    })
+                );
+                if (converted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(converted);
+                payoutLimit.amount = uint224(converted);
+            }
+
+            // Decrement from the balance until it reaches zero.
+            if (surplus > payoutLimit.amount) {
+                surplus -= payoutLimit.amount;
+            } else {
+                return 0;
+            }
         }
     }
 }
