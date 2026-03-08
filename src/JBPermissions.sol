@@ -40,8 +40,9 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     /// @custom:param account The address of the account being operated on behalf of.
     /// @custom:param projectId The project ID the permissions are scoped to. An ID of 0 grants permissions across all
     /// projects.
-    mapping(address operator => mapping(address account => mapping(uint256 projectId => uint256))) public override
-        permissionsOf;
+    mapping(address operator => mapping(address account => mapping(uint256 projectId => uint256)))
+        public
+        override permissionsOf;
 
     //*********************************************************************//
     // ---------------------------- constructor -------------------------- //
@@ -83,35 +84,26 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         // If the ROOT permission is set and should be included, return true.
         if (
             includeRoot
-                && (
-                    _includesPermission({
-                        permissions: permissionsOf[operator][account][projectId],
-                        permissionId: JBPermissionIds.ROOT
+                && (_includesPermission({
+                        permissions: permissionsOf[operator][account][projectId], permissionId: JBPermissionIds.ROOT
                     })
-                        || (
-                            includeWildcardProjectId
-                                && _includesPermission({
-                                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
-                                    permissionId: JBPermissionIds.ROOT
-                                })
-                        )
-                )
+                    || (includeWildcardProjectId
+                        && _includesPermission({
+                            permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
+                            permissionId: JBPermissionIds.ROOT
+                        })))
         ) {
             return true;
         }
 
         // Otherwise return the t/f flag of the specified id.
         return _includesPermission({
-            permissions: permissionsOf[operator][account][projectId],
-            permissionId: permissionId
-        })
-            || (
-                includeWildcardProjectId
-                    && _includesPermission({
-                        permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
-                        permissionId: permissionId
-                    })
-            );
+                permissions: permissionsOf[operator][account][projectId], permissionId: permissionId
+            })
+            || (includeWildcardProjectId
+                && _includesPermission({
+                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID], permissionId: permissionId
+                }));
     }
 
     /// @notice Check if an operator has all of the specified permissions for a specific address and project ID.
@@ -140,19 +132,14 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         // If the ROOT permission is set and should be included, return true.
         if (
             includeRoot
-                && (
-                    _includesPermission({
-                        permissions: permissionsOf[operator][account][projectId],
-                        permissionId: JBPermissionIds.ROOT
+                && (_includesPermission({
+                        permissions: permissionsOf[operator][account][projectId], permissionId: JBPermissionIds.ROOT
                     })
-                        || (
-                            includeWildcardProjectId
-                                && _includesPermission({
-                                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
-                                    permissionId: JBPermissionIds.ROOT
-                                })
-                        )
-                )
+                    || (includeWildcardProjectId
+                        && _includesPermission({
+                            permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
+                            permissionId: JBPermissionIds.ROOT
+                        })))
         ) {
             return true;
         }
@@ -174,7 +161,9 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
             // Check each permissionId
             if (
                 !_includesPermission({permissions: operatorAccountProjectPermissions, permissionId: permissionId})
-                    && !_includesPermission({permissions: operatorAccountWildcardProjectPermissions, permissionId: permissionId})
+                    && !_includesPermission({
+                        permissions: operatorAccountWildcardProjectPermissions, permissionId: permissionId
+                    })
             ) {
                 return false;
             }
@@ -229,18 +218,16 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         // ROOT permission or setting permissions for a wildcard project ID.
         if (
             msgSender != account
-                && (
-                    _includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
-                        || permissionsData.projectId == WILDCARD_PROJECT_ID
-                        || !hasPermission({
-                            operator: msgSender,
-                            account: account,
-                            projectId: permissionsData.projectId,
-                            permissionId: JBPermissionIds.ROOT,
-                            includeRoot: true,
-                            includeWildcardProjectId: true
-                        })
-                )
+                && (_includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
+                    || permissionsData.projectId == WILDCARD_PROJECT_ID
+                    || !hasPermission({
+                        operator: msgSender,
+                        account: account,
+                        projectId: permissionsData.projectId,
+                        permissionId: JBPermissionIds.ROOT,
+                        includeRoot: true,
+                        includeWildcardProjectId: true
+                    }))
         ) revert JBPermissions_Unauthorized();
 
         // Store the new value.

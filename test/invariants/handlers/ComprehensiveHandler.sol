@@ -85,7 +85,8 @@ contract ComprehensiveHandler is Test {
         ghost_feeProjectBalanceLast = currentFeeBalance;
     }
 
-    // ─── Operation 1: Pay ─────────────────────────────────────────────
+    // ─── Operation 1: Pay
+    // ─────────────────────────────────────────────
 
     function payProject(uint256 actorSeed, uint256 amount) public {
         amount = bound(amount, 0.01 ether, 100 ether);
@@ -108,7 +109,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 2: Cash Out ────────────────────────────────────────
+    // ─── Operation 2: Cash Out
+    // ────────────────────────────────────────
 
     function cashOutTokens(uint256 actorSeed, uint256 cashOutPercent) public {
         address actor = _getActor(actorSeed);
@@ -135,7 +137,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 3: Send Payouts ────────────────────────────────────
+    // ─── Operation 3: Send Payouts
+    // ────────────────────────────────────
 
     function sendPayouts(uint256 amount) public {
         uint256 balance = store.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
@@ -150,7 +153,9 @@ contract ComprehensiveHandler is Test {
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
-        }) returns (uint256 amountPaidOut) {
+        }) returns (
+            uint256 amountPaidOut
+        ) {
             ghost_totalPaidOut += amountPaidOut;
         } catch {}
 
@@ -158,7 +163,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 4: Add to Balance ──────────────────────────────────
+    // ─── Operation 4: Add to Balance
+    // ──────────────────────────────────
 
     function addToBalance(uint256 amount) public {
         amount = bound(amount, 0.01 ether, 50 ether);
@@ -178,7 +184,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 5: Send Reserved Tokens ────────────────────────────
+    // ─── Operation 5: Send Reserved Tokens
+    // ────────────────────────────
 
     function sendReservedTokens() public {
         try controller.sendReservedTokensToSplitsOf(projectId) {} catch {}
@@ -186,7 +193,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 6: Use Allowance ───────────────────────────────────
+    // ─── Operation 6: Use Allowance
+    // ───────────────────────────────────
 
     function useAllowance(uint256 amount) public {
         uint256 balance = store.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
@@ -204,7 +212,9 @@ contract ComprehensiveHandler is Test {
             beneficiary: payable(projectOwner),
             feeBeneficiary: payable(projectOwner),
             memo: "allowance"
-        }) returns (uint256 netAmountPaidOut) {
+        }) returns (
+            uint256 netAmountPaidOut
+        ) {
             ghost_totalAllowanceUsed += netAmountPaidOut;
         } catch {}
 
@@ -212,7 +222,8 @@ contract ComprehensiveHandler is Test {
         _trackFeeProjectBalance();
     }
 
-    // ─── Operation 7: Burn Tokens ─────────────────────────────────────
+    // ─── Operation 7: Burn Tokens
+    // ─────────────────────────────────────
 
     function burnTokens(uint256 actorSeed, uint256 burnPercent) public {
         address actor = _getActor(actorSeed);
@@ -225,12 +236,13 @@ contract ComprehensiveHandler is Test {
 
         vm.prank(actor);
         try controller.burnTokensOf({holder: actor, projectId: projectId, tokenCount: burnCount, memo: "burn"}) {}
-        catch {}
+            catch {}
 
         callCount_burnTokens++;
     }
 
-    // ─── Operation 8: Claim Credits as ERC20 ──────────────────────────
+    // ─── Operation 8: Claim Credits as ERC20
+    // ──────────────────────────
 
     function claimCredits(uint256 actorSeed, uint256 claimPercent) public {
         address actor = _getActor(actorSeed);
@@ -242,13 +254,16 @@ contract ComprehensiveHandler is Test {
         if (claimCount == 0) return;
 
         vm.prank(actor);
-        try controller.claimTokensFor({holder: actor, projectId: projectId, tokenCount: claimCount, beneficiary: actor})
-        {} catch {}
+        try controller.claimTokensFor({
+            holder: actor, projectId: projectId, tokenCount: claimCount, beneficiary: actor
+        }) {}
+            catch {}
 
         callCount_claimCredits++;
     }
 
-    // ─── Operation 9: Advance Time ────────────────────────────────────
+    // ─── Operation 9: Advance Time
+    // ────────────────────────────────────
 
     function advanceTime(uint256 timeSeed) public {
         uint256 timeJump = bound(timeSeed, 1 hours, 90 days);
@@ -256,7 +271,8 @@ contract ComprehensiveHandler is Test {
         callCount_advanceTime++;
     }
 
-    // ─── Operation 10: Process Held Fees ──────────────────────────────
+    // ─── Operation 10: Process Held Fees
+    // ──────────────────────────────
 
     function processHeldFees(uint256 count) public {
         count = bound(count, 1, 10);

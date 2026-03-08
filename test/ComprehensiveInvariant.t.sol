@@ -23,7 +23,8 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         projectOwner = multisig();
         splitBeneficiary = address(0xBEEF);
 
-        // ── Launch fee collector project (#1) ────────────────────────
+        // ── Launch fee collector project (#1)
+        // ────────────────────────
         JBRulesetConfig[] memory feeRulesetConfig = new JBRulesetConfig[](1);
         feeRulesetConfig[0].mustStartAtOrAfter = 0;
         feeRulesetConfig[0].duration = 0;
@@ -57,20 +58,19 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
-        jbController().launchProjectFor({
-            owner: address(420),
-            projectUri: "feeCollector",
-            rulesetConfigurations: feeRulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        jbController()
+            .launchProjectFor({
+                owner: address(420),
+                projectUri: "feeCollector",
+                rulesetConfigurations: feeRulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // ── Launch test project (#2): 20% reserved, 30% cashOutTax, holdFees, splits, limits ──
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -125,12 +125,10 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         // Fund access limits: 5 ETH payout limit, 3 ETH surplus allowance
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] =
-            JBCurrencyAmount({amount: 5 ether, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        payoutLimits[0] = JBCurrencyAmount({amount: 5 ether, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
 
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);
-        surplusAllowances[0] =
-            JBCurrencyAmount({amount: 3 ether, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        surplusAllowances[0] = JBCurrencyAmount({amount: 3 ether, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
 
         JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
         fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
@@ -141,13 +139,14 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         });
         rulesetConfig[0].fundAccessLimitGroups = fundAccessLimitGroups;
 
-        projectId = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "testProject",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectId = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "testProject",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Deploy ERC20 so tokens can be tracked
         vm.prank(projectOwner);
@@ -179,8 +178,7 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
     function invariant_COMP1_terminalBalanceCoversRecordedBalances() public view {
         uint256 projectBalance =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
-        uint256 feeProjectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         assertGe(
@@ -207,13 +205,14 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
     /// @notice COMP3: usedPayoutLimit <= payoutLimit per cycle.
     function invariant_COMP3_payoutLimitRespected() public view {
         (JBRuleset memory ruleset,) = jbController().currentRulesetOf(projectId);
-        uint256 usedPayoutLimit = jbTerminalStore().usedPayoutLimitOf(
-            address(jbMultiTerminal()),
-            projectId,
-            JBConstants.NATIVE_TOKEN,
-            ruleset.cycleNumber,
-            uint32(uint160(JBConstants.NATIVE_TOKEN))
-        );
+        uint256 usedPayoutLimit = jbTerminalStore()
+            .usedPayoutLimitOf(
+                address(jbMultiTerminal()),
+                projectId,
+                JBConstants.NATIVE_TOKEN,
+                ruleset.cycleNumber,
+                uint32(uint160(JBConstants.NATIVE_TOKEN))
+            );
 
         // Payout limit is 5 ETH
         assertLe(usedPayoutLimit, 5 ether, "COMP3: usedPayoutLimit must not exceed configured payout limit");
@@ -226,28 +225,25 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        uint256 surplus = jbTerminalStore().currentSurplusOf({
-            terminal: address(jbMultiTerminal()),
-            projectId: projectId,
-            accountingContexts: contexts,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
+        uint256 surplus = jbTerminalStore()
+            .currentSurplusOf({
+                terminal: address(jbMultiTerminal()),
+                projectId: projectId,
+                accountingContexts: contexts,
+                decimals: 18,
+                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            });
 
         uint256 halfSupply = totalSupply / 2;
         if (halfSupply == 0) return;
 
-        uint256 reclaimable = jbTerminalStore().currentReclaimableSurplusOf({
-            projectId: projectId,
-            cashOutCount: halfSupply,
-            totalSupply: totalSupply,
-            surplus: surplus
-        });
+        uint256 reclaimable = jbTerminalStore()
+            .currentReclaimableSurplusOf({
+                projectId: projectId, cashOutCount: halfSupply, totalSupply: totalSupply, surplus: surplus
+            });
 
         assertLe(reclaimable, surplus, "COMP4: Reclaimable surplus must not exceed current surplus");
     }
@@ -267,26 +263,19 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
     /// @notice COMP6: Ghost fund conservation (totalIn >= totalOut + remaining).
     function invariant_COMP6_ghostFundConservation() public view {
         uint256 totalIn = handler.ghost_totalPaidIn() + handler.ghost_totalAddedToBalance();
-        uint256 totalOut = handler.ghost_totalCashedOut() + handler.ghost_totalPaidOut() + handler.ghost_totalAllowanceUsed();
+        uint256 totalOut =
+            handler.ghost_totalCashedOut() + handler.ghost_totalPaidOut() + handler.ghost_totalAllowanceUsed();
 
         uint256 projectBalance =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
 
         // Fees go to project #1, so total funds are conserved within the terminal
-        assertGe(
-            totalIn,
-            totalOut,
-            "COMP6: Ghost conservation - total funds in must be >= total funds out"
-        );
+        assertGe(totalIn, totalOut, "COMP6: Ghost conservation - total funds in must be >= total funds out");
     }
 
     /// @notice COMP7: Fee project balance never decreases (monotonically increasing).
     function invariant_COMP7_feeProjectBalanceMonotonic() public view {
-        assertEq(
-            handler.ghost_feeProjectBalanceDecreased(),
-            0,
-            "COMP7: Fee project balance must never decrease"
-        );
+        assertEq(handler.ghost_feeProjectBalanceDecreased(), 0, "COMP7: Fee project balance must never decrease");
     }
 
     /// @notice COMP8: Terminal ETH balance == projectBalance + feeBalance + heldFeeAmounts.
@@ -295,8 +284,7 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
     function invariant_COMP8_exactAccountingWithHeldFees() public view {
         uint256 projectBalance =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
-        uint256 feeProjectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         // The terminal's actual ETH balance should always be >= sum of recorded balances.

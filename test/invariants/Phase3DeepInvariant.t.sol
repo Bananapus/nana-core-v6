@@ -42,18 +42,17 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             feeRuleset[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
             JBTerminalConfig[] memory feeTermCfg = new JBTerminalConfig[](1);
-            feeTermCfg[0] = JBTerminalConfig({
-                terminal: jbMultiTerminal(),
-                accountingContextsToAccept: _nativeTokenContextArray()
-            });
+            feeTermCfg[0] =
+                JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: _nativeTokenContextArray()});
 
-            uint256 feeProjectId = jbController().launchProjectFor({
-                owner: owner,
-                projectUri: "FeeProject",
-                rulesetConfigurations: feeRuleset,
-                terminalConfigurations: feeTermCfg,
-                memo: ""
-            });
+            uint256 feeProjectId = jbController()
+                .launchProjectFor({
+                    owner: owner,
+                    projectUri: "FeeProject",
+                    rulesetConfigurations: feeRuleset,
+                    terminalConfigurations: feeTermCfg,
+                    memo: ""
+                });
             require(feeProjectId == 1, "Fee project must be #1");
         }
 
@@ -94,15 +93,11 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             // Fund access limits: 5 ETH payout, 3 ETH surplus allowance
             JBFundAccessLimitGroup[] memory limits2 = new JBFundAccessLimitGroup[](1);
             JBCurrencyAmount[] memory payoutLimits2 = new JBCurrencyAmount[](1);
-            payoutLimits2[0] = JBCurrencyAmount({
-                amount: uint224(5 ether),
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-            });
+            payoutLimits2[0] =
+                JBCurrencyAmount({amount: uint224(5 ether), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
             JBCurrencyAmount[] memory surplusAllowances2 = new JBCurrencyAmount[](1);
-            surplusAllowances2[0] = JBCurrencyAmount({
-                amount: uint224(3 ether),
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-            });
+            surplusAllowances2[0] =
+                JBCurrencyAmount({amount: uint224(3 ether), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
             limits2[0] = JBFundAccessLimitGroup({
                 terminal: address(jbMultiTerminal()),
                 token: JBConstants.NATIVE_TOKEN,
@@ -112,18 +107,17 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             ruleset2[0].fundAccessLimitGroups = limits2;
 
             JBTerminalConfig[] memory termCfg = new JBTerminalConfig[](1);
-            termCfg[0] = JBTerminalConfig({
-                terminal: jbMultiTerminal(),
-                accountingContextsToAccept: _nativeTokenContextArray()
-            });
+            termCfg[0] =
+                JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: _nativeTokenContextArray()});
 
-            project2 = jbController().launchProjectFor({
-                owner: owner,
-                projectUri: "Project2",
-                rulesetConfigurations: ruleset2,
-                terminalConfigurations: termCfg,
-                memo: ""
-            });
+            project2 = jbController()
+                .launchProjectFor({
+                    owner: owner,
+                    projectUri: "Project2",
+                    rulesetConfigurations: ruleset2,
+                    terminalConfigurations: termCfg,
+                    memo: ""
+                });
         }
 
         // =====================================================================
@@ -145,18 +139,17 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             ruleset3[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
             JBTerminalConfig[] memory termCfg3 = new JBTerminalConfig[](1);
-            termCfg3[0] = JBTerminalConfig({
-                terminal: jbMultiTerminal(),
-                accountingContextsToAccept: _nativeTokenContextArray()
-            });
+            termCfg3[0] =
+                JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: _nativeTokenContextArray()});
 
-            project3 = jbController().launchProjectFor({
-                owner: owner,
-                projectUri: "Project3",
-                rulesetConfigurations: ruleset3,
-                terminalConfigurations: termCfg3,
-                memo: ""
-            });
+            project3 = jbController()
+                .launchProjectFor({
+                    owner: owner,
+                    projectUri: "Project3",
+                    rulesetConfigurations: ruleset3,
+                    terminalConfigurations: termCfg3,
+                    memo: ""
+                });
             require(project3 == 3, "Project 3 must be #3");
         }
 
@@ -175,18 +168,17 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             ruleset4[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
             JBTerminalConfig[] memory termCfg4 = new JBTerminalConfig[](1);
-            termCfg4[0] = JBTerminalConfig({
-                terminal: jbMultiTerminal(),
-                accountingContextsToAccept: _nativeTokenContextArray()
-            });
+            termCfg4[0] =
+                JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: _nativeTokenContextArray()});
 
-            project4 = jbController().launchProjectFor({
-                owner: owner,
-                projectUri: "Project4",
-                rulesetConfigurations: ruleset4,
-                terminalConfigurations: termCfg4,
-                memo: ""
-            });
+            project4 = jbController()
+                .launchProjectFor({
+                    owner: owner,
+                    projectUri: "Project4",
+                    rulesetConfigurations: ruleset4,
+                    terminalConfigurations: termCfg4,
+                    memo: ""
+                });
 
             // Register project 4's owner as feeless
             vm.prank(multisig());
@@ -197,14 +189,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
         // Deploy handler
         // =====================================================================
         handler = new Phase3Handler(
-            jbMultiTerminal(),
-            jbTerminalStore(),
-            jbController(),
-            jbTokens(),
-            project2,
-            project3,
-            project4,
-            owner
+            jbMultiTerminal(), jbTerminalStore(), jbController(), jbTokens(), project2, project3, project4, owner
         );
 
         // Deploy ERC20 token for project 2 so claimCredits2 works
@@ -266,9 +251,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
     function _nativeTokenContextArray() internal pure returns (JBAccountingContext[] memory) {
         JBAccountingContext[] memory ctx = new JBAccountingContext[](1);
         ctx[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         return ctx;
     }
@@ -327,9 +310,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             uint256 extracted = handler.ghost_actorExtracted(actor, project2);
 
             assertGe(
-                contributed,
-                extracted,
-                "INV-P3-3: Actor should not extract more than contributed with cash out tax"
+                contributed, extracted, "INV-P3-3: Actor should not extract more than contributed with cash out tax"
             );
         }
     }
@@ -372,11 +353,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         // Terminal balance should not exceed total inflows
-        assertGe(
-            totalInflows,
-            actualBalance,
-            "INV-P3-5: Terminal balance should not exceed total inflows"
-        );
+        assertGe(totalInflows, actualBalance, "INV-P3-5: Terminal balance should not exceed total inflows");
     }
 
     // =========================================================================
@@ -401,8 +378,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
     // =========================================================================
     /// @notice Used payout limit + used surplus allowance should not drain more than the balance.
     function invariant_P3_7_limitUsageBoundedByBalance() public view {
-        uint256 totalDrained =
-            handler.ghost_totalPaidOut(project2) + handler.ghost_totalAllowanceUsed(project2);
+        uint256 totalDrained = handler.ghost_totalPaidOut(project2) + handler.ghost_totalAllowanceUsed(project2);
         uint256 totalAvailable = handler.ghost_totalPaidIn(project2) + handler.ghost_totalAddedToBalance(project2);
 
         // Total drained should not exceed total available
@@ -423,10 +399,6 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 supplyWithReserves = jbController().totalTokenSupplyWithReservedTokensOf(project2);
         uint256 rawSupply = jbTokens().totalSupplyOf(project2);
 
-        assertGe(
-            supplyWithReserves,
-            rawSupply,
-            "INV-P3-8: Supply with reserves must >= raw supply"
-        );
+        assertGe(supplyWithReserves, rawSupply, "INV-P3-8: Supply with reserves must >= raw supply");
     }
 }

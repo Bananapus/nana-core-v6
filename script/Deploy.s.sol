@@ -43,7 +43,8 @@ contract Deploy is Script, Sphinx {
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
         sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum", "celo"];
-        sphinxConfig.testnets = ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia", "celo_sepolia"];
+        sphinxConfig.testnets =
+            ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia", "celo_sepolia"];
     }
 
     /// @notice Deploys the protocol.
@@ -87,9 +88,7 @@ contract Deploy is Script, Sphinx {
             projects: projects,
             splits: splits,
             store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                directory: directory,
-                rulesets: rulesets,
-                prices: prices
+                directory: directory, rulesets: rulesets, prices: prices
             }),
             tokens: tokens,
             feelessAddresses: feeless,

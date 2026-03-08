@@ -247,9 +247,7 @@ contract TestLaunchProjectFor_Local is JBControllerSetup {
         JBTerminalConfig[] memory _terminals = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         _terminals[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});

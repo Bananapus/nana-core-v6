@@ -49,7 +49,8 @@ contract DeployPeriphery is Script, Sphinx {
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v5";
         sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum", "celo"];
-        sphinxConfig.testnets = ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia", "celo_sepolia"];
+        sphinxConfig.testnets =
+            ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia", "celo_sepolia"];
     }
 
     /// @notice Deploys the protocol.
@@ -151,31 +152,31 @@ contract DeployPeriphery is Script, Sphinx {
         }
         require(address(feed) != address(0), "Invalid price feed");
 
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.USD,
-            unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            feed: feed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0,
+                pricingCurrency: JBCurrencyIds.USD,
+                unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                feed: feed
+            });
 
         // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
         // chains where Ether is the native asset. We *NEED* to update this when we deploy to a non-ether chain!
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.USD,
-            unitCurrency: JBCurrencyIds.ETH,
-            feed: feed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
+            });
 
         // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
         // NOTE: We need to refactor this the moment we add a chain where its native token is *NOT* ether.
         // As otherwise prices for the `NATIVE_TOKEN` will be incorrect!
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.ETH,
-            unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            feed: matchingPriceFeed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0,
+                pricingCurrency: JBCurrencyIds.ETH,
+                unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                feed: matchingPriceFeed
+            });
 
         // Deploy the USDC/USD price feed.
         _deployUSDCFeed(L2GracePeriod);
@@ -197,23 +198,24 @@ contract DeployPeriphery is Script, Sphinx {
             new JBDeadline7Days{salt: DEADLINES_SALT}();
         }
 
-        core.directory.setIsAllowedToSetFirstController(
-            address(
-                new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-                    directory: core.directory,
-                    fundAccessLimits: core.fundAccess,
-                    prices: core.prices,
-                    permissions: core.permissions,
-                    projects: core.projects,
-                    rulesets: core.rulesets,
-                    splits: core.splits,
-                    tokens: core.tokens,
-                    omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                    trustedForwarder: TRUSTED_FORWARDER
-                })
-            ),
-            true
-        );
+        core.directory
+            .setIsAllowedToSetFirstController(
+                address(
+                    new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                        directory: core.directory,
+                        fundAccessLimits: core.fundAccess,
+                        prices: core.prices,
+                        permissions: core.permissions,
+                        projects: core.projects,
+                        rulesets: core.rulesets,
+                        splits: core.splits,
+                        tokens: core.tokens,
+                        omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
+                        trustedForwarder: TRUSTED_FORWARDER
+                    })
+                ),
+                true
+            );
     }
 
     function _deployUSDCFeed(uint256 L2GracePeriod) internal {
@@ -284,23 +286,13 @@ contract DeployPeriphery is Script, Sphinx {
         require(usdc.code.length > 0, "Invalid USDC address");
         require(address(usdcFeed) != address(0), "Invalid USDC price feed");
 
-        core.prices.addPriceFeedFor({
-            projectId: 0,
-            pricingCurrency: JBCurrencyIds.USD,
-            unitCurrency: uint32(uint160(usdc)),
-            feed: usdcFeed
-        });
+        core.prices
+            .addPriceFeedFor({
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: uint32(uint160(usdc)), feed: usdcFeed
+            });
     }
 
-    function _isDeployed(
-        bytes32 salt,
-        bytes memory creationCode,
-        bytes memory arguments
-    )
-        internal
-        view
-        returns (bool)
-    {
+    function _isDeployed(bytes32 salt, bytes memory creationCode, bytes memory arguments) internal view returns (bool) {
         address _deployedTo = vm.computeCreate2Address({
             salt: salt,
             initCodeHash: keccak256(abi.encodePacked(creationCode, arguments)),

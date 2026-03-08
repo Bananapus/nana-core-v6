@@ -38,9 +38,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         // setup: return data
@@ -77,9 +75,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({
-            token: address(_mockToken),
-            decimals: 6,
-            currency: uint32(uint160(address(_mockToken)))
+            token: address(_mockToken), decimals: 6, currency: uint32(uint160(address(_mockToken)))
         });
 
         // setup: return data

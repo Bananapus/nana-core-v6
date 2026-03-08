@@ -56,9 +56,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         // Launch with terminal A
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         JBTerminalConfig[] memory _terminalConfigs = new JBTerminalConfig[](2);
@@ -81,38 +79,27 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         // Step 1: Pay into terminal A
         vm.deal(_beneficiary, payAmount);
         vm.prank(_beneficiary);
-        uint256 tokensReceived = _terminalA.pay{value: payAmount}(
-            _projectId, JBConstants.NATIVE_TOKEN, payAmount, _beneficiary, 0, "", ""
-        );
+        uint256 tokensReceived =
+            _terminalA.pay{value: payAmount}(_projectId, JBConstants.NATIVE_TOKEN, payAmount, _beneficiary, 0, "", "");
         assertGt(tokensReceived, 0, "should receive tokens");
 
         // Step 2: Verify terminal A has the balance
-        uint256 balanceA = jbTerminalStore().balanceOf(
-            address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN
-        );
+        uint256 balanceA = jbTerminalStore().balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceA, payAmount, "terminal A should have full balance");
 
-        uint256 balanceB = jbTerminalStore().balanceOf(
-            address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN
-        );
+        uint256 balanceB = jbTerminalStore().balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceB, 0, "terminal B should have zero balance");
 
         // Step 3: Migrate from A to B
         vm.prank(_projectOwner);
-        uint256 migratedBalance = _terminalA.migrateBalanceOf(
-            _projectId, JBConstants.NATIVE_TOKEN, _terminalB
-        );
+        uint256 migratedBalance = _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
         assertEq(migratedBalance, payAmount, "full balance should be migrated");
 
         // Step 4: Verify balances after migration
-        uint256 balanceAAfter = jbTerminalStore().balanceOf(
-            address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN
-        );
+        uint256 balanceAAfter = jbTerminalStore().balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceAAfter, 0, "terminal A should have zero after migration");
 
-        uint256 balanceBAfter = jbTerminalStore().balanceOf(
-            address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN
-        );
+        uint256 balanceBAfter = jbTerminalStore().balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceBAfter, payAmount, "terminal B should have full balance");
 
         // Step 5: Terminal B's ETH balance should match
@@ -133,9 +120,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
 
         assertGt(reclaimedAmount, 0, "should reclaim tokens");
         assertEq(
-            _beneficiary.balance,
-            beneficiaryBalanceBefore + reclaimedAmount,
-            "beneficiary should receive reclaimed ETH"
+            _beneficiary.balance, beneficiaryBalanceBefore + reclaimedAmount, "beneficiary should receive reclaimed ETH"
         );
     }
 
@@ -151,14 +136,11 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         // Record surplus before migration
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        uint256 surplusBefore = _terminalA.currentSurplusOf(
-            _projectId, contexts, 18, uint32(uint160(JBConstants.NATIVE_TOKEN))
-        );
+        uint256 surplusBefore =
+            _terminalA.currentSurplusOf(_projectId, contexts, 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertGt(surplusBefore, 0, "should have surplus before migration");
 
         // Migrate
@@ -166,9 +148,8 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
         // Check surplus from terminal B
-        uint256 surplusAfter = _terminalB.currentSurplusOf(
-            _projectId, contexts, 18, uint32(uint160(JBConstants.NATIVE_TOKEN))
-        );
+        uint256 surplusAfter =
+            _terminalB.currentSurplusOf(_projectId, contexts, 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(surplusAfter, surplusBefore, "surplus should be preserved after migration");
     }
 

@@ -125,7 +125,7 @@ contract TestBaseWorkflow is Test, DeployPermit2 {
     JBMultiTerminal private _jbMultiTerminal;
     MetadataResolverHelper private _metadataHelper;
     JBMultiTerminal private _jbMultiTerminal2;
-    
+
     function multisig() internal view returns (address) {
         return _multisig;
     }

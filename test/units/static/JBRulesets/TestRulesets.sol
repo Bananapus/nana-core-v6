@@ -26,20 +26,19 @@ contract TestJBRulesetsUnits_Local is JBTest {
 
     function equals(JBRuleset memory queued, JBRuleset memory stored) internal pure returns (bool) {
         // Just compare the output of hashing all fields packed.
-        return (
-            keccak256(
-                abi.encodePacked(
-                    queued.cycleNumber,
-                    queued.id,
-                    queued.basedOnId,
-                    queued.start,
-                    queued.duration,
-                    queued.weight,
-                    queued.weightCutPercent,
-                    queued.approvalHook,
-                    queued.metadata
+        return (keccak256(
+                    abi.encodePacked(
+                        queued.cycleNumber,
+                        queued.id,
+                        queued.basedOnId,
+                        queued.start,
+                        queued.duration,
+                        queued.weight,
+                        queued.weightCutPercent,
+                        queued.approvalHook,
+                        queued.metadata
+                    )
                 )
-            )
                 == keccak256(
                     abi.encodePacked(
                         stored.cycleNumber,
@@ -52,8 +51,7 @@ contract TestJBRulesetsUnits_Local is JBTest {
                         stored.approvalHook,
                         stored.metadata
                     )
-                )
-        );
+                ));
     }
 
     function setUp() public {

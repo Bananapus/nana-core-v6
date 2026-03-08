@@ -63,20 +63,19 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
             JBTerminalConfig[] memory feeTerminalConfigs = new JBTerminalConfig[](1);
             JBAccountingContext[] memory feeTokens = new JBAccountingContext[](1);
             feeTokens[0] = JBAccountingContext({
-                token: JBConstants.NATIVE_TOKEN,
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });
             feeTerminalConfigs[0] =
                 JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: feeTokens});
 
-            uint256 feeProjectId = jbController().launchProjectFor({
-                owner: projectOwner,
-                projectUri: "FeeProject",
-                rulesetConfigurations: emptyRuleset,
-                terminalConfigurations: feeTerminalConfigs,
-                memo: ""
-            });
+            uint256 feeProjectId = jbController()
+                .launchProjectFor({
+                    owner: projectOwner,
+                    projectUri: "FeeProject",
+                    rulesetConfigurations: emptyRuleset,
+                    terminalConfigurations: feeTerminalConfigs,
+                    memo: ""
+                });
             require(feeProjectId == 1, "Fee project must be #1");
         }
 
@@ -116,20 +115,19 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
-        projectA = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "ProjectA",
-            rulesetConfigurations: rulesetConfigA,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectA = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "ProjectA",
+                rulesetConfigurations: rulesetConfigA,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // =====================================================================
         // Project B: 0% reserved, 0% cash out tax
@@ -164,13 +162,14 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
         rulesetConfigB[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigB[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        projectB = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "ProjectB",
-            rulesetConfigurations: rulesetConfigB,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectB = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "ProjectB",
+                rulesetConfigurations: rulesetConfigB,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // =====================================================================
         // Project C: 50% reserved, 80% cash out tax
@@ -205,26 +204,20 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
         rulesetConfigC[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigC[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        projectC = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "ProjectC",
-            rulesetConfigurations: rulesetConfigC,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectC = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "ProjectC",
+                rulesetConfigurations: rulesetConfigC,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // =====================================================================
         // Create handler and register
         // =====================================================================
         handler = new EconomicHandler(
-            jbMultiTerminal(),
-            jbTerminalStore(),
-            jbController(),
-            jbTokens(),
-            projectA,
-            projectB,
-            projectC,
-            projectOwner
+            jbMultiTerminal(), jbTerminalStore(), jbController(), jbTokens(), projectA, projectB, projectC, projectOwner
         );
 
         bytes4[] memory selectors = new bytes4[](15);
@@ -263,9 +256,7 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         assertGe(
-            actualBalance,
-            totalRecorded,
-            "ECON1: Terminal actual balance must >= sum of all project recorded balances"
+            actualBalance, totalRecorded, "ECON1: Terminal actual balance must >= sum of all project recorded balances"
         );
     }
 
@@ -316,11 +307,7 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
             // With a 60% cash out tax rate, no actor should cash out more than they put in
             // unless addToBalance was used (which inflates surplus without minting tokens)
             if (handler.ghost_totalAddedToBalanceA() == 0) {
-                assertGe(
-                    paidIn,
-                    cashedOut,
-                    "ECON4: Actor should not profit from cash out with tax rate > 0"
-                );
+                assertGe(paidIn, cashedOut, "ECON4: Actor should not profit from cash out with tax rate > 0");
             }
         }
     }
@@ -330,10 +317,7 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
     // =========================================================================
     /// @notice Fee project (#1) balance should never decrease — fees only flow in.
     function invariant_ECON5_feeProjectMonotonicallyIncreases() public view {
-        assertFalse(
-            handler.ghost_feeProjectBalanceDecreased(),
-            "ECON5: Fee project balance must never decrease"
-        );
+        assertFalse(handler.ghost_feeProjectBalanceDecreased(), "ECON5: Fee project balance must never decrease");
     }
 
     // =========================================================================

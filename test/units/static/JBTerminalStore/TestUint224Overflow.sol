@@ -99,8 +99,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_accessLimits),
             abi.encodeCall(
-                IJBFundAccessLimits.payoutLimitsOf,
-                (_projectId, block.timestamp, address(_terminal), address(_token))
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(_terminal), address(_token))
             ),
             abi.encode(_limits)
         );
@@ -133,8 +132,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_accessLimits),
             abi.encodeCall(
-                IJBFundAccessLimits.payoutLimitsOf,
-                (_projectId, block.timestamp, address(_terminal), address(_token))
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(_terminal), address(_token))
             ),
             abi.encode(_limits)
         );
@@ -173,8 +171,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_accessLimits),
             abi.encodeCall(
-                IJBFundAccessLimits.payoutLimitsOf,
-                (_projectId, block.timestamp, address(_terminal), address(_token))
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(_terminal), address(_token))
             ),
             abi.encode(_limits)
         );

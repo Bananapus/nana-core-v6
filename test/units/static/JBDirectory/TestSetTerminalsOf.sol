@@ -26,9 +26,8 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
 
     modifier givenSetTerminalsAllowed() {
         // it should revert with revert SET_TERMINALS_NOT_ALLOWED()
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
 
         // mock erc165 call
         bytes memory _supportCall =
@@ -47,9 +46,8 @@ contract TestSetTerminalsOf_Local is JBDirectorySetup {
 
     function test_GivenNotSetTerminalsAllowed() external whenCallerHasPermission {
         // it should revert with revert SET_TERMINALS_NOT_ALLOWED()
-        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0).checked_write(
-            _mockController
-        );
+        stdstore.target(address(_directory)).sig("controllerOf(uint256)").with_key(1).depth(0)
+            .checked_write(_mockController);
 
         // mock erc165 call
         bytes memory _supportCall =

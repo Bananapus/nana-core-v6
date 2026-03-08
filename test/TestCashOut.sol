@@ -61,9 +61,7 @@ contract TestCashOut_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -122,15 +120,14 @@ contract TestCashOut_Local is TestBaseWorkflow {
 
         JBAccountingContext[] memory _tokensContext = new JBAccountingContext[](1);
         _tokensContext[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         // Get the expected gross per a different view.
-        uint256 _grossPerReclaimable = jbTerminalStore().currentReclaimableSurplusOf(
-            _projectId, _tokenAmountToCashOut, new IJBTerminal[](0), _tokensContext, 18, _tokensContext[0].currency
-        );
+        uint256 _grossPerReclaimable = jbTerminalStore()
+            .currentReclaimableSurplusOf(
+                _projectId, _tokenAmountToCashOut, new IJBTerminal[](0), _tokensContext, 18, _tokensContext[0].currency
+            );
 
         // Test: cash out.
         vm.prank(_beneficiary);

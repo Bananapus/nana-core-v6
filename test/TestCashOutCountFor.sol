@@ -13,7 +13,11 @@ contract CashOutCountForWrapper {
         uint256 desiredOutput,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) external pure returns (uint256) {
+    )
+        external
+        pure
+        returns (uint256)
+    {
         return JBCashOuts.minCashOutCountFor(surplus, desiredOutput, totalSupply, cashOutTaxRate);
     }
 }
@@ -141,7 +145,10 @@ contract TestCashOutCountFor is Test {
         uint128 totalSupply,
         uint128 cashOutCount,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
@@ -165,7 +172,10 @@ contract TestCashOutCountFor is Test {
         uint128 surplus,
         uint128 totalSupply,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 1);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutTaxRate <= MAX_TAX);
@@ -185,7 +195,10 @@ contract TestCashOutCountFor is Test {
         uint128 totalSupply,
         uint128 desiredOutput,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutTaxRate <= MAX_TAX);
@@ -210,7 +223,10 @@ contract TestCashOutCountFor is Test {
         uint128 out1,
         uint128 out2,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 2);
         vm.assume(totalSupply > 0);
         vm.assume(cashOutTaxRate <= MAX_TAX);
@@ -235,7 +251,10 @@ contract TestCashOutCountFor is Test {
         uint128 totalSupply,
         uint128 desiredOutput,
         uint16 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         vm.assume(surplus > 0);
         vm.assume(totalSupply > 1);
         vm.assume(cashOutTaxRate <= MAX_TAX);

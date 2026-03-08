@@ -53,20 +53,19 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
-        jbController().launchProjectFor({
-            owner: address(420),
-            projectUri: "feeCollector",
-            rulesetConfigurations: feeRulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        jbController()
+            .launchProjectFor({
+                owner: address(420),
+                projectUri: "feeCollector",
+                rulesetConfigurations: feeRulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Launch the test project with credits (no ERC20 initially, then deploy)
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -99,13 +98,14 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        projectId = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "testProject",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        projectId = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "testProject",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
 
         // Deploy ERC20 so claiming works
         vm.prank(projectOwner);
@@ -132,11 +132,7 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
         IJBToken token = jbTokens().tokenOf(projectId);
         uint256 erc20Supply = address(token) != address(0) ? token.totalSupply() : 0;
 
-        assertEq(
-            totalSupply,
-            creditSupply + erc20Supply,
-            "INV-TK-1: totalSupply must equal creditSupply + erc20Supply"
-        );
+        assertEq(totalSupply, creditSupply + erc20Supply, "INV-TK-1: totalSupply must equal creditSupply + erc20Supply");
     }
 
     /// @notice INV-TK-2: For each holder, totalBalanceOf == creditBalanceOf + token.balanceOf
@@ -172,11 +168,7 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         // Sum of tracked holder balances should be <= totalSupply.
         // It may be < totalSupply if there are holders we haven't tracked (e.g., fee project).
-        assertLe(
-            sumOfBalances,
-            totalSupply,
-            "INV-TK-3: Sum of tracked holder balances must not exceed totalSupply"
-        );
+        assertLe(sumOfBalances, totalSupply, "INV-TK-3: Sum of tracked holder balances must not exceed totalSupply");
     }
 
     /// @notice INV-TK-4: Claiming does not change totalSupplyOf.
