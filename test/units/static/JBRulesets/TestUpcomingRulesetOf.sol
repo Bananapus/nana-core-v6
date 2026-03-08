@@ -168,7 +168,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
 
         JBRuleset memory _upcoming = _rulesets.upcomingOf(_projectId);
         assertEq(_upcoming.id, block.timestamp + 1); // timestamp + 1 = second queued, since the preceeding ruleset is
-            // in
+        // in
     }
 
     function test_GivenStatusDNEQApprovedOrApprovalExpectedOrEmpty() external whenUpcomingRulesetIdDNEQZero {
@@ -185,7 +185,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
 
         JBRuleset memory _upcoming = _rulesets.upcomingOf(_projectId);
         assertEq(_upcoming.id, block.timestamp); // first queued, since the preceeding ruleset approval hook is still
-            // "Active"
+        // "Active"
     }
 
     function test_GivenTheLatestRulesetStartsInTheFuture() external {
@@ -335,10 +335,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
         assertEq(_upcoming.id, block.timestamp + 1); // timestamp + 1 = second queued
     }
 
-    function test_GivenTheRulesetsApprovalFailedAndItsBasedOnDurationDNEQZero()
-        external
-        whenUpcomingRulesetIdDNEQZero
-    {
+    function test_GivenTheRulesetsApprovalFailedAndItsBasedOnDurationDNEQZero() external whenUpcomingRulesetIdDNEQZero {
         // it will return the simulatedCycledRulesetBasedOn it was based on
         uint256 _latestQueuedId = _rulesets.latestRulesetIdOf(_projectId);
         JBRuleset memory _queuedRuleset = _rulesets.getRulesetOf(_projectId, _latestQueuedId);

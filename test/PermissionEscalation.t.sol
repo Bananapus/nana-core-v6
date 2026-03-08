@@ -35,10 +35,11 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         uint8[] memory rootPerms = new uint8[](1);
         rootPerms[0] = JBPermissionIds.ROOT;
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: alice, projectId: uint64(projectId2), permissionIds: rootPerms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner,
+                JBPermissionsData({operator: alice, projectId: uint64(projectId2), permissionIds: rootPerms})
+            );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -78,13 +79,14 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
 
         JBTerminalConfig[] memory terminalConfigurations = _defaultTerminalConfig();
 
-        jbController().launchProjectFor({
-            owner: address(420),
-            projectUri: "feeCollector",
-            rulesetConfigurations: feeRulesetConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
+        jbController()
+            .launchProjectFor({
+                owner: address(420),
+                projectUri: "feeCollector",
+                rulesetConfigurations: feeRulesetConfig,
+                terminalConfigurations: terminalConfigurations,
+                memo: ""
+            });
     }
 
     function _launchSimpleProject(string memory uri) internal returns (uint256) {
@@ -118,22 +120,21 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        return jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: uri,
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: _defaultTerminalConfig(),
-            memo: ""
-        });
+        return jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: uri,
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: _defaultTerminalConfig(),
+                memo: ""
+            });
     }
 
     function _defaultTerminalConfig() internal view returns (JBTerminalConfig[] memory) {
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
@@ -151,10 +152,8 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_Unauthorized.selector));
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: 0, permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(projectOwner, JBPermissionsData({operator: bob, projectId: 0, permissionIds: perms}));
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -168,10 +167,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
 
         vm.prank(alice);
         vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_Unauthorized.selector));
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -184,20 +183,21 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.CASH_OUT_TOKENS;
 
         vm.prank(alice);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
 
         // Verify Bob now has CASH_OUT_TOKENS
-        bool hasPerm = jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: false,
-            includeWildcardProjectId: false
-        });
+        bool hasPerm = jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: false,
+                includeWildcardProjectId: false
+            });
         assertTrue(hasPerm, "ROOT should be able to grant non-ROOT permissions");
     }
 
@@ -211,31 +211,31 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.CASH_OUT_TOKENS;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: 0, permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(projectOwner, JBPermissionsData({operator: bob, projectId: 0, permissionIds: perms}));
 
         // Bob should have CASH_OUT_TOKENS for project 2 (via wildcard)
-        bool hasPermProject2 = jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: false,
-            includeWildcardProjectId: true
-        });
+        bool hasPermProject2 = jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: false,
+                includeWildcardProjectId: true
+            });
         assertTrue(hasPermProject2, "Wildcard should apply to project 2");
 
         // Bob should have CASH_OUT_TOKENS for project 3 (via wildcard)
-        bool hasPermProject3 = jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId3,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: false,
-            includeWildcardProjectId: true
-        });
+        bool hasPermProject3 = jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId3,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: false,
+                includeWildcardProjectId: true
+            });
         assertTrue(hasPermProject3, "Wildcard should apply to project 3");
     }
 
@@ -249,21 +249,22 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.CASH_OUT_TOKENS;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
 
         // Verify Bob has it
         assertTrue(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should have CASH_OUT_TOKENS"
         );
 
@@ -271,21 +272,23 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         uint8[] memory emptyPerms = new uint8[](0);
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: emptyPerms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner,
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: emptyPerms})
+            );
 
         // Immediately verify Bob lost it
         assertFalse(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Revocation should be immediate"
         );
     }
@@ -300,31 +303,33 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = 255;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
 
-        bool hasPerm = jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: 255,
-            includeRoot: false,
-            includeWildcardProjectId: false
-        });
+        bool hasPerm = jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: 255,
+                includeRoot: false,
+                includeWildcardProjectId: false
+            });
         assertTrue(hasPerm, "Permission ID 255 should work");
 
         // Permission 256 should revert (out of bounds)
         vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_PermissionIdOutOfBounds.selector, 256));
-        jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: 256,
-            includeRoot: false,
-            includeWildcardProjectId: false
-        });
+        jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: 256,
+                includeRoot: false,
+                includeWildcardProjectId: false
+            });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -338,10 +343,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
 
         vm.prank(projectOwner);
         vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_NoZeroPermission.selector));
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -365,15 +370,16 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         // Bob tries to cash out Alice's tokens without permission
         vm.prank(bob);
         vm.expectRevert();
-        jbMultiTerminal().cashOutTokensOf({
-            holder: alice,
-            projectId: projectId2,
-            cashOutCount: tokens,
-            tokenToReclaim: JBConstants.NATIVE_TOKEN,
-            minTokensReclaimed: 0,
-            beneficiary: payable(bob),
-            metadata: new bytes(0)
-        });
+        jbMultiTerminal()
+            .cashOutTokensOf({
+                holder: alice,
+                projectId: projectId2,
+                cashOutCount: tokens,
+                tokenToReclaim: JBConstants.NATIVE_TOKEN,
+                minTokensReclaimed: 0,
+                beneficiary: payable(bob),
+                metadata: new bytes(0)
+            });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -422,13 +428,14 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         });
         rulesetConfig[0].fundAccessLimitGroups = fundAccessLimitGroups;
 
-        uint256 pid = jbController().launchProjectFor({
-            owner: projectOwner,
-            projectUri: "ownerMustPayTest",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: _defaultTerminalConfig(),
-            memo: ""
-        });
+        uint256 pid = jbController()
+            .launchProjectFor({
+                owner: projectOwner,
+                projectUri: "ownerMustPayTest",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: _defaultTerminalConfig(),
+                memo: ""
+            });
 
         // Fund the project
         vm.deal(address(0xBA1E), 20 ether);
@@ -447,32 +454,34 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         uint8[] memory perms = new uint8[](1);
         perms[0] = JBPermissionIds.SEND_PAYOUTS;
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(pid), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(pid), permissionIds: perms})
+            );
 
         // Charlie (no permission) tries to send payouts — should fail because ownerMustSendPayouts
         // requires SEND_PAYOUTS permission
         vm.prank(charlie);
         vm.expectRevert();
-        jbMultiTerminal().sendPayoutsOf({
-            projectId: pid,
-            token: JBConstants.NATIVE_TOKEN,
-            amount: 5 ether,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
-        });
+        jbMultiTerminal()
+            .sendPayoutsOf({
+                projectId: pid,
+                token: JBConstants.NATIVE_TOKEN,
+                amount: 5 ether,
+                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                minTokensPaidOut: 0
+            });
 
         // Bob (with SEND_PAYOUTS permission) CAN send payouts
         vm.prank(bob);
-        jbMultiTerminal().sendPayoutsOf({
-            projectId: pid,
-            token: JBConstants.NATIVE_TOKEN,
-            amount: 5 ether,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
-        });
+        jbMultiTerminal()
+            .sendPayoutsOf({
+                projectId: pid,
+                token: JBConstants.NATIVE_TOKEN,
+                amount: 5 ether,
+                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+                minTokensPaidOut: 0
+            });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -482,24 +491,26 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
     function test_permission_rootOnProject_doesNotAffectOtherProject() public {
         // Alice has ROOT on project 2 (from setUp)
         // Alice should NOT have any permissions on project 3
-        bool hasPermOnProject3 = jbPermissions().hasPermission({
-            operator: alice,
-            account: projectOwner,
-            projectId: projectId3,
-            permissionId: JBPermissionIds.ROOT,
-            includeRoot: true,
-            includeWildcardProjectId: false
-        });
+        bool hasPermOnProject3 = jbPermissions()
+            .hasPermission({
+                operator: alice,
+                account: projectOwner,
+                projectId: projectId3,
+                permissionId: JBPermissionIds.ROOT,
+                includeRoot: true,
+                includeWildcardProjectId: false
+            });
         assertFalse(hasPermOnProject3, "ROOT on project 2 must not grant power over project 3");
 
-        bool hasCashOutOnProject3 = jbPermissions().hasPermission({
-            operator: alice,
-            account: projectOwner,
-            projectId: projectId3,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: true,
-            includeWildcardProjectId: false
-        });
+        bool hasCashOutOnProject3 = jbPermissions()
+            .hasPermission({
+                operator: alice,
+                account: projectOwner,
+                projectId: projectId3,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: true,
+                includeWildcardProjectId: false
+            });
         assertFalse(hasCashOutOnProject3, "ROOT on project 2 must not grant CASH_OUT on project 3");
     }
 
@@ -514,31 +525,33 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms1[1] = JBPermissionIds.BURN_TOKENS;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms1})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms1})
+            );
 
         assertTrue(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should have CASH_OUT_TOKENS"
         );
         assertTrue(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.BURN_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.BURN_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should have BURN_TOKENS"
         );
 
@@ -547,43 +560,46 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms2[0] = JBPermissionIds.MINT_TOKENS;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms2})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms2})
+            );
 
         // Bob should only have MINT_TOKENS, not the previous ones
         assertTrue(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.MINT_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.MINT_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should now have MINT_TOKENS"
         );
         assertFalse(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should no longer have CASH_OUT_TOKENS (overwritten)"
         );
         assertFalse(
-            jbPermissions().hasPermission({
-                operator: bob,
-                account: projectOwner,
-                projectId: projectId2,
-                permissionId: JBPermissionIds.BURN_TOKENS,
-                includeRoot: false,
-                includeWildcardProjectId: false
-            }),
+            jbPermissions()
+                .hasPermission({
+                    operator: bob,
+                    account: projectOwner,
+                    projectId: projectId2,
+                    permissionId: JBPermissionIds.BURN_TOKENS,
+                    includeRoot: false,
+                    includeWildcardProjectId: false
+                }),
             "Bob should no longer have BURN_TOKENS (overwritten)"
         );
     }
@@ -598,10 +614,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = JBPermissionIds.CASH_OUT_TOKENS;
 
         vm.prank(projectOwner);
-        jbPermissions().setPermissionsFor(
-            projectOwner,
-            JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
-        );
+        jbPermissions()
+            .setPermissionsFor(
+                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+            );
 
         // Call from trusted forwarder with Bob appended as sender
         // The permission check should use Bob's address, not the forwarder
@@ -622,26 +638,28 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         );
 
         // Direct call should return true
-        bool hasPerm = jbPermissions().hasPermission({
-            operator: bob,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: false,
-            includeWildcardProjectId: false
-        });
+        bool hasPerm = jbPermissions()
+            .hasPermission({
+                operator: bob,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: false,
+                includeWildcardProjectId: false
+            });
         assertTrue(hasPerm, "Bob should have CASH_OUT_TOKENS via direct call");
 
         // Verify that permission checking respects msg.sender context
         // Charlie (unpermissioned) cannot use Bob's permissions
-        bool charlieHasPerm = jbPermissions().hasPermission({
-            operator: charlie,
-            account: projectOwner,
-            projectId: projectId2,
-            permissionId: JBPermissionIds.CASH_OUT_TOKENS,
-            includeRoot: false,
-            includeWildcardProjectId: false
-        });
+        bool charlieHasPerm = jbPermissions()
+            .hasPermission({
+                operator: charlie,
+                account: projectOwner,
+                projectId: projectId2,
+                permissionId: JBPermissionIds.CASH_OUT_TOKENS,
+                includeRoot: false,
+                includeWildcardProjectId: false
+            });
         assertFalse(charlieHasPerm, "Charlie should NOT have Bob's CASH_OUT_TOKENS");
     }
 

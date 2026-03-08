@@ -112,11 +112,8 @@ contract TestDurationUnderflow is TestBaseWorkflow {
     /// @notice Normal case: duration < block.timestamp. No underflow even without the fix.
     function test_harness_normalDuration_noUnderflow() public view {
         // block_timestamp = 1643802347 >> 7 days. Normal case.
-        JBRuleset memory base = _makeBaseRuleset({
-            start: uint48(block.timestamp - 30 days),
-            duration: uint32(7 days),
-            weight: 1000e18
-        });
+        JBRuleset memory base =
+            _makeBaseRuleset({start: uint48(block.timestamp - 30 days), duration: uint32(7 days), weight: 1000e18});
 
         JBRuleset memory result = _harness.exposed_simulateCycledRulesetBasedOn(1, base, true);
 
@@ -176,19 +173,18 @@ contract TestDurationUnderflow is TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokens = new JBAccountingContext[](1);
         tokens[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigs[0] = JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokens});
 
-        return jbController().launchProjectFor({
-            owner: multisig(),
-            projectUri: "test",
-            rulesetConfigurations: rulesetConfig,
-            terminalConfigurations: terminalConfigs,
-            memo: ""
-        });
+        return jbController()
+            .launchProjectFor({
+                owner: multisig(),
+                projectUri: "test",
+                rulesetConfigurations: rulesetConfig,
+                terminalConfigurations: terminalConfigs,
+                memo: ""
+            });
     }
 
     /// @notice currentOf with a large duration (cycle 1, no cycling needed).

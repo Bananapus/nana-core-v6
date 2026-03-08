@@ -24,7 +24,8 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         );
     }
 
-    // ───────────────────── Append-not-replace bug ─────────────────────
+    // ───────────────────── Append-not-replace bug
+    // ─────────────────────
 
     /// @notice BUG: Calling setFundAccessLimitsFor twice accumulates limits instead of replacing.
     /// If a controller ever calls this twice for the same rulesetId (e.g., custom controller,
@@ -35,10 +36,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
 
         JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](1);
         groups[0] = JBFundAccessLimitGroup({
-            terminal: TERMINAL,
-            token: TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
+            terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
         // First call — sets limit to 1000.
@@ -65,7 +63,8 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         assertEq(limitQuery, 1000, "Query returns first match only");
     }
 
-    // ───────────────────── Zero amount skipped ─────────────────────
+    // ───────────────────── Zero amount skipped
+    // ─────────────────────
 
     /// @notice Zero-amount limits are not stored (filtered by amount > 0 check).
     function test_zeroAmount_skipped() external {
@@ -75,10 +74,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
 
         JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](1);
         groups[0] = JBFundAccessLimitGroup({
-            terminal: TERMINAL,
-            token: TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
+            terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
@@ -90,7 +86,8 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         assertEq(allLimits[0].currency, 2, "Correct currency stored");
     }
 
-    // ───────────────────── Currency ordering validation ─────────────────────
+    // ───────────────────── Currency ordering validation
+    // ─────────────────────
 
     /// @notice Duplicate currencies in payout limits should revert.
     function test_currencyOrdering_rejectsEqual() external {
@@ -100,10 +97,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
 
         JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](1);
         groups[0] = JBFundAccessLimitGroup({
-            terminal: TERMINAL,
-            token: TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
+            terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
         vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
@@ -118,17 +112,15 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
 
         JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](1);
         groups[0] = JBFundAccessLimitGroup({
-            terminal: TERMINAL,
-            token: TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
+            terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
         vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 
-    // ───────────────────── Packing round-trip ─────────────────────
+    // ───────────────────── Packing round-trip
+    // ─────────────────────
 
     /// @notice Fuzz: packed amount + currency unpack correctly for all inputs.
     function testFuzz_packingRoundTrip(uint224 amount, uint32 currency) external {
@@ -142,10 +134,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
 
         JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](1);
         groups[0] = JBFundAccessLimitGroup({
-            terminal: TERMINAL,
-            token: TOKEN,
-            payoutLimits: payoutLimits,
-            surplusAllowances: new JBCurrencyAmount[](0)
+            terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
         // Use a unique rulesetId for each fuzz run to avoid accumulation bug.
@@ -159,7 +148,8 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         assertEq(result[0].currency, currency, "Currency should round-trip correctly");
     }
 
-    // ───────────────────── Query nonexistent returns zero ─────────────────────
+    // ───────────────────── Query nonexistent returns zero
+    // ─────────────────────
 
     /// @notice Querying a currency with no limit returns 0 (implicit default).
     function test_queryNonexistentCurrency_returnsZero() external view {

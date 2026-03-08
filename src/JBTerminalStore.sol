@@ -74,8 +74,9 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @custom:param terminal The terminal to get the project's balance within.
     /// @custom:param projectId The ID of the project to get the balance of.
     /// @custom:param token The token to get the balance for.
-    mapping(address terminal => mapping(uint256 projectId => mapping(address token => uint256))) public override
-        balanceOf;
+    mapping(address terminal => mapping(uint256 projectId => mapping(address token => uint256)))
+        public
+        override balanceOf;
 
     /// @notice The currency-denominated amount of funds that a project has already paid out from its payout limit
     /// during the current ruleset for each terminal, in terms of the payout limit's currency.
@@ -90,12 +91,12 @@ contract JBTerminalStore is IJBTerminalStore {
     mapping(
         address terminal
             => mapping(
-                uint256 projectId
-                    => mapping(
-                        address token => mapping(uint256 rulesetCycleNumber => mapping(uint256 currency => uint256))
-                    )
-            )
-    ) public override usedPayoutLimitOf;
+            uint256 projectId
+                => mapping(address token => mapping(uint256 rulesetCycleNumber => mapping(uint256 currency => uint256)))
+        )
+    )
+        public
+        override usedPayoutLimitOf;
 
     /// @notice The currency-denominated amounts of funds that a project has used from its surplus allowance during the
     /// current ruleset for each terminal, in terms of the surplus allowance's currency.
@@ -110,10 +111,12 @@ contract JBTerminalStore is IJBTerminalStore {
     mapping(
         address terminal
             => mapping(
-                uint256 projectId
-                    => mapping(address token => mapping(uint256 rulesetId => mapping(uint256 currency => uint256)))
-            )
-    ) public override usedSurplusAllowanceOf;
+            uint256 projectId
+                => mapping(address token => mapping(uint256 rulesetId => mapping(uint256 currency => uint256)))
+        )
+    )
+        public
+        override usedSurplusAllowanceOf;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -368,9 +371,7 @@ contract JBTerminalStore is IJBTerminalStore {
         surplus = accountingContext.decimals == targetDecimals
             ? surplus
             : JBFixedPointNumber.adjustDecimals({
-                value: surplus,
-                decimals: accountingContext.decimals,
-                targetDecimals: targetDecimals
+                value: surplus, decimals: accountingContext.decimals, targetDecimals: targetDecimals
             });
 
         // Add up all the balances.
@@ -379,7 +380,7 @@ contract JBTerminalStore is IJBTerminalStore {
             : mulDiv(
                 surplus,
                 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                    // `_payoutLimitRemaining`'s fidelity as possible when converting.
+                // `_payoutLimitRemaining`'s fidelity as possible when converting.
                 PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: accountingContext.currency,
@@ -390,12 +391,10 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Get a reference to the payout limit during the ruleset for the token.
         JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
-            .FUND_ACCESS_LIMITS().payoutLimitsOf({
-            projectId: projectId,
-            rulesetId: ruleset.id,
-            terminal: address(terminal),
-            token: accountingContext.token
-        });
+            .FUND_ACCESS_LIMITS()
+            .payoutLimitsOf({
+                projectId: projectId, rulesetId: ruleset.id, terminal: address(terminal), token: accountingContext.token
+            });
 
         // Keep a reference to the number of payout limits being iterated on.
         uint256 numberOfPayoutLimits = payoutLimits.length;
@@ -407,8 +406,9 @@ contract JBTerminalStore is IJBTerminalStore {
             // Set the payout limit value to the amount still available to pay out during the ruleset.
             {
                 uint256 remaining = payoutLimit.amount
-                    - usedPayoutLimitOf[terminal][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit
-                        .currency];
+                    - usedPayoutLimitOf[
+                        terminal
+                    ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
                 if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
                 payoutLimit.amount = uint224(remaining);
             }
@@ -416,9 +416,7 @@ contract JBTerminalStore is IJBTerminalStore {
             // Adjust the decimals of the fixed point number if needed to have the correct decimals.
             if (accountingContext.decimals != targetDecimals) {
                 uint256 adjusted = JBFixedPointNumber.adjustDecimals({
-                    value: payoutLimit.amount,
-                    decimals: accountingContext.decimals,
-                    targetDecimals: targetDecimals
+                    value: payoutLimit.amount, decimals: accountingContext.decimals, targetDecimals: targetDecimals
                 });
                 if (adjusted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(adjusted);
                 payoutLimit.amount = uint224(adjusted);
@@ -429,7 +427,7 @@ contract JBTerminalStore is IJBTerminalStore {
                 uint256 converted = mulDiv(
                     payoutLimit.amount,
                     10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                        // `payoutLimitRemaining`'s fidelity as possible when converting.
+                    // `payoutLimitRemaining`'s fidelity as possible when converting.
                     PRICES.pricePerUnitOf({
                         projectId: projectId,
                         pricingCurrency: payoutLimit.currency,
@@ -759,7 +757,7 @@ contract JBTerminalStore is IJBTerminalStore {
             : mulDiv(
                 amount,
                 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount`'s
-                    // fidelity as possible when converting.
+                // fidelity as possible when converting.
                 PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: currency,
@@ -787,17 +785,17 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Store the new amount.
         usedPayoutLimitOf[msg.sender][projectId][accountingContext.token][ruleset.cycleNumber][currency] =
-            newUsedPayoutLimitOf;
+        newUsedPayoutLimitOf;
 
         // Amount must be within what is still available to pay out.
         uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .payoutLimitOf({
-            projectId: projectId,
-            rulesetId: ruleset.id,
-            terminal: msg.sender,
-            token: accountingContext.token,
-            currency: currency
-        });
+                projectId: projectId,
+                rulesetId: ruleset.id,
+                terminal: msg.sender,
+                token: accountingContext.token,
+                currency: currency
+            });
 
         // Make sure the new used amount is within the payout limit.
         if (newUsedPayoutLimitOf > payoutLimit || payoutLimit == 0) {
@@ -855,7 +853,7 @@ contract JBTerminalStore is IJBTerminalStore {
             : mulDiv(
                 amount,
                 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `amount`'s
-                    // fidelity as possible when converting.
+                // fidelity as possible when converting.
                 PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: currency,
@@ -890,17 +888,17 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Store the incremented value.
         usedSurplusAllowanceOf[msg.sender][projectId][accountingContext.token][ruleset.id][currency] =
-            newUsedSurplusAllowanceOf;
+        newUsedSurplusAllowanceOf;
 
         // There must be sufficient surplus allowance available.
         uint256 surplusAllowance = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .surplusAllowanceOf({
-            projectId: projectId,
-            rulesetId: ruleset.id,
-            terminal: msg.sender,
-            token: accountingContext.token,
-            currency: currency
-        });
+                projectId: projectId,
+                rulesetId: ruleset.id,
+                terminal: msg.sender,
+                token: accountingContext.token,
+                currency: currency
+            });
 
         // Make sure the new used amount is within the allowance.
         if (newUsedSurplusAllowanceOf > surplusAllowance || surplusAllowance == 0) {

@@ -127,9 +127,8 @@ contract TestPriceFeed_Local is JBTest {
     ///      To test the IncompleteRound path, we use a priceFeed with THRESHOLD > block.timestamp.
     function test_incompleteRound_reverts() external {
         // Create a price feed with a huge threshold so stale check passes
-        JBChainlinkV3PriceFeed largeThrPriceFeed = new JBChainlinkV3PriceFeed(
-            AggregatorV3Interface(address(mockFeed)), type(uint256).max
-        );
+        JBChainlinkV3PriceFeed largeThrPriceFeed =
+            new JBChainlinkV3PriceFeed(AggregatorV3Interface(address(mockFeed)), type(uint256).max);
         mockFeed.setUpdatedAt(0);
 
         vm.expectRevert(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector);
@@ -144,7 +143,9 @@ contract TestPriceFeed_Local is JBTest {
     function test_zeroPrice_reverts() external {
         mockFeed.setPrice(0);
 
-        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_NegativePrice.selector, int256(0)));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_NegativePrice.selector, int256(0))
+        );
         priceFeed.currentUnitPrice(18);
     }
 
@@ -174,9 +175,8 @@ contract TestPriceFeed_Local is JBTest {
         fuzzFeed.setUpdatedAt(block.timestamp);
         fuzzFeed.setRoundId(1);
 
-        JBChainlinkV3PriceFeed fuzzPriceFeed = new JBChainlinkV3PriceFeed(
-            AggregatorV3Interface(address(fuzzFeed)), THRESHOLD
-        );
+        JBChainlinkV3PriceFeed fuzzPriceFeed =
+            new JBChainlinkV3PriceFeed(AggregatorV3Interface(address(fuzzFeed)), THRESHOLD);
 
         uint256 price = fuzzPriceFeed.currentUnitPrice(requestedDecimals);
         uint256 expected = uint256(rawPrice).adjustDecimals({decimals: feedDecimals, targetDecimals: requestedDecimals});

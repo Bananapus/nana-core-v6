@@ -58,10 +58,8 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
 
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] = JBCurrencyAmount({
-            amount: uint224(PAY_AMOUNT),
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
+        payoutLimits[0] =
+            JBCurrencyAmount({amount: uint224(PAY_AMOUNT), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
         JBFundAccessLimitGroup[] memory limitGroups = new JBFundAccessLimitGroup[](1);
         limitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(_terminal),
@@ -73,12 +71,11 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
 
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](1);
-        terminalConfigs[0] = JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
+        terminalConfigs[0] =
+            JBTerminalConfig({terminal: IJBTerminal(address(_terminal)), accountingContextsToAccept: tokensToAccept});
 
         // Fee project (#1) — set up normally so fees can be collected.
         _controller.launchProjectFor({

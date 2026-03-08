@@ -105,13 +105,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         view
         returns (JBRuleset memory ruleset, JBRulesetMetadata memory metadata);
 
-    function addPriceFeed(
-        uint256 projectId,
-        uint256 pricingCurrency,
-        uint256 unitCurrency,
-        IJBPriceFeed feed
-    )
-        external;
+    function addPriceFeed(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed) external;
     function burnTokensOf(address holder, uint256 projectId, uint256 tokenCount, string calldata memo) external;
     function claimTokensFor(address holder, uint256 projectId, uint256 tokenCount, address beneficiary) external;
     function deployERC20For(

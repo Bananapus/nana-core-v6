@@ -69,16 +69,9 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
 
         // Accept both ETH and USDC
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](2);
-        _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: _nativeCurrency
-        });
-        _tokensToAccept[1] = JBAccountingContext({
-            token: address(_usdc),
-            decimals: 6,
-            currency: _usdcCurrency
-        });
+        _tokensToAccept[0] =
+            JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
+        _tokensToAccept[1] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
 
         JBTerminalConfig[] memory _terminalConfigs = new JBTerminalConfig[](1);
         _terminalConfigs[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -95,10 +88,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         // This allows the terminal to convert USDC balances to ETH-denominated surplus
         vm.prank(_projectOwner);
         _controller.addPriceFeed({
-            projectId: _projectId,
-            pricingCurrency: _usdcCurrency,
-            unitCurrency: _nativeCurrency,
-            feed: _ethToUsdcFeed
+            projectId: _projectId, pricingCurrency: _usdcCurrency, unitCurrency: _nativeCurrency, feed: _ethToUsdcFeed
         });
     }
 
@@ -112,15 +102,9 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
 
         // Check surplus in ETH terms
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: _nativeCurrency
-        });
+        contexts[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
 
-        uint256 surplus = _terminal.currentSurplusOf(
-            _projectId, contexts, 18, _nativeCurrency
-        );
+        uint256 surplus = _terminal.currentSurplusOf(_projectId, contexts, 18, _nativeCurrency);
         assertEq(surplus, payAmount, "ETH surplus should match payment");
     }
 
@@ -140,15 +124,9 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
 
         // Check surplus in USDC terms
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] = JBAccountingContext({
-            token: address(_usdc),
-            decimals: 6,
-            currency: _usdcCurrency
-        });
+        contexts[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
 
-        uint256 surplus = _terminal.currentSurplusOf(
-            _projectId, contexts, 6, _usdcCurrency
-        );
+        uint256 surplus = _terminal.currentSurplusOf(_projectId, contexts, 6, _usdcCurrency);
         assertEq(surplus, usdcAmount, "USDC surplus should match payment");
     }
 
@@ -174,27 +152,15 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
 
         // Check surplus of each token individually
         JBAccountingContext[] memory ethContext = new JBAccountingContext[](1);
-        ethContext[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: _nativeCurrency
-        });
+        ethContext[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
 
         JBAccountingContext[] memory usdcContext = new JBAccountingContext[](1);
-        usdcContext[0] = JBAccountingContext({
-            token: address(_usdc),
-            decimals: 6,
-            currency: _usdcCurrency
-        });
+        usdcContext[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
 
-        uint256 ethSurplus = _terminal.currentSurplusOf(
-            _projectId, ethContext, 18, _nativeCurrency
-        );
+        uint256 ethSurplus = _terminal.currentSurplusOf(_projectId, ethContext, 18, _nativeCurrency);
         assertEq(ethSurplus, ethAmount, "ETH surplus should match");
 
-        uint256 usdcSurplus = _terminal.currentSurplusOf(
-            _projectId, usdcContext, 6, _usdcCurrency
-        );
+        uint256 usdcSurplus = _terminal.currentSurplusOf(_projectId, usdcContext, 6, _usdcCurrency);
         assertEq(usdcSurplus, usdcAmount, "USDC surplus should match");
 
         // Check aggregated surplus in ETH terms (both contexts)
@@ -202,9 +168,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         bothContexts[0] = ethContext[0];
         bothContexts[1] = usdcContext[0];
 
-        uint256 totalSurplus = _terminal.currentSurplusOf(
-            _projectId, bothContexts, 18, _nativeCurrency
-        );
+        uint256 totalSurplus = _terminal.currentSurplusOf(_projectId, bothContexts, 18, _nativeCurrency);
 
         // Total should be ETH amount + USDC converted to ETH
         // 1 ETH + (2000 USDC / 2000 per ETH) = 2 ETH
@@ -233,14 +197,10 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         _terminal.pay(_projectId, address(_usdc), usdcAmount, _beneficiary, 0, "", "");
 
         // Check individual balances
-        uint256 ethBalance = jbTerminalStore().balanceOf(
-            address(_terminal), _projectId, JBConstants.NATIVE_TOKEN
-        );
+        uint256 ethBalance = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(ethBalance, ethAmount, "ETH balance should match");
 
-        uint256 usdcBalance = jbTerminalStore().balanceOf(
-            address(_terminal), _projectId, address(_usdc)
-        );
+        uint256 usdcBalance = jbTerminalStore().balanceOf(address(_terminal), _projectId, address(_usdc));
         assertEq(usdcBalance, usdcAmount, "USDC balance should match");
     }
 }

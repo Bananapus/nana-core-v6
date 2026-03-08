@@ -64,9 +64,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -140,10 +138,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
 
         vm.prank(_beneficiary);
         _controller.burnTokensOf({
-            holder: _beneficiary,
-            projectId: _projectId,
-            tokenCount: _burnTokenAmount,
-            memo: "I hate tokens!"
+            holder: _beneficiary, projectId: _projectId, tokenCount: _burnTokenAmount, memo: "I hate tokens!"
         });
 
         // Make sure the beneficiary should has a new balance of project tokens.

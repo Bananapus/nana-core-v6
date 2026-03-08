@@ -274,11 +274,7 @@ library JBMetadataResolver {
     /// @param start The start index to slice at.
     /// @param end The end index to slice at.
     /// @param slicedBytes The sliced array.
-    function _sliceBytes(
-        bytes memory data,
-        uint256 start,
-        uint256 end
-    )
+    function _sliceBytes(bytes memory data, uint256 start, uint256 end)
         private
         pure
         returns (bytes memory slicedBytes)

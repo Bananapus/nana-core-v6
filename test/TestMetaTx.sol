@@ -35,13 +35,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
         returns (ERC2771Forwarder.ForwardRequestData memory)
     {
         ForwardRequest memory request = ForwardRequest({
-            from: _signer,
-            to: address(target),
-            value: value,
-            gas: 300_000,
-            nonce: nonce,
-            deadline: deadline,
-            data: data
+            from: _signer, to: address(target), value: value, gas: 300_000, nonce: nonce, deadline: deadline, data: data
         });
 
         bytes32 digest = _erc2771Forwarder.structHash(request);
@@ -114,9 +108,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -163,11 +155,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
 
         // Setup: forwarder request data
         ERC2771Forwarder.ForwardRequestData memory requestData = _forgeRequestData({
-            value: _payAmount,
-            nonce: 0,
-            deadline: uint48(block.timestamp + 1),
-            data: _data,
-            target: address(_terminal)
+            value: _payAmount, nonce: 0, deadline: uint48(block.timestamp + 1), data: _data, target: address(_terminal)
         });
 
         // Send: "Meta Tx" (signed by _signer) from relayer to our trusted forwarder
@@ -199,11 +187,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
 
         // Setup 2: forwarder request data with incremented nonce for cash out tx
         ERC2771Forwarder.ForwardRequestData memory requestData2 = _forgeRequestData({
-            value: 0,
-            nonce: 1,
-            deadline: uint48(block.timestamp + 1),
-            data: _data2,
-            target: address(_terminal)
+            value: 0, nonce: 1, deadline: uint48(block.timestamp + 1), data: _data2, target: address(_terminal)
         });
 
         // Setup 2: Give relayer some gas gas gasssss

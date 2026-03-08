@@ -302,11 +302,7 @@ contract JBSplits is JBControlled, IJBSplits {
             }
 
             emit SetSplit({
-                projectId: projectId,
-                rulesetId: rulesetId,
-                groupId: groupId,
-                split: split,
-                caller: msg.sender
+                projectId: projectId, rulesetId: rulesetId, groupId: groupId, split: split, caller: msg.sender
             });
         }
 

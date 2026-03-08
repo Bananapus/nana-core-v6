@@ -13,7 +13,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         super.splitsSetup();
     }
 
-    // ───────────────────────────────── Helpers ─────────────────────────────────
+    // ───────────────────────────────── Helpers
+    // ─────────────────────────────────
 
     /// @dev Build a single-split group for the given groupId.
     function _makeSplitGroup(
@@ -45,7 +46,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         mockExpect(address(directory), call_, ret);
     }
 
-    // ──────────────────── Self-managed namespace: happy paths ──────────────────
+    // ──────────────────── Self-managed namespace: happy paths
+    // ──────────────────
 
     function test_CallerCanSetSplitsInOwnGroupNamespace() external {
         // Any contract can set splits when groupId's lower 160 bits == msg.sender.
@@ -197,10 +199,14 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         address payable beneB = payable(makeAddr("beneB"));
 
         vm.prank(caller);
-        _splits.setSplitGroupsOf(_projectId, rulesetA, _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT, beneA));
+        _splits.setSplitGroupsOf(
+            _projectId, rulesetA, _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT, beneA)
+        );
 
         vm.prank(caller);
-        _splits.setSplitGroupsOf(_projectId, rulesetB, _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT, beneB));
+        _splits.setSplitGroupsOf(
+            _projectId, rulesetB, _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT, beneB)
+        );
 
         JBSplit[] memory resultA = _splits.splitsOf(_projectId, rulesetA, groupId);
         JBSplit[] memory resultB = _splits.splitsOf(_projectId, rulesetB, groupId);
@@ -209,7 +215,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         assertEq(resultB[0].beneficiary, beneB);
     }
 
-    // ────────────────────── Self-managed: validation still applies ─────────────
+    // ────────────────────── Self-managed: validation still applies
+    // ─────────────
 
     function test_SelfManagedSplitsRevertOnZeroPercent() external {
         address caller = makeAddr("hookContract");
@@ -299,7 +306,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 
-    // ──────────────────────── Authorization: revert cases ──────────────────────
+    // ──────────────────────── Authorization: revert cases
+    // ──────────────────────
 
     function test_NonOwnerCannotSetSplitsInOtherNamespace() external {
         // A caller whose address doesn't match the groupId's lower 160 bits is rejected (unless controller).
@@ -314,7 +322,9 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
 
         vm.prank(caller);
         vm.expectRevert(
-            abi.encodeWithSelector(JBControlled.JBControlled_ControllerUnauthorized.selector, makeAddr("realController"))
+            abi.encodeWithSelector(
+                JBControlled.JBControlled_ControllerUnauthorized.selector, makeAddr("realController")
+            )
         );
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
@@ -331,12 +341,15 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
 
         vm.prank(caller);
         vm.expectRevert(
-            abi.encodeWithSelector(JBControlled.JBControlled_ControllerUnauthorized.selector, makeAddr("realController"))
+            abi.encodeWithSelector(
+                JBControlled.JBControlled_ControllerUnauthorized.selector, makeAddr("realController")
+            )
         );
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 
-    // ───────────────────── Controller can still set any group ──────────────────
+    // ───────────────────── Controller can still set any group
+    // ──────────────────
 
     function test_ControllerCanSetSplitsInAnyGroup() external {
         // The controller can set splits in a group that "belongs" to another address.
@@ -356,7 +369,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         assertEq(result[0].beneficiary, _bene);
     }
 
-    // ─────────────────── Mixed groups in one call ─────────────────────────────
+    // ─────────────────── Mixed groups in one call
+    // ─────────────────────────────
 
     function test_MixedSelfManagedAndControllerGroupsInOneCall() external {
         // A single setSplitGroupsOf call with one self-managed group and one controller-gated group.
@@ -443,7 +457,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 
-    // ────────────────────── Fuzz tests ─────────────────────────────────────────
+    // ────────────────────── Fuzz tests
+    // ─────────────────────────────────────────
 
     function testFuzz_AnyAddressCanSetOwnNamespace(address caller, uint96 upperBits, uint32 percent) external {
         vm.assume(caller != address(0));
@@ -474,15 +489,12 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
 
         uint256 groupId = uint256(uint160(groupOwner));
 
-        JBSplitGroup[] memory groups =
-            _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT / 2, _bene);
+        JBSplitGroup[] memory groups = _makeSplitGroup(groupId, JBConstants.SPLITS_TOTAL_PERCENT / 2, _bene);
 
         _mockController(controller);
 
         vm.prank(caller);
-        vm.expectRevert(
-            abi.encodeWithSelector(JBControlled.JBControlled_ControllerUnauthorized.selector, controller)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBControlled.JBControlled_ControllerUnauthorized.selector, controller));
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 }
