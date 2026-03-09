@@ -246,6 +246,10 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 - `IJBDirectoryAccessControl` has `setControllerAllowed()` and `setTerminalsAllowed()` -- NOT `setControllerAllowedFor()`
 - Price feeds are immutable once set in `JBPrices` -- they cannot be replaced or removed
 - `JBFundAccessLimits` requires payout limits and surplus allowances to be in strictly increasing currency order to prevent duplicates
+- **Empty `fundAccessLimitGroups` = zero payouts, NOT unlimited.** If a ruleset's `fundAccessLimitGroups` array is empty (or has no entry for the terminal/token), `payoutLimitsOf()` returns an empty array → cumulative limit is 0 → `sendPayoutsOf()` reverts on any amount. To allow unlimited payouts, explicitly set a payout limit with `amount: type(uint224).max`.
+- **`groupId` (uint256) vs `currency` (uint32) are different types for the same address.** `JBSplitGroup.groupId` is `uint256(uint160(tokenAddress))` while `JBAccountingContext.currency` is `uint32(uint160(tokenAddress))`. These truncate differently — only `NATIVE_TOKEN` (0x...EEEe) matches by coincidence. Don't confuse them.
+- **`JBAccountingContext.currency` is NOT `baseCurrency`.** Ruleset metadata's `baseCurrency` uses convention values (1 = ETH, 2 = USD). `JBAccountingContext.currency` is `uint32(uint160(tokenAddress))` — e.g. 61166 for NATIVE_TOKEN, not 1. These are completely different numbering systems.
+- **Multiple queued rulesets for vesting is an anti-pattern.** Don't queue 12 identical rulesets for 12-month vesting. Use ONE cycling ruleset with `duration: 30 days` — it automatically recycles. Queue multiple rulesets only when configuration actually changes between periods.
 
 ## Example Integration
 
