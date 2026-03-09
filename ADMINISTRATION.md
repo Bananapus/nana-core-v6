@@ -75,7 +75,7 @@ Admin privileges and their scope in nana-core-v6.
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `setPermissionsFor` | Account owner, or ROOT operator for that account+project | ROOT (1) | Per account + project | Sets the permission bitmap for an operator. ROOT operators can set non-ROOT permissions for the same project but cannot grant ROOT to them or set wildcard project permissions. |
+| `setPermissionsFor` | Account owner, or ROOT operator for that account+project | ROOT (1) | Per account + project | Sets the permission bitmap for an operator. ROOT operators can set non-ROOT permissions for the same project but cannot grant ROOT or set wildcard project permissions. |
 
 ### JBProjects
 
