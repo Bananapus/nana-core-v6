@@ -93,7 +93,6 @@ import {JBSplitGroupIds} from "../../src/libraries/JBSplitGroupIds.sol";
 import {IPermit2, IAllowanceTransfer} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {DeployPermit2} from "@uniswap/permit2/test/utils/DeployPermit2.sol";
 
-
 import {MetadataResolverHelper} from "./MetadataResolverHelper.sol";
 
 import {MockERC20} from "./../mock/MockERC20.sol";
