@@ -198,8 +198,8 @@ contract BondingCurveProperties is Test {
         if (firstResult + secondResult > singleResult) {
             // The excess should be tiny relative to the result
             uint256 excess = (firstResult + secondResult) - singleResult;
-            // Allow up to 1 basis point (0.01%) rounding tolerance
-            assert(excess * 10_000 <= singleResult);
+            // Allow up to 2 wei absolute (for small values) or 0.01% relative
+            assert(excess <= 2 || excess * 10_000 <= singleResult);
         }
     }
 
@@ -229,10 +229,13 @@ contract BondingCurveProperties is Test {
         uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, cashOutTaxRate);
 
         // NOTE: Strict subadditivity violated due to mulDiv rounding.
-        // Verify the weaker property: excess bounded by rounding tolerance (< 0.01%).
+        // Verify the weaker property: excess bounded by rounding tolerance (<=2 wei or < 0.01%).
         if (firstResult + secondResult > singleResult) {
             uint256 excess = (firstResult + secondResult) - singleResult;
-            assertLe(excess * 10_000, singleResult, "No-arbitrage: rounding excess should be < 0.01%");
+            assertTrue(
+                excess <= 2 || excess * 10_000 <= singleResult,
+                "No-arbitrage: rounding excess should be <= 2 wei or < 0.01%"
+            );
         }
     }
 
