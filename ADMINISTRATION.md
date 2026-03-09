@@ -26,7 +26,7 @@ Admin privileges and their scope in nana-core-v6.
 
 ### ROOT Permission Holder
 
-- **How assigned:** Granted the ROOT permission (ID 255) by an account via `JBPermissions`. ROOT on a specific project grants all permissions for that project. ROOT cannot be granted on the wildcard project ID (0) to prevent unlimited cross-project access.
+- **How assigned:** Granted the ROOT permission (ID 1) by an account via `JBPermissions`. ROOT on a specific project grants all permissions for that project. ROOT cannot be granted on the wildcard project ID (0) to prevent unlimited cross-project access.
 - **Scope:** ROOT holders for a project can do anything the project owner can do for that project. ROOT holders can also grant non-ROOT permissions to other operators for the same project but cannot grant ROOT to others or set wildcard permissions.
 
 ### Directory Owner
