@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 
 /// @notice Edge case tests for JBFundAccessLimits append behavior and packing.
 /// The key finding is that setFundAccessLimitsFor uses .push() (append), not replace.

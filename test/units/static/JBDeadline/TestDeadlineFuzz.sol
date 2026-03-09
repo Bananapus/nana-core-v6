@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBDeadline} from "../../../../src/JBDeadline.sol";
 import {JBApprovalStatus} from "../../../../src/enums/JBApprovalStatus.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";

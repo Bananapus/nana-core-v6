@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 
 /*
 Contract that deploys a target contract with other mock contracts to satisfy the constructor.

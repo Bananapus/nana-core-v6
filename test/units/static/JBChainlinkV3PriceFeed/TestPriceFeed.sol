@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBChainlinkV3PriceFeed} from "../../../../src/JBChainlinkV3PriceFeed.sol";
 import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 import {JBFixedPointNumber} from "../../../../src/libraries/JBFixedPointNumber.sol";

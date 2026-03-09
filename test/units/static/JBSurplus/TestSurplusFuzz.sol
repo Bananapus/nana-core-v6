@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBSurplus} from "../../../../src/libraries/JBSurplus.sol";
 
 /// @notice Mock terminal that returns a fixed surplus for testing JBSurplus.
