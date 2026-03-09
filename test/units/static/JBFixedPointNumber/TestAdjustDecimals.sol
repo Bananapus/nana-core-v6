@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBFixedPointNumber} from "../../../../src/libraries/JBFixedPointNumber.sol";
 
 contract TestAdjustDecimals_Local is JBTest {

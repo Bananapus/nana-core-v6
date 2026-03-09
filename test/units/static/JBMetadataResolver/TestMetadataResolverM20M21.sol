@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBMetadataResolver} from "../../../../src/libraries/JBMetadataResolver.sol";
 
 /// @notice Harness that exposes JBMetadataResolver internals and adds a combined operation

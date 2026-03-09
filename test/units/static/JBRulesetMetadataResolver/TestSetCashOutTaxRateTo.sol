@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 
 contract TestSetCashOutTaxRateTo_Local is JBTest {
     using JBRulesetMetadataResolver for JBRulesetMetadata;

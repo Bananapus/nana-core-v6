@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
 
 /// @notice Fuzz tests for the JBFees library.
