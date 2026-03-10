@@ -3,9 +3,6 @@ solc = '0.8.26'
 evm_version = 'cancun'
 optimizer_runs = 200
 libs = ["node_modules", "lib"]
-
-[lint]
-exclude_lints = ["unsafe-typecast", "incorrect-shift"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 
 [fuzz]
