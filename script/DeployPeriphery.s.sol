@@ -2,14 +2,10 @@
 pragma solidity 0.8.26;
 
 import "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
-import {Script, stdJson, VmSafe} from "forge-std/Script.sol";
+import {Script} from "forge-std/Script.sol";
 import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
 
-import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {IJBPriceFeed} from "src/interfaces/IJBPriceFeed.sol";
-import {JBPermissions} from "src/JBPermissions.sol";
-import {JBProjects} from "src/JBProjects.sol";
-import {JBPrices} from "src/JBPrices.sol";
 import {JBDeadline3Hours} from "src/periphery/JBDeadline3Hours.sol";
 import {JBDeadline1Day} from "src/periphery/JBDeadline1Day.sol";
 import {JBDeadline3Days} from "src/periphery/JBDeadline3Days.sol";
@@ -18,16 +14,7 @@ import {JBMatchingPriceFeed} from "src/periphery/JBMatchingPriceFeed.sol";
 import {JBChainlinkV3PriceFeed, AggregatorV3Interface} from "src/JBChainlinkV3PriceFeed.sol";
 import {AggregatorV2V3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV2V3Interface.sol";
 import {JBChainlinkV3SequencerPriceFeed} from "src/JBChainlinkV3SequencerPriceFeed.sol";
-import {JBRulesets} from "src/JBRulesets.sol";
-import {JBDirectory} from "src/JBDirectory.sol";
-import {JBERC20} from "src/JBERC20.sol";
-import {JBTokens} from "src/JBTokens.sol";
-import {JBSplits} from "src/JBSplits.sol";
-import {JBFeelessAddresses} from "src/JBFeelessAddresses.sol";
-import {JBFundAccessLimits} from "src/JBFundAccessLimits.sol";
 import {JBController} from "src/JBController.sol";
-import {JBTerminalStore} from "src/JBTerminalStore.sol";
-import {JBMultiTerminal} from "src/JBMultiTerminal.sol";
 
 import {JBConstants} from "src/libraries/JBConstants.sol";
 import {JBCurrencyIds} from "src/libraries/JBCurrencyIds.sol";

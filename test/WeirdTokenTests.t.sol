@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
-import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Tests for weird/non-standard ERC-20 tokens: fee-on-transfer, rebasing, return-false, low/high decimals.
 contract WeirdTokenTests_Local is TestBaseWorkflow {

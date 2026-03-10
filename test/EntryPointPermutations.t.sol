@@ -4,7 +4,6 @@ pragma solidity ^0.8.6;
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
-import {JBFees} from "../src/libraries/JBFees.sol";
 
 /// @title EntryPointPermutations
 /// @notice Systematically tests every JBMultiTerminal external function with edge-case parameters
@@ -452,7 +451,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         );
 
         // Held fees should be reduced (partially or fully returned)
-        JBFee[] memory feesAfter = jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
+        jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
 
         if (feesBefore.length > 0) {
             // Either fewer fees or smaller amounts

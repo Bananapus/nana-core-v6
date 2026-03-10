@@ -2,8 +2,7 @@
 pragma solidity 0.8.26;
 
 import "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
-import {Script, stdJson, VmSafe} from "forge-std/Script.sol";
-import {CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
+import {Script} from "forge-std/Script.sol";
 
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBPermissions} from "src/JBPermissions.sol";
@@ -16,7 +15,6 @@ import {JBTokens} from "src/JBTokens.sol";
 import {JBSplits} from "src/JBSplits.sol";
 import {JBFeelessAddresses} from "src/JBFeelessAddresses.sol";
 import {JBFundAccessLimits} from "src/JBFundAccessLimits.sol";
-import {JBController} from "src/JBController.sol";
 import {JBTerminalStore} from "src/JBTerminalStore.sol";
 import {JBMultiTerminal} from "src/JBMultiTerminal.sol";
 

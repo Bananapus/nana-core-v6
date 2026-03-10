@@ -254,7 +254,6 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         // Both should get proportional shares (with cashOutTax reducing it)
         // Key check: they should get roughly equal amounts since they have equal tokens
-        uint256 diff = aliceReclaim > bobReclaim ? aliceReclaim - bobReclaim : bobReclaim - aliceReclaim;
         // Alice cashes out first, so she gets slightly more due to reduced supply.
         // But the proportional split should be reasonable.
         assertTrue(aliceReclaim > 0, "Alice should get some reclaim");

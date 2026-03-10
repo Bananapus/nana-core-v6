@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import /* {*} from */ "../helpers/TestBaseWorkflow.sol";
 import {IJBMultiTerminal} from "../../src/interfaces/IJBMultiTerminal.sol";
-import {JBMultiTerminal} from "../../src/JBMultiTerminal.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 

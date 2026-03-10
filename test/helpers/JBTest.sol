@@ -65,7 +65,7 @@ contract JBTest is Test {
         });
     }
 
-    function generateEmptyMetadata() public view returns (JBRulesetMetadata memory) {
+    function generateEmptyMetadata() public pure returns (JBRulesetMetadata memory) {
         return JBRulesetMetadata({
             reservedPercent: 0,
             cashOutTaxRate: 0,

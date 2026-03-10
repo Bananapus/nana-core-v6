@@ -144,11 +144,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         assertGt(heldFees.length, 0, "Should have held fees after payout");
 
         // Step 3: Migrate balance to terminal2.
-        uint256 balanceBefore = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
-
         vm.prank(_projectOwner);
-        uint256 migrated =
-            _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
+        _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, IJBTerminal(address(_terminal2)));
 
         // Step 4: Verify old terminal has no balance but still has held fees.
         uint256 balanceAfter = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
@@ -231,15 +228,9 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
         // Warp past holding period.
         vm.warp(block.timestamp + 28 days + 1);
 
-        // Fee project balance before attempting to process.
-        uint256 feeBalanceBefore = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
-
         // Try to process held fees — the fees still exist but the old terminal has no ETH.
         // The _processFee try-catch will catch the revert and credit the fee amount back to the project.
         _terminal.processHeldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
-
-        // Fee project should NOT have received fees (old terminal had no ETH to transfer).
-        uint256 feeBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
 
         // The fee processing attempted but the terminal has no actual ETH.
         // The _recordAddedBalanceFor in the catch block inflates the store balance

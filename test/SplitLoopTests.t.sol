@@ -463,10 +463,8 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
 
         _payProject(pid, address(0xBA1E), 10 ether);
 
-        uint256 totalBefore = address(jbMultiTerminal()).balance;
-
         vm.prank(projectOwner);
-        uint256 netLeftover = jbMultiTerminal()
+        jbMultiTerminal()
             .sendPayoutsOf({
                 projectId: pid,
                 token: JBConstants.NATIVE_TOKEN,

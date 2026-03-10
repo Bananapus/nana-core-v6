@@ -187,7 +187,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @dev Can only be called by the directory.
     /// @param from The controller being migrated from.
     /// @param projectId The ID of the project that migrated to this controller.
-    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external override {
+    function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external view override {
         from; // Suppress unused variable warning.
         projectId; // Suppress unused variable warning.
 

@@ -153,9 +153,6 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
         // For this test, verify the FeeReverted event is emitted when fee processing fails.
         // We'll manipulate the directory to return address(0) for fee project's terminal.
 
-        // Record balance before payout.
-        uint256 projectBalanceBefore = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
-
         // The fee is taken during sendPayoutsOf. Under normal conditions, it goes to project #1.
         // The _processFee try-catch handles failures gracefully.
         // We verify that the normal path works (fee is deducted from payout and sent to fee project).
@@ -168,8 +165,6 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        uint256 projectBalanceAfter = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
-
         // Fee was deducted from the payout — project balance is now only the surplus (if any).
         // The fee was 2.5% of the payout amount.
         uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: _terminal.FEE()});
@@ -178,7 +173,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
 
     /// @notice Held fee processing: when fee payment reverts, the FeeReverted event is emitted
     /// and the fee amount is credited back to the project balance via _recordAddedBalanceFor.
-    function test_heldFeeProcessing_revert_refundsToProject() external {
+    function test_heldFeeProcessing_revert_refundsToProject() external view {
         // This test requires holdFees=true ruleset — we test the principle:
         // When _processFee's try block reverts, the catch block calls _recordAddedBalanceFor.
         // This returns the fee amount to the project's terminal store balance.
