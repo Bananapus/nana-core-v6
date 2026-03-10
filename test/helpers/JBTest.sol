@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {JBRuleset} from "src/structs/JBRuleset.sol";
-import {JBRulesetMetadata} from "src/structs/JBRulesetMetadata.sol";
-import {JBRulesetMetadataResolver} from "src/libraries/JBRulesetMetadataResolver.sol";
-import {JBConstants} from "src/libraries/JBConstants.sol";
-import {IJBRulesetApprovalHook} from "src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBRuleset} from "../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
+import {JBRulesetMetadataResolver} from "../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBConstants} from "../../src/libraries/JBConstants.sol";
+import {IJBRulesetApprovalHook} from "../../src/interfaces/IJBRulesetApprovalHook.sol";
 import "lib/forge-std/src/Test.sol";
 
 contract JBTest is Test {
