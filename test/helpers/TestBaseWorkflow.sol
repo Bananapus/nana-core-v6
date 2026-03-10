@@ -94,6 +94,7 @@ import {IPermit2, IAllowanceTransfer} from "@uniswap/permit2/src/interfaces/IPer
 import {DeployPermit2} from "@uniswap/permit2/test/utils/DeployPermit2.sol";
 
 import {MetadataResolverHelper} from "./MetadataResolverHelper.sol";
+import {JBTest} from "./JBTest.sol";
 
 import {MockERC20} from "./../mock/MockERC20.sol";
 
@@ -102,7 +103,7 @@ import {mul as UD60x18mul, wrap as UD60x18wrap, unwrap as UD60x18unwrap} from "@
 
 // Base contract for Juicebox system tests.
 // Provides common functionality, such as deploying contracts on test setup.
-contract TestBaseWorkflow is Test, DeployPermit2 {
+contract TestBaseWorkflow is JBTest, DeployPermit2 {
     // Multisig address used for testing.
     address private _multisig = address(123);
     address private _beneficiary = address(69_420);

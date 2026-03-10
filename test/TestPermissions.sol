@@ -2,9 +2,8 @@
 pragma solidity ^0.8.6;
 
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
-import {JBTest} from "./helpers/JBTest.sol";
 
-contract TestPermissions_Local is TestBaseWorkflow, JBTest {
+contract TestPermissions_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBRulesetMetadata private _metadata;
     IJBTerminal private _terminal;
