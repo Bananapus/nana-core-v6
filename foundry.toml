@@ -13,6 +13,9 @@ runs = 1024
 depth = 100
 fail_on_revert = false
 
+[rpc_endpoints]
+ethereum = "${RPC_ETHEREUM_MAINNET}"
+
 [fmt]
 number_underscore = "thousands"
 multiline_func_header = "all"
