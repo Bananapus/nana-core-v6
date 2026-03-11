@@ -231,6 +231,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         uint256 idx;
         for (uint256 i = 1; i < 256; i++) {
             if ((bitmap >> i) & 1 == 1) {
+                // forge-lint: disable-next-line(unsafe-typecast)
                 ids[idx] = uint8(i);
                 idx++;
             }

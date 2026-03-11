@@ -92,6 +92,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         rulesetConfig[0].metadata = JBRulesetMetadata({
             reservedPercent: 0,
             cashOutTaxRate: 0,
+            // forge-lint: disable-next-line(unsafe-typecast)
             baseCurrency: uint32(uint160(token)),
             pausePay: false,
             pauseCreditTransfers: false,
@@ -115,6 +116,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         tokensToAccept[0] = JBAccountingContext({token: token, decimals: decimals, currency: uint32(uint160(token))});
         terminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
@@ -676,9 +678,11 @@ contract RebasingToken is ERC20 {
     function rebaseHolder(address target, int256 percent) external {
         uint256 balance = balanceOf(target);
         if (percent > 0) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 increase = (balance * uint256(percent)) / 100;
             _mint(target, increase);
         } else if (percent < 0) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 decrease = (balance * uint256(-percent)) / 100;
             if (decrease > 0 && decrease <= balance) {
                 _burn(target, decrease);

@@ -47,7 +47,9 @@ contract TestDeadlineFuzz_Local is JBTest {
 
     /// @notice Ruleset queued too close to start returns Failed.
     function test_insufficientGap_isFailed() external view {
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 start = uint48(block.timestamp + 1 days);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 queued = start - uint48(DURATION) + 1; // 1 second short of required gap
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queued, start: start});
@@ -58,7 +60,9 @@ contract TestDeadlineFuzz_Local is JBTest {
     /// @notice Ruleset with exactly enough gap and deadline not yet passed returns ApprovalExpected.
     function test_exactGap_deadlineNotPassed_isApprovalExpected() external view {
         // queue far enough in advance, and start is still far in the future
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 start = uint48(block.timestamp + 2 * DURATION + 100);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 queued = start - uint48(DURATION);
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queued, start: start});
@@ -68,7 +72,9 @@ contract TestDeadlineFuzz_Local is JBTest {
 
     /// @notice Ruleset with enough gap and deadline passed returns Approved.
     function test_gapSufficient_deadlinePassed_isApproved() external view {
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 start = uint48(block.timestamp + 1); // start is very soon
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 queued = start - uint48(DURATION) - 1; // plenty of gap
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queued, start: start});
@@ -123,7 +129,9 @@ contract TestDeadlineFuzz_Local is JBTest {
 
         // Warp to a timestamp large enough so that start >= gap always holds.
         vm.warp(gap + 1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 start = uint48(block.timestamp);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 queuedAt = start - uint48(gap);
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});
@@ -166,7 +174,9 @@ contract TestDeadlineFuzz_Local is JBTest {
         // Ensure block.timestamp >= duration to avoid underflow.
         vm.warp(duration + 1);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 start = uint48(block.timestamp + 1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint48 queuedAt = uint48(block.timestamp - duration);
 
         JBRuleset memory ruleset = _makeRuleset({queuedAt: queuedAt, start: start});

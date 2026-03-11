@@ -68,6 +68,7 @@ contract TestChainlinkPriceFeedFork is Test {
         // Cross-check against raw latestRoundData.
         (, int256 rawPrice,,,) = AggregatorV3Interface(ETH_USD_FEED).latestRoundData();
         uint256 feedDecimals = AggregatorV3Interface(ETH_USD_FEED).decimals();
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 expected18 = uint256(rawPrice) * 10 ** (18 - feedDecimals);
         assertEq(price18, expected18, "Price mismatch vs raw feed");
     }
@@ -85,15 +86,19 @@ contract TestChainlinkPriceFeedFork is Test {
 
         // Raw feed is 8 decimals — price8 should match it exactly.
         (, int256 rawPrice,,,) = AggregatorV3Interface(ETH_USD_FEED).latestRoundData();
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(price8, uint256(rawPrice), "8-decimal mismatch");
 
         // 6 decimals = raw / 100 (truncated).
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(price6, uint256(rawPrice) / 1e2, "6-decimal mismatch");
 
         // 18 decimals = raw * 1e10.
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(price18, uint256(rawPrice) * 1e10, "18-decimal mismatch");
 
         // 27 decimals = raw * 1e19.
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(price27, uint256(rawPrice) * 1e19, "27-decimal mismatch");
     }
 

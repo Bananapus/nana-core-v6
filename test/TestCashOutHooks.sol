@@ -275,6 +275,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
                 _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
                 _forwardedAmount
             ),
+            // forge-lint: disable-next-line(unsafe-typecast)
             cashOutTaxRate: uint16(_customCashOutTaxRate),
             beneficiary: payable(address(this)),
             hookMetadata: "",

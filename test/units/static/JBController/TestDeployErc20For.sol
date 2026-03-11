@@ -34,6 +34,7 @@ contract TestDeployERC20For_Local is JBControllerSetup {
     function test_WhenCallerIsPermissionedAndSaltIsNonZero() external {
         // it will deploy ERC20 and return IJBToken
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         bytes32 _nonZeroSalt = bytes32("somesalt");
         bytes32 _encodedSalt = keccak256(abi.encodePacked(address(this), _nonZeroSalt));
 

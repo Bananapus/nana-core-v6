@@ -120,7 +120,8 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
 
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
         payoutLimits[0] =
-            JBCurrencyAmount({amount: uint224(payoutLimit), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBCurrencyAmount({amount: uint224(payoutLimit), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
         JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
         fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(jbMultiTerminal()),
@@ -186,12 +187,14 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         projectA = _launchProjectWithSplitsAndPayoutLimit(dummySplits, 10 ether);
 
         // Now create B with split to A
+        // forge-lint: disable-next-line(unsafe-typecast)
         splitsB[0].projectId = uint64(projectA);
         projectB = _launchProjectWithSplitsAndPayoutLimit(splitsB, 10 ether);
 
         // Update A's splits to point to B
         (JBRuleset memory rulesetA,) = jbController().currentRulesetOf(projectA);
         JBSplitGroup[] memory newSplitGroupsA = new JBSplitGroup[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         splitsA[0].projectId = uint64(projectB);
         newSplitGroupsA[0] = JBSplitGroup({groupId: uint256(uint160(JBConstants.NATIVE_TOKEN)), splits: splitsA});
         vm.prank(projectOwner);
@@ -372,6 +375,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         uint256 pid = _launchProjectWithSplitsAndPayoutLimit(new JBSplit[](0), 10 ether);
 
         // Update splits to point to self
+        // forge-lint: disable-next-line(unsafe-typecast)
         splits[0].projectId = uint64(pid);
         (JBRuleset memory ruleset,) = jbController().currentRulesetOf(pid);
         JBSplitGroup[] memory newSplitGroups = new JBSplitGroup[](1);
@@ -404,12 +408,14 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         uint256 numSplits = 200;
         JBSplit[] memory splits = new JBSplit[](numSplits);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 perSplitPercent = uint32(JBConstants.SPLITS_TOTAL_PERCENT / numSplits);
 
         for (uint256 i = 0; i < numSplits; i++) {
             splits[i] = JBSplit({
                 percent: perSplitPercent,
                 projectId: 0,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 beneficiary: payable(address(uint160(0x3000 + i))),
                 preferAddToBalance: false,
                 lockedUntil: 0,
@@ -452,6 +458,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             splits[i] = JBSplit({
                 percent: oneThird,
                 projectId: 0,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 beneficiary: payable(address(uint160(0x4000 + i))),
                 preferAddToBalance: false,
                 lockedUntil: 0,
@@ -476,6 +483,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         // Check no rounding loss greater than 3 wei (one per split)
         uint256 totalPaidToSplits = 0;
         for (uint256 i = 0; i < 3; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             totalPaidToSplits += address(uint160(0x4000 + i)).balance;
         }
 

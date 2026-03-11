@@ -99,6 +99,7 @@ contract Phase3Handler is Test {
         projectOwner = _projectOwner;
 
         for (uint256 i = 0; i < NUM_ACTORS; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             address actor = address(uint160(0x4000 + i));
             actors.push(actor);
         }

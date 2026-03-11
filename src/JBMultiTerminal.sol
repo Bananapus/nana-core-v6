@@ -1834,6 +1834,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 JBFee({
                     amount: amount,
                     beneficiary: beneficiary,
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS)
                 })
             );
@@ -1885,6 +1886,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (amount > type(uint160).max) revert JBMultiTerminal_OverflowAlert(amount, type(uint160).max);
 
         // Otherwise we attempt to use the PERMIT2 method.
+        // forge-lint: disable-next-line(unsafe-typecast)
         PERMIT2.transferFrom({from: from, to: to, amount: uint160(amount), token: token});
     }
 

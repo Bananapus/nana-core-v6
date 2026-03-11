@@ -177,6 +177,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
 
             // If the currencies match, return the value.
             if (currency == packedPayoutLimitData >> 224) {
+                // forge-lint: disable-next-line(unsafe-typecast)
                 return uint256(uint224(packedPayoutLimitData));
             }
         }
@@ -217,8 +218,12 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             uint256 packedPayoutLimitData = packedPayoutLimitsData[i];
 
             // The limit amount is in bits 0-223. The currency is in bits 224-255.
+            // forge-lint: disable-next-line(unsafe-typecast)
             payoutLimits[i] = JBCurrencyAmount({
-                currency: uint32(packedPayoutLimitData >> 224), amount: uint224(packedPayoutLimitData)
+                // forge-lint: disable-next-line(unsafe-typecast)
+                currency: uint32(packedPayoutLimitData >> 224),
+                // forge-lint: disable-next-line(unsafe-typecast)
+                amount: uint224(packedPayoutLimitData)
             });
         }
     }
@@ -258,6 +263,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
 
             // If the currencies match, return the value.
             if (currency == packedSurplusAllowanceData >> 224) {
+                // forge-lint: disable-next-line(unsafe-typecast)
                 return uint256(uint224(packedSurplusAllowanceData));
             }
         }
@@ -300,8 +306,12 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             uint256 packedSurplusAllowanceData = packedSurplusAllowancesData[i];
 
             // The limit is in bits 0-223. The currency is in bits 224-255.
+            // forge-lint: disable-next-line(unsafe-typecast)
             surplusAllowances[i] = JBCurrencyAmount({
-                currency: uint32(packedSurplusAllowanceData >> 224), amount: uint224(packedSurplusAllowanceData)
+                // forge-lint: disable-next-line(unsafe-typecast)
+                currency: uint32(packedSurplusAllowanceData >> 224),
+                // forge-lint: disable-next-line(unsafe-typecast)
+                amount: uint224(packedSurplusAllowanceData)
             });
         }
     }

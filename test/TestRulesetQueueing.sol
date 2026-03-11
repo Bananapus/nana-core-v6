@@ -15,6 +15,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
 
     uint256 private _DEADLINE_DURATION = 3 days;
     uint256 private _RULESET_DURATION_DAYS = 6;
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 private _RULESET_DURATION = uint32(_RULESET_DURATION_DAYS * 1 days);
 
     function setUp() public override {
@@ -779,6 +780,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         // Package up another config to overwrite.
         JBRulesetConfig[] memory _secondQueued = new JBRulesetConfig[](1);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         _secondQueued[0].mustStartAtOrAfter = uint48(block.timestamp + _DEADLINE_DURATION);
         _secondQueued[0].duration = _RULESET_DURATION;
         _secondQueued[0].weight = _weightSecondQueued;
@@ -805,10 +807,13 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         _duration = bound(_duration, 1, block.timestamp);
 
         JBRuleset memory _ruleset = JBRuleset({
+            // forge-lint: disable-next-line(unsafe-typecast)
             id: uint48(_rulesetId),
             basedOnId: 0,
             cycleNumber: 1,
+            // forge-lint: disable-next-line(unsafe-typecast)
             start: uint48(_start),
+            // forge-lint: disable-next-line(unsafe-typecast)
             duration: uint32(_duration),
             weight: 1,
             weightCutPercent: 0,

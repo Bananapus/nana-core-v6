@@ -7,6 +7,7 @@ import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
     uint256 _projectId = 1;
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _usdcCurrency = uint32(uint160(_usdc));
 
     function setUp() public {
@@ -35,8 +36,10 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // it will revert ACCOUNTING_CONTEXT_ALREADY_SET
 
         // Accounting Context to set
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
 
         // Find the storage slot
         bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
@@ -65,6 +68,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
         vm.expectRevert(
@@ -97,6 +101,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
@@ -104,6 +109,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _usdc);
         assertEq(_storedContext.token, _usdc);
         assertEq(_storedContext.decimals, 6);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(_storedContext.currency, uint32(uint160(_usdc)));
     }
 
@@ -263,6 +269,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         _tokens[0] = JBAccountingContext({
             token: someToken,
             decimals: 17, // invalid- we will mock a return of 18 decimals
+            // forge-lint: disable-next-line(unsafe-typecast)
             currency: uint32(uint160(someToken))
         });
 
@@ -296,6 +303,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: someToken, decimals: 18, currency: uint32(uint160(0))});
 
         // setup: return data

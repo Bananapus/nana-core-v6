@@ -126,7 +126,13 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc), amount: uint160(_coins), expiration: uint48(_expiration), nonce: 0
+            // forge-lint: disable-next-line(unsafe-typecast)
+            token: address(_usdc),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint160(_coins),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            expiration: uint48(_expiration),
+            nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -137,7 +143,9 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         JBSingleAllowance memory permitData = JBSingleAllowance({
             sigDeadline: _deadline,
+            // forge-lint: disable-next-line(unsafe-typecast)
             amount: uint160(_coins),
+            // forge-lint: disable-next-line(unsafe-typecast)
             expiration: uint48(_expiration),
             nonce: uint48(0),
             signature: sig
@@ -191,7 +199,13 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         // Setup: prepare permit details for signing.
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc), amount: uint160(_coins), expiration: uint48(_expiration), nonce: 0
+            // forge-lint: disable-next-line(unsafe-typecast)
+            token: address(_usdc),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint160(_coins),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            expiration: uint48(_expiration),
+            nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -202,7 +216,9 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         JBSingleAllowance memory permitData = JBSingleAllowance({
             sigDeadline: _deadline,
+            // forge-lint: disable-next-line(unsafe-typecast)
             amount: uint160(_coins),
+            // forge-lint: disable-next-line(unsafe-typecast)
             expiration: uint48(_expiration),
             nonce: uint48(0),
             signature: sig

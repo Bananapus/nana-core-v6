@@ -9,8 +9,10 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
     uint256 _defaultAmount = 1e18;
     address _bene = makeAddr("beneficiary");
     address _native = JBConstants.NATIVE_TOKEN;
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _nativeCurrency = uint32(uint160(_native));
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _usdcCurrency = uint32(uint160(_usdc));
 
     IJBTerminal _newTerminal = IJBTerminal(makeAddr("newTerminal"));
@@ -94,8 +96,10 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // it will safeIncreaseAllowance and addToBalanceOf
 
         // for next mock
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(_usdcCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(_usdcCurrency)});
 
         // mock call to the destination terminals accountingContextFor
         mockExpect(
@@ -131,8 +135,10 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // it will addToBalanceOf with value in msgvalue
 
         // for next mock
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
         // mock call to the destination terminals accountingContextFor
         mockExpect(
@@ -165,8 +171,10 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // it will not add to balance
 
         // for next mock
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
         // mock call to the destination terminals accountingContextFor
         mockExpect(

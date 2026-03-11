@@ -197,6 +197,7 @@ contract TestMetadataResolverEdgeCases is JBTest {
         // 5 entries of 42 words (1344 bytes) + 1 entry of 43 words (1376 bytes)
         for (uint256 i; i < 5; i++) {
             datas[i] = new bytes(1344);
+            // forge-lint: disable-next-line(unsafe-typecast)
             datas[i][0] = bytes1(uint8(i + 1));
         }
         datas[5] = new bytes(1376);
@@ -228,6 +229,7 @@ contract TestMetadataResolverEdgeCases is JBTest {
         bytes[] memory datas = new bytes[](6);
         for (uint256 i; i < 6; i++) {
             datas[i] = new bytes(1344); // 42 words each
+            // forge-lint: disable-next-line(unsafe-typecast)
             datas[i][0] = bytes1(uint8(i + 1));
         }
 

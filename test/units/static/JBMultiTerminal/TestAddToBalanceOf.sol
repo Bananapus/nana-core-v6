@@ -11,8 +11,10 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
     // global constants
     uint256 _projectId = 1;
     address _native = JBConstants.NATIVE_TOKEN;
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _nativeCurrency = uint32(uint160(_native));
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _usdcCurrency = uint32(uint160(_usdc));
     uint256 _terminalUSDCBalance = 1e18;
 
@@ -37,8 +39,10 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
 
     modifier whenNativeTokenIsAccepted() {
         // Accounting Context to set
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
         // Find the storage slot
         bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
@@ -55,8 +59,10 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
 
     modifier whenShouldReturnHeldFeesEqTrue() {
         // Accounting Context to set
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
         // Find the storage slot
         bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
@@ -222,8 +228,10 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // it will revert NO_MSG_VALUE_ALLOWED
 
         // Accounting Context to set
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
 
         // Find the storage slot
         bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
@@ -249,8 +257,10 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
 
     modifier whenPayMetadataContainsPermitData() {
         // Accounting Context to set
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
-            JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
 
         // Find the storage slot
         bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
@@ -333,8 +343,15 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         payAmount = 1e18;
 
         // Setup: prepare permit details for signing.
+        // forge-lint: disable-next-line(unsafe-typecast)
         IAllowanceTransfer.PermitDetails memory details = IAllowanceTransfer.PermitDetails({
-            token: address(_usdc), amount: uint160(payAmount), expiration: uint48(expiration), nonce: 0
+            // forge-lint: disable-next-line(unsafe-typecast)
+            token: address(_usdc),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint160(payAmount),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            expiration: uint48(expiration),
+            nonce: 0
         });
 
         IAllowanceTransfer.PermitSingle memory permit =
@@ -343,8 +360,15 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // Setup: sign permit details.
         bytes memory sig = getPermitSignature(permit, fromPrivateKey, DOMAIN_SEPARATOR);
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         JBSingleAllowance memory permitData = JBSingleAllowance({
-            sigDeadline: deadline, amount: uint160(1), expiration: uint48(expiration), nonce: uint48(0), signature: sig
+            // forge-lint: disable-next-line(unsafe-typecast)
+            sigDeadline: deadline,
+            amount: uint160(1),
+            // forge-lint: disable-next-line(unsafe-typecast)
+            expiration: uint48(expiration),
+            nonce: uint48(0),
+            signature: sig
         });
 
         // Setup: prepare data for metadata helper.

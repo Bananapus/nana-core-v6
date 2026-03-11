@@ -182,7 +182,9 @@ contract TestMetadataResolverFuzz_Local is JBTest {
     /// @dev Only tests addresses that differ in the first 4 bytes to avoid XOR collision.
     function testFuzz_getId_differentTargets(uint256 seed1, uint256 seed2) external view {
         vm.assume(seed1 != seed2);
+        // forge-lint: disable-next-line(unsafe-typecast)
         address target1 = address(uint160(seed1));
+        // forge-lint: disable-next-line(unsafe-typecast)
         address target2 = address(uint160(seed2));
         vm.assume(target1 != target2);
 

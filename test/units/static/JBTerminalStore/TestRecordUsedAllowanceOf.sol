@@ -42,6 +42,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
             reservedPercent: 0,
             cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            // forge-lint: disable-next-line(unsafe-typecast)
             baseCurrency: uint32(uint160(_nativeAddress)),
             pausePay: false,
             pauseCreditTransfers: false,
@@ -144,6 +145,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
             reservedPercent: 0,
             cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            // forge-lint: disable-next-line(unsafe-typecast)
             baseCurrency: uint32(uint160(_nativeAddress)),
             pausePay: false,
             pauseCreditTransfers: false,
