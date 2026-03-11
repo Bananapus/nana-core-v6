@@ -9,8 +9,10 @@ contract TestPay_Local is JBMultiTerminalSetup {
     uint256 _defaultAmount = 1e18;
     address _bene = makeAddr("beneficiary");
     address _native = JBConstants.NATIVE_TOKEN;
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 _nativeCurrency = uint32(uint160(_native));
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 _usdcCurrency = uint32(uint160(_usdc));
 
     address _mockController = makeAddr("mc");
@@ -230,7 +232,8 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         // needed for next mock call returns
         JBTokenAmount memory tokenAmount =
-            JBTokenAmount(address(_mockToken), 6, uint32(_mockTokenCurrency), _defaultAmount);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBTokenAmount(address(_mockToken), 6, uint32(_mockTokenCurrency), _defaultAmount);
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
         hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
 

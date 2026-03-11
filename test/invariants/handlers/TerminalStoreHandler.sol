@@ -47,6 +47,7 @@ contract TerminalStoreHandler is Test {
 
         // Create actor addresses
         for (uint256 i = 0; i < NUM_ACTORS; i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             address actor = address(uint160(0x1000 + i));
             actors.push(actor);
             isActor[actor] = true;

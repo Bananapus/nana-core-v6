@@ -350,6 +350,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
                     pid,
                     0,
                     FOURTEEN_DAYS,
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     uint112(INITIAL_WEIGHT + uint112(i) * 100e18),
                     0,
                     IJBRulesetApprovalHook(address(0))
@@ -544,6 +545,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
 
             _queueRuleset(
                 pid,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 uint48(originalStart + SEVEN_DAYS),
                 SEVEN_DAYS,
                 INITIAL_WEIGHT * 2,
@@ -563,6 +565,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
             // 1 second after first boundary -> should snap to second boundary.
             _queueRuleset(
                 pid,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 uint48(originalStart + SEVEN_DAYS + 1),
                 SEVEN_DAYS,
                 INITIAL_WEIGHT * 2,
@@ -599,6 +602,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
                     pid,
                     0,
                     SEVEN_DAYS,
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     uint112(INITIAL_WEIGHT + uint112(i) * 100e18),
                     0,
                     IJBRulesetApprovalHook(address(0))
@@ -608,6 +612,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
                 JBRuleset memory current = _rulesets.currentOf(pid);
                 assertEq(
                     current.weight,
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     INITIAL_WEIGHT + uint112(i) * 100e18,
                     string.concat("Cycle ", vm.toString(i + 1), " weight mismatch")
                 );
@@ -765,6 +770,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
                     pid,
                     0,
                     SEVEN_DAYS,
+                    // forge-lint: disable-next-line(unsafe-typecast)
                     uint112(INITIAL_WEIGHT + uint112(i) * 100e18),
                     0,
                     IJBRulesetApprovalHook(address(0))

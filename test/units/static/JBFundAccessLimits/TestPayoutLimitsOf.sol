@@ -28,6 +28,7 @@ contract TestPayoutLimitsOf_Local is JBFundAccessSetup {
                 JBCurrencyAmount({amount: _payoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
 
             // Specify a second payout limit.
+            // forge-lint: disable-next-line(unsafe-typecast)
             _payoutLimits[1] = JBCurrencyAmount({amount: _payoutLimit2, currency: uint32(uint160(_someToken))});
 
             // Specify a surplus allowance.
@@ -66,6 +67,7 @@ contract TestPayoutLimitsOf_Local is JBFundAccessSetup {
 
         assertEq(payoutLimits[0].currency, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(payoutLimits[0].amount, _payoutLimit);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(payoutLimits[1].currency, uint32(uint160(_someToken)));
         assertEq(payoutLimits[1].amount, _payoutLimit2);
     }
@@ -77,6 +79,7 @@ contract TestPayoutLimitsOf_Local is JBFundAccessSetup {
 
         assertEq(payoutLimits[0].currency, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(payoutLimits[0].amount, _payoutLimit);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(payoutLimits[1].currency, uint32(uint160(_someToken)));
         assertEq(payoutLimits[1].amount, _payoutLimit2);
     }
@@ -88,6 +91,7 @@ contract TestPayoutLimitsOf_Local is JBFundAccessSetup {
 
         assertEq(payoutLimits[0].currency, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(payoutLimits[0].amount, _payoutLimit);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(payoutLimits[1].currency, uint32(uint160(_someToken)));
         assertEq(payoutLimits[1].amount, _payoutLimit2);
     }

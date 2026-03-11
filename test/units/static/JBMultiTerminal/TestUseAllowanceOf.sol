@@ -177,6 +177,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // Weight for a fee calculation that would take place in terminal store
         uint112 weight = 1000 * 10 ** 18;
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint32 currencyId = uint32(uint160(mockToken));
 
         // Start the cascade of issuing project tokens to the fee beneficiary. (recieving platform tokens for paying a

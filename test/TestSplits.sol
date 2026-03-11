@@ -304,6 +304,7 @@ contract TestSplits_Local is TestBaseWorkflow {
         // Set up a payout split recipient.
         _splits[0] = JBSplit({
             preferAddToBalance: false,
+            // forge-lint: disable-next-line(unsafe-typecast)
             percent: uint32(JBConstants.SPLITS_TOTAL_PERCENT / _multiplier),
             projectId: 0,
             beneficiary: _splitsGuy,
@@ -314,6 +315,7 @@ contract TestSplits_Local is TestBaseWorkflow {
         // A dummy used to check that splits groups of "0" don't bypass payout limits.
         _splits[1] = JBSplit({
             preferAddToBalance: false,
+            // forge-lint: disable-next-line(unsafe-typecast)
             percent: uint32(JBConstants.SPLITS_TOTAL_PERCENT / _multiplier),
             projectId: 0,
             beneficiary: _splitsGuy,

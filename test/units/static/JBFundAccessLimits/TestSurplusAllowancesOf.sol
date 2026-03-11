@@ -31,6 +31,7 @@ contract TestSurplusAllowancesOf_Local is JBFundAccessSetup {
             _surplusAllowances[0] =
                 JBCurrencyAmount({amount: 1e18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
 
+            // forge-lint: disable-next-line(unsafe-typecast)
             _surplusAllowances[1] = JBCurrencyAmount({amount: 2e18, currency: uint32(uint160(_someToken))});
 
             _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
@@ -65,11 +66,13 @@ contract TestSurplusAllowancesOf_Local is JBFundAccessSetup {
 
         assertEq(surplusLimits[0].currency, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(surplusLimits[0].amount, 1e18);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(surplusLimits[1].currency, uint32(uint160(_someToken)));
         assertEq(surplusLimits[1].amount, 2e18);
 
         assertEq(surplusLimits2[0].currency, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(surplusLimits2[0].amount, 1e18);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(surplusLimits2[1].currency, uint32(uint160(_someToken)));
         assertEq(surplusLimits2[1].amount, 2e18);
     }

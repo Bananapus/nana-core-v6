@@ -62,6 +62,7 @@ library JBMetadataResolver {
     {
         // Empty original metadata and maybe something in the first 32 bytes: create new metadata
         if (originalMetadata.length <= RESERVED_SIZE) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             return abi.encodePacked(bytes32(originalMetadata), bytes32(abi.encodePacked(idToAdd, uint8(2))), dataToAdd);
         }
 
@@ -118,6 +119,7 @@ library JBMetadataResolver {
         // Compute in uint256 first — casting directly to uint8 silently wraps offsets > 255.
         uint256 newOffset = lastOffset + numberOfWordslastData;
         if (newOffset > 255) revert JBMetadataResolver_MetadataTooLong();
+        // forge-lint: disable-next-line(unsafe-typecast)
         newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(newOffset)));
 
         // Pad as needed - inlined for gas saving
@@ -181,6 +183,7 @@ library JBMetadataResolver {
                 revert JBMetadataResolver_DataNotPadded();
             }
 
+            // forge-lint: disable-next-line(unsafe-typecast)
             metadata = abi.encodePacked(metadata, ids[i], bytes1(uint8(offset)));
             offset += data.length / JBMetadataResolver.WORD_SIZE;
 

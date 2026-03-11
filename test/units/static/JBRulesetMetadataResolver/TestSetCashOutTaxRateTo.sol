@@ -50,24 +50,29 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
 
         // Reserved Rate
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _reservedPercent = uint256(uint16(_packed >> 4));
 
         // Cash out tax rate
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _cashOutTaxRate = uint256(uint16(_packed >> 20));
 
         assertEq(_reservedPercent, _fuzzReservedPercent);
         assertEq(_cashOutTaxRate, _fuzzCashOutTaxRate);
 
         for (uint256 _i = 68; _i < 81; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             uint256 _flag = uint256(uint16(_packed >> _i) & 1);
             assertEq(_flag, 1);
         }
 
         // Data source address
+        // forge-lint: disable-next-line(unsafe-typecast)
         address _packedDataHook = address(uint160(_packed >> 82));
         assertEq(_packedDataHook, _hookAddress);
 
         // Metadata
+        // forge-lint: disable-next-line(unsafe-typecast)
         uint256 _packedMetadata = uint256(uint16(_packed >> 242));
         assertEq(_packedMetadata, uint256(_fuzzMetadata));
     }

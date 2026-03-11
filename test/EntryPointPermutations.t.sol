@@ -592,7 +592,9 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             if (payoutLimit > 0) {
                 payoutLimits = new JBCurrencyAmount[](1);
                 payoutLimits[0] = JBCurrencyAmount({
-                    amount: uint224(payoutLimit), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                    // forge-lint: disable-next-line(unsafe-typecast)
+                    amount: uint224(payoutLimit),
+                    currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
                 });
             } else {
                 payoutLimits = new JBCurrencyAmount[](0);
@@ -601,7 +603,9 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             if (surplusAllowance > 0) {
                 surplusAllowances = new JBCurrencyAmount[](1);
                 surplusAllowances[0] = JBCurrencyAmount({
-                    amount: uint224(surplusAllowance), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                    // forge-lint: disable-next-line(unsafe-typecast)
+                    amount: uint224(surplusAllowance),
+                    currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
                 });
             } else {
                 surplusAllowances = new JBCurrencyAmount[](0);

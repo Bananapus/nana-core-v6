@@ -250,6 +250,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
             uint256 permissionId = permissionIds[i];
 
             // Turn on the bit at the ID.
+            // forge-lint: disable-next-line(incorrect-shift)
             packed |= 1 << permissionId;
         }
     }

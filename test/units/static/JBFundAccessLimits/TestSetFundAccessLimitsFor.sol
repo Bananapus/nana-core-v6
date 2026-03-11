@@ -113,6 +113,7 @@ contract TestSetFundAccessLimitsFor_Local is JBFundAccessSetup {
                 JBCurrencyAmount({amount: _validLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
 
             // Specify a second payout limit.
+            // forge-lint: disable-next-line(unsafe-typecast)
             _payoutLimits[1] = JBCurrencyAmount({amount: _validLimit, currency: uint32(uint160(_someToken))});
 
             // Specify a surplus allowance.

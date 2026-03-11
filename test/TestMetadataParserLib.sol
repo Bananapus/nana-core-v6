@@ -62,9 +62,15 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](10);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(
-                bytes1(uint8(_i + 1)), uint32(69), bytes2(uint16(_i + 69)), bytes32(uint256(type(uint256).max))
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes1(uint8(_i + 1)),
+                uint32(69),
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes2(uint16(_i + 69)),
+                bytes32(uint256(type(uint256).max))
             );
         }
 
@@ -95,6 +101,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(type(uint256).max - _i);
         }
@@ -122,7 +129,9 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
+            // forge-lint: disable-next-line(incorrect-shift)
             _datas[_i] = abi.encode(69 << _i * 20);
         }
 
@@ -133,6 +142,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
             uint256 _data = abi.decode(_dataParsed, (uint256));
 
             assertTrue(_found);
+            // forge-lint: disable-next-line(incorrect-shift)
             assertEq(_data, 69 << _i * 20);
         }
     }
@@ -148,6 +158,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(type(uint256).max - _i);
         }
@@ -166,6 +177,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(type(uint256).max - _i);
         }
@@ -199,9 +211,15 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](2);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(
-                bytes1(uint8(_i + 1)), uint32(69), bytes2(uint16(_i + 69)), bytes32(uint256(type(uint256).max))
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes1(uint8(_i + 1)),
+                uint32(69),
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes2(uint16(_i + 69)),
+                bytes32(uint256(type(uint256).max))
             );
         }
 
@@ -210,6 +228,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes memory _modifiedMetadata = parser.addDataToMetadata(
             _metadata,
             bytes4(uint32(type(uint32).max)),
+            // forge-lint: disable-next-line(unsafe-typecast)
             abi.encode(bytes32(uint256(type(uint256).max)), bytes32(hex"123456"))
         );
 
@@ -218,6 +237,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
 
         assertTrue(_found);
         assertEq(bytes32(uint256(type(uint256).max)), _a);
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(bytes32(hex"123456"), _b);
 
         for (uint256 _i; _i < _ids.length; _i++) {
@@ -243,6 +263,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(_i * 4);
         }
@@ -304,6 +325,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         assertEq(_a, uint32(69));
         assertEq(_b, bytes32(uint256(type(uint256).max)));
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         assertEq(uint256(bytes32(_modifiedMetadata)), _reserved);
     }
 
@@ -339,6 +361,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfIds);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
             _datas[_i] = abi.encode(_i * 4);
         }
@@ -383,6 +406,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](_numberOfMetadatas);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
         }
 
@@ -420,10 +444,17 @@ contract JBDelegateMetadataLib_Test_Local is Test {
         bytes[] memory _datas = new bytes[](10);
 
         for (uint256 _i; _i < _ids.length; _i++) {
+            // forge-lint: disable-next-line(unsafe-typecast)
             _ids[_i] = bytes4(uint32(_i + 1 * 1000));
 
+            // forge-lint: disable-next-line(unsafe-typecast)
             _datas[_i] = abi.encodePacked(
-                bytes1(uint8(_i + 1)), uint32(69), bytes2(uint16(_i + 69)), bytes32(uint256(type(uint256).max))
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes1(uint8(_i + 1)),
+                uint32(69),
+                // forge-lint: disable-next-line(unsafe-typecast)
+                bytes2(uint16(_i + 69)),
+                bytes32(uint256(type(uint256).max))
             );
         }
 

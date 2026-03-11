@@ -271,10 +271,13 @@ contract JBSplits is JBControlled, IJBSplits {
             JBSplit memory split;
 
             // `percent` in bits 0-31.
+            // forge-lint: disable-next-line(unsafe-typecast)
             split.percent = uint32(packedSplitPart1);
             // `projectId` in bits 32-95.
+            // forge-lint: disable-next-line(unsafe-typecast)
             split.projectId = uint64(packedSplitPart1 >> 32);
             // `beneficiary` in bits 96-255.
+            // forge-lint: disable-next-line(unsafe-typecast)
             split.beneficiary = payable(address(uint160(packedSplitPart1 >> 96)));
 
             // Get a reference to the second part of the split's packed data.
@@ -285,8 +288,10 @@ contract JBSplits is JBControlled, IJBSplits {
                 // `preferAddToBalance` in bit 0.
                 split.preferAddToBalance = packedSplitPart2 & 1 == 1;
                 // `lockedUntil` in bits 1-48.
+                // forge-lint: disable-next-line(unsafe-typecast)
                 split.lockedUntil = uint48(packedSplitPart2 >> 1);
                 // `hook` in bits 49-208.
+                // forge-lint: disable-next-line(unsafe-typecast)
                 split.hook = IJBSplitHook(address(uint160(packedSplitPart2 >> 49)));
             }
 

@@ -117,6 +117,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         vm.prank(_beneficiary);
         _usdc.approve(address(permit2()), usdcAmount);
         vm.prank(_beneficiary);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(_usdc), address(_terminal), uint160(usdcAmount), type(uint48).max);
 
         vm.prank(_beneficiary);
@@ -145,6 +146,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         vm.prank(_beneficiary);
         _usdc.approve(address(permit2()), usdcAmount);
         vm.prank(_beneficiary);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(_usdc), address(_terminal), uint160(usdcAmount), type(uint48).max);
 
         vm.prank(_beneficiary);
@@ -191,6 +193,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         vm.prank(_beneficiary);
         _usdc.approve(address(permit2()), usdcAmount);
         vm.prank(_beneficiary);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(_usdc), address(_terminal), uint160(usdcAmount), type(uint48).max);
 
         vm.prank(_beneficiary);

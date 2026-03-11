@@ -247,6 +247,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Calculate the weight cut multiple.
         uint168 weightCutMultiple;
         unchecked {
+            // forge-lint: disable-next-line(unsafe-typecast)
             weightCutMultiple = uint168(startDistance / targetRuleset.duration);
         }
 
@@ -955,26 +956,34 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // slither-disable-next-line incorrect-equality
         if (rulesetId == 0) return ruleset;
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.id = uint48(rulesetId);
 
         uint256 packedIntrinsicProperties = _packedIntrinsicPropertiesOf[projectId][rulesetId];
 
         // `weight` in bits 0-111 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.weight = uint112(packedIntrinsicProperties);
         // `basedOnId` in bits 112-159 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.basedOnId = uint48(packedIntrinsicProperties >> 112);
         // `start` in bits 160-207 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.start = uint48(packedIntrinsicProperties >> 160);
         // `cycleNumber` in bits 208-255 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.cycleNumber = uint48(packedIntrinsicProperties >> 208);
 
         uint256 packedUserProperties = _packedUserPropertiesOf[projectId][rulesetId];
 
         // approval hook in bits 0-159 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.approvalHook = IJBRulesetApprovalHook(address(uint160(packedUserProperties)));
         // `duration` in bits 160-191 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.duration = uint32(packedUserProperties >> 160);
         // weight cut percent in bits 192-223 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.weightCutPercent = uint32(packedUserProperties >> 192);
 
         ruleset.metadata = _metadataOf[projectId][rulesetId];
@@ -1021,9 +1030,11 @@ contract JBRulesets is JBControlled, IJBRulesets {
         });
 
         return JBRuleset({
+            // forge-lint: disable-next-line(unsafe-typecast)
             cycleNumber: uint48(rulesetCycleNumber),
             id: baseRuleset.id,
             basedOnId: baseRuleset.basedOnId,
+            // forge-lint: disable-next-line(unsafe-typecast)
             start: uint48(start),
             duration: baseRuleset.duration,
             weight: uint112(

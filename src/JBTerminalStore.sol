@@ -868,6 +868,7 @@ contract JBTerminalStore is IJBTerminalStore {
                         terminal
                     ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
                 if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
+                // forge-lint: disable-next-line(unsafe-typecast)
                 payoutLimit.amount = uint224(remaining);
             }
 
@@ -877,6 +878,7 @@ contract JBTerminalStore is IJBTerminalStore {
                     value: payoutLimit.amount, decimals: accountingContext.decimals, targetDecimals: targetDecimals
                 });
                 if (adjusted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(adjusted);
+                // forge-lint: disable-next-line(unsafe-typecast)
                 payoutLimit.amount = uint224(adjusted);
             }
 
@@ -894,6 +896,7 @@ contract JBTerminalStore is IJBTerminalStore {
                     })
                 );
                 if (converted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(converted);
+                // forge-lint: disable-next-line(unsafe-typecast)
                 payoutLimit.amount = uint224(converted);
             }
 

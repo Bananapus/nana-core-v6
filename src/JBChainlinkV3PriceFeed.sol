@@ -68,6 +68,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
         uint256 feedDecimals = FEED.decimals();
 
         // Return the price, adjusted to the specified number of decimals.
+        // forge-lint: disable-next-line(unsafe-typecast)
         return uint256(price).adjustDecimals({decimals: feedDecimals, targetDecimals: decimals});
     }
 }

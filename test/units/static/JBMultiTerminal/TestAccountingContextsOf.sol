@@ -7,6 +7,7 @@ import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 contract TestAccountingContextsOf_Local is JBMultiTerminalSetup {
     uint256 _projectId = 1;
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _usdcCurrency = uint32(uint160(_usdc));
 
     function setUp() public {
@@ -47,6 +48,7 @@ contract TestAccountingContextsOf_Local is JBMultiTerminalSetup {
 
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);

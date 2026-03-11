@@ -38,6 +38,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         jbPermissions()
             .setPermissionsFor(
                 projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 JBPermissionsData({operator: alice, projectId: uint64(projectId2), permissionIds: rootPerms})
             );
     }
@@ -175,13 +176,17 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
                 JBPermissions.JBPermissions_Unauthorized.selector,
                 projectOwner,
                 alice,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 uint64(projectId2),
                 JBPermissionIds.ROOT
             )
         );
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
     }
 
@@ -197,7 +202,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(alice);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
 
         // Verify Bob now has CASH_OUT_TOKENS
@@ -263,7 +271,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
 
         // Verify Bob has it
@@ -287,6 +298,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         jbPermissions()
             .setPermissionsFor(
                 projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
                 JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: emptyPerms})
             );
 
@@ -317,7 +329,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
 
         bool hasPerm = jbPermissions()
@@ -357,7 +372,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_NoZeroPermission.selector));
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
     }
 
@@ -468,7 +486,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(pid), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(pid), permissionIds: perms})
             );
 
         // Charlie (no permission) tries to send payouts — should fail because ownerMustSendPayouts
@@ -539,7 +560,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms1})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms1})
             );
 
         assertTrue(
@@ -574,7 +598,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms2})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms2})
             );
 
         // Bob should only have MINT_TOKENS, not the previous ones
@@ -628,7 +655,10 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbPermissions()
             .setPermissionsFor(
-                projectOwner, JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
+                // forge-lint: disable-next-line(unsafe-typecast)
+                projectOwner,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                JBPermissionsData({operator: bob, projectId: uint64(projectId2), permissionIds: perms})
             );
 
         // Call from trusted forwarder with Bob appended as sender

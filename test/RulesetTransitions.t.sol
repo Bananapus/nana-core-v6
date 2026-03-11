@@ -255,6 +255,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
         uint256[] memory tokensPerCycle = new uint256[](10);
         for (uint256 i = 0; i < 10; i++) {
             if (i > 0) vm.warp(block.timestamp + 1 days + 1);
+            // forge-lint: disable-next-line(unsafe-typecast)
             tokensPerCycle[i] = _payProject(pid, address(uint160(0x6000 + i)), 1 ether);
         }
 
