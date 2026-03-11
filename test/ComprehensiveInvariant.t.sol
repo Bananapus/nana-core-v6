@@ -266,9 +266,6 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 totalOut =
             handler.ghost_totalCashedOut() + handler.ghost_totalPaidOut() + handler.ghost_totalAllowanceUsed();
 
-        uint256 projectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
-
         // Fees go to project #1, so total funds are conserved within the terminal
         assertGe(totalIn, totalOut, "COMP6: Ghost conservation - total funds in must be >= total funds out");
     }

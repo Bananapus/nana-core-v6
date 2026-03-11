@@ -7,7 +7,7 @@ import {JBMetadataResolver} from "../../../../src/libraries/JBMetadataResolver.s
 
 /// @notice Harness that exposes JBMetadataResolver internals and adds a combined operation
 /// to test memory corruption from _sliceBytes within a single execution context.
-contract M20M21Harness {
+contract MetadataResolverEdgeCaseHarness {
     function createMetadata(bytes4[] memory ids, bytes[] memory datas) external pure returns (bytes memory) {
         return JBMetadataResolver.createMetadata(ids, datas);
     }
@@ -64,11 +64,11 @@ contract M20M21Harness {
 }
 
 /// @notice Tests for _sliceBytes over-copy and addToMetadata offset overflow.
-contract TestMetadataResolverM20M21 is JBTest {
-    M20M21Harness harness;
+contract TestMetadataResolverEdgeCases is JBTest {
+    MetadataResolverEdgeCaseHarness harness;
 
     function setUp() external {
-        harness = new M20M21Harness();
+        harness = new MetadataResolverEdgeCaseHarness();
     }
 
     //*********************************************************************//

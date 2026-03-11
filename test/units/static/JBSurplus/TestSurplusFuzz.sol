@@ -53,7 +53,7 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
         override
     {}
 
-    function migrateBalanceOf(uint256, address, IJBTerminal) external override returns (uint256) {
+    function migrateBalanceOf(uint256, address, IJBTerminal) external pure override returns (uint256) {
         return 0;
     }
 

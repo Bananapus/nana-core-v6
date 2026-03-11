@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IJBSplits} from "./IJBSplits.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
 import {JBSplit} from "../structs/JBSplit.sol";
 

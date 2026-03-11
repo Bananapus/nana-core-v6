@@ -6,7 +6,6 @@ import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBController} from "../../../src/interfaces/IJBController.sol";
 import {IJBTokens} from "../../../src/interfaces/IJBTokens.sol";
-import {IJBToken} from "../../../src/interfaces/IJBToken.sol";
 
 /// @notice Handler contract for JBTokens invariant testing.
 /// @dev Drives mint, burn, claim, and transfer operations; tracks holders for sum-of-balances checks.

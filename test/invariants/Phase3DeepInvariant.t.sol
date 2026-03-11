@@ -6,8 +6,6 @@ import /* {*} from */ "../helpers/TestBaseWorkflow.sol";
 import {Phase3Handler} from "./handlers/Phase3Handler.sol";
 import {JBAccountingContext} from "../../src/structs/JBAccountingContext.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";
-import {JBFee} from "../../src/structs/JBFee.sol";
-import {JBSplitGroupIds} from "../../src/libraries/JBSplitGroupIds.sol";
 
 /// @title Phase3DeepInvariant
 /// @notice Multi-project deep invariant tests with strict equality checks.
@@ -362,7 +360,6 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
     /// @notice After addToBalance(shouldReturn=true), returned fees must not exceed held fees.
     function invariant_P3_6_heldFeeReturnBounded() public view {
         uint256 returned = handler.ghost_totalReturnedFees(project2);
-        uint256 heldTotal = handler.ghost_totalHeldFeeAmounts(project2);
 
         // Returned fees should never exceed what was held
         // (heldTotal may be 0 if we never tracked, so only check when both nonzero)

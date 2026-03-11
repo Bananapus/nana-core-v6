@@ -500,7 +500,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
     //  Test 10: ROOT on project 2 has no power over project 3
     // ═══════════════════════════════════════════════════════════════════
 
-    function test_permission_rootOnProject_doesNotAffectOtherProject() public {
+    function test_permission_rootOnProject_doesNotAffectOtherProject() public view {
         // Alice has ROOT on project 2 (from setUp)
         // Alice should NOT have any permissions on project 3
         bool hasPermOnProject3 = jbPermissions()
@@ -637,17 +637,6 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
 
         // Verify the forwarder is set up correctly
         assertTrue(forwarder != address(0), "Trusted forwarder should be set");
-
-        // Construct the calldata with Bob's address appended (ERC2771 pattern)
-        bytes memory callData = abi.encodeWithSelector(
-            IJBPermissions.hasPermission.selector,
-            bob,
-            projectOwner,
-            projectId2,
-            JBPermissionIds.CASH_OUT_TOKENS,
-            false,
-            false
-        );
 
         // Direct call should return true
         bool hasPerm = jbPermissions()

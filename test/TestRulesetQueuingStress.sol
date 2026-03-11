@@ -709,7 +709,14 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
         }
 
         /// @notice Fuzz: deriveStartFrom always returns a value >= mustStartAtOrAfter and aligned to duration.
-        function testFuzz_deriveStartFrom_alignment(uint48 baseStart, uint32 duration, uint48 mustStartAfter) external {
+        function testFuzz_deriveStartFrom_alignment(
+            uint48 baseStart,
+            uint32 duration,
+            uint48 mustStartAfter
+        )
+            external
+            view
+        {
             // Bound to reasonable values.
             baseStart = uint48(bound(baseStart, 1, type(uint48).max / 2));
             duration = uint32(bound(duration, 1, type(uint32).max / 2));

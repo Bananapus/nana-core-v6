@@ -12,7 +12,6 @@ import {IJBProjects} from "./IJBProjects.sol";
 import {IJBProjectUriRegistry} from "./IJBProjectUriRegistry.sol";
 import {IJBRulesets} from "./IJBRulesets.sol";
 import {IJBSplits} from "./IJBSplits.sol";
-import {IJBTerminal} from "./IJBTerminal.sol";
 import {IJBToken} from "./IJBToken.sol";
 import {IJBTokens} from "./IJBTokens.sol";
 import {JBApprovalStatus} from "./../enums/JBApprovalStatus.sol";

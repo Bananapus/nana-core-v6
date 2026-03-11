@@ -16,9 +16,8 @@ import {JBFundAccessLimits} from "../../src/JBFundAccessLimits.sol";
 import {JBController} from "../../src/JBController.sol";
 import {JBTerminalStore} from "../../src/JBTerminalStore.sol";
 import {JBMultiTerminal} from "../../src/JBMultiTerminal.sol";
-import {ERC2771Forwarder} from "@openzeppelin/contracts/metatx/ERC2771Forwarder.sol";
 
-import {SphinxConstants, NetworkInfo} from "@sphinx-labs/contracts/SphinxConstants.sol";
+import {SphinxConstants, NetworkInfo} from "@sphinx-labs/contracts/contracts/foundry/SphinxConstants.sol";
 
 struct CoreDeployment {
     JBPermissions permissions;

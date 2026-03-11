@@ -2,7 +2,6 @@
 pragma solidity >=0.8.6;
 
 import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
-import {MockPriceFeed} from "./mock/MockPriceFeed.sol";
 
 // A ruleset's weight can be cached to make larger intervals calculable while staying within the gas limit.
 contract TestRulesetWeightCaching_Local is TestBaseWorkflow {

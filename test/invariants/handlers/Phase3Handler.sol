@@ -9,7 +9,6 @@ import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBTerminalStore} from "../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBController} from "../../../src/interfaces/IJBController.sol";
 import {IJBTokens} from "../../../src/interfaces/IJBTokens.sol";
-import {JBMultiTerminal} from "../../../src/JBMultiTerminal.sol";
 
 /// @title Phase3Handler
 /// @notice Stateful fuzzing handler with ghost variable tracking for strict invariant verification.

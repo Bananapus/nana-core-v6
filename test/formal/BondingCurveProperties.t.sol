@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Test.sol";
-import {mulDiv} from "@prb/math/src/Common.sol";
 import {JBCashOuts} from "../../src/libraries/JBCashOuts.sol";
 import {JBFees} from "../../src/libraries/JBFees.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";

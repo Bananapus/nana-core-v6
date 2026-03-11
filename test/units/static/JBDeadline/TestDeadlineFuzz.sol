@@ -46,7 +46,7 @@ contract TestDeadlineFuzz_Local is JBTest {
     }
 
     /// @notice Ruleset queued too close to start returns Failed.
-    function test_insufficientGap_isFailed() external {
+    function test_insufficientGap_isFailed() external view {
         uint48 start = uint48(block.timestamp + 1 days);
         uint48 queued = start - uint48(DURATION) + 1; // 1 second short of required gap
 
@@ -56,7 +56,7 @@ contract TestDeadlineFuzz_Local is JBTest {
     }
 
     /// @notice Ruleset with exactly enough gap and deadline not yet passed returns ApprovalExpected.
-    function test_exactGap_deadlineNotPassed_isApprovalExpected() external {
+    function test_exactGap_deadlineNotPassed_isApprovalExpected() external view {
         // queue far enough in advance, and start is still far in the future
         uint48 start = uint48(block.timestamp + 2 * DURATION + 100);
         uint48 queued = start - uint48(DURATION);
@@ -67,7 +67,7 @@ contract TestDeadlineFuzz_Local is JBTest {
     }
 
     /// @notice Ruleset with enough gap and deadline passed returns Approved.
-    function test_gapSufficient_deadlinePassed_isApproved() external {
+    function test_gapSufficient_deadlinePassed_isApproved() external view {
         uint48 start = uint48(block.timestamp + 1); // start is very soon
         uint48 queued = start - uint48(DURATION) - 1; // plenty of gap
 
