@@ -9,7 +9,7 @@ fs_permissions = [{ access = "read-write", path = "./"}]
 runs = 4096
 
 [invariant]
-runs = 1024
+runs = 10240
 depth = 100
 fail_on_revert = false
 
