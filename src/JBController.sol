@@ -652,7 +652,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param projectId The ID of the project whose token is being updated.
     /// @param name The new name.
     /// @param symbol The new symbol.
-    function setTokenNameAndSymbolOf(
+    function setTokenMetadataOf(
         uint256 projectId,
         string calldata name,
         string calldata symbol
@@ -667,7 +667,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             permissionId: JBPermissionIds.SET_TOKEN_METADATA
         });
 
-        TOKENS.setTokenNameAndSymbolFor({projectId: projectId, name: name, symbol: symbol});
+        TOKENS.setTokenMetadataFor({projectId: projectId, name: name, symbol: symbol});
     }
 
     /// @notice Set a project's metadata URI.

@@ -349,7 +349,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param projectId The ID of the project whose token is being updated.
     /// @param name The new name.
     /// @param symbol The new symbol.
-    function setTokenNameAndSymbolOf(uint256 projectId, string calldata name, string calldata symbol) external;
+    function setTokenMetadataOf(uint256 projectId, string calldata name, string calldata symbol) external;
 
     /// @notice Transfers credits from one address to another.
     /// @param holder The address to transfer credits from.

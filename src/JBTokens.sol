@@ -303,7 +303,7 @@ contract JBTokens is JBControlled, IJBTokens {
     /// @param projectId The ID of the project whose token is being updated.
     /// @param name The new name.
     /// @param symbol The new symbol.
-    function setTokenNameAndSymbolFor(
+    function setTokenMetadataFor(
         uint256 projectId,
         string calldata name,
         string calldata symbol
@@ -324,7 +324,7 @@ contract JBTokens is JBControlled, IJBTokens {
         // There must be a symbol.
         if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol();
 
-        emit SetTokenNameAndSymbol({projectId: projectId, name: name, symbol: symbol, caller: msg.sender});
+        emit SetTokenMetadata({projectId: projectId, name: name, symbol: symbol, caller: msg.sender});
 
         // Set the name and symbol.
         token.setNameAndSymbol({name: name, symbol: symbol});
