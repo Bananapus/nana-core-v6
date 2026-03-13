@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
+import {Sphinx} from "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
 import {Script} from "forge-std/Script.sol";
 
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
@@ -26,16 +26,20 @@ contract Deploy is Script, Sphinx {
 
     /// @notice The address that is allowed to forward calls to the terminal and controller on a users behalf.
     string private constant TRUSTED_FORWARDER_NAME = "Juicebox";
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private TRUSTED_FORWARDER;
 
     /// @notice The address that will manage the few privileged functions of the protocol.
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private MANAGER;
 
     /// @notice The address that will own the fee-project.
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private FEE_PROJECT_OWNER;
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private CORE_DEPLOYMENT_NONCE = 6;
 
     function configureSphinx() public override {
@@ -61,19 +65,24 @@ contract Deploy is Script, Sphinx {
 
         JBPermissions permissions =
             new JBPermissions{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(TRUSTED_FORWARDER);
-        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            safeAddress(), safeAddress(), TRUSTED_FORWARDER
-        );
-        JBDirectory directory =
-            new JBDirectory{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(permissions, projects, safeAddress());
+        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            owner: safeAddress(), feeProjectOwner: safeAddress(), trustedForwarder: TRUSTED_FORWARDER
+        });
+        JBDirectory directory = new JBDirectory{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            permissions: permissions, projects: projects, owner: safeAddress()
+        });
         JBSplits splits = new JBSplits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
         JBRulesets rulesets = new JBRulesets{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
-        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            directory, permissions, projects, safeAddress(), TRUSTED_FORWARDER
-        );
-        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            directory, new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
-        );
+        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            directory: directory,
+            permissions: permissions,
+            projects: projects,
+            owner: safeAddress(),
+            trustedForwarder: TRUSTED_FORWARDER
+        });
+        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            directory: directory, token: new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
+        });
 
         new JBFundAccessLimits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
 
@@ -103,7 +112,7 @@ contract Deploy is Script, Sphinx {
 
         // Transfer ownership to the fee project owner.
         if (FEE_PROJECT_OWNER != safeAddress() && FEE_PROJECT_OWNER != address(0)) {
-            projects.safeTransferFrom(safeAddress(), FEE_PROJECT_OWNER, 1);
+            projects.safeTransferFrom({from: safeAddress(), to: FEE_PROJECT_OWNER, tokenId: 1});
         }
     }
 }

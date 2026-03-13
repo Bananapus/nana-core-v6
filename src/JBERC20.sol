@@ -47,7 +47,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     /// @param account The address to burn tokens from.
     /// @param amount The amount of tokens to burn, as a fixed point number with 18 decimals.
     function burn(address account, uint256 amount) external override onlyOwner {
-        return _burn(account, amount);
+        return _burn({account: account, value: amount});
     }
 
     /// @notice Mints more of this token.
@@ -55,7 +55,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     /// @param account The address to mint the new tokens to.
     /// @param amount The amount of tokens to mint, as a fixed point number with 18 decimals.
     function mint(address account, uint256 amount) external override onlyOwner {
-        return _mint(account, amount);
+        return _mint({account: account, value: amount});
     }
 
     /// @notice Sets the token's name and symbol.
@@ -139,6 +139,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
 
     /// @notice Required override.
     function _update(address from, address to, uint256 value) internal virtual override(ERC20, ERC20Votes) {
-        super._update(from, to, value);
+        super._update({from: from, to: to, value: value});
     }
 }

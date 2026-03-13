@@ -8,6 +8,7 @@ import {IJBPayHook} from "../interfaces/IJBPayHook.sol";
 /// @custom:member hook The pay hook to use when fulfilling this specification.
 /// @custom:member amount The amount to send to the hook.
 /// @custom:member metadata Metadata to pass the hook.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBPayHookSpecification {
     IJBPayHook hook;
     uint256 amount;

@@ -1,7 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {MetadataResolverHelper} from "../../../helpers/MetadataResolverHelper.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IJBMultiTerminal} from "../../../../src/interfaces/IJBMultiTerminal.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
+import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 
 /*

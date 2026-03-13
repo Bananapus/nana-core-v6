@@ -6,6 +6,7 @@ pragma solidity ^0.8.0;
 /// permissions under this project's scope. An ID of 0 is a wildcard, which gives an operator permissions across all
 /// projects.
 /// @custom:member permissionIds The IDs of the permissions being given. See the `JBPermissionIds` library.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBPermissionsData {
     address operator;
     uint64 projectId;

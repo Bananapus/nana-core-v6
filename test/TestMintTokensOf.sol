@@ -1,7 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesetDataHook} from "../src/interfaces/IJBRulesetDataHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IJBTokens} from "../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 contract TestMintTokensOf_Local is TestBaseWorkflow {
     uint8 private constant _WEIGHT_DECIMALS = 18;

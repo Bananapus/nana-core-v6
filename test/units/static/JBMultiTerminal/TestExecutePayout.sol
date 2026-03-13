@@ -1,7 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBSplit} from "../../../../src/structs/JBSplit.sol";
+import {JBSplitHookContext} from "../../../../src/structs/JBSplitHookContext.sol";
+import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestExecutePayout_Local is JBMultiTerminalSetup {
@@ -344,7 +359,8 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         });
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_usdc, 0, 0, _defaultAmount);
+        JBTokenAmount memory tokenAmount =
+            JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,

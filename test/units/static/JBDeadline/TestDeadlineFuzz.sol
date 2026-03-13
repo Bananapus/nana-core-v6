@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBDeadline} from "../../../../src/JBDeadline.sol";
 import {JBApprovalStatus} from "../../../../src/enums/JBApprovalStatus.sol";

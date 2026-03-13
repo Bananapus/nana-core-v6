@@ -1,11 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBPrices} from "../../../../src/JBPrices.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBPriceFeed} from "../../../../src/interfaces/IJBPriceFeed.sol";
+import {IJBPrices} from "../../../../src/interfaces/IJBPrices.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBPricesSetup} from "./JBPricesSetup.sol";
 
 contract TestAddPriceFeedFor_Local is JBPricesSetup {
     IJBPriceFeed _feed = IJBPriceFeed(makeAddr("feed"));
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 DEFAULT_PROJECT_ID = 0;
     uint256 _projectId = 1;
     address _projectOneOwner = makeAddr("oneOwner");

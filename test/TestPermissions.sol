@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {MockERC20} from "./mock/MockERC20.sol";
+import {JBPermissions} from "../src/JBPermissions.sol";
+import {JBPermissioned} from "../src/abstract/JBPermissioned.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBPermissions} from "../src/interfaces/IJBPermissions.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IJBToken} from "../src/interfaces/IJBToken.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBPermissionsData} from "../src/structs/JBPermissionsData.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 
 contract TestPermissions_Local is TestBaseWorkflow {
     IJBController private _controller;
@@ -135,6 +152,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
         address _op,
         uint56 _projectId,
         uint8 _checkedId,
+        // forge-lint: disable-next-line(mixed-case-variable)
         uint8[] memory _set_permissions
     )
         public
@@ -143,6 +161,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
         vm.assume(_set_permissions.length != 0);
         vm.assume(_account != trustedForwarder());
 
+        // forge-lint: disable-next-line(mixed-case-variable)
         uint256[] memory _check_permissions = new uint256[](1);
         _check_permissions[0] = _checkedId;
 

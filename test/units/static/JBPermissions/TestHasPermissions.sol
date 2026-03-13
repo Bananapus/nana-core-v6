@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBPermissions} from "../../../../src/JBPermissions.sol";
 import {JBPermissionsSetup} from "./JBPermissionsSetup.sol";
 
 contract TestHasPermissions_Local is JBPermissionsSetup {

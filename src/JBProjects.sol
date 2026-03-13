@@ -74,7 +74,7 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
         emit Create({projectId: projectId, owner: owner, caller: _msgSender()});
 
         // Mint the project.
-        _safeMint(owner, projectId);
+        _safeMint({to: owner, tokenId: projectId});
     }
 
     //*********************************************************************//

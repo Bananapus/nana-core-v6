@@ -128,7 +128,7 @@ contract JBTokens is JBControlled, IJBTokens {
         });
 
         // Burn the tokens.
-        if (tokensToBurn > 0) token.burn(holder, tokensToBurn);
+        if (tokensToBurn > 0) token.burn({account: holder, amount: tokensToBurn});
     }
 
     /// @notice Redeem credits to claim tokens into a holder's wallet.
@@ -177,7 +177,7 @@ contract JBTokens is JBControlled, IJBTokens {
         });
 
         // Mint the equivalent amount of the project's token for the holder.
-        token.mint(beneficiary, count);
+        token.mint({account: beneficiary, amount: count});
     }
 
     /// @notice Deploys an ERC-20 token for a project. It will be used when claiming tokens.
@@ -211,7 +211,11 @@ contract JBTokens is JBControlled, IJBTokens {
 
         token = salt == bytes32(0)
             ? IJBToken(Clones.clone(address(TOKEN)))
-            : IJBToken(Clones.cloneDeterministic(address(TOKEN), keccak256(abi.encode(msg.sender, salt))));
+            : IJBToken(
+                Clones.cloneDeterministic({
+                    implementation: address(TOKEN), salt: keccak256(abi.encode(msg.sender, salt))
+                })
+            );
 
         // Store the token contract.
         tokenOf[projectId] = token;
@@ -257,7 +261,7 @@ contract JBTokens is JBControlled, IJBTokens {
         if (tokensWereClaimed) {
             // If tokens should be claimed, mint tokens into the holder's wallet.
             // slither-disable-next-line reentrancy-events
-            token.mint(holder, count);
+            token.mint({account: holder, amount: count});
         } else {
             // Otherwise, add the tokens to their credits and the credit supply.
             creditBalanceOf[holder][projectId] += count;

@@ -27,6 +27,7 @@ import {IJBSplitHook} from "./../interfaces/IJBSplitHook.sol";
 /// increased while a split is locked. If `lockedUntil` is zero, this split can be changed at any time.
 /// @custom:member hook A contract which will receive this split's tokens and properties, and can define custom
 /// behavior.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBSplit {
     uint32 percent;
     uint64 projectId;

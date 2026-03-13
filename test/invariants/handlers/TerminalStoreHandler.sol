@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBTerminalStore} from "../../../src/interfaces/IJBTerminalStore.sol";
@@ -20,9 +20,13 @@ contract TerminalStoreHandler is Test {
     address public projectOwner;
 
     // Ghost variables for fund tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidIn;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalCashedOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalAddedToBalance;
 
     // Track actors

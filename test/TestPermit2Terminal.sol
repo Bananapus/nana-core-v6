@@ -1,7 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {MetadataResolverHelper} from "./helpers/MetadataResolverHelper.sol";
+import {JBMultiTerminal} from "../src/JBMultiTerminal.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBPrices} from "../src/interfaces/IJBPrices.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IJBTokens} from "../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSingleAllowance} from "../src/structs/JBSingleAllowance.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {IAllowanceTransfer, IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockPriceFeed} from "./mock/MockPriceFeed.sol";
 
@@ -20,6 +36,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
     uint256 _projectId;
 
     // Permit2 params.
+    // forge-lint: disable-next-line(mixed-case-variable)
     bytes32 DOMAIN_SEPARATOR;
     address from;
     uint256 fromPrivateKey;

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
+import {IJBTokenUriResolver} from "../../../../src/interfaces/IJBTokenUriResolver.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
 import {JBProjectsSetup} from "./JBProjectsSetup.sol";
 
 contract TestTokenURI_Local is JBProjectsSetup {

@@ -1,7 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBApprovalStatus} from "../src/enums/JBApprovalStatus.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
@@ -661,6 +672,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
 /// @notice Approval hook that approves after a configurable delay.
 contract DelayedApprovalHook is ERC165, IJBRulesetApprovalHook {
+    // forge-lint: disable-next-line(screaming-snake-case-immutable)
     uint256 public immutable approvalDelay;
 
     constructor(uint256 _approvalDelay) {
@@ -686,6 +698,7 @@ contract DelayedApprovalHook is ERC165, IJBRulesetApprovalHook {
 
 /// @notice Approval hook that always rejects.
 contract AlwaysRejectingHook is ERC165, IJBRulesetApprovalHook {
+    // forge-lint: disable-next-line(mixed-case-function)
     function DURATION() external pure override returns (uint256) {
         return 0;
     }

@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBFeeTerminal} from "../../../../src/interfaces/IJBFeeTerminal.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBFee} from "../../../../src/structs/JBFee.sol";
+import {JBSingleAllowance} from "../../../../src/structs/JBSingleAllowance.sol";
+import {IAllowanceTransfer, IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
@@ -16,6 +25,7 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
     address _usdc = makeAddr("USDC");
     // forge-lint: disable-next-line(unsafe-typecast)
     uint256 _usdcCurrency = uint32(uint160(_usdc));
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 _terminalUSDCBalance = 1e18;
 
     // set by modifiers
@@ -27,6 +37,7 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
     bool _shouldReturnHeldFees;
 
     // Permit2 params.
+    // forge-lint: disable-next-line(mixed-case-variable)
     bytes32 DOMAIN_SEPARATOR;
     address from;
     uint256 fromPrivateKey = 0x12341234;

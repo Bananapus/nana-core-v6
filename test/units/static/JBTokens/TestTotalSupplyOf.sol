@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
 import {JBTokensSetup} from "./JBTokensSetup.sol";
 
 contract TestTotalSupplyOf_Local is JBTokensSetup {

@@ -1,7 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {IJBCashOutHook} from "../src/interfaces/IJBCashOutHook.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesetDataHook} from "../src/interfaces/IJBRulesetDataHook.sol";
+import {IJBToken} from "../src/interfaces/IJBToken.sol";
+import {IJBTokens} from "../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBAfterCashOutRecordedContext} from "../src/structs/JBAfterCashOutRecordedContext.sol";
+import {JBCashOutHookSpecification} from "../src/structs/JBCashOutHookSpecification.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {JBTokenAmount} from "../src/structs/JBTokenAmount.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
+import {mul as UD60x18mul, unwrap as UD60x18unwrap, wrap as UD60x18wrap} from "@prb/math/src/UD60x18.sol";
 
 contract TestCashOutHooks_Local is TestBaseWorkflow {
     using JBRulesetMetadataResolver for JBRuleset;
@@ -149,18 +170,18 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             projectId: _projectId,
             rulesetId: _ruleset.id,
             cashOutCount: _beneficiaryTokenBalance / 2,
-            reclaimedAmount: JBTokenAmount(
-                JBConstants.NATIVE_TOKEN,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                _halfPaid
-            ),
-            forwardedAmount: JBTokenAmount(
-                JBConstants.NATIVE_TOKEN,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                _halfPaid
-            ),
+            reclaimedAmount: JBTokenAmount({
+                token: JBConstants.NATIVE_TOKEN,
+                decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                value: _halfPaid
+            }),
+            forwardedAmount: JBTokenAmount({
+                token: JBConstants.NATIVE_TOKEN,
+                decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                value: _halfPaid
+            }),
             cashOutTaxRate: 0,
             beneficiary: payable(address(this)),
             hookMetadata: "",
@@ -263,18 +284,18 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             projectId: _projectId,
             rulesetId: _ruleset.id,
             cashOutCount: _beneficiaryTokenBalance / 2,
-            reclaimedAmount: JBTokenAmount(
-                JBConstants.NATIVE_TOKEN,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                _beneficiaryAmount
-            ),
-            forwardedAmount: JBTokenAmount(
-                JBConstants.NATIVE_TOKEN,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                _forwardedAmount
-            ),
+            reclaimedAmount: JBTokenAmount({
+                token: JBConstants.NATIVE_TOKEN,
+                decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                value: _beneficiaryAmount
+            }),
+            forwardedAmount: JBTokenAmount({
+                token: JBConstants.NATIVE_TOKEN,
+                decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                value: _forwardedAmount
+            }),
             // forge-lint: disable-next-line(unsafe-typecast)
             cashOutTaxRate: uint16(_customCashOutTaxRate),
             beneficiary: payable(address(this)),

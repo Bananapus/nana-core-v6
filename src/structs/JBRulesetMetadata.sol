@@ -33,6 +33,7 @@ pragma solidity ^0.8.0;
 /// @custom:member dataHook The data hook to use during this ruleset.
 /// @custom:member metadata Metadata of the metadata, only the 14 least significant bits can be used, the 2 most
 /// significant bits are disregarded.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBRulesetMetadata {
     uint16 reservedPercent;
     uint16 cashOutTaxRate;

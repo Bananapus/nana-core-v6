@@ -1,7 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBTerminalStore} from "../src/JBTerminalStore.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBDirectory} from "../src/interfaces/IJBDirectory.sol";
+import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBSplitHook} from "../src/interfaces/IJBSplitHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IJBTokens} from "../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBSplitGroupIds} from "../src/libraries/JBSplitGroupIds.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplit} from "../src/structs/JBSplit.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
 
 contract TestSplits_Local is TestBaseWorkflow {
     IJBController private _controller;

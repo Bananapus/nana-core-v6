@@ -1,7 +1,27 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBController} from "../../../../src/JBController.sol";
+import {IJBController} from "../../../../src/interfaces/IJBController.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFundAccessLimits} from "../../../../src/interfaces/IJBFundAccessLimits.sol";
+import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
+import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../../../../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../../../../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
+import {JBSplit} from "../../../../src/structs/JBSplit.sol";
+import {JBSplitGroup} from "../../../../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../../../../src/structs/JBTerminalConfig.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBControllerSetup} from "./JBControllerSetup.sol";
 
 contract TestLaunchProjectFor_Local is JBControllerSetup {

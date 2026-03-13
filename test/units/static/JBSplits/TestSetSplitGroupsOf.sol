@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBSplits} from "../../../../src/JBSplits.sol";
+import {JBControlled} from "../../../../src/abstract/JBControlled.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
+import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBSplit} from "../../../../src/structs/JBSplit.sol";
+import {JBSplitGroup} from "../../../../src/structs/JBSplitGroup.sol";
 import {JBSplitsSetup} from "./JBSplitsSetup.sol";
 
 contract TestSetSplitGroupsOf_Local is JBSplitsSetup {

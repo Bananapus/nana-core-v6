@@ -17,6 +17,7 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member useTotalSurplus If surplus across all of a project's terminals is being used when making cash outs.
 /// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is being made during.
 /// @custom:member metadata Extra data provided by the casher.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBBeforeCashOutRecordedContext {
     address terminal;
     address holder;

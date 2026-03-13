@@ -1,10 +1,29 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBController} from "../src/JBController.sol";
+import {JBDeadline} from "../src/JBDeadline.sol";
+import {JBMultiTerminal} from "../src/JBMultiTerminal.sol";
+import {JBProjects} from "../src/JBProjects.sol";
+import {IJBCashOutTerminal} from "../src/interfaces/IJBCashOutTerminal.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBFeeTerminal} from "../src/interfaces/IJBFeeTerminal.sol";
+import {IJBMigratable} from "../src/interfaces/IJBMigratable.sol";
+import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
+import {IJBPayoutTerminal} from "../src/interfaces/IJBPayoutTerminal.sol";
+import {IJBPermissioned} from "../src/interfaces/IJBPermissioned.sol";
+import {IJBPermitTerminal} from "../src/interfaces/IJBPermitTerminal.sol";
+import {IJBProjects} from "../src/interfaces/IJBProjects.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721Metadata} from "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 
 /// Contracts are introspective about the interfaces they adhere to.
 contract TestEIP165_Local is TestBaseWorkflow {
+    // forge-lint: disable-next-line(screaming-snake-case-const)
     bytes4 private constant _notSupportedInterface = 0xffffffff;
 
     function testJBController() public view {

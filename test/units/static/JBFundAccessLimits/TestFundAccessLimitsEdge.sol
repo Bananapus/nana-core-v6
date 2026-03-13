@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBFundAccessLimits} from "../../../../src/JBFundAccessLimits.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {JBCurrencyAmount} from "../../../../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../../../../src/structs/JBFundAccessLimitGroup.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 
 /// @notice Edge case tests for JBFundAccessLimits append behavior and packing.

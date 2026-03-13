@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../helpers/TestBaseWorkflow.sol";
+import {Test} from "forge-std/Test.sol";
+import {JBTerminalStore} from "../../src/JBTerminalStore.sol";
 import {IJBMultiTerminal} from "../../src/interfaces/IJBMultiTerminal.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBTerminalStoreSetup} from "./JBTerminalStoreSetup.sol";
 
 contract TestCurrentTotalSurplusOf_Local is JBTerminalStoreSetup {
