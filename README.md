@@ -97,7 +97,7 @@ All contracts use Solidity `0.8.26`.
 | `JBProjects` | ERC-721 registry of projects. Minting an NFT creates a project. Optionally mints project #1 to a fee beneficiary owner. |
 | `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. Supports ROOT (255) for all-permissions and wildcard project ID (0). |
 | `JBDirectory` | Maps each project to its controller and terminals. Entry point for looking up where to interact with a project. Manages an allowlist of addresses permitted to set a project's first controller. |
-| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, sending reserved tokens, setting project URIs, adding price feeds, and transferring credits. |
+| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, updating token metadata, sending reserved tokens, setting project URIs, adding price feeds, and transferring credits. |
 | `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, manages surplus allowances, and handles fees. Integrates with Permit2 for ERC-20 approvals. |
 | `JBTerminalStore` | Bookkeeping engine for all terminal inflows and outflows. Tracks balances, enforces payout limits and surplus allowances, computes cash out reclaim amounts via a bonding curve, and integrates with data hooks. |
 | `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, approval hook validation, and weight caching for long-running projects. |
@@ -110,7 +110,7 @@ All contracts use Solidity `0.8.26`.
 
 | Contract | Description |
 |----------|-------------|
-| `JBERC20` | Cloneable ERC-20 with ERC20Votes and ERC20Permit. Deployed by `JBTokens` via `Clones.clone()`. Owned by `JBTokens`. |
+| `JBERC20` | Cloneable ERC-20 with ERC20Votes and ERC20Permit. Deployed by `JBTokens` via `Clones.clone()`. Owned by `JBTokens`. Name and symbol can be updated by the project owner via `JBController.setTokenMetadataOf`. |
 | `JBChainlinkV3PriceFeed` | `IJBPriceFeed` backed by a Chainlink `AggregatorV3Interface` with staleness threshold. Rejects negative/zero prices and incomplete rounds. |
 | `JBChainlinkV3SequencerPriceFeed` | Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime validation and grace period for Optimism/Arbitrum. |
 | `JBMatchingPriceFeed` | Returns 1:1 price (e.g., ETH/NATIVE_TOKEN on applicable chains). Lives in `src/periphery/`. |

@@ -108,6 +108,7 @@ Admin privileges and their scope in nana-core-v6.
 | `sendReservedTokensToSplitsOf` | Anyone | N/A | Per project | Distributes accumulated reserved tokens to the project's reserved token split group. No permission required -- anyone can trigger this. |
 | `setSplitGroupsOf` | Project owner or operator | SET_SPLIT_GROUPS (18) | Per project | Sets split groups for a project. Must preserve any currently locked splits. |
 | `setTokenFor` | Project owner or operator | SET_TOKEN (9) | Per project | Assigns an external ERC-20 token to the project. Requires the ruleset's `allowSetCustomToken` flag. Can only be called once (before any token is set). |
+| `setTokenMetadataOf` | Project owner or operator | SET_TOKEN_METADATA (21) | Per project | Sets the name and symbol of a project's ERC-20 token. The project must have a token deployed. |
 | `setUriOf` | Project owner or operator | SET_PROJECT_URI (7) | Per project | Updates the project's metadata URI. |
 | `transferCreditsFrom` | Credit holder or operator | TRANSFER_CREDITS (13) | Per project | Transfers internal token credits between addresses. Requires the ruleset's `pauseCreditTransfers` flag to be false. |
 | `migrate` | JBDirectory only | N/A (msg.sender == DIRECTORY) | Per project | Called by the directory during controller migration. Reverts if there are pending reserved tokens. |
@@ -140,6 +141,7 @@ Admin privileges and their scope in nana-core-v6.
 | `deployERC20For` | Project's controller | N/A (onlyControllerOf) | Per project | Deploys a cloned JBERC20 token for the project. |
 | `mintFor` | Project's controller | N/A (onlyControllerOf) | Per project | Mints new tokens (ERC-20 if deployed) or credits for a holder. |
 | `setTokenFor` | Project's controller | N/A (onlyControllerOf) | Per project | Sets an external ERC-20 token for the project. Cannot be changed once set. |
+| `setTokenMetadataFor` | Project's controller | N/A (onlyControllerOf) | Per project | Sets the name and symbol of a project's token. |
 | `transferCreditsFrom` | Project's controller | N/A (onlyControllerOf) | Per project | Transfers credits between addresses. |
 
 ### JBSplits
@@ -180,6 +182,7 @@ Admin privileges and their scope in nana-core-v6.
 | `mint` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Mints new tokens to an address. |
 | `burn` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Burns tokens from an address. |
 | `initialize` | Anyone (once) | N/A | Per token | Initializes the token name, symbol, and owner. Can only be called once. |
+| `setNameAndSymbol` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Updates the token's name and symbol. |
 
 ### JBTerminalStore
 
@@ -228,6 +231,7 @@ JBPermissions implements a 256-bit packed permission bitmap system:
 | 18 | SET_SPLIT_GROUPS | `JBController.setSplitGroupsOf` |
 | 19 | ADD_PRICE_FEED | `JBController.addPriceFeed` |
 | 20 | ADD_ACCOUNTING_CONTEXTS | `JBMultiTerminal.addAccountingContextsFor` |
+| 21 | SET_TOKEN_METADATA | `JBController.setTokenMetadataOf` |
 
 ## Immutable Configuration
 

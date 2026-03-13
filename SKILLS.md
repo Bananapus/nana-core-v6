@@ -42,6 +42,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `claimTokensFor(address holder, uint256 projectId, uint256 count, address beneficiary)` | Redeems credits for ERC-20 tokens into beneficiary's wallet. |
 | `setSplitGroupsOf(uint256 projectId, uint256 rulesetId, JBSplitGroup[] splitGroups)` | Sets the split groups for a project's ruleset. |
 | `setTokenFor(uint256 projectId, IJBToken token)` | Sets an existing ERC-20 token for the project (requires `allowSetCustomToken` in ruleset). |
+| `setTokenMetadataOf(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's ERC-20 token. Requires `SET_TOKEN_METADATA` permission. |
 | `setUriOf(uint256 projectId, string uri)` | Sets the project's metadata URI. |
 | `transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 creditCount)` | Transfers credits between addresses (reverts if `pauseCreditTransfers` is set in ruleset). |
 | `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in ruleset). |
@@ -129,6 +130,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `totalBalanceOf(address holder, uint256 projectId)` | Returns combined credit + ERC-20 balance. |
 | `creditBalanceOf(address holder, uint256 projectId)` | Returns the holder's credit balance. |
 | `tokenOf(uint256 projectId)` | Returns the ERC-20 token for a project (`IJBToken`). |
+| `setTokenMetadataFor(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's token. Controller-only. |
 
 ### JBSplits
 
