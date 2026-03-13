@@ -652,19 +652,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param projectId The ID of the project whose token is being updated.
     /// @param name The new name.
     /// @param symbol The new symbol.
-    function setTokenMetadataOf(
-        uint256 projectId,
-        string calldata name,
-        string calldata symbol
-    )
-        external
-        override
-    {
+    function setTokenMetadataOf(uint256 projectId, string calldata name, string calldata symbol) external override {
         // Enforce permissions.
         _requirePermissionFrom({
-            account: PROJECTS.ownerOf(projectId),
-            projectId: projectId,
-            permissionId: JBPermissionIds.SET_TOKEN_METADATA
+            account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN_METADATA
         });
 
         TOKENS.setTokenMetadataFor({projectId: projectId, name: name, symbol: symbol});
