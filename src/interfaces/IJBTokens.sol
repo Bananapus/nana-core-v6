@@ -64,6 +64,13 @@ interface IJBTokens {
     /// @param caller The address that set the token.
     event SetToken(uint256 indexed projectId, IJBToken indexed token, address caller);
 
+    /// @notice A project token's name and symbol were updated.
+    /// @param projectId The ID of the project whose token was updated.
+    /// @param name The new token name.
+    /// @param symbol The new token symbol.
+    /// @param caller The address that called the function.
+    event SetTokenNameAndSymbol(uint256 indexed projectId, string name, string symbol, address caller);
+
     /// @notice Credits were transferred from one holder to another.
     /// @param holder The address that transferred the credits.
     /// @param projectId The ID of the project whose credits were transferred.
@@ -145,6 +152,12 @@ interface IJBTokens {
     /// @param projectId The ID of the project to set the token of.
     /// @param token The token to set.
     function setTokenFor(uint256 projectId, IJBToken token) external;
+
+    /// @notice Sets the name and symbol of a project's token.
+    /// @param projectId The ID of the project whose token is being updated.
+    /// @param name The new name.
+    /// @param symbol The new symbol.
+    function setTokenNameAndSymbolFor(uint256 projectId, string calldata name, string calldata symbol) external;
 
     /// @notice Transfers credits from one holder to another.
     /// @param holder The address to transfer credits from.

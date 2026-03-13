@@ -646,6 +646,30 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         TOKENS.setTokenFor({projectId: projectId, token: token});
     }
 
+    /// @notice Sets the name and symbol of a project's token.
+    /// @dev Can only be called by the project's owner or an address with the owner's permission to
+    /// `SET_TOKEN_METADATA`.
+    /// @param projectId The ID of the project whose token is being updated.
+    /// @param name The new name.
+    /// @param symbol The new symbol.
+    function setTokenNameAndSymbolOf(
+        uint256 projectId,
+        string calldata name,
+        string calldata symbol
+    )
+        external
+        override
+    {
+        // Enforce permissions.
+        _requirePermissionFrom({
+            account: PROJECTS.ownerOf(projectId),
+            projectId: projectId,
+            permissionId: JBPermissionIds.SET_TOKEN_METADATA
+        });
+
+        TOKENS.setTokenNameAndSymbolFor({projectId: projectId, name: name, symbol: symbol});
+    }
+
     /// @notice Set a project's metadata URI.
     /// @dev This is typically an IPFS hash, optionally with an `ipfs://` prefix.
     /// @dev Can only be called by the project's owner or an address with the owner's permission to
