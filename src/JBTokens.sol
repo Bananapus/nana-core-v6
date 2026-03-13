@@ -327,7 +327,7 @@ contract JBTokens is JBControlled, IJBTokens {
         emit SetTokenMetadata({projectId: projectId, name: name, symbol: symbol, caller: msg.sender});
 
         // Set the name and symbol.
-        token.setNameAndSymbol({name: name, symbol: symbol});
+        token.setMetadata({name: name, symbol: symbol});
     }
 
     /// @notice Allows a holder to transfer credits to another account.

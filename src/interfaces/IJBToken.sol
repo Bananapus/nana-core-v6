@@ -40,5 +40,5 @@ interface IJBToken {
     /// @notice Sets the token's name and symbol.
     /// @param name The new name.
     /// @param symbol The new symbol.
-    function setNameAndSymbol(string memory name, string memory symbol) external;
+    function setMetadata(string memory name, string memory symbol) external;
 }

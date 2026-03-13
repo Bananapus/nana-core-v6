@@ -182,7 +182,7 @@ Admin privileges and their scope in nana-core-v6.
 | `mint` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Mints new tokens to an address. |
 | `burn` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Burns tokens from an address. |
 | `initialize` | Anyone (once) | N/A | Per token | Initializes the token name, symbol, and owner. Can only be called once. |
-| `setNameAndSymbol` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Updates the token's name and symbol. |
+| `setMetadata` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Updates the token's name and symbol. |
 
 ### JBTerminalStore
 
