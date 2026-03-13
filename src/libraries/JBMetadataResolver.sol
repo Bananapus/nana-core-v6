@@ -97,7 +97,7 @@ library JBMetadataResolver {
                 numberOfWordslastData = (originalMetadata.length - lastOffset * WORD_SIZE) / WORD_SIZE;
 
                 // Copy the reserved word and the table and remove the previous padding
-                newMetadata = _sliceBytes(originalMetadata, 0, lastOffsetIndex + 1);
+                newMetadata = _sliceBytes({data: originalMetadata, start: 0, end: lastOffsetIndex + 1});
 
                 // Check if the new entry is still fitting in this word
                 if (i + TOTAL_ID_SIZE >= firstOffset * WORD_SIZE) {
@@ -131,7 +131,8 @@ library JBMetadataResolver {
 
         // Add existing data at the end
         newMetadata = abi.encodePacked(
-            newMetadata, _sliceBytes(originalMetadata, firstOffset * WORD_SIZE, originalMetadata.length)
+            newMetadata,
+            _sliceBytes({data: originalMetadata, start: firstOffset * WORD_SIZE, end: originalMetadata.length})
         );
 
         // Pad as needed
@@ -247,7 +248,7 @@ library JBMetadataResolver {
                     ? metadata.length
                     : uint256(uint8(metadata[i + NEXT_ID_OFFSET])) * WORD_SIZE;
 
-                return (true, _sliceBytes(metadata, currentOffset * WORD_SIZE, end));
+                return (true, _sliceBytes({data: metadata, start: currentOffset * WORD_SIZE, end: end}));
             }
             unchecked {
                 i += TOTAL_ID_SIZE;

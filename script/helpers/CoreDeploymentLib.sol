@@ -52,7 +52,7 @@ library CoreDeploymentLib {
 
         for (uint256 _i; _i < networks.length; _i++) {
             if (networks[_i].chainId == chainId) {
-                return getDeployment(path, networks[_i].name);
+                return getDeployment({path: path, networkName: networks[_i].name});
             }
         }
 
@@ -61,41 +61,87 @@ library CoreDeploymentLib {
 
     function getDeployment(
         string memory path,
-        string memory network_name
+        string memory networkName
     )
         internal
         view
         returns (CoreDeployment memory deployment)
     {
-        deployment.permissions = JBPermissions(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBPermissions"));
+        deployment.permissions = JBPermissions(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBPermissions"
+            })
+        );
 
-        deployment.projects = JBProjects(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBProjects"));
+        deployment.projects = JBProjects(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBProjects"
+            })
+        );
 
-        deployment.directory = JBDirectory(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBDirectory"));
+        deployment.directory = JBDirectory(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBDirectory"
+            })
+        );
 
-        deployment.splits = JBSplits(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBSplits"));
+        deployment.splits = JBSplits(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBSplits"
+            })
+        );
 
-        deployment.rulesets = JBRulesets(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBRulesets"));
+        deployment.rulesets = JBRulesets(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBRulesets"
+            })
+        );
 
-        deployment.controller = JBController(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBController"));
+        deployment.controller = JBController(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBController"
+            })
+        );
 
-        deployment.terminal =
-            JBMultiTerminal(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBMultiTerminal"));
+        deployment.terminal = JBMultiTerminal(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBMultiTerminal"
+            })
+        );
 
-        deployment.terminalStore =
-            JBTerminalStore(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTerminalStore"));
+        deployment.terminalStore = JBTerminalStore(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBTerminalStore"
+            })
+        );
 
-        deployment.prices = JBPrices(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBPrices"));
+        deployment.prices = JBPrices(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBPrices"
+            })
+        );
 
-        deployment.feeless =
-            JBFeelessAddresses(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBFeelessAddresses"));
+        deployment.feeless = JBFeelessAddresses(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBFeelessAddresses"
+            })
+        );
 
-        deployment.fundAccess =
-            JBFundAccessLimits(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBFundAccessLimits"));
+        deployment.fundAccess = JBFundAccessLimits(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBFundAccessLimits"
+            })
+        );
 
-        deployment.tokens = JBTokens(_getDeploymentAddress(path, PROJECT_NAME, network_name, "JBTokens"));
+        deployment.tokens = JBTokens(
+            _getDeploymentAddress({
+                path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBTokens"
+            })
+        );
 
-        deployment.trustedForwarder = _getDeploymentAddress(path, PROJECT_NAME, network_name, "ERC2771Forwarder");
+        deployment.trustedForwarder = _getDeploymentAddress({
+            path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "ERC2771Forwarder"
+        });
     }
 
     /// @notice Get the address of a contract that was deployed by the Deploy script.
@@ -105,8 +151,8 @@ library CoreDeploymentLib {
     /// @return The address of the contract.
     function _getDeploymentAddress(
         string memory path,
-        string memory project_name,
-        string memory network_name,
+        string memory projectName,
+        string memory networkName,
         string memory contractName
     )
         internal
@@ -114,7 +160,7 @@ library CoreDeploymentLib {
         returns (address)
     {
         string memory deploymentJson =
-            vm.readFile(string.concat(path, project_name, "/", network_name, "/", contractName, ".json"));
-        return stdJson.readAddress(deploymentJson, ".address");
+            vm.readFile(string.concat(path, projectName, "/", networkName, "/", contractName, ".json"));
+        return stdJson.readAddress({json: deploymentJson, key: ".address"});
     }
 }

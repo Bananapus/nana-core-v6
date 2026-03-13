@@ -336,7 +336,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         require(msg.sender == address(this));
 
         // Approve the tokens being paid.
-        IERC20(address(token)).forceApprove(address(terminal), splitTokenCount);
+        IERC20(address(token)).forceApprove({spender: address(terminal), value: splitTokenCount});
 
         // slither-disable-next-line unused-return
         terminal.pay({
@@ -350,7 +350,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
 
         // Make sure that the terminal received the tokens.
-        if (IERC20(address(token)).allowance(address(this), address(terminal)) != 0) {
+        if (IERC20(address(token)).allowance({owner: address(this), spender: address(terminal)}) != 0) {
             revert JBController_TerminalTokensNotTransferred();
         }
     }
@@ -1041,7 +1041,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                                 });
 
                                 // If it fails, transfer the tokens from this contract to the beneficiary.
-                                IERC20(address(token)).safeTransfer(beneficiary, splitTokenCount);
+                                IERC20(address(token)).safeTransfer({to: beneficiary, value: splitTokenCount});
                             }
                         }
                     } else if (beneficiary == address(0xdead)) {

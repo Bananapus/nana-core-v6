@@ -61,19 +61,24 @@ contract Deploy is Script, Sphinx {
 
         JBPermissions permissions =
             new JBPermissions{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(TRUSTED_FORWARDER);
-        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            safeAddress(), safeAddress(), TRUSTED_FORWARDER
-        );
-        JBDirectory directory =
-            new JBDirectory{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(permissions, projects, safeAddress());
+        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            owner: safeAddress(), feeProjectOwner: safeAddress(), trustedForwarder: TRUSTED_FORWARDER
+        });
+        JBDirectory directory = new JBDirectory{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            permissions: permissions, projects: projects, owner: safeAddress()
+        });
         JBSplits splits = new JBSplits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
         JBRulesets rulesets = new JBRulesets{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
-        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            directory, permissions, projects, safeAddress(), TRUSTED_FORWARDER
-        );
-        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(
-            directory, new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
-        );
+        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            directory: directory,
+            permissions: permissions,
+            projects: projects,
+            owner: safeAddress(),
+            trustedForwarder: TRUSTED_FORWARDER
+        });
+        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            directory: directory, token: new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
+        });
 
         new JBFundAccessLimits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
 
@@ -103,7 +108,7 @@ contract Deploy is Script, Sphinx {
 
         // Transfer ownership to the fee project owner.
         if (FEE_PROJECT_OWNER != safeAddress() && FEE_PROJECT_OWNER != address(0)) {
-            projects.safeTransferFrom(safeAddress(), FEE_PROJECT_OWNER, 1);
+            projects.safeTransferFrom({from: safeAddress(), to: FEE_PROJECT_OWNER, tokenId: 1});
         }
     }
 }

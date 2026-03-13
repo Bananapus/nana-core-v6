@@ -78,13 +78,15 @@ contract DeployPeriphery is Script, Sphinx {
 
         // Perform the deploy for L1(s).
         if (block.chainid == 1) {
-            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(
-                AggregatorV3Interface(address(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419)), 3600 seconds
-            );
+            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                feed: AggregatorV3Interface(address(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419)),
+                threshold: 3600 seconds
+            });
         } else if (block.chainid == 11_155_111) {
-            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(
-                AggregatorV3Interface(address(0x694AA1769357215DE4FAC081bf1f309aDC325306)), 3600 seconds
-            );
+            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                feed: AggregatorV3Interface(address(0x694AA1769357215DE4FAC081bf1f309aDC325306)),
+                threshold: 3600 seconds
+            });
         } else {
             // Perform the deploy for L2s
             AggregatorV3Interface source;
@@ -92,47 +94,47 @@ contract DeployPeriphery is Script, Sphinx {
             // Optimism
             if (block.chainid == 10) {
                 source = AggregatorV3Interface(0x13e3Ee699D1909E989722E753853AE30b17e08c5);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}(
-                    source,
-                    3600 seconds,
-                    AggregatorV2V3Interface(0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389),
-                    L2GracePeriod
-                );
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                    feed: source,
+                    threshold: 3600 seconds,
+                    sequencerFeed: AggregatorV2V3Interface(0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389),
+                    gracePeriod: L2GracePeriod
+                });
             }
             // Optimism Sepolia
             else if (block.chainid == 11_155_420) {
                 source = AggregatorV3Interface(address(0x61Ec26aA57019C486B10502285c5A3D4A4750AD7));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(source, 3600 seconds);
+                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             }
             // Base
             else if (block.chainid == 8453) {
                 source = AggregatorV3Interface(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}(
-                    source,
-                    3600 seconds,
-                    AggregatorV2V3Interface(0xBCF85224fc0756B9Fa45aA7892530B47e10b6433),
-                    L2GracePeriod
-                );
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                    feed: source,
+                    threshold: 3600 seconds,
+                    sequencerFeed: AggregatorV2V3Interface(0xBCF85224fc0756B9Fa45aA7892530B47e10b6433),
+                    gracePeriod: L2GracePeriod
+                });
             }
             // Base Sepolia
             else if (block.chainid == 84_532) {
                 source = AggregatorV3Interface(address(0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(source, 3600 seconds);
+                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             }
             // Arbitrum
             else if (block.chainid == 42_161) {
                 source = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}(
-                    source,
-                    3600 seconds,
-                    AggregatorV2V3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D),
-                    L2GracePeriod
-                );
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                    feed: source,
+                    threshold: 3600 seconds,
+                    sequencerFeed: AggregatorV2V3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D),
+                    gracePeriod: L2GracePeriod
+                });
             }
             // Arbitrum Sepolia
             else if (block.chainid == 421_614) {
                 source = AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}(source, 3600 seconds);
+                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             } else {
                 revert("Unsupported chain");
             }
@@ -169,25 +171,25 @@ contract DeployPeriphery is Script, Sphinx {
         _deployUSDCFeed(L2GracePeriod);
 
         // Deploy the JBDeadlines
-        if (!_isDeployed(DEADLINES_SALT, type(JBDeadline3Hours).creationCode, "")) {
+        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline3Hours).creationCode, arguments: ""})) {
             new JBDeadline3Hours{salt: DEADLINES_SALT}();
         }
 
-        if (!_isDeployed(DEADLINES_SALT, type(JBDeadline1Day).creationCode, "")) {
+        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline1Day).creationCode, arguments: ""})) {
             new JBDeadline1Day{salt: DEADLINES_SALT}();
         }
 
-        if (!_isDeployed(DEADLINES_SALT, type(JBDeadline3Days).creationCode, "")) {
+        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline3Days).creationCode, arguments: ""})) {
             new JBDeadline3Days{salt: DEADLINES_SALT}();
         }
 
-        if (!_isDeployed(DEADLINES_SALT, type(JBDeadline7Days).creationCode, "")) {
+        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline7Days).creationCode, arguments: ""})) {
             new JBDeadline7Days{salt: DEADLINES_SALT}();
         }
 
         core.directory
-            .setIsAllowedToSetFirstController(
-                address(
+            .setIsAllowedToSetFirstController({
+                addr: address(
                     new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
                         directory: core.directory,
                         fundAccessLimits: core.fundAccess,
@@ -201,8 +203,8 @@ contract DeployPeriphery is Script, Sphinx {
                         trustedForwarder: TRUSTED_FORWARDER
                     })
                 ),
-                true
-            );
+                flag: true
+            });
     }
 
     function _deployUSDCFeed(uint256 L2GracePeriod) internal {
@@ -211,14 +213,16 @@ contract DeployPeriphery is Script, Sphinx {
 
         if (block.chainid == 1) {
             usdc = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-            usdcFeed = new JBChainlinkV3PriceFeed(
-                AggregatorV3Interface(address(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6)), 86_400 seconds
-            );
+            usdcFeed = new JBChainlinkV3PriceFeed({
+                feed: AggregatorV3Interface(address(0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6)),
+                threshold: 86_400 seconds
+            });
         } else if (block.chainid == 11_155_111) {
             usdc = address(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238);
-            usdcFeed = new JBChainlinkV3PriceFeed(
-                AggregatorV3Interface(address(0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E)), 86_400 seconds
-            );
+            usdcFeed = new JBChainlinkV3PriceFeed({
+                feed: AggregatorV3Interface(address(0xA2F78ab2355fe2f984D808B5CeE7FD0A93D5270E)),
+                threshold: 86_400 seconds
+            });
         } else if (block.chainid == 10) {
             usdc = address(0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85);
             usdcFeed = new JBChainlinkV3SequencerPriceFeed({
@@ -229,9 +233,10 @@ contract DeployPeriphery is Script, Sphinx {
             });
         } else if (block.chainid == 11_155_420) {
             usdc = address(0x5fd84259d66Cd46123540766Be93DFE6D43130D7);
-            usdcFeed = new JBChainlinkV3PriceFeed(
-                AggregatorV3Interface(address(0x6e44e50E3cc14DD16e01C590DC1d7020cb36eD4C)), 86_400 seconds
-            );
+            usdcFeed = new JBChainlinkV3PriceFeed({
+                feed: AggregatorV3Interface(address(0x6e44e50E3cc14DD16e01C590DC1d7020cb36eD4C)),
+                threshold: 86_400 seconds
+            });
         } else if (block.chainid == 8453) {
             usdc = address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
             usdcFeed = new JBChainlinkV3SequencerPriceFeed({
@@ -242,9 +247,10 @@ contract DeployPeriphery is Script, Sphinx {
             });
         } else if (block.chainid == 84_532) {
             usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
-            usdcFeed = new JBChainlinkV3PriceFeed(
-                AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)), 86_400 seconds
-            );
+            usdcFeed = new JBChainlinkV3PriceFeed({
+                feed: AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)),
+                threshold: 86_400 seconds
+            });
         } else if (block.chainid == 42_161) {
             usdc = address(0xaf88d065e77c8cC2239327C5EDb3A432268e5831);
             usdcFeed = new JBChainlinkV3SequencerPriceFeed({
@@ -255,9 +261,10 @@ contract DeployPeriphery is Script, Sphinx {
             });
         } else if (block.chainid == 421_614) {
             usdc = address(0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d);
-            usdcFeed = new JBChainlinkV3PriceFeed(
-                AggregatorV3Interface(address(0x0153002d20B96532C639313c2d54c3dA09109309)), 86_400 seconds
-            );
+            usdcFeed = new JBChainlinkV3PriceFeed({
+                feed: AggregatorV3Interface(address(0x0153002d20B96532C639313c2d54c3dA09109309)),
+                threshold: 86_400 seconds
+            });
         } else {
             revert("Unsupported chain for USDC feed");
         }

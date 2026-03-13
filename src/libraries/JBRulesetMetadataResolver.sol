@@ -135,26 +135,26 @@ library JBRulesetMetadataResolver {
     /// @param ruleset The funding cycle having its metadata expanded.
     /// @return rulesetMetadata The ruleset's metadata object.
     function expandMetadata(JBRuleset memory ruleset) internal pure returns (JBRulesetMetadata memory) {
-        return JBRulesetMetadata(
-            reservedPercent(ruleset),
-            cashOutTaxRate(ruleset),
-            baseCurrency(ruleset),
-            pausePay(ruleset),
-            pauseCreditTransfers(ruleset),
-            allowOwnerMinting(ruleset),
-            allowSetCustomToken(ruleset),
-            allowTerminalMigration(ruleset),
-            allowSetTerminals(ruleset),
-            allowSetController(ruleset),
-            allowAddAccountingContext(ruleset),
-            allowAddPriceFeed(ruleset),
-            ownerMustSendPayouts(ruleset),
-            holdFees(ruleset),
-            useTotalSurplusForCashOuts(ruleset),
-            useDataHookForPay(ruleset),
-            useDataHookForCashOut(ruleset),
-            dataHook(ruleset),
-            metadata(ruleset)
-        );
+        return JBRulesetMetadata({
+            reservedPercent: reservedPercent(ruleset),
+            cashOutTaxRate: cashOutTaxRate(ruleset),
+            baseCurrency: baseCurrency(ruleset),
+            pausePay: pausePay(ruleset),
+            pauseCreditTransfers: pauseCreditTransfers(ruleset),
+            allowOwnerMinting: allowOwnerMinting(ruleset),
+            allowSetCustomToken: allowSetCustomToken(ruleset),
+            allowTerminalMigration: allowTerminalMigration(ruleset),
+            allowSetTerminals: allowSetTerminals(ruleset),
+            allowSetController: allowSetController(ruleset),
+            allowAddAccountingContext: allowAddAccountingContext(ruleset),
+            allowAddPriceFeed: allowAddPriceFeed(ruleset),
+            ownerMustSendPayouts: ownerMustSendPayouts(ruleset),
+            holdFees: holdFees(ruleset),
+            useTotalSurplusForCashOuts: useTotalSurplusForCashOuts(ruleset),
+            useDataHookForPay: useDataHookForPay(ruleset),
+            useDataHookForCashOut: useDataHookForCashOut(ruleset),
+            dataHook: dataHook(ruleset),
+            metadata: metadata(ruleset)
+        });
     }
 }
