@@ -36,4 +36,9 @@ interface IJBToken {
     /// @param account The address to mint tokens to.
     /// @param amount The amount of tokens to mint.
     function mint(address account, uint256 amount) external;
+
+    /// @notice Sets the token's name and symbol.
+    /// @param name The new name.
+    /// @param symbol The new symbol.
+    function setMetadata(string memory name, string memory symbol) external;
 }

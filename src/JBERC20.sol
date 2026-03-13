@@ -58,6 +58,15 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
         return _mint(account, amount);
     }
 
+    /// @notice Sets the token's name and symbol.
+    /// @dev Can only be called by this contract's owner.
+    /// @param name_ The new name.
+    /// @param symbol_ The new symbol.
+    function setMetadata(string memory name_, string memory symbol_) external override onlyOwner {
+        _name = name_;
+        _symbol = symbol_;
+    }
+
     //*********************************************************************//
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//

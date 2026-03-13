@@ -298,6 +298,38 @@ contract JBTokens is JBControlled, IJBTokens {
         emit SetToken({projectId: projectId, token: token, caller: msg.sender});
     }
 
+    /// @notice Sets the name and symbol of a project's token.
+    /// @dev Only a project's controller can set the token's name and symbol.
+    /// @param projectId The ID of the project whose token is being updated.
+    /// @param name The new name.
+    /// @param symbol The new symbol.
+    function setTokenMetadataFor(
+        uint256 projectId,
+        string calldata name,
+        string calldata symbol
+    )
+        external
+        override
+        onlyControllerOf(projectId)
+    {
+        // Get a reference to the project's current token.
+        IJBToken token = tokenOf[projectId];
+
+        // The project must have a token contract attached.
+        if (token == IJBToken(address(0))) revert JBTokens_TokenNotFound();
+
+        // There must be a name.
+        if (bytes(name).length == 0) revert JBTokens_EmptyName();
+
+        // There must be a symbol.
+        if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol();
+
+        emit SetTokenMetadata({projectId: projectId, name: name, symbol: symbol, caller: msg.sender});
+
+        // Set the name and symbol.
+        token.setMetadata({name: name, symbol: symbol});
+    }
+
     /// @notice Allows a holder to transfer credits to another account.
     /// @dev Only a project's controller can transfer credits for that project.
     /// @param holder The address to transfer credits from.
