@@ -31,6 +31,7 @@ import {JBSplitGroup} from "./JBSplitGroup.sol";
 /// its balance in each payment terminal while the ruleset is active. Amounts are fixed point numbers using the same
 /// number of decimals as the corresponding terminal. The `_payoutLimit` and `_surplusAllowance` parameters must fit in
 /// a `uint232`.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBRulesetConfig {
     uint48 mustStartAtOrAfter;
     uint32 duration;

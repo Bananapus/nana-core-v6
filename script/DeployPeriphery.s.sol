@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
+import {Sphinx} from "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
 import {Script} from "forge-std/Script.sol";
 import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
 
@@ -23,13 +23,17 @@ contract DeployPeriphery is Script, Sphinx {
     /// @notice tracks the deployment of the core contracts for the chain we are deploying to.
     CoreDeployment core;
 
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private TRUSTED_FORWARDER;
 
+    // forge-lint: disable-next-line(mixed-case-variable)
     bytes32 private DEADLINES_SALT = keccak256("_JBDeadlinesV6_");
+    // forge-lint: disable-next-line(mixed-case-variable)
     bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEEDV6");
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private CORE_DEPLOYMENT_NONCE = 6;
 
     /// @notice The address of the omnichain ruleset operator contract (e.g. JBOmnichainDeployer).
@@ -39,6 +43,7 @@ contract DeployPeriphery is Script, Sphinx {
     /// @dev This address should correspond to the deterministic CREATE2 deployment of the omnichain deployer contract
     /// from the nana-omnichain-deployers-v6 repository. Verify it matches the deployed address on all target chains
     /// before running this script.
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
@@ -71,6 +76,7 @@ contract DeployPeriphery is Script, Sphinx {
         matchingPriceFeed = new JBMatchingPriceFeed();
 
         // Same as the chainlink example grace period.
+        // forge-lint: disable-next-line(mixed-case-variable)
         uint256 L2GracePeriod = 3600 seconds;
 
         // NOTE: Feeds come from this url `https://data.chain.link/feeds/ethereum/mainnet/eth-usd`.
@@ -207,6 +213,7 @@ contract DeployPeriphery is Script, Sphinx {
             });
     }
 
+    // forge-lint: disable-next-line(mixed-case-function, mixed-case-variable)
     function _deployUSDCFeed(uint256 L2GracePeriod) internal {
         IJBPriceFeed usdcFeed;
         address usdc;

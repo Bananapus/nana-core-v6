@@ -16,6 +16,7 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member beneficiary The address the reclaimed amount will be sent to.
 /// @custom:member hookMetadata Extra data specified by the data hook, which is sent to the cash out hook.
 /// @custom:member cashOutMetadata Extra data specified by the account cashing out, which is sent to the cash out hook.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBAfterCashOutRecordedContext {
     address holder;
     uint256 projectId;

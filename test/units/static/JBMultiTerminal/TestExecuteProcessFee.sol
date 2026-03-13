@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
@@ -80,7 +88,7 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         // it will call internal _pay
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_native, 0, 0, _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _native, decimals: 0, currency: 0, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -143,7 +151,7 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         // it will call external pay with zero msgvalue
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_usdc, 0, 0, _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBTerminalStore} from "../../../src/interfaces/IJBTerminalStore.sol";
@@ -25,25 +25,41 @@ contract EconomicHandler is Test {
     address public projectOwner;
 
     // Ghost variables for conservation tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidInA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidInB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidInC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalCashedOutA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalCashedOutB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalCashedOutC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidOutA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidOutB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidOutC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalAddedToBalanceA;
 
     // Fee project tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_feeProjectBalance;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_feeProjectBalancePrev;
+    // forge-lint: disable-next-line(mixed-case-variable)
     bool public ghost_feeProjectBalanceDecreased;
 
     // Cross-project split tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     bool public ghost_splitCascadeOccurred;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_projectBBalanceBeforeSplit;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_projectBBalanceAfterSplit;
 
     // Track actors
@@ -52,18 +68,31 @@ contract EconomicHandler is Test {
     uint256 public constant NUM_ACTORS = 10;
 
     // Operation counters
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_payA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_payB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_payC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOutA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOutB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOutC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendPayoutsA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendPayoutsB;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendPayoutsC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_addToBalanceA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendReservedA;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendReservedC;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_advanceTime;
 
     // Per-actor tracking

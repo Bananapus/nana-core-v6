@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
+import {Sphinx} from "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol";
 import {Script} from "forge-std/Script.sol";
 
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
@@ -26,16 +26,20 @@ contract Deploy is Script, Sphinx {
 
     /// @notice The address that is allowed to forward calls to the terminal and controller on a users behalf.
     string private constant TRUSTED_FORWARDER_NAME = "Juicebox";
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private TRUSTED_FORWARDER;
 
     /// @notice The address that will manage the few privileged functions of the protocol.
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private MANAGER;
 
     /// @notice The address that will own the fee-project.
+    // forge-lint: disable-next-line(mixed-case-variable)
     address private FEE_PROJECT_OWNER;
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private CORE_DEPLOYMENT_NONCE = 6;
 
     function configureSphinx() public override {

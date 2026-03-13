@@ -1,7 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBPermissions} from "../src/JBPermissions.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBPermissionsData} from "../src/structs/JBPermissionsData.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 
 /// @notice Tests for permission system correctness: ROOT restrictions, wildcard, boundary IDs, escalation prevention.

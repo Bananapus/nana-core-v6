@@ -10,6 +10,7 @@ import {JBSplit} from "./JBSplit.sol";
 /// @custom:member groupId The group the split belongs to. By convention, this ID is `uint256(uint160(tokenAddress))`
 /// for payouts and `1` for reserved tokens.
 /// @custom:member split The split which specified the hook.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBSplitHookContext {
     address token;
     uint256 amount;

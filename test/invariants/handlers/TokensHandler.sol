@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBController} from "../../../src/interfaces/IJBController.sol";

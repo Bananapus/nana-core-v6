@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBSurplus} from "../../../../src/libraries/JBSurplus.sol";
 

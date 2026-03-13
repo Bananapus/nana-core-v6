@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBRulesetsSetup} from "./JBRulesetsSetup.sol";
 
 contract TestRulesetsOf_Local is JBRulesetsSetup {

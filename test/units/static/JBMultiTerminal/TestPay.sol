@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {MockERC20} from "../../../mock/MockERC20.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBController} from "../../../../src/interfaces/IJBController.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBPayHook} from "../../../../src/interfaces/IJBPayHook.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBAfterPayRecordedContext} from "../../../../src/structs/JBAfterPayRecordedContext.sol";
+import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestPay_Local is JBMultiTerminalSetup {
@@ -104,7 +121,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // it will revert UNDER_MIN_RETURNED_TOKENS
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_native, 18, uint32(_nativeCurrency), _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -145,7 +162,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // it will mint tokens and emit Pay
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_native, 18, uint32(_nativeCurrency), _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -233,7 +250,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // needed for next mock call returns
         JBTokenAmount memory tokenAmount =
         // forge-lint: disable-next-line(unsafe-typecast)
-        JBTokenAmount(address(_mockToken), 6, uint32(_mockTokenCurrency), _defaultAmount);
+        JBTokenAmount({token: address(_mockToken), decimals: 6, currency: uint32(_mockTokenCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
         hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
 
@@ -323,7 +340,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // it will send ETH to the hook and emit HookAfterRecordPay and Pay
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_native, 18, uint32(_nativeCurrency), _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
         hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
 
@@ -455,7 +472,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // it will not transfer
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount(_native, 18, uint32(_nativeCurrency), _defaultAmount);
+        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
 
         JBRuleset memory returnedRuleset = JBRuleset({

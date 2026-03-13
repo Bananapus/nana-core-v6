@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
+import {JBController} from "../../../../src/JBController.sol";
+import {IJBMigratable} from "../../../../src/interfaces/IJBMigratable.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBControllerSetup} from "./JBControllerSetup.sol";
 
 contract TestMigrateController_Local is JBControllerSetup {

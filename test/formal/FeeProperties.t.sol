@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBFees} from "../../src/libraries/JBFees.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";
 
@@ -17,6 +17,7 @@ contract FeeProperties is Test {
     // =========================================================================
     /// @notice feeAmountFrom(a+b, fee) vs feeAmountFrom(a, fee) + feeAmountFrom(b, fee)
     ///         differ by at most 1 wei due to mulDiv rounding.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_additivity(uint256 a, uint256 b, uint256 feePercent) public pure {
         vm.assume(a > 0 && b > 0);
         vm.assume(a <= type(uint128).max && b <= type(uint128).max);
@@ -53,6 +54,7 @@ contract FeeProperties is Test {
     /// @notice feeAmountResultingIn(netAmount, fee) >= feeAmountFrom(netAmount + feeAmountResultingIn(netAmount, fee),
     // fee) /         The reverse fee is always >= the forward fee on the gross amount, ensuring
     ///         the protocol never undercharges when returning held fees.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_returnConsistency(uint256 netAmount, uint256 feePercent) public pure {
         vm.assume(netAmount > 0 && netAmount <= type(uint128).max);
         vm.assume(feePercent > 0 && feePercent < MAX_FEE);
@@ -91,6 +93,7 @@ contract FeeProperties is Test {
     ///         The overshoot is bounded by MAX_FEE / (MAX_FEE - feePercent): the rounding
     ///         error in fee1 (at most 1 wei of net) gets amplified by the fee ratio when
     ///         computing the reverse fee, plus 1 for the reverse mulDiv rounding itself.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_roundTrip(uint256 amount, uint256 feePercent) public pure {
         vm.assume(amount > 0 && amount <= type(uint128).max);
         vm.assume(feePercent > 0 && feePercent < MAX_FEE);
@@ -133,6 +136,7 @@ contract FeeProperties is Test {
     // Property 4: Partial return monotonicity
     // =========================================================================
     /// @notice feeAmountResultingIn(a, fee) <= feeAmountResultingIn(b, fee) when a <= b.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_partialReturnMonotonicity(uint256 a, uint256 b, uint256 feePercent) public pure {
         vm.assume(a > 0 && b > 0);
         vm.assume(a <= type(uint128).max && b <= type(uint128).max);
@@ -163,6 +167,7 @@ contract FeeProperties is Test {
     ///         fee = feeAmountFrom(heldFeeAmount, feePercent) <= heldFeeAmount.
     ///         This guarantees leftover = heldFeeAmount - fee never underflows, and
     ///         leftover + fee == heldFeeAmount (exact decomposition).
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_subtractionSafety(uint256 heldFeeAmount, uint256 feePercent) public pure {
         vm.assume(heldFeeAmount > 0 && heldFeeAmount <= type(uint128).max);
         vm.assume(feePercent > 0 && feePercent < MAX_FEE);
@@ -195,6 +200,7 @@ contract FeeProperties is Test {
     /// @notice After N splits each paying fee, total fee error vs single-payment fee
     ///         is bounded by N wei. For N=10: sum(feeAmountFrom(amount/N, fee), N times)
     ///         vs feeAmountFrom(amount, fee) differ by at most N.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_multiSplitAccumulation(uint256 amount, uint256 feePercent) public pure {
         vm.assume(amount >= 10); // Must be divisible into 10 parts
         vm.assume(amount <= type(uint128).max);

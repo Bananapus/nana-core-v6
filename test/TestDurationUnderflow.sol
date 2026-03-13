@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBRulesets} from "../src/JBRulesets.sol";
+import {IJBDirectory} from "../src/interfaces/IJBDirectory.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 /// @notice Harness that exposes the internal `_simulateCycledRulesetBasedOn` for direct testing.
 contract JBRulesetsHarness is JBRulesets {
     constructor(IJBDirectory directory) JBRulesets(directory) {}
 
     /// @notice Public wrapper for the internal function under test.
+    // forge-lint: disable-next-line(mixed-case-function)
     function exposed_simulateCycledRulesetBasedOn(
         uint256 projectId,
         JBRuleset memory baseRuleset,

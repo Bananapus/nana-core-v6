@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBDirectoryAccessControl} from "../../../../src/interfaces/IJBDirectoryAccessControl.sol";
+import {IJBMigratable} from "../../../../src/interfaces/IJBMigratable.sol";
+import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBDirectorySetup} from "./JBDirectorySetup.sol";
 
 /// @notice A mock controller that asserts the directory still points to it during migrate().

@@ -1,8 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/StdInvariant.sol";
-import /* {*} from */ "../helpers/TestBaseWorkflow.sol";
+import {StdInvariant} from "forge-std/StdInvariant.sol";
+import {TestBaseWorkflow} from "../helpers/TestBaseWorkflow.sol";
+import {IJBRulesetApprovalHook} from "../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBConstants} from "../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBFundAccessLimitGroup} from "../../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 import {TerminalStoreHandler} from "./handlers/TerminalStoreHandler.sol";
 import {JBAccountingContext} from "../../src/structs/JBAccountingContext.sol";
 

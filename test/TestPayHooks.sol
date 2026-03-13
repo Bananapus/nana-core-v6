@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBPayHook} from "../src/interfaces/IJBPayHook.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesetDataHook} from "../src/interfaces/IJBRulesetDataHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBAfterPayRecordedContext} from "../src/structs/JBAfterPayRecordedContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBPayHookSpecification} from "../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {JBTokenAmount} from "../src/structs/JBTokenAmount.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
 
 contract TestPayHooks_Local is TestBaseWorkflow {
     uint8 private constant _WEIGHT_DECIMALS = 18;
@@ -118,25 +135,29 @@ contract TestPayHooks_Local is TestBaseWorkflow {
             bytes memory _hookMetadata = bytes("Some data hook metadata");
 
             // Package up the specification struct.
-            _specifications[i] = JBPayHookSpecification(IJBPayHook(_hookAddress), _payHookAmounts[i], _hookMetadata);
+            _specifications[i] = JBPayHookSpecification({
+                hook: IJBPayHook(_hookAddress),
+                amount: _payHookAmounts[i],
+                metadata: _hookMetadata
+            });
 
             // Keep a reference to the data that'll be received by the hook.
             JBAfterPayRecordedContext memory _postRecordPayContext = JBAfterPayRecordedContext({
                 payer: _payer,
                 projectId: _projectId,
                 rulesetId: _ruleset.id,
-                amount: JBTokenAmount(
-                    JBConstants.NATIVE_TOKEN,
-                    _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                    _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                    _nativePayAmount
-                ),
-                forwardedAmount: JBTokenAmount(
-                    JBConstants.NATIVE_TOKEN,
-                    _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
-                    _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
-                    _payHookAmounts[i]
-                ),
+                amount: JBTokenAmount({
+                    token: JBConstants.NATIVE_TOKEN,
+                    decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                    currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                    value: _nativePayAmount
+                }),
+                forwardedAmount: JBTokenAmount({
+                    token: JBConstants.NATIVE_TOKEN,
+                    decimals: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).decimals,
+                    currency: _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN).currency,
+                    value: _payHookAmounts[i]
+                }),
                 weight: _WEIGHT,
                 newlyIssuedTokenCount: mulDiv(_nativePayAmount, _DATA_HOOK_WEIGHT, 10 ** _NATIVE_TOKEN_DECIMALS),
                 beneficiary: _beneficiary,

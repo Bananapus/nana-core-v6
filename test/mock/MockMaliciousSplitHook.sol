@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../helpers/TestBaseWorkflow.sol";
+import {IJBSplitHook} from "../../src/interfaces/IJBSplitHook.sol";
+import {JBSplitHookContext} from "../../src/structs/JBSplitHookContext.sol";
 
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 

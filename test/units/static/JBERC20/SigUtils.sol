@@ -2,8 +2,10 @@
 pragma solidity 0.8.26;
 
 contract SigUtils {
+    // forge-lint: disable-next-line(mixed-case-variable)
     bytes32 internal DOMAIN_SEPARATOR;
 
+    // forge-lint: disable-next-line(mixed-case-variable)
     constructor(bytes32 _DOMAIN_SEPARATOR) {
         DOMAIN_SEPARATOR = _DOMAIN_SEPARATOR;
     }

@@ -1,7 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBController} from "../src/JBController.sol";
+import {JBERC20} from "../src/JBERC20.sol";
+import {JBTokens} from "../src/JBTokens.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {IJBToken} from "../src/interfaces/IJBToken.sol";
+import {IJBTokens} from "../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
 
 // Launch project, issue token or set the token, mint token, burn token.
 contract TestTokenFlow_Local is TestBaseWorkflow {

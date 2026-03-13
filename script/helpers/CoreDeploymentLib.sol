@@ -38,6 +38,7 @@ struct CoreDeployment {
 library CoreDeploymentLib {
     // Cheat code address, 0x7109709ECfa91a80626fF3989D68f67F5b1DD12D.
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
+    // forge-lint: disable-next-line(screaming-snake-case-const)
     Vm internal constant vm = Vm(VM_ADDRESS);
     string constant PROJECT_NAME = "nana-core-v5";
 
@@ -160,6 +161,7 @@ library CoreDeploymentLib {
         returns (address)
     {
         string memory deploymentJson =
+            // forge-lint: disable-next-line(unsafe-cheatcode)
             vm.readFile(string.concat(path, projectName, "/", networkName, "/", contractName, ".json"));
         return stdJson.readAddress({json: deploymentJson, key: ".address"});
     }

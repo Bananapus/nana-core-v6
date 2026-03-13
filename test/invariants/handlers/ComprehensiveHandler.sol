@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBMultiTerminal} from "../../../src/interfaces/IJBMultiTerminal.sol";
 import {IJBTerminalStore} from "../../../src/interfaces/IJBTerminalStore.sol";
@@ -20,12 +20,19 @@ contract ComprehensiveHandler is Test {
     address public projectOwner;
 
     // Ghost variables for fund tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidIn;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalCashedOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalPaidOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalAddedToBalance;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_totalAllowanceUsed;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_feeProjectBalanceLast;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_feeProjectBalanceDecreased; // should always be 0
 
     // Track actors
@@ -34,15 +41,25 @@ contract ComprehensiveHandler is Test {
     uint256 public constant NUM_ACTORS = 5;
 
     // Operation counters for debugging
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_pay;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendPayouts;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_addToBalance;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendReservedTokens;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_useAllowance;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_burnTokens;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_claimCredits;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_advanceTime;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_processHeldFees;
 
     constructor(

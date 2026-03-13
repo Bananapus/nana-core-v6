@@ -1,7 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTerminalStore} from "../../../../src/JBTerminalStore.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
 import {JBTerminalStoreSetup} from "./JBTerminalStoreSetup.sol";
 
 contract TestRecordTerminalMigration_Local is JBTerminalStoreSetup {

@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
+import {JBDirectory} from "../../../../src/JBDirectory.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBDirectoryAccessControl} from "../../../../src/interfaces/IJBDirectoryAccessControl.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBDirectorySetup} from "./JBDirectorySetup.sol";
 
 contract TestSetTerminalsOf_Local is JBDirectorySetup {

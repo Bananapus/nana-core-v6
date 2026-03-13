@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBRulesets} from "../src/interfaces/IJBRulesets.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 
 // A ruleset's weight can be cached to make larger intervals calculable while staying within the gas limit.
 contract TestRulesetWeightCaching_Local is TestBaseWorkflow {

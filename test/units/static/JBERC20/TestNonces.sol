@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {JBERC20Setup} from "./JBERC20Setup.sol";
 import {SigUtils} from "./SigUtils.sol";
 
@@ -9,7 +9,9 @@ contract TestNonces_Local is JBERC20Setup {
     IERC20Permit _token;
     SigUtils sigUtils;
 
+    // forge-lint: disable-next-line(screaming-snake-case-immutable)
     bytes32 private immutable _hashedName = keccak256(bytes("JBToken"));
+    // forge-lint: disable-next-line(screaming-snake-case-immutable)
     bytes32 private immutable _hashedVersion = keccak256(bytes("1"));
 
     bytes32 _domain;

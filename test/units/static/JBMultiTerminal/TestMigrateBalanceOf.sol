@@ -1,7 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {

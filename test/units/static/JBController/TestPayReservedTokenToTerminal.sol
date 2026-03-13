@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBController} from "../../../../src/JBController.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBControllerSetup} from "./JBControllerSetup.sol";
 
 contract TestExecutePayReservedTokenToTerminal_Local is JBControllerSetup {

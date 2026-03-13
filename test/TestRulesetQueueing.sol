@@ -1,7 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBController} from "../src/JBController.sol";
+import {JBDeadline} from "../src/JBDeadline.sol";
+import {JBRulesets} from "../src/JBRulesets.sol";
+import {JBApprovalStatus} from "../src/enums/JBApprovalStatus.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 // A project's rulesets can be queued, and re-queued as long as the current ruleset approval hook approves.
 contract TestRulesetQueuing_Local is TestBaseWorkflow {
@@ -13,9 +28,12 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
     IJBTerminal private _terminal;
     uint112 private _weight;
 
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private _DEADLINE_DURATION = 3 days;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private _RULESET_DURATION_DAYS = 6;
     // forge-lint: disable-next-line(unsafe-typecast)
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint32 private _RULESET_DURATION = uint32(_RULESET_DURATION_DAYS * 1 days);
 
     function setUp() public override {

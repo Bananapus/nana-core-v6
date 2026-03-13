@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {IJBRulesets} from "../../../src/interfaces/IJBRulesets.sol";
 import {IJBController} from "../../../src/interfaces/IJBController.sol";
@@ -25,9 +25,13 @@ contract RulesetsHandler is Test {
     address public projectOwner;
 
     // Ghost: track the last observed cycle number and weight for monotonicity checks
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint48 public ghost_lastCycleNumber;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint112 public ghost_lastWeight;
+    // forge-lint: disable-next-line(mixed-case-variable)
     bool public ghost_hasLaunched;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_queueCount;
 
     constructor(IJBRulesets _rulesets, IJBController _controller, uint256 _projectId, address _projectOwner) {

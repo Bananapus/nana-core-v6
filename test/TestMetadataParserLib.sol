@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {Test} from "forge-std/Test.sol";
+import {MetadataResolverHelper} from "./helpers/MetadataResolverHelper.sol";
+import {JBMetadataResolver} from "../src/libraries/JBMetadataResolver.sol";
 
 /**
  * @notice Test the `JBDelegateMetadata` library and helper contract.

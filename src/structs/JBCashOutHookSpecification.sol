@@ -8,6 +8,7 @@ import {IJBCashOutHook} from "../interfaces/IJBCashOutHook.sol";
 /// @custom:member hook The cash out hook to use when fulfilling this specification.
 /// @custom:member amount The amount to send to the hook.
 /// @custom:member metadata Metadata to pass to the hook.
+// forge-lint: disable-next-line(pascal-case-struct)
 struct JBCashOutHookSpecification {
     IJBCashOutHook hook;
     uint256 amount;

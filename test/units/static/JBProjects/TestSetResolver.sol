@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
+import {IJBTokenUriResolver} from "../../../../src/interfaces/IJBTokenUriResolver.sol";
 import {JBProjectsSetup} from "./JBProjectsSetup.sol";
 
 contract TestSetTokenURIResolver_Local is JBProjectsSetup {

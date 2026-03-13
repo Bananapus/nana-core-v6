@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBCashOuts} from "../../src/libraries/JBCashOuts.sol";
 import {JBFees} from "../../src/libraries/JBFees.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";
@@ -21,6 +21,7 @@ contract BondingCurveProperties is Test {
     // Property 1: Boundedness — cashOutFrom never exceeds surplus
     // =========================================================================
     /// @notice cashOutFrom(S, c, T, r) <= S for all valid inputs.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_boundedness(
         uint256 surplus,
         uint256 cashOutCount,
@@ -62,6 +63,7 @@ contract BondingCurveProperties is Test {
     // Property 2: Monotonicity — more tokens → more reclaim
     // =========================================================================
     /// @notice cashOutFrom(S, c1, T, r) <= cashOutFrom(S, c2, T, r) when c1 <= c2.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_monotonicity(
         uint256 surplus,
         uint256 c1,
@@ -112,6 +114,7 @@ contract BondingCurveProperties is Test {
     // Property 3: Full redemption — when c >= T, result is S (full surplus)
     // =========================================================================
     /// @notice When cashOutCount >= totalSupply, the full surplus is returned.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_fullRedemption(uint256 surplus, uint256 totalSupply, uint256 cashOutTaxRate) public pure {
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
@@ -136,6 +139,7 @@ contract BondingCurveProperties is Test {
     // Property 4: Max tax → zero reclaim
     // =========================================================================
     /// @notice When cashOutTaxRate == MAX_CASH_OUT_TAX_RATE, result is 0.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_maxTaxIsZero(uint256 surplus, uint256 cashOutCount, uint256 totalSupply) public pure {
         vm.assume(surplus > 0 && surplus <= type(uint128).max);
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
@@ -160,6 +164,7 @@ contract BondingCurveProperties is Test {
     /// @notice Splitting a cash out into two parts should never yield more than a single cash out.
     ///         cashOutFrom(S, a, T, r) + cashOutFrom(S', b, T', r) <= cashOutFrom(S, a+b, T, r)
     ///         where S' = S - cashOutFrom(S, a, T, r) and T' = T - a
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_noArbitrage(
         uint256 surplus,
         uint256 a,
@@ -244,6 +249,7 @@ contract BondingCurveProperties is Test {
     /// @notice The forward and reverse fee functions should be consistent:
     ///         amount - feeAmountFrom(amount, fee) + feeAmountResultingIn(net, fee) >= feeAmountFrom(amount, fee)
     ///         where net = amount - feeAmountFrom(amount, fee)
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_fee_roundTrip(uint256 amount, uint256 feePercent) public pure {
         vm.assume(amount > 0 && amount <= type(uint128).max);
         vm.assume(feePercent > 0 && feePercent < MAX_FEE);
@@ -275,6 +281,7 @@ contract BondingCurveProperties is Test {
     // Property 7: Metadata packing round-trip
     // =========================================================================
     /// @notice packRulesetMetadata(m) → expandMetadata should return the original metadata.
+    // forge-lint: disable-next-line(mixed-case-function)
     function check_metadataPacking_roundTrip(
         uint16 reservedPercent,
         uint16 cashOutTaxRate,

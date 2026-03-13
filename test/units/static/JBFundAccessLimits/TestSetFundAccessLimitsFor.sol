@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBFundAccessLimits} from "../../../../src/JBFundAccessLimits.sol";
+import {JBControlled} from "../../../../src/abstract/JBControlled.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFundAccessLimits} from "../../../../src/interfaces/IJBFundAccessLimits.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBCurrencyAmount} from "../../../../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../../../../src/structs/JBFundAccessLimitGroup.sol";
 import {JBFundAccessSetup} from "./JBFundAccessSetup.sol";
 
 contract TestSetFundAccessLimitsFor_Local is JBFundAccessSetup {

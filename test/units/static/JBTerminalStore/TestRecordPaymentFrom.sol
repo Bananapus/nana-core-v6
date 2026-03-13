@@ -1,7 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBTerminalStore} from "../../../../src/JBTerminalStore.sol";
+import {IJBPayHook} from "../../../../src/interfaces/IJBPayHook.sol";
+import {IJBPrices} from "../../../../src/interfaces/IJBPrices.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesetDataHook} from "../../../../src/interfaces/IJBRulesetDataHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBBeforePayRecordedContext} from "../../../../src/structs/JBBeforePayRecordedContext.sol";
+import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
+import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
 import {JBTerminalStoreSetup} from "./JBTerminalStoreSetup.sol";
 
 contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {

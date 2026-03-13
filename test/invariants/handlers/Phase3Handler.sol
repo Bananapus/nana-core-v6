@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {JBConstants} from "../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../src/libraries/JBFees.sol";
 import {JBFee} from "../../../src/structs/JBFee.sol";
@@ -39,44 +39,73 @@ contract Phase3Handler is Test {
     // =========================================================================
 
     // Per-project total inflows/outflows
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalPaidIn;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalCashedOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalPaidOut;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalAllowanceUsed;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalAddedToBalance;
 
     // Fee tracking (key innovation for strict invariants)
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalFeesDeducted;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalFeesSentToProject1;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalHeldFeeAmounts;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalReturnedFees;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalProcessedFees;
 
     // Per-actor tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(address => mapping(uint256 => uint256)) public ghost_actorContributed;
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(address => mapping(uint256 => uint256)) public ghost_actorExtracted;
 
     // Token tracking
+    // forge-lint: disable-next-line(mixed-case-variable)
     mapping(uint256 => uint256) public ghost_totalReservesSent;
 
     // Global conservation
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_globalInflows;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public ghost_globalOutflows;
 
     // Operation counters
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_pay2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_pay3;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOut2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_cashOut3;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendPayouts2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_useAllowance2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_sendReserved2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_processHeldFees2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_addToBalanceReturn2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_addToBalanceNoReturn2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_burnTokens2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_burnTokens3;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_claimCredits2;
+    // forge-lint: disable-next-line(mixed-case-variable)
     uint256 public callCount_advanceTime;
 
     constructor(

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBMetadataResolver} from "../../../../src/libraries/JBMetadataResolver.sol";
 
@@ -24,6 +23,7 @@ contract TestGetDataFor_Local is JBTest {
         assertEq("", _data);
     }
 
+    // forge-lint: disable-next-line(mixed-case-function)
     modifier whenMetadataLengthGTMIN_METADATA_LENGTH() {
         _;
     }

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBFeelessSetup} from "./JBFeelessSetup.sol";
 
 contract TestSupportsInterface_Local is JBFeelessSetup {

@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import "src/JBSplits.sol";
-import "forge-std/Test.sol";
+import {JBSplits} from "src/JBSplits.sol";
+import {IJBDirectory} from "src/interfaces/IJBDirectory.sol";
+import {JBConstants} from "src/libraries/JBConstants.sol";
+import {JBSplit} from "src/structs/JBSplit.sol";
+import {Test} from "forge-std/Test.sol";
 
 contract TestSplitsPacking_Local is JBSplits, Test {
     constructor() JBSplits(IJBDirectory(address(0))) {}

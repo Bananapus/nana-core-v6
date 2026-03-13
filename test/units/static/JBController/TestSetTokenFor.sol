@@ -1,7 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBController} from "../../../../src/JBController.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
+import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBControllerSetup} from "./JBControllerSetup.sol";
 
 contract TestSetTokenFor_Local is JBControllerSetup {

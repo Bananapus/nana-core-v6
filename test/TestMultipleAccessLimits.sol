@@ -1,12 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBFundAccessLimits} from "../src/JBFundAccessLimits.sol";
+import {JBTerminalStore} from "../src/JBTerminalStore.sol";
+import {JBTokens} from "../src/JBTokens.sol";
+import {IJBController} from "../src/interfaces/IJBController.sol";
+import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
+import {IJBPriceFeed} from "../src/interfaces/IJBPriceFeed.sol";
+import {IJBPrices} from "../src/interfaces/IJBPrices.sol";
+import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBCurrencyIds} from "../src/libraries/JBCurrencyIds.sol";
+import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
+import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
+import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
+import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
+import {mul as UD60x18mul, unwrap as UD60x18unwrap, wrap as UD60x18wrap} from "@prb/math/src/UD60x18.sol";
 import {MockPriceFeed} from "./mock/MockPriceFeed.sol";
 
 contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
     uint32 private _nativeCurrency;
     IJBController private _controller;
+    // forge-lint: disable-next-line(mixed-case-variable)
     IJBMultiTerminal private __terminal;
     IJBPrices private _prices;
     JBTokens private _tokens;
@@ -225,6 +245,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         });
     }
 
+    // forge-lint: disable-next-line(mixed-case-variable)
     function testFuzzedInvalidAllowanceCurrencyOrdering(uint24 ALLOWCURRENCY) external {
         JBFundAccessLimitGroup[] memory _fundAccessLimitGroup = new JBFundAccessLimitGroup[](1);
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
@@ -336,6 +357,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         uint224 _payoutLimit,
         uint224 _surplusAllowance,
         uint32 _payoutCurrency,
+        // forge-lint: disable-next-line(mixed-case-variable)
         uint32 ALLOWCURRENCY
     )
         external

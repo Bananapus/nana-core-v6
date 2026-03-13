@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.6;
 
-import /* {*} from */ "./helpers/TestBaseWorkflow.sol";
+import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
+import {JBPermissions} from "../src/JBPermissions.sol";
+import {JBPermissionsData} from "../src/structs/JBPermissionsData.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 
 /// @notice Defense-in-depth validation of JBPermissions ROOT escalation prevention.
 /// Verifies that ROOT operators cannot forward ROOT, cannot set wildcard permissions,

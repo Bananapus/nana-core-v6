@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
+import {JBSplitGroup} from "../../../../src/structs/JBSplitGroup.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBControllerSetup} from "./JBControllerSetup.sol";
 
 contract TestSetSplitGroupsOf_Local is JBControllerSetup {

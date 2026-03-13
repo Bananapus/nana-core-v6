@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 
 contract TestSetCashOutTaxRateTo_Local is JBTest {

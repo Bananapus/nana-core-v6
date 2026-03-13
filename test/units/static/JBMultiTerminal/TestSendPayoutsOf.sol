@@ -1,7 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IJBPayoutTerminal} from "../../../../src/interfaces/IJBPayoutTerminal.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
+import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBSplit} from "../../../../src/structs/JBSplit.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {

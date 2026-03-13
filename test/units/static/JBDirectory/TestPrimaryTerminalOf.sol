@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {IJBDirectoryAccessControl} from "../../../../src/interfaces/IJBDirectoryAccessControl.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBDirectorySetup} from "./JBDirectorySetup.sol";
 
 contract TestPrimaryTerminalOf_Local is JBDirectorySetup {

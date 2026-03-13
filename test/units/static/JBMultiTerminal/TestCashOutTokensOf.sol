@@ -1,7 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import /* {*} from */ "../../../helpers/TestBaseWorkflow.sol";
+import {MockERC20} from "../../../mock/MockERC20.sol";
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
+import {IJBCashOutHook} from "../../../../src/interfaces/IJBCashOutHook.sol";
+import {IJBCashOutTerminal} from "../../../../src/interfaces/IJBCashOutTerminal.sol";
+import {IJBController} from "../../../../src/interfaces/IJBController.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBAfterCashOutRecordedContext} from "../../../../src/structs/JBAfterCashOutRecordedContext.sol";
+import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
@@ -329,8 +348,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             abi.encode(true)
         );
 
-        JBTokenAmount memory reclaimedAmount = JBTokenAmount(address(_mockToken2), 0, 0, reclaimAmount);
-        JBTokenAmount memory forwardedAmount = JBTokenAmount(address(_mockToken2), 0, 0, _defaultAmount);
+        JBTokenAmount memory reclaimedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
+        JBTokenAmount memory forwardedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: _defaultAmount});
 
         // needed for hook call
         JBAfterCashOutRecordedContext memory context = JBAfterCashOutRecordedContext({
@@ -433,9 +452,9 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 hookTax = JBFees.feeAmountFrom(_defaultAmount, 25);
         uint256 passedAfterTax = _defaultAmount - hookTax;
 
-        JBTokenAmount memory reclaimedAmount = JBTokenAmount(address(_mockToken2), 0, 0, reclaimAmount);
-        JBTokenAmount memory forwardedAmount = JBTokenAmount(address(_mockToken2), 0, 0, passedAfterTax);
-        JBTokenAmount memory feeRepayAmount = JBTokenAmount(address(_mockToken2), 0, 0, hookTax);
+        JBTokenAmount memory reclaimedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
+        JBTokenAmount memory forwardedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: passedAfterTax});
+        JBTokenAmount memory feeRepayAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: hookTax});
 
         // needed for hook call
         JBAfterCashOutRecordedContext memory context = JBAfterCashOutRecordedContext({
