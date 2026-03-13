@@ -348,8 +348,10 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             abi.encode(true)
         );
 
-        JBTokenAmount memory reclaimedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
-        JBTokenAmount memory forwardedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: _defaultAmount});
+        JBTokenAmount memory reclaimedAmount =
+            JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
+        JBTokenAmount memory forwardedAmount =
+            JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: _defaultAmount});
 
         // needed for hook call
         JBAfterCashOutRecordedContext memory context = JBAfterCashOutRecordedContext({
@@ -452,9 +454,12 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 hookTax = JBFees.feeAmountFrom(_defaultAmount, 25);
         uint256 passedAfterTax = _defaultAmount - hookTax;
 
-        JBTokenAmount memory reclaimedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
-        JBTokenAmount memory forwardedAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: passedAfterTax});
-        JBTokenAmount memory feeRepayAmount = JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: hookTax});
+        JBTokenAmount memory reclaimedAmount =
+            JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: reclaimAmount});
+        JBTokenAmount memory forwardedAmount =
+            JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: passedAfterTax});
+        JBTokenAmount memory feeRepayAmount =
+            JBTokenAmount({token: address(_mockToken2), decimals: 0, currency: 0, value: hookTax});
 
         // needed for hook call
         JBAfterCashOutRecordedContext memory context = JBAfterCashOutRecordedContext({

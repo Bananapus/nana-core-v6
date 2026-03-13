@@ -359,7 +359,8 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         });
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount = JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
+        JBTokenAmount memory tokenAmount =
+            JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,

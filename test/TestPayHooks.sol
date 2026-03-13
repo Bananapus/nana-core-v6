@@ -136,9 +136,7 @@ contract TestPayHooks_Local is TestBaseWorkflow {
 
             // Package up the specification struct.
             _specifications[i] = JBPayHookSpecification({
-                hook: IJBPayHook(_hookAddress),
-                amount: _payHookAmounts[i],
-                metadata: _hookMetadata
+                hook: IJBPayHook(_hookAddress), amount: _payHookAmounts[i], metadata: _hookMetadata
             });
 
             // Keep a reference to the data that'll be received by the hook.

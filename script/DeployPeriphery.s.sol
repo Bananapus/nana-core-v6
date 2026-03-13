@@ -282,7 +282,10 @@ contract DeployPeriphery is Script, Sphinx {
         core.prices
             .addPriceFeedFor({
                 // forge-lint: disable-next-line(unsafe-typecast)
-                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: uint32(uint160(usdc)), feed: usdcFeed
+                projectId: 0,
+                pricingCurrency: JBCurrencyIds.USD,
+                unitCurrency: uint32(uint160(usdc)),
+                feed: usdcFeed
             });
     }
 
