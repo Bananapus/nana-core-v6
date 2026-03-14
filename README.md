@@ -47,7 +47,7 @@ Each ruleset can define a `reservedPercent` (0-10,000 basis points). When tokens
 
 `JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions. See [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v6/blob/main/src/JBPermissionIds.sol) for the full list.
 
-- Permission ID `255` is `ROOT` and grants all permissions for the scoped project.
+- Permission ID `1` is `ROOT` and grants all permissions for the scoped project.
 - Project ID `0` is a wildcard, granting permissions across all projects (cannot be combined with `ROOT` for safety).
 - ROOT operators can set non-ROOT permissions for other operators, but cannot grant ROOT or set wildcard-project permissions.
 
@@ -95,7 +95,7 @@ All contracts use Solidity `0.8.26`.
 | Contract | Description |
 |----------|-------------|
 | `JBProjects` | ERC-721 registry of projects. Minting an NFT creates a project. Optionally mints project #1 to a fee beneficiary owner. |
-| `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. Supports ROOT (255) for all-permissions and wildcard project ID (0). |
+| `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. Supports ROOT (1) for all-permissions and wildcard project ID (0). |
 | `JBDirectory` | Maps each project to its controller and terminals. Entry point for looking up where to interact with a project. Manages an allowlist of addresses permitted to set a project's first controller. |
 | `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, updating token metadata, sending reserved tokens, setting project URIs, adding price feeds, and transferring credits. |
 | `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, manages surplus allowances, and handles fees. Integrates with Permit2 for ERC-20 approvals. |
