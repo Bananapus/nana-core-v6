@@ -99,8 +99,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Function | What it does |
 |----------|--------------|
 | `setPermissionsFor(address account, JBPermissionsData permissionsData)` | Grants or revokes operator permissions. ROOT operators can set non-ROOT permissions for others. |
-| `hasPermission(address operator, address account, uint256 projectId, uint256 permissionId)` | Checks if an operator has a specific permission. |
-| `hasPermissions(address operator, address account, uint256 projectId, uint256[] permissionIds)` | Checks if an operator has all specified permissions. |
+| `hasPermission(address operator, address account, uint256 projectId, uint256 permissionId, bool includeRoot, bool includeWildcardProjectId)` | Checks if an operator has a specific permission. |
+| `hasPermissions(address operator, address account, uint256 projectId, uint256[] permissionIds, bool includeRoot, bool includeWildcardProjectId)` | Checks if an operator has all specified permissions. |
 
 ### JBDirectory
 
