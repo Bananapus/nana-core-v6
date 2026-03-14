@@ -210,8 +210,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `weight = 0` | `JBRuleset` / `JBRulesetConfig` | No token issuance for payments. |
 | `weight = 1` | `JBRuleset` / `JBRulesetConfig` | Inherit decayed weight from previous ruleset (sentinel). |
 | `duration = 0` | `JBRuleset` / `JBRulesetConfig` | Ruleset never expires; must be explicitly replaced by a new queued ruleset (takes effect immediately). |
-| `projectId = 0` | `JBPermissionsData` | Wildcard: permission applies to ALL projects. Cannot be combined with ROOT (255). |
-| `permissionId = 255` | `JBPermissions` | ROOT: grants all permissions for the scoped project. |
+| `projectId = 0` | `JBPermissionsData` | Wildcard: permission applies to ALL projects. Cannot be combined with ROOT (1). |
+| `permissionId = 1` | `JBPermissions` | ROOT: grants all permissions for the scoped project. |
 | `rulesetId = 0` | `JBSplits.splitsOf()` | Fallback split group used when no splits are set for a specific ruleset. |
 | `projectId = 0` | `JBPrices.addPriceFeedFor()` | Sets a protocol-wide default price feed (owner-only). |
 
