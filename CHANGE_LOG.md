@@ -1,0 +1,432 @@
+# nana-core-v6 Changelog (v5 -> v6)
+
+This document describes all changes between `nana-core` (v5, Solidity 0.8.23) and `nana-core-v6` (v6, Solidity 0.8.26).
+
+---
+
+## 1. Breaking Changes
+
+### 1.1 Interface Signature Changes
+
+#### IJBRulesetApprovalHook
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `approvalStatusOf` signature | `approvalStatusOf(uint256 projectId, uint256 rulesetId, uint256 start)` | `approvalStatusOf(uint256 projectId, JBRuleset memory ruleset)` |
+
+The separate `rulesetId` and `start` parameters are replaced with a full `JBRuleset` struct. All approval hook implementations must update their signature.
+
+#### IJBRulesetDataHook
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `hasMintPermissionFor` signature | `hasMintPermissionFor(uint256 projectId, address addr)` | `hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, address addr)` |
+
+A `JBRuleset` parameter was added. All data hook implementations must update their signature.
+
+#### IJBRulesets
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `updateRulesetWeightCache` signature | `updateRulesetWeightCache(uint256 projectId)` | `updateRulesetWeightCache(uint256 projectId, uint256 rulesetId)` |
+
+A `rulesetId` parameter was added. Callers must now specify which ruleset to cache the weight for. This should be the ruleset that `currentOf()` actually uses (which may differ from `latestRulesetIdOf` if the latest was rejected by an approval hook).
+
+#### IJBTerminalStore
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `currentReclaimableSurplusOf` parameter rename | `uint256 tokenCount` (4-param overload) | `uint256 cashOutCount` |
+
+The parameter was renamed from `tokenCount` to `cashOutCount` in the simple 4-parameter overload.
+
+#### IJBPayoutTerminal
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `sendPayoutsOf` return value | `returns (uint256 netLeftoverPayoutAmount)` | `returns (uint256 amountPaidOut)` |
+
+The return value semantics changed: v5 returned the net leftover payout amount (sent to the project owner), while v6 returns the total amount paid out.
+
+#### IJBController
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `launchProjectFor` terminal configs | `JBTerminalConfig[] memory terminalConfigurations` | `JBTerminalConfig[] calldata terminalConfigurations` |
+| `launchRulesetsFor` terminal configs | `JBTerminalConfig[] memory terminalConfigurations` | `JBTerminalConfig[] calldata terminalConfigurations` |
+
+Parameters changed from `memory` to `calldata` for gas efficiency.
+
+#### IJBSplits
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `setSplitGroupsOf` splits param | `JBSplitGroup[] memory splitGroups` | `JBSplitGroup[] calldata splitGroups` |
+
+#### IJBFundAccessLimits
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `setFundAccessLimitsFor` param | `JBFundAccessLimitGroup[] memory fundAccessLimitGroups` | `JBFundAccessLimitGroup[] calldata fundAccessLimitGroups` |
+
+### 1.2 Removed Interfaces
+
+| File | Notes |
+|------|-------|
+| `IJBController4_1.sol` | Merged into `IJBController`. The `DeployERC20` event and `OMNICHAIN_RULESET_OPERATOR()` function are now part of the base `IJBController` interface. |
+| `IJBRulesetDataHook4_1.sol` | Merged into `IJBRulesetDataHook`. The `JBRuleset` parameter on `hasMintPermissionFor` is now the standard signature. |
+
+### 1.3 Removed Contracts
+
+| File | Notes |
+|------|-------|
+| `JBController4_1.sol` | The v6 `JBController` incorporates all `4_1` functionality directly. |
+
+### 1.4 Removed Errors
+
+| Contract | v5 Error | v6 Replacement |
+|----------|----------|----------------|
+| `JBMultiTerminal` | `JBMultiTerminal_ZeroAccountingContextDecimals()` | `JBMultiTerminal_AccountingContextDecimalsMismatch()` |
+
+### 1.5 Library Changes (Breaking)
+
+#### JBCurrencyIds
+
+| Change | v5 | v6 |
+|--------|----|----|
+| `USD` constant | `uint32 public constant USD = 3` | `uint32 public constant USD = 2` |
+
+The v5 USD ID was `3` because a botched price feed was deployed on `2`. The v6 deployment corrects this to `2`.
+
+---
+
+## 2. New Features
+
+### 2.1 New Functions
+
+#### IJBController / JBController
+
+| Function | Description |
+|----------|-------------|
+| `setTokenMetadataOf(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's ERC-20 token. Requires the `SET_TOKEN_METADATA` permission. |
+| `OMNICHAIN_RULESET_OPERATOR()` | Returns the address of the omnichain ruleset operator (previously only in `IJBController4_1`). |
+| `afterReceiveMigrationFrom(IERC165 from, uint256 projectId)` | Called by the directory after this controller has been set as the active controller. Added to the `IJBMigratable` interface. |
+
+#### IJBTokens / JBTokens
+
+| Function | Description |
+|----------|-------------|
+| `setTokenMetadataFor(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's token. Only callable by the project's controller. |
+
+#### IJBToken / JBERC20
+
+| Function | Description |
+|----------|-------------|
+| `setMetadata(string name, string symbol)` | Sets the token's name and symbol. Only callable by the token's owner (JBTokens). |
+
+#### IJBMigratable
+
+| Function | Description |
+|----------|-------------|
+| `afterReceiveMigrationFrom(IERC165 from, uint256 projectId)` | New lifecycle hook called after a controller migration completes. |
+
+#### JBCashOuts (Library)
+
+| Function | Description |
+|----------|-------------|
+| `minCashOutCountFor(uint256 surplus, uint256 desiredOutput, uint256 totalSupply, uint256 cashOutTaxRate)` | Inverse bonding curve: returns the minimum number of tokens to cash out to receive at least `desiredOutput`. Uses binary search for the general case. |
+
+### 2.2 New Events
+
+| Contract | Event |
+|----------|-------|
+| `IJBController` | `DeployERC20(uint256 indexed projectId, address indexed deployer, bytes32 salt, bytes32 saltHash, address caller)` |
+| `IJBController` | `LaunchProject(uint256 rulesetId, uint256 projectId, string projectUri, string memo, address caller)` |
+| `IJBController` | `LaunchRulesets(uint256 rulesetId, uint256 projectId, string memo, address caller)` |
+| `IJBTokens` | `SetTokenMetadata(uint256 indexed projectId, string name, string symbol, address caller)` |
+| `IJBPermitTerminal` | `Permit2AllowanceFailed(address indexed token, address indexed owner, bytes reason)` |
+
+### 2.3 New Errors
+
+| Contract | Error |
+|----------|-------|
+| `JBController` | `JBController_PendingReservedTokens(uint256 pendingReservedTokenBalance)` |
+| `JBController` | `JBController_TerminalTokensNotTransferred()` |
+| `JBMultiTerminal` | `JBMultiTerminal_AccountingContextDecimalsMismatch()` |
+| `JBRulesets` | `JBRulesets_WeightCacheRequired(uint256 projectId)` |
+| `JBTerminalStore` | `JBTerminalStore_Uint224Overflow(uint256 value)` |
+| `JBCashOuts` | `JBCashOuts_DesiredOutputNotAchievable()` |
+| `JBERC20` | `JBERC20_AlreadyInitialized()` |
+
+### 2.4 New Permission IDs
+
+| Permission | Description |
+|------------|-------------|
+| `LAUNCH_RULESETS` | Required for `launchRulesetsFor`. In v5, `QUEUE_RULESETS` was used. |
+| `SET_TOKEN_METADATA` | Required for `setTokenMetadataOf`. |
+
+---
+
+## 3. Event Changes
+
+### 3.1 New Events
+
+See section 2.2 above.
+
+### 3.2 Modified Events
+
+| Contract | Event | Change |
+|----------|-------|--------|
+| `IJBCashOutTerminal` | `CashOut` | Event order changed in the interface (moved before `HookAfterRecordCashOut`); NatSpec added. No field changes. |
+| `IJBCashOutTerminal` | `HookAfterRecordCashOut` | Event order changed in the interface (moved after `CashOut`); NatSpec added. No field changes. |
+
+### 3.3 All Interfaces Gained NatSpec
+
+Every interface file in v6 has comprehensive NatSpec documentation added to all functions, events, errors, and return values. This is a documentation-only change that does not affect the ABI.
+
+---
+
+## 4. Error Changes
+
+### 4.1 Errors with Added Parameters (More Informative Reverts)
+
+| Contract | v5 | v6 |
+|----------|----|----|
+| `JBController` | `JBController_AddingPriceFeedNotAllowed()` | `JBController_AddingPriceFeedNotAllowed(uint256 projectId)` |
+| `JBController` | `JBController_MintNotAllowedAndNotTerminalOrHook()` | `JBController_MintNotAllowedAndNotTerminalOrHook(address caller)` |
+| `JBController` | `JBController_RulesetsAlreadyLaunched()` | `JBController_RulesetsAlreadyLaunched(uint256 projectId)` |
+| `JBController` | `JBController_RulesetSetTokenNotAllowed()` | `JBController_RulesetSetTokenNotAllowed(uint256 projectId)` |
+| `JBMultiTerminal` | `JBMultiTerminal_FeeTerminalNotFound()` | `JBMultiTerminal_FeeTerminalNotFound(address token)` |
+| `JBMultiTerminal` | `JBMultiTerminal_TerminalTokensIncompatible()` | `JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal)` |
+| `JBDirectory` | `JBDirectory_SetControllerNotAllowed()` | `JBDirectory_SetControllerNotAllowed(uint256 projectId)` |
+| `JBDirectory` | `JBDirectory_SetTerminalsNotAllowed()` | `JBDirectory_SetTerminalsNotAllowed(uint256 projectId)` |
+| `JBSplits` | `JBSplits_PreviousLockedSplitsNotIncluded()` | `JBSplits_PreviousLockedSplitsNotIncluded(uint256 projectId, uint256 rulesetId)` |
+| `JBTokens` | `JBTokens_EmptyToken()` | `JBTokens_EmptyToken(uint256 projectId)` |
+| `JBTerminalStore` | `JBTerminalStore_RulesetNotFound()` | `JBTerminalStore_RulesetNotFound(uint256 projectId)` |
+| `JBPermissions` | `JBPermissions_Unauthorized()` | `JBPermissions_Unauthorized(address account, address operator, uint256 projectId, uint256 permissionId)` |
+
+### 4.2 Renamed Errors
+
+| Contract | v5 | v6 |
+|----------|----|----|
+| `JBMultiTerminal` | `JBMultiTerminal_ZeroAccountingContextDecimals()` | `JBMultiTerminal_AccountingContextDecimalsMismatch()` |
+
+### 4.3 Removed Errors
+
+| Contract | Error | Notes |
+|----------|-------|-------|
+| `JBMultiTerminal` | `JBMultiTerminal_ZeroAccountingContextDecimals()` | Replaced by `AccountingContextDecimalsMismatch` |
+
+### 4.4 New Errors
+
+See section 2.3 above.
+
+---
+
+## 5. Struct Changes
+
+All structs are **identical** between v5 and v6. The only differences are:
+- `forge-lint: disable-next-line(pascal-case-struct)` comments added to all struct definitions.
+- `JBSplit`: Additional NatSpec documentation on the `beneficiary` field behavior when set to `address(0)`.
+
+---
+
+## 6. Enum Changes
+
+`JBApprovalStatus` is **identical** between v5 and v6.
+
+---
+
+## 7. Library Changes
+
+### JBCashOuts
+
+| Change | Description |
+|--------|-------------|
+| **New function** `minCashOutCountFor` | Inverse bonding curve calculation using binary search. Returns the minimum tokens to cash out for a desired output. |
+| **New error** `JBCashOuts_DesiredOutputNotAchievable` | Thrown when the cash out tax rate is 100% and no output is possible. |
+| **Bug fix**: Early return for zero `cashOutCount` | `cashOutFrom` now returns `0` immediately when `cashOutCount == 0` (v5 would compute with zero). |
+
+### JBMetadataResolver
+
+| Change | Description |
+|--------|-------------|
+| Assembly blocks marked `"memory-safe"` | All inline assembly blocks now use the `assembly ("memory-safe")` annotation. |
+| **Bug fix**: `_sliceBytes` copy loop | The loop bound changed from `end` (absolute source offset) to `length` (relative), preventing over-copy past the allocated buffer. |
+| **Bug fix**: Overflow protection | Offset increment now checks for `> 255` overflow before casting to `uint8`, reverting with `JBMetadataResolver_MetadataTooLong()`. |
+| **Bug fix**: Memory alignment | Free memory pointer in `_sliceBytes` now rounds up to 32-byte boundary to prevent overlapping allocations. |
+| Empty input handling | `createMetadata` now returns empty bytes for empty input arrays. |
+| Named parameters in `_sliceBytes` calls | All calls now use named parameters (`data:`, `start:`, `end:`). |
+
+### JBRulesetMetadataResolver
+
+| Change | Description |
+|--------|-------------|
+| Bit 77 comment fix | Changed from "allow controller migration" to "owner must send payouts" to match actual bit semantics. |
+| `baseCurrency` range comment fix | Changed from `0-16777215` (24-bit) to `0-4294967295` (32-bit). |
+| `currency` range comment fix | Changed from `0-4294967296` to `0-4294967295`. |
+| Named field syntax | `expandMetadata()` now uses named field syntax (`reservedPercent:`, etc.) instead of positional. |
+
+### JBFees
+
+| Change | Description |
+|--------|-------------|
+| NatSpec improvements | Clarified that `feeAmountFrom` forward-calculates and `feeAmountIn` back-calculates. Added documentation about rounding bounds. |
+
+### JBSurplus
+
+| Change | Description |
+|--------|-------------|
+| Typo fix | `termainls` -> `terminals`. |
+
+### JBCurrencyIds
+
+| Change | Description |
+|--------|-------------|
+| **BREAKING**: `USD` changed from `3` to `2` | v5 skipped `2` due to a botched price feed deployment. v6 corrects this. |
+
+### JBConstants, JBFixedPointNumber, JBSplitGroupIds
+
+No changes.
+
+---
+
+## 8. Implementation Changes (Non-Interface)
+
+### 8.1 JBController
+
+| Change | Description |
+|--------|-------------|
+| **Omnichain operator** | `OMNICHAIN_RULESET_OPERATOR` immutable added to constructor. `launchRulesetsFor` and `queueRulesetsOf` grant access to this address via `_requirePermissionAllowingOverrideFrom`. |
+| **Migration lifecycle** | `beforeReceiveMigrationFrom` now sends pending reserved tokens before migration. `afterReceiveMigrationFrom` added as a no-op (validates caller is directory). |
+| **Migration guard** | `migrate()` now reverts with `JBController_PendingReservedTokens` if there are unsent reserved tokens. |
+| **`launchRulesetsFor` permission** | Changed from `QUEUE_RULESETS` to `LAUNCH_RULESETS`. |
+| **ERC-20 deploy salt handling** | `DeployERC20` event emitted from controller (not just JBTokens). Salt hashing moved earlier; `saltHash` included in event. |
+| **Split token transfer assertion** | `assert(allowance == 0)` replaced with explicit `revert JBController_TerminalTokensNotTransferred()`. |
+| **Code organization** | External views moved after external transactions. Internal views moved to end of file. |
+
+### 8.2 JBMultiTerminal
+
+| Change | Description |
+|--------|-------------|
+| **Decimal validation** | `ZeroAccountingContextDecimals` renamed to `AccountingContextDecimalsMismatch`. Non-standard ERC-20s that revert on `decimals()` bypass validation (documented). |
+| **Permit2 failure event** | Failed Permit2 allowance approvals now emit `Permit2AllowanceFailed` instead of silently catching. |
+| **Migration held fees** | Migration intentionally does not transfer held fees (documented: held fees belong to fee beneficiary, not the migrating project). |
+| **Held fee processing (reentrancy hardening)** | `processHeldFeesOf` now re-reads the storage index each iteration (instead of caching), deletes the entry before the external call, and updates the index before the external call. |
+| **Split payout documentation** | Failed split payouts documented as consuming payout limit by design. |
+
+### 8.3 JBRulesets
+
+| Change | Description |
+|--------|-------------|
+| **Cache threshold** | `_WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD` increased from `1,000` to `20,000`. |
+| **Cache cap removed** | `_MAX_WEIGHT_CUT_MULTIPLE_CACHE_THRESHOLD` (`50,000`) removed entirely. |
+| **Weight cache required** | `_deriveWeightFrom` now reverts with `JBRulesets_WeightCacheRequired(projectId)` when iteration count exceeds the threshold, instead of silently iterating. |
+| **Approval hook try/catch** | `_approvalStatusOf` now wraps the external `approvalHook.approvalStatusOf()` call in a try/catch. A reverting approval hook returns `JBApprovalStatus.Failed` instead of propagating the revert. This prevents a malicious or buggy approval hook from permanently freezing a project. |
+| **`_approvalStatusOf` internal consolidation** | The two-overload pattern (one taking struct fields, one taking a `JBRuleset`) was consolidated into a single overload that takes `JBRuleset`. |
+
+### 8.4 JBDirectory
+
+| Change | Description |
+|--------|-------------|
+| **Migration ordering** | `setControllerOf` now calls `migrate()` on the old controller BEFORE updating `controllerOf` in storage (so `migrate()` runs while the directory still points to the old controller). After updating storage, it calls `afterReceiveMigrationFrom` on the new controller. |
+
+### 8.5 JBTokens
+
+| Change | Description |
+|--------|-------------|
+| **Overflow check timing** | `mintFor` now checks `totalSupplyOf(projectId) + count > type(uint208).max` BEFORE minting (v5 checked after). |
+
+### 8.6 JBERC20
+
+| Change | Description |
+|--------|-------------|
+| **Named revert** | `initialize()` now reverts with `JBERC20_AlreadyInitialized()` instead of a bare `revert()`. |
+
+### 8.7 JBChainlinkV3PriceFeed
+
+| Change | Description |
+|--------|-------------|
+| **Incomplete round check order** | The check for `updatedAt == 0` (incomplete round) now runs BEFORE the stale price check, avoiding false stale errors on incomplete rounds. |
+
+### 8.8 JBChainlinkV3SequencerPriceFeed
+
+| Change | Description |
+|--------|-------------|
+| **Typo fix** | Error parameter `gradePeriodTime` corrected to `gracePeriodTime` in `JBChainlinkV3SequencerPriceFeed_SequencerDown`. |
+| **Threshold docs** | Constructor parameter `threshold` documentation corrected from "blocks" to "seconds". |
+
+### 8.9 JBDeadline
+
+| Change | Description |
+|--------|-------------|
+| **Signature change** | `approvalStatusOf` updated to accept `JBRuleset memory ruleset` instead of separate `rulesetId` and `start` params. Uses `ruleset.id` and `ruleset.start` internally. |
+
+### 8.10 Solidity Version
+
+All contracts upgraded from `pragma solidity 0.8.23` to `pragma solidity 0.8.26`.
+
+### 8.11 Named Arguments
+
+Throughout the codebase, function calls were updated to use named argument syntax (e.g., `foo({bar: 1, baz: 2})`) for improved readability.
+
+---
+
+## 9. Migration Table
+
+### Interfaces
+
+| v5 | v6 | Notes |
+|----|----|-------|
+| `IJBController` | `IJBController` | Gained `OMNICHAIN_RULESET_OPERATOR`, `setTokenMetadataOf`, `DeployERC20` event, `LaunchProject` event, `LaunchRulesets` event. `calldata` for terminal configs. |
+| `IJBController4_1` | (removed) | Merged into `IJBController` |
+| `IJBRulesetDataHook` | `IJBRulesetDataHook` | `hasMintPermissionFor` gained `JBRuleset` parameter |
+| `IJBRulesetDataHook4_1` | (removed) | Merged into `IJBRulesetDataHook` |
+| `IJBRulesetApprovalHook` | `IJBRulesetApprovalHook` | `approvalStatusOf` takes `JBRuleset` instead of `rulesetId + start` |
+| `IJBRulesets` | `IJBRulesets` | `updateRulesetWeightCache` gained `rulesetId` parameter |
+| `IJBTerminalStore` | `IJBTerminalStore` | `tokenCount` renamed to `cashOutCount` in `currentReclaimableSurplusOf`. View functions reordered. |
+| `IJBPayoutTerminal` | `IJBPayoutTerminal` | `sendPayoutsOf` returns `amountPaidOut` (was `netLeftoverPayoutAmount`). `SendPayoutToSplit` event moved. |
+| `IJBPermitTerminal` | `IJBPermitTerminal` | Gained `Permit2AllowanceFailed` event |
+| `IJBMigratable` | `IJBMigratable` | Gained `afterReceiveMigrationFrom` function |
+| `IJBTokens` | `IJBTokens` | Gained `setTokenMetadataFor`, `SetTokenMetadata` event |
+| `IJBToken` | `IJBToken` | Gained `setMetadata` function |
+| `IJBSplits` | `IJBSplits` | `setSplitGroupsOf` param changed to `calldata` |
+| `IJBFundAccessLimits` | `IJBFundAccessLimits` | `setFundAccessLimitsFor` param changed to `calldata` |
+| `IJBFeelessAddresses` | `IJBFeelessAddresses` | Param names: `account` -> `addr`. NatSpec added. |
+| All other interfaces | Same name | NatSpec documentation added. No functional changes. |
+
+### Contracts
+
+| v5 | v6 | Notes |
+|----|----|-------|
+| `JBController4_1` | (removed) | Merged into `JBController` |
+| `JBController` | `JBController` | Omnichain operator, token metadata, migration lifecycle changes |
+| `JBMultiTerminal` | `JBMultiTerminal` | Reentrancy hardening, decimal validation rename, Permit2 event |
+| `JBRulesets` | `JBRulesets` | Approval hook try/catch, weight cache changes, threshold increase |
+| `JBDirectory` | `JBDirectory` | Migration ordering fix, afterReceiveMigration call |
+| `JBTokens` | `JBTokens` | Token metadata support, overflow check timing |
+| `JBERC20` | `JBERC20` | `setMetadata`, named revert |
+| `JBDeadline` | `JBDeadline` | Updated for new `approvalStatusOf` signature |
+| All others | Same name | Error parameter enrichment, named arguments, NatSpec |
+
+### Libraries
+
+| v5 | v6 | Notes |
+|----|----|-------|
+| `JBCashOuts` | `JBCashOuts` | Added `minCashOutCountFor` (inverse bonding curve) |
+| `JBMetadataResolver` | `JBMetadataResolver` | Memory safety, overflow protection, copy loop fix |
+| `JBRulesetMetadataResolver` | `JBRulesetMetadataResolver` | Comment fixes, named field syntax |
+| `JBCurrencyIds` | `JBCurrencyIds` | **BREAKING**: `USD` changed from `3` to `2` |
+| All others | Same name | No changes |
+
+### Structs
+
+| v5 | v6 | Notes |
+|----|----|-------|
+| All 22 structs | Same names, same fields | Only lint comments added |
+
+### Enums
+
+| v5 | v6 | Notes |
+|----|----|-------|
+| `JBApprovalStatus` | `JBApprovalStatus` | Identical |
