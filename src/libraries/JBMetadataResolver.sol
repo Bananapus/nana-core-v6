@@ -103,7 +103,10 @@ library JBMetadataResolver {
                 if (i + TOTAL_ID_SIZE >= firstOffset * WORD_SIZE) {
                     // Increment every offset by 1 (as the table now takes one more word)
                     for (uint256 j = RESERVED_SIZE + ID_SIZE; j < lastOffsetIndex + 1; j += TOTAL_ID_SIZE) {
-                        newMetadata[j] = bytes1(uint8(originalMetadata[j]) + 1);
+                        uint256 incremented = uint256(uint8(originalMetadata[j])) + 1;
+                        if (incremented > 255) revert JBMetadataResolver_MetadataTooLong();
+                        // forge-lint: disable-next-line(unsafe-typecast)
+                        newMetadata[j] = bytes1(uint8(incremented));
                     }
 
                     // Increment the last offset so the new offset will be properly set too
