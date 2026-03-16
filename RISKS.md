@@ -26,7 +26,7 @@ Known security properties, trust assumptions, vulnerability vectors, and operati
 
 | ID | Severity | Description | Status |
 |----|----------|-------------|--------|
-| **C-5** | CRITICAL (by design) | `cashOutTokensOf(count=0)` with `totalSupply == 0` returns entire surplus. `JBCashOuts.cashOutFrom()` line 37: `if (cashOutCount >= totalSupply) return surplus` -- when both are 0, `0 >= 0` is true. | CONFIRMED. Known, documented. Requires totalSupply to reach 0 (all tokens burned). |
+| **C-5** | CRITICAL (historical) | `cashOutTokensOf(count=0)` with `totalSupply == 0` returned entire surplus in V5.0. `JBCashOuts.cashOutFrom()` line 37: `if (cashOutCount >= totalSupply) return surplus` -- when both are 0, `0 >= 0` is true. | **FIXED in V5.1+.** Early return at line 31: `if (cashOutCount == 0) return 0` prevents reaching the vulnerable condition. Regression tests in `FlashLoanAttacks.t.sol` and `CoreExploitTests.t.sol`. |
 | **H-4** | HIGH | Pending reserved tokens inflate `totalSupply` via `totalTokenSupplyWithReservedTokensOf()`, reducing cash out value. In extreme cases (large pending reserves), cash out value drops 50%+. | CONFIRMED. Mitigation: call `sendReservedTokensToSplitsOf()` regularly. |
 | **FV-1** | LOW | Bonding curve subadditivity violation from `mulDiv` rounding. `cashOutFrom(a) + cashOutFrom(b) <= cashOutFrom(a+b)` can be violated by <0.01%. | KNOWN. Economically insignificant. |
 
