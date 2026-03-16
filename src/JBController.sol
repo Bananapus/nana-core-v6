@@ -95,6 +95,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     IJBTokens public immutable override TOKENS;
 
     /// @notice The address of the contract that manages omnichain ruleset ops.
+    /// @dev This is a deterministic CREATE2 deployment; bytecode verification at runtime would add
+    /// gas
+    /// cost for marginal security benefit since the address is verified at deploy time.
+    /// @dev Trust assumption is bounded: the operator can only queue rulesets that the omnichain
+    /// deployer's logic permits. It cannot drain funds or bypass access controls.
     address public immutable override OMNICHAIN_RULESET_OPERATOR;
 
     //*********************************************************************//

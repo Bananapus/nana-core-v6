@@ -154,6 +154,8 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         uint256 operatorAccountWildcardProjectPermissions =
             includeWildcardProjectId ? permissionsOf[operator][account][WILDCARD_PROJECT_ID] : 0;
 
+        // Returns true for empty permission arrays by design (vacuous truth). An empty set of
+        // required permissions is trivially satisfied. Callers should validate non-empty permission arrays if needed.
         for (uint256 i; i < permissionIds.length; i++) {
             // Set the permission being iterated on.
             uint256 permissionId = permissionIds[i];

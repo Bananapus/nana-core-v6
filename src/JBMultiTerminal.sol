@@ -541,6 +541,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
 
+        // Terminal migration intentionally does not transfer held fees. Held fees belong to the
+        // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
         // Record the migration in the store.
         // slither-disable-next-line reentrancy-events
         balance = STORE.recordTerminalMigration({projectId: projectId, token: token});
@@ -1623,7 +1625,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256)
     {
-        // Attempt to distribute this split.
+        // Failed split payouts consume the payout limit by design. The try-catch prevents a single
+        // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
+        // `_recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
+        // distribution.
         // slither-disable-next-line reentrancy-events
         try this.executePayout({
             split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: _msgSender()
@@ -1697,7 +1702,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 ? 0
                 : JBFees.feeAmountFrom({amountBeforeFee: leftoverPayoutAmount, feePercent: FEE});
 
-            // Transfer the amount to the project owner.
+            // Failed owner transfer consumes the payout limit by design. Same pattern as split payouts:
+            // the try-catch prevents revert, failed amount is returned to project balance, and the owner can retry
+            // via addToBalanceOf or in the next cycle.
             try this.executeTransferTo({addr: projectOwner, token: token, amount: leftoverPayoutAmount - fee}) {
                 if (fee > 0) {
                     amountEligibleForFees += leftoverPayoutAmount;
