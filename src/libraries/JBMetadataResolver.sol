@@ -126,6 +126,10 @@ library JBMetadataResolver {
         newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(newOffset)));
 
         // Pad as needed - inlined for gas saving
+        // The length inflation to the next 32-byte boundary does NOT read uninitialized memory.
+        // abi.encodePacked always advances the free memory pointer to a 32-byte-aligned position, so the
+        // padding bytes (up to 31) are within the already-allocated region and guaranteed to be zero by
+        // Solidity's virgin-memory invariant. The zeros are the intended table padding per the metadata format.
         uint256 paddedLength =
             newMetadata.length % WORD_SIZE == 0 ? newMetadata.length : (newMetadata.length / WORD_SIZE + 1) * WORD_SIZE;
         assembly ("memory-safe") {
@@ -164,6 +168,9 @@ library JBMetadataResolver {
     /// @return metadata The resulting metadata
     function createMetadata(bytes4[] memory ids, bytes[] memory datas) internal pure returns (bytes memory metadata) {
         if (ids.length != datas.length) revert JBMetadataResolver_LengthMismatch();
+
+        // Return empty bytes for empty input arrays to avoid underflow in offset calculation below.
+        if (ids.length == 0) return bytes("");
 
         // Add a first empty 32B for the protocol reserved word
         metadata = abi.encodePacked(bytes32(0));
@@ -221,6 +228,9 @@ library JBMetadataResolver {
 
     /// @notice Parse the metadata to find the data for a specific ID
     /// @dev Returns false and an empty bytes if no data is found
+    /// @dev Padding to 32-byte boundaries is required for ABI compatibility. The apparent
+    /// inconsistency between creation and parsing is intentional: creation pads for storage alignment,
+    /// parsing uses actual data length boundaries from the lookup table.
     /// @param id The ID to find.
     /// @param metadata The metadata to parse.
     /// @return found Whether the {id:data} was found

@@ -134,6 +134,10 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
                     : priceFeedFor[projectId][unitCurrency][pricingCurrency]);
         }
 
+        // Price feed immutability is by design to prevent admin-key attacks on price oracles.
+        // If a feed fails, operations using that currency pair revert (DoS but not fund loss). Projects can use
+        // alternative currency pairs. A default feed for a currency pair prevents per-project overrides to ensure
+        // price consistency; projects should use unused currency IDs for custom pricing.
         // Store the feed.
         priceFeedFor[projectId][pricingCurrency][unitCurrency] = feed;
 
