@@ -32,9 +32,7 @@ contract TestL2SequencerPriceFeed_Local is Test {
 
         // Mock the decimals() call on the price feed aggregator.
         vm.mockCall(
-            _mockPriceFeed,
-            abi.encodeWithSelector(AggregatorV3Interface.decimals.selector),
-            abi.encode(uint8(8))
+            _mockPriceFeed, abi.encodeWithSelector(AggregatorV3Interface.decimals.selector), abi.encode(uint8(8))
         );
 
         _baseFeed = new JBChainlinkV3PriceFeed(AggregatorV3Interface(_mockPriceFeed), _THRESHOLD);
@@ -222,9 +220,7 @@ contract TestL2SequencerPriceFeed_Local is Test {
             abi.encode(uint80(1), int256(2000e8), block.timestamp, uint256(0), uint80(1))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector));
         _baseFeed.currentUnitPrice(18);
     }
 
@@ -240,9 +236,7 @@ contract TestL2SequencerPriceFeed_Local is Test {
             abi.encode(uint80(1), int256(2000e8), block.timestamp, uint256(0), uint80(1))
         );
 
-        vm.expectRevert(
-            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector));
         _sequencerFeed.currentUnitPrice(18);
     }
 

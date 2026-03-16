@@ -82,9 +82,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -141,8 +139,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         assertEq(tokensReceived, 0, "weight=0 should mint zero tokens");
 
         // But the balance should still increase (funds are still received).
-        uint256 balance =
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balance, _payAmount, "terminal balance should still increase");
     }
 
@@ -197,8 +194,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             metadata: ""
         });
 
-        uint256 balance =
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balance = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balance, _payAmount, "full amount should go to project balance with empty specs");
     }
 
@@ -223,9 +219,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.deal(address(this), _payAmount);
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InvalidAmountToForwardHook.selector,
-                _payAmount + 1,
-                _payAmount
+                JBTerminalStore.JBTerminalStore_InvalidAmountToForwardHook.selector, _payAmount + 1, _payAmount
             )
         );
         _terminal.pay{value: _payAmount}({
@@ -333,11 +327,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         jbFeelessAddresses().setFeelessAddress(_cashOutHook, true);
 
         JBCashOutHookSpecification[] memory _specs = new JBCashOutHookSpecification[](1);
-        _specs[0] = JBCashOutHookSpecification({
-            hook: IJBCashOutHook(_cashOutHook),
-            amount: _hookAmount,
-            metadata: ""
-        });
+        _specs[0] = JBCashOutHookSpecification({hook: IJBCashOutHook(_cashOutHook), amount: _hookAmount, metadata: ""});
 
         // Override: cashOutTaxRate=0, half the tokens cashed out, original totalSupply.
         vm.mockCall(
@@ -347,11 +337,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         );
 
         // Mock the cash out hook call.
-        vm.mockCall(
-            _cashOutHook,
-            abi.encodeWithSelector(IJBCashOutHook.afterCashOutRecordedWith.selector),
-            ""
-        );
+        vm.mockCall(_cashOutHook, abi.encodeWithSelector(IJBCashOutHook.afterCashOutRecordedWith.selector), "");
 
         _terminal.cashOutTokensOf({
             holder: address(this),
@@ -364,8 +350,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         });
 
         // After half cash out, balance should be reduced by reclaim + hookAmount.
-        uint256 balanceAfter =
-            jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balanceAfter = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(
             balanceAfter,
             _payAmount - expectedReclaim - _hookAmount,
@@ -422,9 +407,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory _termCfg2 = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tok2 = new JBAccountingContext[](1);
         _tok2[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _termCfg2[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tok2});
 
@@ -476,7 +459,9 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
 
         // Verify pending reserved tokens accumulated (also allow 1 wei rounding).
         uint256 pendingReserved = _controller.pendingReservedTokenBalanceOf(_project2);
-        assertApproxEqAbs(pendingReserved, reservedPortion, 1, "reserved tokens should accumulate from data hook weight");
+        assertApproxEqAbs(
+            pendingReserved, reservedPortion, 1, "reserved tokens should accumulate from data hook weight"
+        );
     }
 
     /// @notice Cash out hook spec amount that, combined with reclaim, exceeds terminal balance should revert.
@@ -505,11 +490,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         // Cash out all tokens. With cashOutTaxRate=0, reclaim = full surplus = _payAmount.
         // Set hook spec amount to 1 wei -- total = _payAmount + 1 which exceeds balance.
         JBCashOutHookSpecification[] memory _specs = new JBCashOutHookSpecification[](1);
-        _specs[0] = JBCashOutHookSpecification({
-            hook: IJBCashOutHook(makeAddr("hook")),
-            amount: 1,
-            metadata: ""
-        });
+        _specs[0] = JBCashOutHookSpecification({hook: IJBCashOutHook(makeAddr("hook")), amount: 1, metadata: ""});
 
         vm.mockCall(
             _DATA_HOOK,
@@ -519,9 +500,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector,
-                _payAmount + 1,
-                _payAmount
+                JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _payAmount + 1, _payAmount
             )
         );
         _terminal.cashOutTokensOf({

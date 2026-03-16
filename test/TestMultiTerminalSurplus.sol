@@ -86,8 +86,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
 
         // Terminal 1 accepts ETH; Terminal 2 accepts USDC.
         JBAccountingContext[] memory _ethContext = new JBAccountingContext[](1);
-        _ethContext[0] =
-            JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
+        _ethContext[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
 
         JBAccountingContext[] memory _usdcContext = new JBAccountingContext[](1);
         _usdcContext[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
@@ -108,10 +107,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         // Add price feed: USDC priced in native token terms.
         vm.prank(_projectOwner);
         _controller.addPriceFeed({
-            projectId: _projectId,
-            pricingCurrency: _usdcCurrency,
-            unitCurrency: _nativeCurrency,
-            feed: _ethToUsdcFeed
+            projectId: _projectId, pricingCurrency: _usdcCurrency, unitCurrency: _nativeCurrency, feed: _ethToUsdcFeed
         });
 
         // Deploy ERC-20 for the project.
