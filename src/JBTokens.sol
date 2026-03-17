@@ -275,6 +275,9 @@ contract JBTokens is JBControlled, IJBTokens {
 
     /// @notice Set a project's token if not already set.
     /// @dev Only a project's controller can set its token.
+    /// @dev If the provided ERC-20 has a pre-existing supply (minted outside this contract), that supply will be
+    /// included in `totalSupplyOf` and will dilute cash-out calculations for all token holders. Project owners are
+    /// responsible for ensuring the token's supply is appropriate before calling this function.
     /// @param projectId The ID of the project to set the token of.
     /// @param token The new token's address.
     function setTokenFor(uint256 projectId, IJBToken token) external override onlyControllerOf(projectId) {

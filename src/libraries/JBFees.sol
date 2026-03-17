@@ -20,7 +20,7 @@ library JBFees {
     /// @notice Returns the fee that would be taken from `amountBeforeFee`.
     /// @dev Use this to forward-calculate the fee from a known pre-fee amount.
     /// @dev Fee rounding error is bounded by N-1 wei (N = number of splits). Economically
-    /// insignificant. Rounding up via mulDiv protects the fee beneficiary (project #1).
+    /// insignificant. Rounds down (mulDiv floors), so the fee beneficiary may receive up to 1 wei less per split.
     /// @param amountBeforeFee The amount before the fee is applied, as a fixed point number.
     /// @param feePercent The fee percent, out of `JBConstants.MAX_FEE`.
     /// @return The fee amount, as a fixed point number with the same number of decimals as the provided `amount`.
