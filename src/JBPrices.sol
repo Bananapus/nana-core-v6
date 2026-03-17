@@ -15,8 +15,10 @@ import {IJBProjects} from "./interfaces/IJBProjects.sol";
 
 /// @notice Manages and normalizes price feeds. Price feeds are contracts which return the "pricing currency" cost of 1
 /// "unit currency".
-/// @dev Price feeds are immutable once set and cannot be replaced or removed. If a price feed needs to be changed,
-/// a new JBPrices contract must be deployed and projects must migrate to use it.
+/// @dev Price feeds are immutable once set and cannot be replaced or removed. This prevents oracle manipulation via
+/// admin-key attacks, but means a misconfigured or failing feed will cause operations using that currency pair to
+/// revert (DoS, not fund loss). Select feeds carefully — recovery requires deploying a new JBPrices contract and
+/// migrating projects.
 contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBPrices {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
