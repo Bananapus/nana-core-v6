@@ -60,6 +60,9 @@ library JBMetadataResolver {
         pure
         returns (bytes memory newMetadata)
     {
+        // Validate data padding upfront so that the fast path below cannot bypass the check.
+        if (dataToAdd.length < 32) revert JBMetadataResolver_DataNotPadded();
+
         // Empty original metadata and maybe something in the first 32 bytes: create new metadata
         if (originalMetadata.length <= RESERVED_SIZE) {
             // forge-lint: disable-next-line(unsafe-typecast)
@@ -68,9 +71,6 @@ library JBMetadataResolver {
 
         // There is something in the table offset, but not a valid entry - avoid overwriting
         if (originalMetadata.length < RESERVED_SIZE + ID_SIZE + 1) revert JBMetadataResolver_MetadataTooShort();
-
-        // Make sure the data is padded to 32 bytes.
-        if (dataToAdd.length < 32) revert JBMetadataResolver_DataNotPadded();
 
         // Get the first data offset - upcast to avoid overflow (same for other offset)...
         uint256 firstOffset = uint8(originalMetadata[RESERVED_SIZE + ID_SIZE]);

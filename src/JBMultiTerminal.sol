@@ -627,6 +627,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Process any fees that are being held for the project.
+    /// @dev Reentrancy safety: the loop re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the
+    /// index before the external `_processFee` call, so a reentrant call cannot double-process the same fee entry.
     /// @param projectId The ID of the project to process held fees for.
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.

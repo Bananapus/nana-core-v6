@@ -11,6 +11,9 @@ import {JBRuleset} from "./structs/JBRuleset.sol";
 /// seconds before the current ruleset ends. In other words, rulesets must be queued before the deadline to take effect.
 /// @dev Project rulesets are stored in a queue. Rulesets take effect after the previous ruleset in the queue ends, and
 /// only if they are approved by the previous ruleset's approval hook.
+/// @dev If `DURATION` is set longer than the ruleset's cycle duration, no queued ruleset can ever satisfy the deadline
+/// and the current ruleset will effectively be locked in perpetuity. Choose a `DURATION` shorter than the shortest
+/// cycle it will govern.
 contract JBDeadline is IJBRulesetApprovalHook {
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //

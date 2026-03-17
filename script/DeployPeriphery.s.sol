@@ -254,6 +254,9 @@ contract DeployPeriphery is Script, Sphinx {
             });
         } else if (block.chainid == 84_532) {
             usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
+            // TODO: Verify this feed address — 0xd30e2101... is the Arbitrum Sepolia ETH/USD feed and is likely
+            // incorrect for Base Sepolia USDC/USD. Replace with the correct Chainlink Base Sepolia USDC/USD address
+            // before deploying. Testnet-only; does not affect mainnet deployments.
             usdcFeed = new JBChainlinkV3PriceFeed({
                 feed: AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)),
                 threshold: 86_400 seconds
@@ -289,6 +292,9 @@ contract DeployPeriphery is Script, Sphinx {
             });
     }
 
+    /// @dev This helper predicts addresses using the Arachnid CREATE2 deployer, but actual deployments go through
+    /// Sphinx (which uses a different deployer). As a result, this guard will never detect Sphinx-deployed contracts
+    /// and is only effective for contracts deployed via the Arachnid deployer directly.
     function _isDeployed(bytes32 salt, bytes memory creationCode, bytes memory arguments) internal view returns (bool) {
         address _deployedTo = vm.computeCreate2Address({
             salt: salt,
