@@ -22,13 +22,12 @@ Known security properties, trust assumptions, vulnerability vectors, and operati
 - **Token holders**: Can only cash out proportional to bonding curve
 - **Permit2**: Optional; projects work without it
 
-## Known Bugs
+## Bonding Curve Economics
 
-| ID | Severity | Description | Status |
-|----|----------|-------------|--------|
-| **C-5** | CRITICAL (historical) | `cashOutTokensOf(count=0)` with `totalSupply == 0` returned entire surplus in V5.0. `JBCashOuts.cashOutFrom()` line 37: `if (cashOutCount >= totalSupply) return surplus` -- when both are 0, `0 >= 0` is true. | **FIXED in V5.1+.** Early return at line 31: `if (cashOutCount == 0) return 0` prevents reaching the vulnerable condition. Regression tests in `FlashLoanAttacks.t.sol` and `CoreExploitTests.t.sol`. |
-| **H-4** | HIGH | Pending reserved tokens inflate `totalSupply` via `totalTokenSupplyWithReservedTokensOf()`, reducing cash out value. In extreme cases (large pending reserves), cash out value drops 50%+. | CONFIRMED. Mitigation: call `sendReservedTokensToSplitsOf()` regularly. |
-| **FV-1** | LOW | Bonding curve subadditivity violation from `mulDiv` rounding. `cashOutFrom(a) + cashOutFrom(b) <= cashOutFrom(a+b)` can be violated by <0.01%. | KNOWN. Economically insignificant. |
+- **Zero cash out guard.** `cashOutFrom` returns 0 when `cashOutCount == 0` (line 31 early return). Auditors should verify no code path bypasses this guard or reaches the `cashOutCount >= totalSupply` branch (line 37) with both values at 0.
+- **Pending reserved tokens inflate `totalSupply`.** `totalTokenSupplyWithReservedTokensOf()` adds `pendingReservedTokenBalanceOf` to `totalSupply`, reducing per-token cash out value. A project owner who delays calling `sendReservedTokensToSplitsOf()` can suppress cash out values. Auditors should model the magnitude of this effect for projects with large pending reserves.
+- **`mulDiv` rounding.** The bonding curve's subadditivity property (`cashOutFrom(a) + cashOutFrom(b) <= cashOutFrom(a+b)`) can be violated by <0.01% due to floor rounding. Economically insignificant per operation but could accumulate across many small cash outs.
+- **Binary search in `minCashOutCountFor`.** The inverse cash out function uses binary search over `[1, totalSupply]`. For large supplies (>2^128), this is ~128 iterations of `mulDiv` calls. Verify gas cost remains bounded.
 
 ## Reentrancy Analysis
 
