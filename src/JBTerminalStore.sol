@@ -916,6 +916,10 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
+    //*********************************************************************//
+    // -------------------------- private views ------------------------- //
+    //*********************************************************************//
+
     /// @notice Checks if an address is feeless according to a terminal's feeless registry.
     /// @param terminal The terminal to query for feeless addresses.
     /// @param addr The address to check.
