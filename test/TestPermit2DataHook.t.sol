@@ -3,7 +3,6 @@ pragma solidity >=0.8.6;
 
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {MetadataResolverHelper} from "./helpers/MetadataResolverHelper.sol";
-import {JBMultiTerminal} from "../src/JBMultiTerminal.sol";
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBPrices} from "../src/interfaces/IJBPrices.sol";
 import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";

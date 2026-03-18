@@ -250,10 +250,12 @@ contract TestPay_Local is JBMultiTerminalSetup {
         _mockToken.approve(address(_mockHook), _defaultAmount);
 
         // needed for next mock call returns
-        JBTokenAmount memory tokenAmount =
-        // forge-lint: disable-next-line(unsafe-typecast)
-        JBTokenAmount({
-            token: address(_mockToken), decimals: 6, currency: uint32(_mockTokenCurrency), value: _defaultAmount
+        JBTokenAmount memory tokenAmount = JBTokenAmount({
+            // forge-lint: disable-next-line(unsafe-typecast)
+            token: address(_mockToken),
+            decimals: 6,
+            currency: uint32(_mockTokenCurrency),
+            value: _defaultAmount
         });
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
         hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});

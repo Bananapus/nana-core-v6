@@ -97,9 +97,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         terminalConfigs[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: tokensToAccept});
 
@@ -180,8 +178,8 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         uint256 payerTokens = _tokens.totalBalanceOf(_payer, _projectId);
         {
             // weight=1000e18 tokens per 1 ETH, pay=10 ETH => 10000e18 total. 50% reserved => payer gets 5000e18.
-            uint256 expectedPayerTokens = (uint256(WEIGHT) * uint256(PAY_AMOUNT) / 1 ether)
-                * (JBConstants.MAX_RESERVED_PERCENT - 5000) / JBConstants.MAX_RESERVED_PERCENT;
+            uint256 expectedPayerTokens = uint256(WEIGHT) * uint256(PAY_AMOUNT)
+                * (JBConstants.MAX_RESERVED_PERCENT - 5000) / JBConstants.MAX_RESERVED_PERCENT / 1 ether;
             assertEq(payerTokens, expectedPayerTokens, "Payer should have 50% of minted tokens");
         }
 
@@ -228,10 +226,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             uint256 totalSupply = _controller.totalTokenSupplyWithReservedTokensOf(_projectId);
 
             uint256 grossReclaim = JBCashOuts.cashOutFrom({
-                surplus: surplus,
-                cashOutCount: cashOutCount,
-                totalSupply: totalSupply,
-                cashOutTaxRate: 5000
+                surplus: surplus, cashOutCount: cashOutCount, totalSupply: totalSupply, cashOutTaxRate: 5000
             });
             assertGt(grossReclaim, 0, "Gross reclaim should be positive");
 
@@ -270,18 +265,14 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         );
         _controller.sendReservedTokensToSplitsOf(_projectId);
         assertEq(
-            _controller.pendingReservedTokenBalanceOf(_projectId),
-            0,
-            "Pending reserves should be 0 after distribution"
+            _controller.pendingReservedTokenBalanceOf(_projectId), 0, "Pending reserves should be 0 after distribution"
         );
 
         // ── Step 5: Verify accounting invariants ──
         {
             uint256 finalStoreBalance = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
             assertGe(
-                address(_terminal).balance,
-                finalStoreBalance,
-                "Terminal ETH balance must be >= store recorded balance"
+                address(_terminal).balance, finalStoreBalance, "Terminal ETH balance must be >= store recorded balance"
             );
 
             uint256 totalTokenSupply = _tokens.totalSupplyOf(_projectId);
@@ -296,8 +287,9 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             JBFee[] memory remainingHeldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
             uint256 totalHeldFeeValue;
             for (uint256 i; i < remainingHeldFees.length; i++) {
-                totalHeldFeeValue +=
-                    JBFees.feeAmountFrom({amountBeforeFee: remainingHeldFees[i].amount, feePercent: _terminal.FEE()});
+                totalHeldFeeValue += JBFees.feeAmountFrom({
+                    amountBeforeFee: remainingHeldFees[i].amount, feePercent: _terminal.FEE()
+                });
             }
             assertGe(
                 address(_terminal).balance,
@@ -335,11 +327,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         assertEq(storeBalance, PAY_AMOUNT - PAYOUT_LIMIT, "Store balance should not include held fees");
 
         // The terminal's actual ETH balance includes the held fee.
-        assertGt(
-            address(_terminal).balance,
-            storeBalance,
-            "Terminal ETH should exceed store balance due to held fees"
-        );
+        assertGt(address(_terminal).balance, storeBalance, "Terminal ETH should exceed store balance due to held fees");
 
         // The difference should be accounted for by held fees + fee project balance.
         uint256 feeProjectBalance = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
@@ -391,26 +379,16 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
 
         // Compute expected cashout with the inflated supply (what the system does).
         uint256 reclaimWithReserves = JBCashOuts.cashOutFrom({
-            surplus: surplus,
-            cashOutCount: payerTokens,
-            totalSupply: totalWithReserves,
-            cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, cashOutTaxRate: 5000
         });
 
         // Compute hypothetical cashout without pending reserves.
         uint256 reclaimWithoutReserves = JBCashOuts.cashOutFrom({
-            surplus: surplus,
-            cashOutCount: payerTokens,
-            totalSupply: circulatingSupply,
-            cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, cashOutTaxRate: 5000
         });
 
         // With pending reserves, the cashout value is lower (known behavior, H-4).
-        assertLt(
-            reclaimWithReserves,
-            reclaimWithoutReserves,
-            "Pending reserves reduce cashout value (expected, H-4)"
-        );
+        assertLt(reclaimWithReserves, reclaimWithoutReserves, "Pending reserves reduce cashout value (expected, H-4)");
 
         // Actually perform the cashout and confirm it matches the with-reserves calculation (net of fee).
         // cashOutTokensOf returns the NET reclaim after the 2.5% fee is deducted.

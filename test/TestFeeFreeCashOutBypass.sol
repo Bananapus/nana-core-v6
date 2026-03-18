@@ -5,10 +5,8 @@ import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {JBTokens} from "../src/JBTokens.sol";
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
-import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBSplitHook} from "../src/interfaces/IJBSplitHook.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
-import {JBSplitGroupIds} from "../src/libraries/JBSplitGroupIds.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
 import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
@@ -94,6 +92,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         _splits[0] = JBSplit({
             preferAddToBalance: false,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
             projectId: uint64(_projectIdB),
             beneficiary: payable(_attacker),
             lockedUntil: 0,
@@ -522,6 +521,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         _splits[0] = JBSplit({
             preferAddToBalance: false,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
             projectId: uint64(_projectIdB),
             beneficiary: payable(_attacker),
             lockedUntil: 0,
@@ -549,11 +549,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         _newRuleset[0].fundAccessLimitGroups = _fundAccessLimitGroup;
 
         vm.prank(_projectOwner);
-        _controller.queueRulesetsOf({
-            projectId: _projectIdA,
-            rulesetConfigurations: _newRuleset,
-            memo: ""
-        });
+        _controller.queueRulesetsOf({projectId: _projectIdA, rulesetConfigurations: _newRuleset, memo: ""});
 
         // Second payout cycle: pay A again, send payouts → another 10 ETH, total 20 ETH surplus.
         vm.prank(_attacker);

@@ -95,7 +95,9 @@ contract WeightCacheBoundary_Local is TestBaseWorkflow {
     function _expectedWeight(uint256 n) internal pure returns (uint256 weight) {
         weight = _INITIAL_WEIGHT;
         for (uint256 i; i < n; i++) {
-            weight = mulDiv(weight, JBConstants.MAX_WEIGHT_CUT_PERCENT - _WEIGHT_CUT_PERCENT, JBConstants.MAX_WEIGHT_CUT_PERCENT);
+            weight = mulDiv(
+                weight, JBConstants.MAX_WEIGHT_CUT_PERCENT - _WEIGHT_CUT_PERCENT, JBConstants.MAX_WEIGHT_CUT_PERCENT
+            );
             if (weight == 0) break;
         }
     }

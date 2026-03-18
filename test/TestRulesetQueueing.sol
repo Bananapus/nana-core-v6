@@ -32,8 +32,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
     uint256 private _DEADLINE_DURATION = 3 days;
     // forge-lint: disable-next-line(mixed-case-variable)
     uint256 private _RULESET_DURATION_DAYS = 6;
-    // forge-lint: disable-next-line(unsafe-typecast)
-    // forge-lint: disable-next-line(mixed-case-variable)
+    // forge-lint: disable-next-line(unsafe-typecast, mixed-case-variable)
     uint32 private _RULESET_DURATION = uint32(_RULESET_DURATION_DAYS * 1 days);
 
     function setUp() public override {
