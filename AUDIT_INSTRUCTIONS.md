@@ -84,9 +84,11 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
   -> [If hookSpecs] _fulfillCashOutHookSpecificationsFor()
      -> For each spec: transfer funds, call hook.afterCashOutRecordedWith()
   -> _takeFeeFrom() on total amount eligible for fees
+     -> Fee charged if cashOutTaxRate > 0 OR _hasReceivedFeeFreePayout[projectId][token]
+     -> Fee skipped if beneficiary is feeless
 ```
 
-**Critical note**: The beneficiary receives the reclaim amount BEFORE cash out hooks execute. Fees are taken AFTER hooks.
+**Critical note**: The beneficiary receives the reclaim amount BEFORE cash out hooks execute. Fees are taken AFTER hooks. The `_hasReceivedFeeFreePayout` flag is permanently set when a project receives a fee-free intra-terminal payout, preventing a round-trip fee bypass (payout via same terminal → zero-tax cashout).
 
 ### Payout Flow (`sendPayoutsOf`)
 

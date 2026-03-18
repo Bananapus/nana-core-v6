@@ -68,7 +68,8 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
   -> JBController.burnTokensOf()
   -> Transfer reclaimed tokens to beneficiary
   -> [Optional] Cash out hooks execute
-  -> Take fees (2.5% to project #1)
+  -> Take fees (2.5% to project #1) if cashOutTaxRate > 0
+     OR if project received a fee-free intra-terminal payout (_hasReceivedFeeFreePayout)
 ```
 
 ### Payout Flow
