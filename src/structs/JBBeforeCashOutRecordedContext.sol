@@ -16,6 +16,8 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// included, and the currency of the surplus.
 /// @custom:member useTotalSurplus If surplus across all of a project's terminals is being used when making cash outs.
 /// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is being made during.
+/// @custom:member beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Useful for data hooks
+/// that charge their own fees — they can skip fees when value stays in the protocol (e.g. project-to-project routing).
 /// @custom:member metadata Extra data provided by the casher.
 // forge-lint: disable-next-line(pascal-case-struct)
 struct JBBeforeCashOutRecordedContext {
@@ -28,5 +30,6 @@ struct JBBeforeCashOutRecordedContext {
     JBTokenAmount surplus;
     bool useTotalSurplus;
     uint256 cashOutTaxRate;
+    bool beneficiaryIsFeeless;
     bytes metadata;
 }

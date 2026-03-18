@@ -5,6 +5,8 @@ import {mulDiv} from "@prb/math/src/Common.sol";
 
 import {IJBController} from "./interfaces/IJBController.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
+import {IJBFeeTerminal} from "./interfaces/IJBFeeTerminal.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
@@ -235,8 +237,13 @@ contract JBTerminalStore is IJBTerminalStore {
                 }),
                 useTotalSurplus: ruleset.useTotalSurplusForCashOuts(),
                 cashOutTaxRate: ruleset.cashOutTaxRate(),
+                beneficiaryIsFeeless: false,
                 metadata: metadata
             });
+
+            // Set after construction to avoid stack-too-deep. Lets data hooks skip fees when value
+            // stays in the protocol (e.g. router terminal routing between projects).
+            context.beneficiaryIsFeeless = _isFeelessForTerminal({terminal: msg.sender, addr: holder});
 
             (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
                 IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
@@ -906,6 +913,18 @@ contract JBTerminalStore is IJBTerminalStore {
             } else {
                 return 0;
             }
+        }
+    }
+
+    /// @notice Checks if an address is feeless according to a terminal's feeless registry.
+    /// @param terminal The terminal to query for feeless addresses.
+    /// @param addr The address to check.
+    /// @return A flag indicating if the address is feeless.
+    function _isFeelessForTerminal(address terminal, address addr) private view returns (bool) {
+        try IJBFeeTerminal(terminal).FEELESS_ADDRESSES() returns (IJBFeelessAddresses feelessAddresses) {
+            return feelessAddresses.isFeeless(addr);
+        } catch {
+            return false;
         }
     }
 }

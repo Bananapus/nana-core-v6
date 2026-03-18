@@ -420,6 +420,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             surplus: _reclaimedTokenAmount,
             useTotalSurplus: true,
             cashOutTaxRate: 0,
+            beneficiaryIsFeeless: false,
             metadata: ""
         });
 
