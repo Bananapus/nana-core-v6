@@ -136,6 +136,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param projectId The ID of the project to get a list of accepted tokens for.
     mapping(uint256 projectId => JBAccountingContext[]) internal _accountingContextsOf;
 
+    /// @notice Whether a project has ever received a fee-free payout from another project on this terminal.
+    /// @dev Once set, this permanently disables the fee-free cashout exemption for this project/token pair.
+    /// @custom:param projectId The ID of the project that received the payout.
+    /// @custom:param token The token that was received.
+    mapping(uint256 projectId => mapping(address token => bool)) internal _hasReceivedFeeFreePayout;
+
     /// @notice Fees that are being held for each project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
     /// @dev Held fees can be processed at any time by this terminal's owner.
@@ -423,6 +429,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // a feeless address.
             if (terminal != this && !_isFeeless(address(terminal))) {
                 netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+            }
+
+            // Mark the receiving project as having received a fee-free payout.
+            // This permanently disables the fee-free cashout exemption for this project/token,
+            // closing the round-trip fee bypass (intra-terminal payout → zero-tax cashout).
+            if (terminal == this) {
+                _hasReceivedFeeFreePayout[split.projectId][token] = true;
             }
 
             // Send the `projectId` in the metadata as a referral.
@@ -1071,9 +1084,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Send the reclaimed funds to the beneficiary.
         if (reclaimAmount != 0) {
-            // Determine if a fee should be taken. Fees are not taked if the cash out tax rate is zero,
-            // if the beneficiary is feeless, or if the fee beneficiary doesn't accept the given token.
-            if (!_isFeeless(beneficiary) && cashOutTaxRate != 0) {
+            // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless,
+            // if the fee beneficiary doesn't accept the given token, or if the cash out tax rate is
+            // zero and the project has never received a fee-free payout from another project.
+            if (!_isFeeless(beneficiary) && (cashOutTaxRate != 0 || _hasReceivedFeeFreePayout[projectId][tokenToReclaim])) {
                 amountEligibleForFees += reclaimAmount;
                 // Subtract the fee for the reclaimed amount.
                 reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
