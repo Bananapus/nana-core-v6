@@ -76,7 +76,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |----------|--------------|
 | `recordPaymentFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Records a payment. Applies data hook if enabled. Returns ruleset, token count, hook specifications. |
 | `recordPayoutFor(uint256 projectId, JBAccountingContext accountingContext, uint256 amount, uint256 currency)` | Records a payout. Enforces payout limits. Returns ruleset and amount paid out. |
-| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bytes metadata)` | Records a cash out. Computes reclaim via bonding curve. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via bonding curve. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 | `recordUsedAllowanceOf(uint256 projectId, JBAccountingContext accountingContext, uint256 amount, uint256 currency)` | Records surplus allowance usage. Enforces allowance limits. Returns ruleset and used amount. |
 | `recordAddedBalanceFor(uint256 projectId, address token, uint256 amount)` | Records funds added to a project's balance. |
 | `recordTerminalMigration(uint256 projectId, address token)` | Records a terminal migration, returning the full balance. |
@@ -174,7 +174,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Struct | Key Fields | Used In |
 |--------|------------|---------|
 | `JBBeforePayRecordedContext` | `terminal`, `payer`, `amount (JBTokenAmount)`, `projectId`, `rulesetId`, `beneficiary`, `weight`, `reservedPercent`, `metadata` | `IJBRulesetDataHook.beforePayRecordedWith()` input |
-| `JBBeforeCashOutRecordedContext` | `terminal`, `holder`, `projectId`, `rulesetId`, `cashOutCount`, `totalSupply`, `surplus (JBTokenAmount)`, `useTotalSurplus`, `cashOutTaxRate`, `metadata` | `IJBRulesetDataHook.beforeCashOutRecordedWith()` input |
+| `JBBeforeCashOutRecordedContext` | `terminal`, `holder`, `projectId`, `rulesetId`, `cashOutCount`, `totalSupply`, `surplus (JBTokenAmount)`, `useTotalSurplus`, `cashOutTaxRate`, `beneficiaryIsFeeless`, `metadata` | `IJBRulesetDataHook.beforeCashOutRecordedWith()` input |
 | `JBAfterPayRecordedContext` | `payer`, `projectId`, `rulesetId`, `amount (JBTokenAmount)`, `forwardedAmount (JBTokenAmount)`, `weight`, `newlyIssuedTokenCount`, `beneficiary`, `hookMetadata`, `payerMetadata` | `IJBPayHook.afterPayRecordedWith()` input |
 | `JBAfterCashOutRecordedContext` | `holder`, `projectId`, `rulesetId`, `cashOutCount`, `reclaimedAmount (JBTokenAmount)`, `forwardedAmount (JBTokenAmount)`, `cashOutTaxRate`, `beneficiary`, `hookMetadata`, `cashOutMetadata` | `IJBCashOutHook.afterCashOutRecordedWith()` input |
 | `JBPayHookSpecification` | `hook (IJBPayHook)`, `amount`, `metadata` | Returned by data hook; specifies which pay hooks to call and how much to forward |
