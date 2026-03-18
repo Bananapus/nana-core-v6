@@ -353,6 +353,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
     /// @notice The ruleset that is currently active for the specified project.
     /// @dev If a current ruleset of the project is not found, returns an empty ruleset with all properties set to 0.
+    /// @dev The first cycle returns the stored ruleset directly (cycleNumber=1, original weight). Subsequent cycles
+    /// simulate cycling with weight decay via `_simulateCycledRulesetBasedOn`. Payout limits reset each cycle because
+    /// the terminal store keys usage by rulesetId, and each cycle produces a new simulated rulesetId.
     /// @param projectId The ID of the project to get the current ruleset of.
     /// @return ruleset The project's current ruleset.
     function currentOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {

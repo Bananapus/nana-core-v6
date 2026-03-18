@@ -416,8 +416,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 revert JBMultiTerminal_RecipientProjectTerminalNotFound(split.projectId, token);
             }
 
+            // Fees apply to fund egress, not intra-terminal accounting. When both projects share this terminal,
+            // funds stay within the contract (addToBalance or pay) so no fee is charged. This is intentional:
+            // the fee model taxes value leaving the protocol ecosystem, not internal rebalancing.
             // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
-            // a feelss address.
+            // a feeless address.
             if (terminal != this && !_isFeeless(address(terminal))) {
                 netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
             }
