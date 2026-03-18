@@ -175,6 +175,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         // 1% fee: 1000e18 * 99/100 = 990e18
         uint256 expectedDelta = 990e18;
         assertEq(recordedBalance, expectedDelta, "Terminal should record delta amount for FOT tokens");
+
+        // INVARIANT: recorded balance <= actual token balance at all times.
+        uint256 actualTerminalBalance = fotToken.balanceOf(address(jbMultiTerminal()));
+        assertLe(
+            recordedBalance,
+            actualTerminalBalance,
+            "FOT: recorded balance must not exceed actual terminal token balance after pay"
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -223,6 +231,16 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         // Beneficiary receives less than reclaimAmount due to outbound fee
         assertLt(actualReceived, reclaimAmount, "FOT: beneficiary receives less than reclaimAmount on outbound");
+
+        // INVARIANT: recorded balance <= actual token balance after cash-out.
+        uint256 recordedBalanceAfterCashOut =
+            jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(fotToken));
+        uint256 actualTerminalBalanceAfterCashOut = fotToken.balanceOf(address(jbMultiTerminal()));
+        assertLe(
+            recordedBalanceAfterCashOut,
+            actualTerminalBalanceAfterCashOut,
+            "FOT: recorded balance must not exceed actual terminal token balance after cash-out"
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -336,6 +354,17 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         assertTrue(actualReceived > 0, "Split beneficiary should receive something");
         // The terminal sends a computed net amount, but the FOT tax reduces what arrives
         // This documents the information finding: FOT tokens cause split recipients to receive less
+
+        // INVARIANT: Terminal's recorded balance must never exceed actual token balance.
+        // With FOT tokens, the terminal may hold fewer tokens than recorded (inbound fee on pay).
+        // After a payout, the recorded balance should still be <= actual balance.
+        uint256 recordedBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(fotToken));
+        uint256 actualTerminalBalance = fotToken.balanceOf(address(jbMultiTerminal()));
+        assertLe(
+            recordedBalance,
+            actualTerminalBalance,
+            "FOT: recorded balance must not exceed actual terminal token balance after payout"
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -574,6 +603,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         // Balance should increase (delta accounting handles the fee)
         assertGt(recordedAfter, recordedBefore, "Balance should increase with addToBalance");
+
+        // INVARIANT: recorded balance <= actual token balance after addToBalance.
+        uint256 actualTerminalBalance = fotToken.balanceOf(address(jbMultiTerminal()));
+        assertLe(
+            recordedAfter,
+            actualTerminalBalance,
+            "FOT: recorded balance must not exceed actual terminal token balance after addToBalance"
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════

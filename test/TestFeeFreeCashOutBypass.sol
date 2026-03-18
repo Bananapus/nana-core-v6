@@ -19,7 +19,8 @@ import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 
-/// @notice Tests that the fee-free cashout bypass via same-terminal round-trip is closed.
+/// @notice Tests that the fee-free cashout bypass via same-terminal round-trip is closed:
+/// fees apply on cashout up to the cumulative fee-free payout amount, then deplete.
 contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
@@ -226,15 +227,15 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         assertEq(reclaimAmount, payAmount, "direct pay-in cashout should be fee-free");
     }
 
-    /// @notice Once the flag is set, it stays set permanently.
-    function testFlagIsPermanent() external {
+    /// @notice After the fee-free surplus is fully consumed, subsequent direct pay-ins cash out fee-free.
+    function testSurplusDepletionRestoresFeeFreeCashOut() external {
         uint256 payAmount = 10 ether;
         vm.deal(_attacker, payAmount * 2);
 
         vm.prank(_projectOwner);
         _controller.deployERC20For(_projectIdB, "ProjectB", "PB", bytes32(0));
 
-        // Pay project A and trigger payout → sets flag on project B.
+        // Pay project A and trigger payout → accumulates fee-free surplus on project B.
         vm.prank(_attacker);
         _terminal.pay{value: payAmount}({
             projectId: _projectIdA,
@@ -253,10 +254,10 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        // Cash out all tokens from project B (flag is now set).
+        // Cash out all tokens from project B — fee applied against fee-free surplus, which is now depleted.
         uint256 tokensFromPayout = _tokens.totalBalanceOf(_attacker, _projectIdB);
         vm.prank(_attacker);
-        _terminal.cashOutTokensOf({
+        uint256 firstReclaim = _terminal.cashOutTokensOf({
             holder: _attacker,
             projectId: _projectIdB,
             cashOutCount: tokensFromPayout,
@@ -265,6 +266,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             beneficiary: payable(_attacker),
             metadata: new bytes(0)
         });
+        // First cashout should have had a fee deducted.
+        assertLt(firstReclaim, _payoutLimit, "first cashout should have fee deducted");
 
         // Now pay project B directly with fresh funds.
         vm.prank(_attacker);
@@ -281,9 +284,9 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         uint256 newTokens = _tokens.totalBalanceOf(_attacker, _projectIdB);
         assertGt(newTokens, 0, "attacker should have new tokens");
 
-        // Cash out again — fee should STILL be charged because flag is permanent.
+        // Cash out again — surplus is depleted, so this direct pay-in should be fee-free.
         vm.prank(_attacker);
-        uint256 reclaimAmount = _terminal.cashOutTokensOf({
+        uint256 secondReclaim = _terminal.cashOutTokensOf({
             holder: _attacker,
             projectId: _projectIdB,
             cashOutCount: newTokens,
@@ -293,8 +296,303 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             metadata: new bytes(0)
         });
 
-        // Fee should be charged even on direct pay-in cashout, because the flag is permanent.
-        assertLt(reclaimAmount, payAmount, "fee should still apply after flag is permanently set");
+        // After surplus depletion, direct pay-in cashout should be fee-free.
+        assertEq(secondReclaim, payAmount, "direct pay-in cashout should be fee-free after surplus depleted");
+    }
+
+    /// @notice Fee-free surplus only covers the exact payout amount — partial cashout leaves remainder.
+    function testPartialCashOutConsumesPartialSurplus() external {
+        uint256 payAmount = 10 ether;
+        vm.deal(_attacker, payAmount);
+
+        vm.prank(_projectOwner);
+        _controller.deployERC20For(_projectIdB, "ProjectB", "PB", bytes32(0));
+
+        // Pay project A and trigger payout → 10 ETH fee-free surplus on project B.
+        vm.prank(_attacker);
+        _terminal.pay{value: payAmount}({
+            projectId: _projectIdA,
+            amount: payAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+        _terminal.sendPayoutsOf({
+            projectId: _projectIdA,
+            amount: _payoutLimit,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        // Cash out half the tokens — should consume roughly half the fee-free surplus.
+        uint256 totalTokens = _tokens.totalBalanceOf(_attacker, _projectIdB);
+        uint256 halfTokens = totalTokens / 2;
+
+        vm.prank(_attacker);
+        uint256 firstReclaim = _terminal.cashOutTokensOf({
+            holder: _attacker,
+            projectId: _projectIdB,
+            cashOutCount: halfTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(_attacker),
+            metadata: new bytes(0)
+        });
+        // First half-cashout should have fee deducted (fee-free surplus partially consumed).
+        assertLt(firstReclaim, _payoutLimit / 2, "partial cashout should have fee deducted");
+
+        // Cash out the remaining tokens — should also have fee (remaining surplus covers it).
+        uint256 remainingTokens = _tokens.totalBalanceOf(_attacker, _projectIdB);
+        vm.prank(_attacker);
+        uint256 secondReclaim = _terminal.cashOutTokensOf({
+            holder: _attacker,
+            projectId: _projectIdB,
+            cashOutCount: remainingTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(_attacker),
+            metadata: new bytes(0)
+        });
+        // Second cashout also has fee deducted from remaining surplus.
+        assertLt(secondReclaim, firstReclaim + 1 ether, "second partial cashout should also have fee");
+    }
+
+    /// @notice Griefing with a tiny payout only costs the victim fees on that tiny amount.
+    function testGriefingWithTinyPayoutIsScoped() external {
+        address victim = makeAddr("victim");
+        vm.deal(victim, 10 ether);
+        vm.deal(_attacker, 1); // 1 wei for the griefing payout
+
+        vm.prank(_projectOwner);
+        _controller.deployERC20For(_projectIdB, "ProjectB", "PB", bytes32(0));
+
+        // Victim pays directly into project B.
+        vm.prank(victim);
+        _terminal.pay{value: 10 ether}({
+            projectId: _projectIdB,
+            amount: 10 ether,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: victim,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        // Attacker triggers a 1 wei payout to project B via project A to set fee-free surplus.
+        // First fund project A with 1 wei.
+        vm.prank(_attacker);
+        _terminal.pay{value: 1}({
+            projectId: _projectIdA,
+            amount: 1,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+        _terminal.sendPayoutsOf({
+            projectId: _projectIdA,
+            amount: 1,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        // Victim cashes out — fee should only apply to 1 wei of surplus, not their full 10 ETH.
+        uint256 victimTokens = _tokens.totalBalanceOf(victim, _projectIdB);
+        vm.prank(victim);
+        uint256 reclaimAmount = _terminal.cashOutTokensOf({
+            holder: victim,
+            projectId: _projectIdB,
+            cashOutCount: victimTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(victim),
+            metadata: new bytes(0)
+        });
+
+        // Fee on 1 wei is 0 (rounds down). Victim should get essentially their full amount back.
+        // The key assertion: victim is NOT penalized with a fee on their full 10 ETH.
+        uint256 feeOn1Wei = mulDiv(1, 25, 1000); // 0 (rounds down)
+        assertGe(reclaimAmount, 10 ether - feeOn1Wei - 1, "griefing should cost at most fee on 1 wei");
+    }
+
+    /// @notice Non-zero cashOutTaxRate applies fees to the full reclaim, ignoring surplus.
+    function testNonZeroTaxRateIgnoresSurplus() external {
+        uint256 payAmount = 10 ether;
+        vm.deal(_attacker, payAmount);
+
+        // Launch project C with cashOutTaxRate = 5000 (50%).
+        JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
+        JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
+        _tokensToAccept[0] = JBAccountingContext({
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+        _terminalConfigurations[0] =
+            JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
+
+        JBRulesetMetadata memory taxMeta = _zeroTaxMetadata();
+        taxMeta.cashOutTaxRate = 5000; // 50%
+
+        JBRulesetConfig[] memory _cRulesetConfig = new JBRulesetConfig[](1);
+        _cRulesetConfig[0].mustStartAtOrAfter = 0;
+        _cRulesetConfig[0].duration = 0;
+        _cRulesetConfig[0].weight = _weight;
+        _cRulesetConfig[0].metadata = taxMeta;
+        _cRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
+        _cRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
+
+        uint256 projectIdC = _controller.launchProjectFor({
+            owner: _projectOwner,
+            projectUri: "project-c",
+            rulesetConfigurations: _cRulesetConfig,
+            terminalConfigurations: _terminalConfigurations,
+            memo: ""
+        });
+
+        vm.prank(_projectOwner);
+        _controller.deployERC20For(projectIdC, "ProjectC", "PC", bytes32(0));
+
+        // Pay and cash out — non-zero tax rate means full fee applies (surplus irrelevant).
+        vm.prank(_attacker);
+        _terminal.pay{value: payAmount}({
+            projectId: projectIdC,
+            amount: payAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        uint256 tokens = _tokens.totalBalanceOf(_attacker, projectIdC);
+        vm.prank(_attacker);
+        uint256 reclaimAmount = _terminal.cashOutTokensOf({
+            holder: _attacker,
+            projectId: projectIdC,
+            cashOutCount: tokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(_attacker),
+            metadata: new bytes(0)
+        });
+
+        // With non-zero tax, the 2.5% fee applies to the full bonding curve output.
+        // Full cashout (count == supply) returns the entire surplus regardless of tax rate,
+        // so gross = 10 ETH, fee = 2.5%, net = 9.75 ETH.
+        assertLt(reclaimAmount, payAmount, "non-zero tax should charge fee on full amount");
+        uint256 expectedFee = mulDiv(payAmount, 25, 1000);
+        uint256 expectedNet = payAmount - expectedFee;
+        assertApproxEqAbs(reclaimAmount, expectedNet, 2, "fee should apply to full bonding curve output");
+    }
+
+    /// @notice Multiple payouts accumulate fee-free surplus correctly.
+    function testMultiplePayoutsAccumulateSurplus() external {
+        uint256 payAmount = 10 ether;
+        // Need to fund project A twice, so give attacker enough.
+        vm.deal(_attacker, payAmount * 2);
+
+        vm.prank(_projectOwner);
+        _controller.deployERC20For(_projectIdB, "ProjectB", "PB", bytes32(0));
+
+        // First payout cycle: pay A, send payouts → 10 ETH fee-free surplus on B.
+        vm.prank(_attacker);
+        _terminal.pay{value: payAmount}({
+            projectId: _projectIdA,
+            amount: payAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+        _terminal.sendPayoutsOf({
+            projectId: _projectIdA,
+            amount: _payoutLimit,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        // Queue a new ruleset so the payout limit resets for the next cycle.
+        JBSplit[] memory _splits = new JBSplit[](1);
+        _splits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            projectId: uint64(_projectIdB),
+            beneficiary: payable(_attacker),
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+        JBSplitGroup[] memory _splitGroups = new JBSplitGroup[](1);
+        _splitGroups[0] = JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: _splits});
+
+        JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
+        _payoutLimits[0] = JBCurrencyAmount({amount: _payoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        JBFundAccessLimitGroup[] memory _fundAccessLimitGroup = new JBFundAccessLimitGroup[](1);
+        _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
+            terminal: address(_terminal),
+            token: JBConstants.NATIVE_TOKEN,
+            payoutLimits: _payoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+
+        JBRulesetConfig[] memory _newRuleset = new JBRulesetConfig[](1);
+        _newRuleset[0].mustStartAtOrAfter = 0;
+        _newRuleset[0].duration = 0;
+        _newRuleset[0].weight = _weight;
+        _newRuleset[0].metadata = _zeroTaxMetadata();
+        _newRuleset[0].splitGroups = _splitGroups;
+        _newRuleset[0].fundAccessLimitGroups = _fundAccessLimitGroup;
+
+        vm.prank(_projectOwner);
+        _controller.queueRulesetsOf({
+            projectId: _projectIdA,
+            rulesetConfigurations: _newRuleset,
+            memo: ""
+        });
+
+        // Second payout cycle: pay A again, send payouts → another 10 ETH, total 20 ETH surplus.
+        vm.prank(_attacker);
+        _terminal.pay{value: payAmount}({
+            projectId: _projectIdA,
+            amount: payAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+        _terminal.sendPayoutsOf({
+            projectId: _projectIdA,
+            amount: _payoutLimit,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        // Cash out all tokens from B — fee should apply to the full 20 ETH surplus.
+        uint256 allTokens = _tokens.totalBalanceOf(_attacker, _projectIdB);
+        vm.prank(_attacker);
+        uint256 reclaimAmount = _terminal.cashOutTokensOf({
+            holder: _attacker,
+            projectId: _projectIdB,
+            cashOutCount: allTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(_attacker),
+            metadata: new bytes(0)
+        });
+
+        // The 2.5% fee should apply to the entire reclaim (covered by 20 ETH surplus).
+        // Gross reclaim ≈ 20 ETH (full balance of B), fee = 2.5% of that.
+        assertLt(reclaimAmount, 20 ether, "fee should be charged on accumulated surplus");
+        uint256 expectedFee = mulDiv(20 ether, 25, 1000);
+        uint256 expectedNet = 20 ether - expectedFee;
+        assertApproxEqAbs(reclaimAmount, expectedNet, 2, "fee should apply to full 20 ETH surplus");
     }
 
     function _zeroTaxMetadata() internal pure returns (JBRulesetMetadata memory) {
