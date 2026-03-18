@@ -141,6 +141,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
     /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
     /// — legitimate cashouts beyond this amount remain fee-free.
+    /// @dev WARNING: This accumulator persists across rulesets and cannot be cleared. Once a fee-free payout
+    /// increments it, the balance remains until consumed by a zero-tax cashout. There is no admin function to reset
+    /// it. Projects switching from zero-tax to non-zero-tax rulesets will carry forward any unconsumed balance.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
