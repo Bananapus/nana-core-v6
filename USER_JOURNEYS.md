@@ -91,7 +91,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 2. Project tokens burned via `JBController.burnTokensOf()` (credits first, then ERC-20)
 3. Reclaimed tokens transferred to beneficiary
 4. Cash out hooks execute (if data hook returns specifications)
-5. Fee taken (2.5%) on total amount eligible for fees, unless `cashOutTaxRate == 0` or beneficiary is feeless
+5. Fee taken (2.5%) on total amount eligible for fees, unless beneficiary is feeless or (`cashOutTaxRate == 0` and the project has never received a fee-free intra-terminal payout)
 
 **Events**: `CashOutTokens(rulesetId, rulesetCycleNumber, projectId, holder, beneficiary, cashOutCount, cashOutTaxRate, reclaimAmount, metadata, caller)`
 
@@ -101,7 +101,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - `cashOutTaxRate = 0` -- proportional (1:1 against supply) with no discount
 - `cashOutCount >= totalSupply` -- returns entire surplus regardless of tax rate
 - Data hook can override `cashOutTaxRate`, `cashOutCount`, `totalSupply` to arbitrary values
-- Fee is NOT taken when `cashOutTaxRate == 0` (feeless path for proportional cash outs)
+- Fee is NOT taken when `cashOutTaxRate == 0` UNLESS the project has received a fee-free intra-terminal payout (`_hasReceivedFeeFreePayout` flag). This prevents round-trip fee bypass.
 - Pending reserved tokens inflate `totalSupply`, reducing individual cash out value (H-4)
 
 ---

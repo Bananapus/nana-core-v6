@@ -64,9 +64,9 @@ Hooks are customizable contracts that plug into protocol flows:
 ### Fees
 
 `JBMultiTerminal` charges a 2.5% fee (`FEE = 25` out of `MAX_FEE = 1000`) on:
-- Payouts to external addresses (not to other Juicebox projects).
+- Payouts to external addresses (not to other Juicebox projects on the same terminal).
 - Surplus allowance usage.
-- Cash outs when the cash out tax rate is below 100%.
+- Cash outs when the cash out tax rate is above 0%, or when the project has ever received a fee-free intra-terminal payout from another project (regardless of tax rate).
 
 Fees are paid to **project #1** (the fee beneficiary project, minted in the `JBProjects` constructor). Addresses on the `JBFeelessAddresses` allowlist are exempt from fees.
 
