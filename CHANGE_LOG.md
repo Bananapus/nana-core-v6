@@ -10,6 +10,14 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 
 `setSplitGroupsOf` self-auth now requires the upper 96 bits of the `groupId` to be non-zero. The full self-auth check is: `uint160(groupId) == msg.sender && groupId >> 160 != 0`. GroupIds with zero upper 96 bits (bare addresses like `uint256(uint160(tokenAddress))`) are protocol-reserved for terminal payout groups and always require controller authorization. This prevents accepted token contracts from writing a project's payout splits without controller auth. The 721 hook is unaffected since it already uses `hookAddress | tierId << 160` (non-zero upper bits).
 
+### 0.2 JBMultiTerminal -- Fee-Free Cashout Bypass Prevention
+
+A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
+
+### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
+
+A `bool beneficiaryIsFeeless` field was added to the `JBBeforeCashOutRecordedContext` struct (before the `metadata` field). `recordCashOutFor` in `IJBTerminalStore` gained a corresponding `bool beneficiaryIsFeeless` parameter. The terminal passes the result of its feeless address check, allowing data hooks to skip their own fees when the beneficiary is already feeless (e.g., project-to-project routing via the router terminal). This is a **breaking change** to both the struct layout and the `recordCashOutFor` function signature.
+
 ---
 
 ## 1. Breaking Changes
@@ -29,8 +37,11 @@ A `rulesetId` parameter was added. Callers must now specify which ruleset to cac
 | Change | v5 | v6 |
 |--------|----|----|
 | `currentReclaimableSurplusOf` parameter rename | `uint256 tokenCount` (4-param overload) | `uint256 cashOutCount` |
+| `recordCashOutFor` new parameter | No `beneficiaryIsFeeless` parameter | `bool beneficiaryIsFeeless` added after `balanceAccountingContexts` |
 
 The parameter was renamed from `tokenCount` to `cashOutCount` in the simple 4-parameter overload.
+
+`recordCashOutFor` gained a `bool beneficiaryIsFeeless` parameter so the terminal can pass through its feeless address check to data hooks via the `JBBeforeCashOutRecordedContext` struct.
 
 #### IJBPayoutTerminal
 
@@ -38,7 +49,7 @@ The parameter was renamed from `tokenCount` to `cashOutCount` in the simple 4-pa
 |--------|----|----|
 | `sendPayoutsOf` return value | `returns (uint256 netLeftoverPayoutAmount)` | `returns (uint256 amountPaidOut)` |
 
-The return value semantics changed: v5 returned the net leftover payout amount (sent to the project owner), while v6 returns the total amount paid out.
+The return variable name was corrected from `netLeftoverPayoutAmount` to `amountPaidOut` to match the actual implementation semantics (total amount paid out). The v5 implementation already returned the total amount from `STORE.recordPayoutFor()`, not the leftover — only the interface had the misleading name.
 
 #### IJBController
 
@@ -141,8 +152,8 @@ See section 2.2 above.
 
 | Contract | Event | Change |
 |----------|-------|--------|
-| `IJBCashOutTerminal` | `CashOut` | Event order changed in the interface (moved before `HookAfterRecordCashOut`); NatSpec added. No field changes. |
-| `IJBCashOutTerminal` | `HookAfterRecordCashOut` | Event order changed in the interface (moved after `CashOut`); NatSpec added. No field changes. |
+| `IJBCashOutTerminal` | `CashOutTokens` | Event order changed in the interface (moved before `HookAfterRecordCashOut`); NatSpec added. No field changes. |
+| `IJBCashOutTerminal` | `HookAfterRecordCashOut` | Event order changed in the interface (moved after `CashOutTokens`); NatSpec added. No field changes. |
 
 ### 3.3 All Interfaces Gained NatSpec
 
@@ -189,7 +200,13 @@ See section 2.3 above.
 
 ## 5. Struct Changes
 
-All structs are **identical** between v5 and v6. The only differences are:
+All structs are identical between v5 and v6 except:
+
+| Struct | Change |
+|--------|--------|
+| `JBBeforeCashOutRecordedContext` | New `bool beneficiaryIsFeeless` field added before `metadata`. Indicates whether the cash out's beneficiary is a feeless address, allowing data hooks to skip their own fees for in-protocol routing. |
+
+Other struct-level differences (non-functional):
 - `forge-lint: disable-next-line(pascal-case-struct)` comments added to all struct definitions.
 - `JBSplit`: Additional NatSpec documentation on the `beneficiary` field behavior when set to `address(0)`.
 
@@ -269,6 +286,8 @@ No changes.
 | **Migration held fees** | Migration intentionally does not transfer held fees (documented: held fees belong to fee beneficiary, not the migrating project). |
 | **Held fee processing (reentrancy hardening)** | `processHeldFeesOf` now re-reads the storage index each iteration (instead of caching), deletes the entry before the external call, and updates the index before the external call. |
 | **Split payout documentation** | Failed split payouts documented as consuming payout limit by design. |
+| **Fee-free cashout bypass prevention** | New `_feeFreeSurplusOf` mapping tracks cumulative fee-free intra-terminal payouts per project/token. During zero-tax cashouts, fees are charged up to this tracked amount (then decremented), preventing round-trip fee bypass. See Section 0.2. |
+| **beneficiaryIsFeeless passthrough** | `cashOutTokensOf` now passes `_isFeeless(beneficiary)` to `recordCashOutFor`, which forwards it to data hooks via `JBBeforeCashOutRecordedContext.beneficiaryIsFeeless`. |
 
 ### 8.3 JBRulesets
 
@@ -285,36 +304,42 @@ No changes.
 |--------|-------------|
 | **Migration ordering** | `setControllerOf` now calls `migrate()` on the old controller BEFORE updating `controllerOf` in storage (so `migrate()` runs while the directory still points to the old controller). After updating storage, it calls `afterReceiveMigrationFrom` on the new controller. |
 
-### 8.5 JBTokens
+### 8.5 JBSplits
+
+| Change | Description |
+|--------|-------------|
+| **Stale storage cleanup** | `_setSplitsOf` now deletes stale packed split data when the new split count is smaller than the previous count, preventing leftover storage from prior configurations. |
+
+### 8.6 JBTokens
 
 | Change | Description |
 |--------|-------------|
 | **Overflow check timing** | `mintFor` now checks `totalSupplyOf(projectId) + count > type(uint208).max` BEFORE minting (v5 checked after). |
 
-### 8.6 JBERC20
+### 8.7 JBERC20
 
 | Change | Description |
 |--------|-------------|
 | **Named revert** | `initialize()` now reverts with `JBERC20_AlreadyInitialized()` instead of a bare `revert()`. |
 
-### 8.7 JBChainlinkV3PriceFeed
+### 8.8 JBChainlinkV3PriceFeed
 
 | Change | Description |
 |--------|-------------|
 | **Incomplete round check order** | The check for `updatedAt == 0` (incomplete round) now runs BEFORE the stale price check, avoiding false stale errors on incomplete rounds. |
 
-### 8.8 JBChainlinkV3SequencerPriceFeed
+### 8.9 JBChainlinkV3SequencerPriceFeed
 
 | Change | Description |
 |--------|-------------|
 | **Typo fix** | Error parameter `gradePeriodTime` corrected to `gracePeriodTime` in `JBChainlinkV3SequencerPriceFeed_SequencerDown`. |
 | **Threshold docs** | Constructor parameter `threshold` documentation corrected from "blocks" to "seconds". |
 
-### 8.9 Solidity Version
+### 8.10 Solidity Version
 
 All contracts upgraded from `pragma solidity 0.8.23` to `pragma solidity 0.8.26`.
 
-### 8.10 Named Arguments
+### 8.11 Named Arguments
 
 Throughout the codebase, function calls were updated to use named argument syntax (e.g., `foo({bar: 1, baz: 2})`) for improved readability.
 
@@ -328,7 +353,7 @@ Throughout the codebase, function calls were updated to use named argument synta
 |----|----|-------|
 | `IJBController` | `IJBController` | Gained `setTokenMetadataOf`. `calldata` for terminal configs. |
 | `IJBRulesets` | `IJBRulesets` | `updateRulesetWeightCache` gained `rulesetId` parameter |
-| `IJBTerminalStore` | `IJBTerminalStore` | `tokenCount` renamed to `cashOutCount` in `currentReclaimableSurplusOf`. View functions reordered. |
+| `IJBTerminalStore` | `IJBTerminalStore` | `tokenCount` renamed to `cashOutCount` in `currentReclaimableSurplusOf`. `recordCashOutFor` gained `beneficiaryIsFeeless` param. View functions reordered. |
 | `IJBPayoutTerminal` | `IJBPayoutTerminal` | `sendPayoutsOf` returns `amountPaidOut` (was `netLeftoverPayoutAmount`). `SendPayoutToSplit` event moved. |
 | `IJBPermitTerminal` | `IJBPermitTerminal` | Gained `Permit2AllowanceFailed` event |
 | `IJBMigratable` | `IJBMigratable` | Gained `afterReceiveMigrationFrom` function |
@@ -344,7 +369,7 @@ Throughout the codebase, function calls were updated to use named argument synta
 | v5 | v6 | Notes |
 |----|----|-------|
 | `JBController` | `JBController` | Token metadata, migration lifecycle (`afterReceiveMigrationFrom`), `LAUNCH_RULESETS` permission |
-| `JBMultiTerminal` | `JBMultiTerminal` | Reentrancy hardening, decimal validation rename, Permit2 event |
+| `JBMultiTerminal` | `JBMultiTerminal` | Reentrancy hardening, decimal validation rename, Permit2 event, fee-free bypass prevention (`_feeFreeSurplusOf`), `beneficiaryIsFeeless` passthrough |
 | `JBRulesets` | `JBRulesets` | Approval hook try/catch, weight cache changes, threshold increase |
 | `JBDirectory` | `JBDirectory` | Migration ordering fix, afterReceiveMigration call |
 | `JBTokens` | `JBTokens` | Token metadata support, overflow check timing |
@@ -366,7 +391,7 @@ Throughout the codebase, function calls were updated to use named argument synta
 
 | v5 | v6 | Notes |
 |----|----|-------|
-| All 22 structs | Same names, same fields | Only lint comments added |
+| All 22 structs | Same names | All identical except `JBBeforeCashOutRecordedContext` (gained `beneficiaryIsFeeless` field). Lint comments added to all. |
 
 ### Enums
 
