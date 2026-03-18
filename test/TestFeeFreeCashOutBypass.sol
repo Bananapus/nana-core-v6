@@ -49,9 +49,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         JBTerminalConfig[] memory _terminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory _tokensToAccept = new JBAccountingContext[](1);
         _tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         _terminalConfigurations[0] =
             JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: _tokensToAccept});
@@ -102,13 +100,11 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         });
 
         JBSplitGroup[] memory _splitGroups = new JBSplitGroup[](1);
-        _splitGroups[0] =
-            JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: _splits});
+        _splitGroups[0] = JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: _splits});
 
         JBFundAccessLimitGroup[] memory _fundAccessLimitGroup = new JBFundAccessLimitGroup[](1);
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
-        _payoutLimits[0] =
-            JBCurrencyAmount({amount: _payoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        _payoutLimits[0] = JBCurrencyAmount({amount: _payoutLimit, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
         _fundAccessLimitGroup[0] = JBFundAccessLimitGroup({
             terminal: address(_terminal),
             token: JBConstants.NATIVE_TOKEN,

@@ -1087,7 +1087,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless,
             // if the fee beneficiary doesn't accept the given token, or if the cash out tax rate is
             // zero and the project has never received a fee-free payout from another project.
-            if (!_isFeeless(beneficiary) && (cashOutTaxRate != 0 || _hasReceivedFeeFreePayout[projectId][tokenToReclaim])) {
+            if (
+                !_isFeeless(beneficiary)
+                    && (cashOutTaxRate != 0 || _hasReceivedFeeFreePayout[projectId][tokenToReclaim])
+            ) {
                 amountEligibleForFees += reclaimAmount;
                 // Subtract the fee for the reclaimed amount.
                 reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
