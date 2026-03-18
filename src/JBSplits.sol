@@ -105,8 +105,7 @@ contract JBSplits is JBControlled, IJBSplits {
             // Self-auth: lower 160 bits must match msg.sender AND upper 96 bits must be non-zero.
             // GroupIds with zero upper bits are reserved for protocol use (e.g. terminal payout groups)
             // and always require controller authorization to prevent token contracts from hijacking payouts.
-            bool isSelfManaged =
-                splitGroup.groupId >> 160 != 0 && address(uint160(splitGroup.groupId)) == msg.sender;
+            bool isSelfManaged = splitGroup.groupId >> 160 != 0 && address(uint160(splitGroup.groupId)) == msg.sender;
 
             if (!isSelfManaged && !controllerChecked) {
                 _onlyControllerOf(projectId);

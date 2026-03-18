@@ -422,7 +422,8 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
     // ─────────────────────────────
 
     function test_MixedSelfManagedAndControllerGroupsInOneCall() external {
-        // A single setSplitGroupsOf call with one self-managed group (non-zero upper bits) and one controller-gated group.
+        // A single setSplitGroupsOf call with one self-managed group (non-zero upper bits) and one controller-gated
+        // group.
         address caller = makeAddr("hookContract");
         uint256 selfGroupId = (1 << 160) | uint256(uint160(caller));
         uint256 otherGroupId = 0;
