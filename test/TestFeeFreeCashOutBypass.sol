@@ -549,11 +549,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         _newRuleset[0].fundAccessLimitGroups = _fundAccessLimitGroup;
 
         vm.prank(_projectOwner);
-        _controller.queueRulesetsOf({
-            projectId: _projectIdA,
-            rulesetConfigurations: _newRuleset,
-            memo: ""
-        });
+        _controller.queueRulesetsOf({projectId: _projectIdA, rulesetConfigurations: _newRuleset, memo: ""});
 
         // Second payout cycle: pay A again, send payouts → another 10 ETH, total 20 ETH surplus.
         vm.prank(_attacker);
