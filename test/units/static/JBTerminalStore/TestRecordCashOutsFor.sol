@@ -336,6 +336,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             cashOutCount: _cashOutCount,
             accountingContext: _accountingContexts,
             balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: false,
             metadata: ""
         });
     }
@@ -369,6 +370,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             cashOutCount: _cashOutCount,
             accountingContext: _accountingContexts,
             balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: false,
             metadata: ""
         });
 
@@ -443,6 +445,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             cashOutCount: _cashOutCount,
             accountingContext: _accountingContexts,
             balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: false,
             metadata: ""
         });
 
@@ -488,6 +491,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             cashOutCount: _cashOutCount,
             accountingContext: _accountingContexts,
             balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: false,
             metadata: ""
         });
     }

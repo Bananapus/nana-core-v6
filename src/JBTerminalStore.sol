@@ -5,8 +5,6 @@ import {mulDiv} from "@prb/math/src/Common.sol";
 
 import {IJBController} from "./interfaces/IJBController.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
-import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
-import {IJBFeeTerminal} from "./interfaces/IJBFeeTerminal.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
@@ -158,6 +156,8 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param accountingContext The accounting context of the token being reclaimed by the cash out.
     /// @param balanceAccountingContexts The accounting contexts of the tokens whose balances should contribute to the
     /// surplus being reclaimed from.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
+    /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Bytes to send to the data hook, if the project's current ruleset specifies one.
     /// @return ruleset The ruleset during the cash out was made during, as a `JBRuleset` struct. This ruleset will
     /// have a cash out tax rate provided by the cash out hook if applicable.
@@ -172,6 +172,7 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 cashOutCount,
         JBAccountingContext calldata accountingContext,
         JBAccountingContext[] calldata balanceAccountingContexts,
+        bool beneficiaryIsFeeless,
         bytes memory metadata
     )
         external
@@ -186,10 +187,9 @@ contract JBTerminalStore is IJBTerminalStore {
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
-        // Get the current surplus amount.
-        // Use the local surplus if the ruleset specifies that it should be used. Otherwise, use the project's total
-        // surplus across all of its terminals.
-        uint256 currentSurplus = ruleset.useTotalSurplusForCashOuts()
+        // Store the current surplus in `reclaimAmount` temporarily to avoid allocating a separate local variable
+        // (saves one stack slot, which is needed to fit the 7th parameter without hitting stack-too-deep).
+        reclaimAmount = ruleset.useTotalSurplusForCashOuts()
             ? JBSurplus.currentSurplusOf({
                 projectId: projectId,
                 terminals: DIRECTORY.terminalsOf(projectId),
@@ -206,59 +206,58 @@ contract JBTerminalStore is IJBTerminalStore {
                 targetCurrency: accountingContext.currency
             });
 
-        // Get the total number of outstanding project tokens.
-        uint256 totalSupply =
-            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
+        // Scoped to keep `totalSupply` and `context` off the outer stack.
+        {
+            // Get the total number of outstanding project tokens.
+            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
+                .totalTokenSupplyWithReservedTokensOf(projectId);
 
-        // Can't cash out more tokens than are in the supply.
-        if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
+            // Can't cash out more tokens than are in the supply.
+            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
 
-        // SECURITY NOTE: The data hook has absolute control over cash-out economics.
-        // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
-        // completely overriding the terminal's bonding curve math. For example, setting
-        // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
-        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
+            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+            // completely overriding the terminal's bonding curve math. For example, setting
+            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+            // Project owners MUST audit their data hooks with the same rigor as the terminal.
 
-        // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
-        if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
-            // Create the cash out context that'll be sent to the data hook.
-            JBBeforeCashOutRecordedContext memory context = JBBeforeCashOutRecordedContext({
-                terminal: msg.sender,
-                holder: holder,
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                cashOutCount: cashOutCount,
-                totalSupply: totalSupply,
-                surplus: JBTokenAmount({
+            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
+            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
+                // Build the cash out context field-by-field to avoid stack-too-deep
+                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
+                JBBeforeCashOutRecordedContext memory context;
+                context.terminal = msg.sender;
+                context.holder = holder;
+                context.projectId = projectId;
+                context.rulesetId = ruleset.id;
+                context.cashOutCount = cashOutCount;
+                context.totalSupply = totalSupply;
+                context.surplus = JBTokenAmount({
                     token: accountingContext.token,
-                    value: currentSurplus,
+                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
                     decimals: accountingContext.decimals,
                     currency: accountingContext.currency
-                }),
-                useTotalSurplus: ruleset.useTotalSurplusForCashOuts(),
-                cashOutTaxRate: ruleset.cashOutTaxRate(),
-                beneficiaryIsFeeless: false,
-                metadata: metadata
-            });
+                });
+                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
+                context.cashOutTaxRate = ruleset.cashOutTaxRate();
+                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
+                context.metadata = metadata;
 
-            // Set after construction to avoid stack-too-deep. Lets data hooks skip fees when value
-            // stays in the protocol (e.g. router terminal routing between projects).
-            context.beneficiaryIsFeeless = _isFeelessForTerminal({terminal: msg.sender, addr: holder});
+                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
+                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+            } else {
+                cashOutTaxRate = ruleset.cashOutTaxRate();
+            }
 
-            (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
-                IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
-        } else {
-            cashOutTaxRate = ruleset.cashOutTaxRate();
-        }
-
-        if (currentSurplus != 0) {
-            // Calculate reclaim amount using the current surplus amount.
-            reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: currentSurplus,
-                cashOutCount: cashOutCount,
-                totalSupply: totalSupply,
-                cashOutTaxRate: cashOutTaxRate
-            });
+            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the result.
+            if (reclaimAmount != 0) {
+                reclaimAmount = JBCashOuts.cashOutFrom({
+                    surplus: reclaimAmount,
+                    cashOutCount: cashOutCount,
+                    totalSupply: totalSupply,
+                    cashOutTaxRate: cashOutTaxRate
+                });
+            }
         }
 
         // Keep a reference to the amount that should be added to the project's balance.
@@ -913,22 +912,6 @@ contract JBTerminalStore is IJBTerminalStore {
             } else {
                 return 0;
             }
-        }
-    }
-
-    //*********************************************************************//
-    // -------------------------- private views ------------------------- //
-    //*********************************************************************//
-
-    /// @notice Checks if an address is feeless according to a terminal's feeless registry.
-    /// @param terminal The terminal to query for feeless addresses.
-    /// @param addr The address to check.
-    /// @return A flag indicating if the address is feeless.
-    function _isFeelessForTerminal(address terminal, address addr) private view returns (bool) {
-        try IJBFeeTerminal(terminal).FEELESS_ADDRESSES() returns (IJBFeelessAddresses feelessAddresses) {
-            return feelessAddresses.isFeeless(addr);
-        } catch {
-            return false;
         }
     }
 }

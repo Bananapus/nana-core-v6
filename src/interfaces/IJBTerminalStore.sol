@@ -145,6 +145,8 @@ interface IJBTerminalStore {
     /// @param cashOutCount The number of project tokens being cashed out.
     /// @param accountingContext The accounting context of the token being reclaimed.
     /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
+    /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
     /// @return reclaimAmount The amount reclaimed.
@@ -156,6 +158,7 @@ interface IJBTerminalStore {
         uint256 cashOutCount,
         JBAccountingContext calldata accountingContext,
         JBAccountingContext[] calldata balanceAccountingContexts,
+        bool beneficiaryIsFeeless,
         bytes calldata metadata
     )
         external
