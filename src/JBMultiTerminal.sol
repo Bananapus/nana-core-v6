@@ -1074,6 +1074,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 accountingContext: accountingContext,
                 balanceAccountingContexts: balanceAccountingContexts,
                 cashOutCount: cashOutCount,
+                beneficiaryIsFeeless: _isFeeless(beneficiary),
                 metadata: metadata
             });
         }
