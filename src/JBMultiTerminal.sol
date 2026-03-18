@@ -137,7 +137,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     mapping(uint256 projectId => JBAccountingContext[]) internal _accountingContextsOf;
 
     /// @notice Whether a project has ever received a fee-free payout from another project on this terminal.
-    /// @dev Once set, this permanently disables the fee-free cashout exemption for this project/token pair.
+    /// @dev This flag is permanently set to `true` once a project receives a fee-free intra-terminal payout — it is
+    /// never cleared. Once set, any cashout from this project/token pair will be subject to fees, even if the
+    /// `cashOutTaxRate` is zero. This prevents a round-trip fee bypass where funds could be routed fee-free into a
+    /// project (via an intra-terminal split payout) and then cashed out fee-free (via a zero-tax cashout). The
+    /// permanence is by design: resetting the flag would allow circumvention by cycling payout recipients or
+    /// ruleset configurations.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => bool)) internal _hasReceivedFeeFreePayout;
