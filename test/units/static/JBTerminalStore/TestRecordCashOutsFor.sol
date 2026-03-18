@@ -496,6 +496,73 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         });
     }
 
+    function test_GivenBeneficiaryIsFeeless_DataHookReceivesTrue()
+        external
+        whenCurrentRulesetUseTotalSurplusForCashOutsEqTrueWithHook
+    {
+        // it will pass beneficiaryIsFeeless=true through to the data hook context
+
+        // mock JBController totalTokenSupplyWithReservedTokensOf
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_totalSupply)
+        );
+
+        // call params
+        JBAccountingContext memory _accountingContexts =
+            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
+
+        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+
+        uint256 _cashOutCount = 1e18;
+        uint256 expectedCashOuts = mulDiv(3e18, _cashOutCount, _totalSupply);
+
+        // Create the expected context — beneficiaryIsFeeless should be true.
+        JBBeforeCashOutRecordedContext memory _context = JBBeforeCashOutRecordedContext({
+            terminal: address(this),
+            holder: address(this),
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            cashOutCount: _cashOutCount,
+            totalSupply: _totalSupply,
+            surplus: JBTokenAmount({
+                token: _accountingContexts.token,
+                value: 3e18,
+                decimals: _accountingContexts.decimals,
+                currency: _accountingContexts.currency
+            }),
+            useTotalSurplus: true,
+            cashOutTaxRate: 0,
+            beneficiaryIsFeeless: true,
+            metadata: ""
+        });
+
+        // return data
+        JBCashOutHookSpecification[] memory _spec = new JBCashOutHookSpecification[](1);
+        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, amount: 0, metadata: ""});
+
+        // The mock will only match if the context has beneficiaryIsFeeless=true.
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
+            abi.encode(0, 1e18, _totalSupply, _spec)
+        );
+
+        (, uint256 reclaimed,,) = _store.recordCashOutFor({
+            holder: address(this),
+            projectId: _projectId,
+            cashOutCount: _cashOutCount,
+            accountingContext: _accountingContexts,
+            balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: true,
+            metadata: ""
+        });
+
+        assertEq(expectedCashOuts, reclaimed);
+    }
+
     // Probably unnecessary even though it may give us a bit of cov %.. skipping for now
     /* function test_WhenTheCurrentRulesetUseTotalSurplusForCashOutsEqFalse() external {
         // it will use the standard surplus calculation
