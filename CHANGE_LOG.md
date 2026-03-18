@@ -4,6 +4,14 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 
 ---
 
+## 0. Post-Release Changes
+
+### 0.1 JBSplits -- Self-Auth GroupId Restriction
+
+`setSplitGroupsOf` self-auth now requires the upper 96 bits of the `groupId` to be non-zero. The full self-auth check is: `uint160(groupId) == msg.sender && groupId >> 160 != 0`. GroupIds with zero upper 96 bits (bare addresses like `uint256(uint160(tokenAddress))`) are protocol-reserved for terminal payout groups and always require controller authorization. This prevents accepted token contracts from writing a project's payout splits without controller auth. The 721 hook is unaffected since it already uses `hookAddress | tierId << 160` (non-zero upper bits).
+
+---
+
 ## 1. Breaking Changes
 
 ### 1.1 Interface Signature Changes

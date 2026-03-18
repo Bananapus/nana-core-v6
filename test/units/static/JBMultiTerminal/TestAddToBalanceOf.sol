@@ -85,8 +85,8 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _native);
         assertEq(_storedContext.token, _native);
 
-        // Find the storage slot for fees array
-        bytes32 feeSlot = keccak256(abi.encode(_projectId, uint256(2)));
+        // Find the storage slot for fees array (_heldFeesOf is at storage slot 3)
+        bytes32 feeSlot = keccak256(abi.encode(_projectId, uint256(3)));
         bytes32 slotForArrayLength = keccak256(abi.encode(_native, feeSlot));
 
         // Set the length of the fees array in the storage slot

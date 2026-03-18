@@ -138,6 +138,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |----------|--------------|
 | `splitsOf(uint256 projectId, uint256 rulesetId, uint256 groupId)` | Returns splits for a project/ruleset/group. Falls back to ruleset ID 0 if none set. |
 
+**Self-auth for `setSplitGroupsOf`**: A contract can set its own split groups without controller authorization if the lower 160 bits of the `groupId` match `msg.sender` AND the upper 96 bits are non-zero. GroupIds with zero upper 96 bits (bare addresses like `uint256(uint160(token))`) are protocol-reserved for terminal payout groups and always require controller auth.
+
 ### Other
 
 | Function | What it does |

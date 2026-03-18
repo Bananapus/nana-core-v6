@@ -95,14 +95,39 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
     }
 
     // ───────────────────────────────────────────────────────────
-    //  Finding 2: Splits groupId namespace is intentional
+    //  Finding 2: Splits groupId namespace — bare addresses reserved for protocol
     // ───────────────────────────────────────────────────────────
 
-    /// @notice A contract can set splits in its own namespace (groupId where first 160 bits == msg.sender).
-    function test_splits_contractCanSetOwnNamespace() public {
+    /// @notice A contract can set splits in its own namespace when upper 96 bits are non-zero.
+    function test_splits_contractCanSetOwnNamespaceWithUpperBits() public {
         uint256 projectId = _launchSimpleProject();
 
-        // The groupId with the caller's address embedded in the first 160 bits.
+        // Self-auth requires non-zero upper 96 bits + lower 160 bits == msg.sender.
+        uint256 groupId = (1 << 160) | uint256(uint160(address(this)));
+
+        JBSplit[] memory splits = new JBSplit[](1);
+        splits[0].beneficiary = payable(address(0xBEEF));
+        splits[0].percent = uint32(JBConstants.SPLITS_TOTAL_PERCENT);
+
+        JBSplitGroup[] memory groups = new JBSplitGroup[](1);
+        groups[0] = JBSplitGroup({groupId: groupId, splits: splits});
+
+        // This call should succeed because address(this) matches the first 160 bits and upper bits != 0.
+        _splits.setSplitGroupsOf(projectId, 0, groups);
+
+        // Verify the splits were set.
+        JBSplit[] memory stored = _splits.splitsOf(projectId, 0, groupId);
+        assertEq(stored.length, 1, "Should have 1 split");
+        assertEq(stored[0].beneficiary, address(0xBEEF), "Beneficiary should match");
+    }
+
+    /// @notice A contract cannot self-auth for bare-address groupIds (upper 96 bits = 0).
+    /// These are reserved for protocol use (terminal payout groups keyed by token address).
+    function test_splits_bareAddressGroupIdBlocksSelfAuth() public {
+        uint256 projectId = _launchSimpleProject();
+
+        // Bare address groupId: upper 96 bits = 0. Even though lower 160 bits == msg.sender,
+        // this is a protocol-reserved namespace and requires controller auth.
         uint256 groupId = uint256(uint160(address(this)));
 
         JBSplit[] memory splits = new JBSplit[](1);
@@ -112,13 +137,10 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
         JBSplitGroup[] memory groups = new JBSplitGroup[](1);
         groups[0] = JBSplitGroup({groupId: groupId, splits: splits});
 
-        // This call should succeed because address(this) matches the first 160 bits of the groupId.
+        // This call should revert because bare-address groupIds require controller auth,
+        // preventing token contracts from hijacking terminal payout splits.
+        vm.expectRevert();
         _splits.setSplitGroupsOf(projectId, 0, groups);
-
-        // Verify the splits were set.
-        JBSplit[] memory stored = _splits.splitsOf(projectId, 0, groupId);
-        assertEq(stored.length, 1, "Should have 1 split");
-        assertEq(stored[0].beneficiary, address(0xBEEF), "Beneficiary should match");
     }
 
     /// @notice A contract cannot set splits in a namespace that belongs to a different address.
