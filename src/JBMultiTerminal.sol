@@ -136,16 +136,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param projectId The ID of the project to get a list of accepted tokens for.
     mapping(uint256 projectId => JBAccountingContext[]) internal _accountingContextsOf;
 
-    /// @notice Whether a project has ever received a fee-free payout from another project on this terminal.
-    /// @dev This flag is permanently set to `true` once a project receives a fee-free intra-terminal payout — it is
-    /// never cleared. Once set, any cashout from this project/token pair will be subject to fees, even if the
-    /// `cashOutTaxRate` is zero. This prevents a round-trip fee bypass where funds could be routed fee-free into a
-    /// project (via an intra-terminal split payout) and then cashed out fee-free (via a zero-tax cashout). The
-    /// permanence is by design: resetting the flag would allow circumvention by cycling payout recipients or
-    /// ruleset configurations.
+    /// @notice The cumulative amount of fee-free intra-terminal payouts a project has received for a given token.
+    /// @dev Incremented each time a fee-free payout lands (same terminal, no fee charged). During cashout with
+    /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
+    /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
+    /// — legitimate cashouts beyond this amount remain fee-free.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
-    mapping(uint256 projectId => mapping(address token => bool)) internal _hasReceivedFeeFreePayout;
+    mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
 
     /// @notice Fees that are being held for each project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
@@ -436,11 +434,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
             }
 
-            // Mark the receiving project as having received a fee-free payout.
-            // This permanently disables the fee-free cashout exemption for this project/token,
-            // closing the round-trip fee bypass (intra-terminal payout → zero-tax cashout).
+            // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
+            // only up to this accumulated amount, preventing round-trip fee bypass.
             if (terminal == this) {
-                _hasReceivedFeeFreePayout[split.projectId][token] = true;
+                _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
             }
 
             // Send the `projectId` in the metadata as a referral.
@@ -1089,16 +1086,22 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Send the reclaimed funds to the beneficiary.
         if (reclaimAmount != 0) {
-            // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless,
-            // if the fee beneficiary doesn't accept the given token, or if the cash out tax rate is
-            // zero and the project has never received a fee-free payout from another project.
-            if (
-                !_isFeeless(beneficiary)
-                    && (cashOutTaxRate != 0 || _hasReceivedFeeFreePayout[projectId][tokenToReclaim])
-            ) {
-                amountEligibleForFees += reclaimAmount;
-                // Subtract the fee for the reclaimed amount.
-                reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
+            // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless.
+            if (!_isFeeless(beneficiary)) {
+                if (cashOutTaxRate != 0) {
+                    // Non-zero tax: fees apply to the full reclaim amount.
+                    amountEligibleForFees += reclaimAmount;
+                    reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
+                } else {
+                    // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
+                    uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
+                    if (feeFreeSurplus != 0) {
+                        uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
+                        _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                        amountEligibleForFees += feeableAmount;
+                        reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
+                    }
+                }
             }
 
             // Subtract the fee from the reclaim amount.

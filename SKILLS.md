@@ -235,7 +235,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 - `JBERC20` is cloned via `Clones.clone()` -- its constructor sets invalid name/symbol; real values set in `initialize()`
 - Fee is 2.5% (`FEE = 25` out of `MAX_FEE = 1000`)
 - Project #1 is the fee beneficiary project (receives all protocol fees)
-- **Fee-free cashout exemption is revoked for projects that received fee-free intra-terminal payouts.** If `_hasReceivedFeeFreePayout[projectId][token]` is set, cash outs charge fees even when `cashOutTaxRate=0`. This prevents a round-trip fee bypass (intra-terminal payout → zero-tax cashout).
+- **Fee-free cashout exemption is scoped to fee-free intra-terminal payout amounts.** `_feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free payouts. During cashout with `cashOutTaxRate=0`, the 2.5% fee applies only up to this surplus, then depletes. Once consumed, subsequent cashouts are fee-free again. This prevents a round-trip fee bypass (intra-terminal payout → zero-tax cashout) while scoping fees precisely to the fee-free inflow.
 - `JBProjects` constructor optionally mints project #1 to `feeProjectOwner` -- if `address(0)`, no fee project is created
 - `JBMultiTerminal` derives `DIRECTORY` and `RULESETS` from the provided `store` in its constructor -- not passed directly
 - `JBPrices.pricePerUnitOf()` checks project-specific feed, then inverse, then falls back to `DEFAULT_PROJECT_ID = 0`
