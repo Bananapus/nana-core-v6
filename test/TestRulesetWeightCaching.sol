@@ -73,9 +73,11 @@ contract TestRulesetWeightCaching_Local is TestBaseWorkflow {
 
         {
             _rulesetConfigurations[0].mustStartAtOrAfter = 0;
-            _rulesetConfigurations[0].duration = uint32(_DURATION);
+            // forge-lint: disable-next-line(unsafe-typecast)
+            _rulesetConfigurations[0].duration = uint32(_DURATION); // safe: _DURATION = 1
             _rulesetConfigurations[0].weight = uint112(1000 * 10 ** _WEIGHT_DECIMALS);
-            _rulesetConfigurations[0].weightCutPercent = uint32(_WEIGHT_CUT_PERCENT);
+            // forge-lint: disable-next-line(unsafe-typecast)
+            _rulesetConfigurations[0].weightCutPercent = uint32(_WEIGHT_CUT_PERCENT); // safe: _WEIGHT_CUT_PERCENT = 1
             _rulesetConfigurations[0].approvalHook = IJBRulesetApprovalHook(address(0));
             _rulesetConfigurations[0].metadata = _metadata;
             _rulesetConfigurations[0].splitGroups = new JBSplitGroup[](0);
