@@ -81,18 +81,16 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
 
         // Use the full payout limit in cycle 1.
         vm.prank(_projectOwner);
-        IJBPayoutTerminal(address(_terminal)).sendPayoutsOf(
-            projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0
-        );
+        IJBPayoutTerminal(address(_terminal))
+            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
 
         // Warp to cycle 2.
         vm.warp(block.timestamp + 30 days + 1);
 
         // Should be able to send payouts again — the limit resets.
         vm.prank(_projectOwner);
-        IJBPayoutTerminal(address(_terminal)).sendPayoutsOf(
-            projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0
-        );
+        IJBPayoutTerminal(address(_terminal))
+            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
         // If this doesn't revert, the payout limit reset per cycle is confirmed.
     }
 
@@ -159,18 +157,15 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
         _terminal.pay{value: 2e18}(projectA, JBConstants.NATIVE_TOKEN, 2e18, address(this), 0, "", "");
 
         // Record project B's balance before payout.
-        uint256 balanceBefore =
-            jbTerminalStore().balanceOf(address(_terminal), projectB, JBConstants.NATIVE_TOKEN);
+        uint256 balanceBefore = jbTerminalStore().balanceOf(address(_terminal), projectB, JBConstants.NATIVE_TOKEN);
 
         // Send payouts from project A.
         vm.prank(_projectOwner);
-        uint256 amountPaidOut = IJBPayoutTerminal(address(_terminal)).sendPayoutsOf(
-            projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0
-        );
+        uint256 amountPaidOut = IJBPayoutTerminal(address(_terminal))
+            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
 
         // Record project B's balance after payout.
-        uint256 balanceAfter =
-            jbTerminalStore().balanceOf(address(_terminal), projectB, JBConstants.NATIVE_TOKEN);
+        uint256 balanceAfter = jbTerminalStore().balanceOf(address(_terminal), projectB, JBConstants.NATIVE_TOKEN);
 
         // Project B should receive the FULL payout amount (no fee deducted) because it's on the same terminal.
         assertEq(balanceAfter - balanceBefore, amountPaidOut, "Same-terminal payout should have no fee");
@@ -191,9 +186,8 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
 
         // Send payouts from project A.
         vm.prank(_projectOwner);
-        IJBPayoutTerminal(address(_terminal)).sendPayoutsOf(
-            projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0
-        );
+        IJBPayoutTerminal(address(_terminal))
+            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
 
         uint256 recipientBalanceAfter = recipient.balance;
         uint256 received = recipientBalanceAfter - recipientBalanceBefore;
