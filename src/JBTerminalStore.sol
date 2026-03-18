@@ -249,7 +249,8 @@ contract JBTerminalStore is IJBTerminalStore {
                 cashOutTaxRate = ruleset.cashOutTaxRate();
             }
 
-            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the result.
+            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
+            // result.
             if (reclaimAmount != 0) {
                 reclaimAmount = JBCashOuts.cashOutFrom({
                     surplus: reclaimAmount,
