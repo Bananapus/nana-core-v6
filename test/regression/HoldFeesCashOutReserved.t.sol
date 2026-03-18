@@ -180,8 +180,8 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         uint256 payerTokens = _tokens.totalBalanceOf(_payer, _projectId);
         {
             // weight=1000e18 tokens per 1 ETH, pay=10 ETH => 10000e18 total. 50% reserved => payer gets 5000e18.
-            uint256 expectedPayerTokens = (uint256(WEIGHT) * uint256(PAY_AMOUNT) / 1 ether)
-                * (JBConstants.MAX_RESERVED_PERCENT - 5000) / JBConstants.MAX_RESERVED_PERCENT;
+            uint256 expectedPayerTokens = uint256(WEIGHT) * uint256(PAY_AMOUNT)
+                * (JBConstants.MAX_RESERVED_PERCENT - 5000) / JBConstants.MAX_RESERVED_PERCENT / 1 ether;
             assertEq(payerTokens, expectedPayerTokens, "Payer should have 50% of minted tokens");
         }
 

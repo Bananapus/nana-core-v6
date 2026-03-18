@@ -10,10 +10,8 @@ import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
-import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
-import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
 import {JBFee} from "../../../../src/structs/JBFee.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
@@ -36,11 +34,11 @@ contract ForTest_JBMultiTerminal is JBMultiTerminal {
         JBMultiTerminal(feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder)
     {}
 
-    function forTest_addHeldFee(uint256 projectId, address token, JBFee memory fee) external {
+    function forTestAddHeldFee(uint256 projectId, address token, JBFee memory fee) external {
         _heldFeesOf[projectId][token].push(fee);
     }
 
-    function forTest_setNextHeldFeeIndex(uint256 projectId, address token, uint256 index) external {
+    function forTestSetNextHeldFeeIndex(uint256 projectId, address token, uint256 index) external {
         _nextHeldFeeIndexOf[projectId][token] = index;
     }
 }
@@ -80,7 +78,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Add a held fee with unlockTimestamp in the future
         uint48 futureTimestamp = uint48(block.timestamp + 1000);
-        _terminal.forTest_addHeldFee(
+        _terminal.forTestAddHeldFee(
             _projectId, _mockToken, JBFee({amount: 100, beneficiary: _beneficiary, unlockTimestamp: futureTimestamp})
         );
 
@@ -111,7 +109,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee that is already unlocked
         uint48 pastTimestamp = uint48(block.timestamp - 1);
         uint256 heldAmount = 1000;
-        _terminal.forTest_addHeldFee(
+        _terminal.forTestAddHeldFee(
             _projectId,
             _mockToken,
             JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
@@ -176,7 +174,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee that is already unlocked
         uint48 pastTimestamp = uint48(block.timestamp - 1);
         uint256 heldAmount = 1000;
-        _terminal.forTest_addHeldFee(
+        _terminal.forTestAddHeldFee(
             _projectId,
             _mockToken,
             JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})

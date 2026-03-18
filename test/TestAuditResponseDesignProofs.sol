@@ -18,7 +18,6 @@ import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplit} from "../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
-import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 
 /// @notice Audit response: proves 3 design decisions are intentional and correct.
 /// Finding 1: currentOf() first cycle NOT skipped — returns the stored ruleset directly.
@@ -304,6 +303,7 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
         // Split 100% to target project.
         JBSplit[] memory splits = new JBSplit[](1);
         splits[0].percent = uint32(JBConstants.SPLITS_TOTAL_PERCENT);
+        // forge-lint: disable-next-line(unsafe-typecast)
         splits[0].projectId = uint64(targetProjectId);
         splits[0].preferAddToBalance = true;
 

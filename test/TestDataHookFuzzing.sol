@@ -373,6 +373,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         _reservedPercent = bound(_reservedPercent, 1, JBConstants.MAX_RESERVED_PERCENT);
 
         JBRulesetMetadata memory _metadata2 = JBRulesetMetadata({
+            // forge-lint: disable-next-line(unsafe-typecast)
             reservedPercent: uint16(_reservedPercent),
             cashOutTaxRate: 0,
             baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
