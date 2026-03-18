@@ -310,7 +310,7 @@ The sum of a ruleset's payout limits is the maximum amount of funds a project ca
 
 Splits are stored slightly differently from the project's other rules, and can be changed by the project's owner at any time (independently of the ruleset) with [`JBController.setSplitGroupsOf(…)`](https://github.com/Bananapus/nana-core/blob/main/src/JBController.sol#L593) unless they are locked – splits have an optional `lockedUntil` timestamp which prevents them from being changed until that time has passed.
 
-By convention, a split group's `groupId` for a given `tokenAddress` is `uint256(uint160(tokenAddress))` – the only exception to this is the reserved token split, [which has a `groupId` of 1](https://github.com/Bananapus/nana-core/blob/main/src/libraries/JBSplitGroupIds.sol). These bare-address groupIds (with zero upper 96 bits) are protocol-reserved and always require controller authorization. Contracts can self-manage split groups where the lower 160 bits of the `groupId` match their address, but only if the upper 96 bits are non-zero (e.g., the 721 hook uses `hookAddress | tierId << 160`).
+By convention, a split group's `groupId` for a given `tokenAddress` is `uint256(uint160(tokenAddress))` – the only exception to this is the reserved token split, [which has a `groupId` of 1](https://github.com/Bananapus/nana-core/blob/main/src/libraries/JBSplitGroupIds.sol).
 
 Payout limits reset at the start of each ruleset – projects can use rulesets as a regular cadence for recurring payouts. If payouts are not sent out during a ruleset, the funds stay in the project's terminals.
 
