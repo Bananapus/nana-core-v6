@@ -77,11 +77,9 @@ contract JBSplits is JBControlled, IJBSplits {
 
     /// @notice Sets a project's split groups.
     /// @dev Only a project's controller can set its splits, unless the first 160 bits of the group's ID match
-    /// `msg.sender`, in which case the caller can set its own splits. The remaining upper 96 bits are free for the
-    /// caller to use as sub-categorization.
-    /// @dev The overlap between terminal-convention groupIds (uint160 of token address) and self-authorized groupIds
-    /// is safe by design: a token contract already has full control over its own transfers, so allowing it to set
-    /// splits in its address-namespace grants no additional privilege.
+    /// `msg.sender` AND the upper 96 bits are non-zero, in which case the caller can set its own splits.
+    /// GroupIds with zero upper 96 bits (i.e. bare addresses) are reserved for protocol use (e.g. terminal
+    /// payout groups keyed by token address) and always require controller authorization.
     /// @dev The new split groups must include any currently set splits that are locked.
     /// @param projectId The ID of the project to set the split groups of.
     /// @param rulesetId The ID of the ruleset the split groups should be active in. Send
@@ -104,9 +102,12 @@ contract JBSplits is JBControlled, IJBSplits {
             // Get a reference to the grouped split being iterated on.
             JBSplitGroup memory splitGroup = splitGroups[i];
 
-            // Allow contracts to set splits in their own namespace (first 160 bits of groupId == msg.sender).
-            // Otherwise, require controller (checked once).
-            if (address(uint160(splitGroup.groupId)) != msg.sender && !controllerChecked) {
+            // Self-auth: lower 160 bits must match msg.sender AND upper 96 bits must be non-zero.
+            // GroupIds with zero upper bits are reserved for protocol use (e.g. terminal payout groups)
+            // and always require controller authorization to prevent token contracts from hijacking payouts.
+            bool isSelfManaged = splitGroup.groupId >> 160 != 0 && address(uint160(splitGroup.groupId)) == msg.sender;
+
+            if (!isSelfManaged && !controllerChecked) {
                 _onlyControllerOf(projectId);
                 controllerChecked = true;
             }

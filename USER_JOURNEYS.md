@@ -260,7 +260,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Entry point**: `JBController.setSplitGroupsOf(uint256 projectId, uint256 rulesetId, JBSplitGroup[] splitGroups)`
 
-**Who can call**: Project owner or address with `SET_SPLIT_GROUPS` permission.
+**Who can call**: Project owner or address with `SET_SPLIT_GROUPS` permission. Alternatively, a contract whose address matches the lower 160 bits of a `groupId` can set that group directly -- but only if the upper 96 bits of the `groupId` are non-zero (bare-address groupIds are protocol-reserved for terminal payout groups).
 
 **Parameters**:
 - `projectId` -- Target project

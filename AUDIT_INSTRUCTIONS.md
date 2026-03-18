@@ -253,6 +253,7 @@ These are the patterns that will trip you up if you are not aware of them:
 4. **`pricePerUnitOf()` is on `IJBPrices`, not `IJBController`**
 5. **`baseCurrency` (1=ETH, 2=USD) != `JBAccountingContext.currency` (uint32(uint160(token)))** -- two different currency systems. `JBPrices` mediates between them.
 6. **`groupId` (uint256) != `currency` (uint32)** -- both derived from token address but different bit widths. `groupId = uint256(uint160(token))`, `currency = uint32(uint160(token))`.
+6b. **`setSplitGroupsOf` self-auth requires non-zero upper 96 bits.** The self-auth path (where `msg.sender` matches the lower 160 bits of the `groupId`) additionally requires `groupId >> 160 != 0`. Bare-address groupIds (upper 96 bits = 0) are protocol-reserved for terminal payout groups and always require controller auth. This prevents accepted token contracts from hijacking payout splits.
 7. **Empty `fundAccessLimitGroups` = zero payouts, NOT unlimited** -- `sendPayoutsOf` reverts on any amount. Use `uint224.max` for unlimited.
 8. **`sendPayoutsOf()` reverts when `amount > payout limit`** -- does NOT auto-cap to limit.
 9. **Cash out tax rate semantics are inverted from what you might expect**: 0% = proportional (1:1) redemption. 100% = nothing reclaimable (all surplus locked).

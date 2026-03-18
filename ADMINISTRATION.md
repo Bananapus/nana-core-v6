@@ -148,7 +148,7 @@ Admin privileges and their scope in nana-core-v6.
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `setSplitGroupsOf` | Project's controller, OR the address whose first 160 bits match the group ID (for self-namespaced splits) | N/A (onlyControllerOf or msg.sender namespace) | Per project | Sets split groups for a project/ruleset. Must preserve any currently locked splits. Percentage total per group must not exceed 100%. |
+| `setSplitGroupsOf` | Project's controller, OR the address whose lower 160 bits match the group ID AND the upper 96 bits are non-zero (for self-namespaced splits) | N/A (onlyControllerOf or msg.sender namespace) | Per project | Sets split groups for a project/ruleset. Must preserve any currently locked splits. Percentage total per group must not exceed 100%. GroupIds with zero upper 96 bits (e.g., `uint256(uint160(tokenAddress))`) are protocol-reserved for terminal payout groups and always require controller authorization. |
 
 ### JBFundAccessLimits
 

@@ -80,7 +80,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 ### Splits GroupId Namespace
 
-- **GroupId namespace overlap between terminals and token contracts is safe by design.** Terminals use `uint160(tokenAddress)` as the `groupId` for split groups. A token contract could also call `setSplitGroupsOf` using its own address as the `groupId`, which overlaps with the terminal's namespace. This is intentional — a token contract that has full control over its own transfers already has equivalent authority. Verified by test (`TestAuditResponseDesignProofs.test_splits_contractCanSetOwnNamespace`).
+- **GroupId namespace overlap between terminals and token contracts is prevented.** Terminals use `uint160(tokenAddress)` as the `groupId` for payout split groups -- these have zero upper 96 bits. The self-auth path in `setSplitGroupsOf` now requires the upper 96 bits of the `groupId` to be non-zero (in addition to the lower 160 bits matching `msg.sender`). This means bare-address groupIds (upper 96 bits = 0) are protocol-reserved and always require controller authorization. Without this restriction, an accepted token contract could call `setSplitGroupsOf` to overwrite the terminal's payout splits for its own address. The 721 hook is unaffected since it uses `hookAddress | tierId << 160` (non-zero upper bits).
 
 ### Migration
 
