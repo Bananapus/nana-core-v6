@@ -304,36 +304,42 @@ No changes.
 |--------|-------------|
 | **Migration ordering** | `setControllerOf` now calls `migrate()` on the old controller BEFORE updating `controllerOf` in storage (so `migrate()` runs while the directory still points to the old controller). After updating storage, it calls `afterReceiveMigrationFrom` on the new controller. |
 
-### 8.5 JBTokens
+### 8.5 JBSplits
+
+| Change | Description |
+|--------|-------------|
+| **Stale storage cleanup** | `_setSplitsOf` now deletes stale packed split data when the new split count is smaller than the previous count, preventing leftover storage from prior configurations. |
+
+### 8.6 JBTokens
 
 | Change | Description |
 |--------|-------------|
 | **Overflow check timing** | `mintFor` now checks `totalSupplyOf(projectId) + count > type(uint208).max` BEFORE minting (v5 checked after). |
 
-### 8.6 JBERC20
+### 8.7 JBERC20
 
 | Change | Description |
 |--------|-------------|
 | **Named revert** | `initialize()` now reverts with `JBERC20_AlreadyInitialized()` instead of a bare `revert()`. |
 
-### 8.7 JBChainlinkV3PriceFeed
+### 8.8 JBChainlinkV3PriceFeed
 
 | Change | Description |
 |--------|-------------|
 | **Incomplete round check order** | The check for `updatedAt == 0` (incomplete round) now runs BEFORE the stale price check, avoiding false stale errors on incomplete rounds. |
 
-### 8.8 JBChainlinkV3SequencerPriceFeed
+### 8.9 JBChainlinkV3SequencerPriceFeed
 
 | Change | Description |
 |--------|-------------|
 | **Typo fix** | Error parameter `gradePeriodTime` corrected to `gracePeriodTime` in `JBChainlinkV3SequencerPriceFeed_SequencerDown`. |
 | **Threshold docs** | Constructor parameter `threshold` documentation corrected from "blocks" to "seconds". |
 
-### 8.9 Solidity Version
+### 8.10 Solidity Version
 
 All contracts upgraded from `pragma solidity 0.8.23` to `pragma solidity 0.8.26`.
 
-### 8.10 Named Arguments
+### 8.11 Named Arguments
 
 Throughout the codebase, function calls were updated to use named argument syntax (e.g., `foo({bar: 1, baz: 2})`) for improved readability.
 
