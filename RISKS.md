@@ -28,6 +28,10 @@ What must be true for the system to remain safe:
 - **Forward vs. backward fee asymmetry.** `feeAmountFrom` (forward) uses `mulDiv(amount, 25, 1000)`. `feeAmountResultingIn` (backward) uses `mulDiv(amount, 1000, 975) - amount`. These are algebraically equivalent but rounding differs. In `_returnHeldFees`, both are used on the same held fee entry (forward to compute `feeAmount`, backward when partially returning). Verify the interplay never undercharges.
 - **Held fee amount mutation.** `_returnHeldFees` mutates `heldFee.amount` in-place via unchecked subtraction (line 1583). If the accounting is off by even 1 wei in the wrong direction, this underflows and corrupts the held fee entry.
 
+### First Cycle Behavior
+
+- **`currentOf()` returns the stored ruleset directly in the first cycle.** The first cycle (`cycleNumber == 1`) uses the original weight with no decay applied. Weight decay via `weightCutPercent` only takes effect from the second cycle onward. This is by design and verified by test (`TestAuditResponseDesignProofs.test_currentOf_firstCycle_returnsOriginalWeight`).
+
 ### Weight Decay
 
 - **Weight cache starvation as DoS.** Projects with short duration and nonzero `weightCutPercent` that run >20,000 cycles without a cache update will revert on `currentOf()` with `WeightCacheRequired`. This blocks all operations (pay, cash out, payouts). Anyone can call `updateRulesetWeightCache()` to fix it, but an attacker could create projects designed to hit this.
@@ -73,6 +77,10 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - **ROOT cannot be set for wildcard `projectId = 0`.** The actual enforcement in `setPermissionsFor` is: if the caller is not the account itself, they must have ROOT for the target project, AND they cannot set ROOT for others, AND they cannot set any permissions on the wildcard project. ROOT holders for a specific project can set non-ROOT permissions for operators on that project. Auditors should verify the exact boundary -- particularly whether a ROOT operator on project X can escalate to ROOT on project Y through any indirect path.
 - **Empty permission arrays pass `hasPermissions`.** By design (vacuous truth). Any caller that expects "the operator has at least one of these permissions" must validate the array is non-empty.
 - **`OMNICHAIN_RULESET_OPERATOR` bypass.** This immutable address can `launchRulesetsFor`, `queueRulesetsOf`, and set terminals for any project without owner permission. The trust assumption is that this operator only queues rulesets that the omnichain deployer's logic permits. If this address is an EOA or an upgradeable contract, it is a single point of failure for all projects.
+
+### Splits GroupId Namespace
+
+- **GroupId namespace overlap between terminals and token contracts is safe by design.** Terminals use `uint160(tokenAddress)` as the `groupId` for split groups. A token contract could also call `setSplitGroupsOf` using its own address as the `groupId`, which overlaps with the terminal's namespace. This is intentional — a token contract that has full control over its own transfers already has equivalent authority. Verified by test (`TestAuditResponseDesignProofs.test_splits_contractCanSetOwnNamespace`).
 
 ### Migration
 
@@ -171,6 +179,10 @@ These should hold at all times and are the most productive targets for formal ve
 
 ### No Flash-Loan Profit
 - `pay() + cashOutTokensOf()` in the same transaction should never be profitable after fees. The 2.5% fee should make single-block round-trips unprofitable. Verify this holds when data hooks modify weights or cash out parameters.
+
+### Same-Terminal Fee Exemption
+
+- **Payouts between projects on the same terminal are fee-exempt by design.** When `executePayout` sends funds to a split's project that uses the same `JBMultiTerminal`, no fee is charged — the payout is routed via `addToBalanceOf` (internal accounting) rather than requiring an external transfer. Fees only apply when funds leave the terminal (sent to an EOA beneficiary or a different terminal). This is intentional: fees protect against fund egress, not intra-terminal accounting moves. Verified by test (`TestAuditResponseDesignProofs.test_sameTerminal_payoutNoFee`).
 
 ### Held Fee Integrity
 - `sum(heldFee.amount for active entries) + sum(processed fees) == total fees ever taken with shouldHoldFees=true`. Active entries are those from `_nextHeldFeeIndexOf` to end of array. Verify `_returnHeldFees`' in-place mutation of `heldFee.amount` preserves this invariant.
