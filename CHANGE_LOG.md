@@ -12,7 +12,7 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 
 ### 0.2 JBMultiTerminal -- Fee-Free Cashout Bypass Prevention
 
-A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal without fees (feeless address or intra-terminal routing), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
+A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
 
 ### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
 
@@ -49,7 +49,7 @@ The parameter was renamed from `tokenCount` to `cashOutCount` in the simple 4-pa
 |--------|----|----|
 | `sendPayoutsOf` return value | `returns (uint256 netLeftoverPayoutAmount)` | `returns (uint256 amountPaidOut)` |
 
-The return value semantics changed: v5 returned the net leftover payout amount (sent to the project owner), while v6 returns the total amount paid out.
+The return variable name was corrected from `netLeftoverPayoutAmount` to `amountPaidOut` to match the actual implementation semantics (total amount paid out). The v5 implementation already returned the total amount from `STORE.recordPayoutFor()`, not the leftover — only the interface had the misleading name.
 
 #### IJBController
 
@@ -152,8 +152,8 @@ See section 2.2 above.
 
 | Contract | Event | Change |
 |----------|-------|--------|
-| `IJBCashOutTerminal` | `CashOut` | Event order changed in the interface (moved before `HookAfterRecordCashOut`); NatSpec added. No field changes. |
-| `IJBCashOutTerminal` | `HookAfterRecordCashOut` | Event order changed in the interface (moved after `CashOut`); NatSpec added. No field changes. |
+| `IJBCashOutTerminal` | `CashOutTokens` | Event order changed in the interface (moved before `HookAfterRecordCashOut`); NatSpec added. No field changes. |
+| `IJBCashOutTerminal` | `HookAfterRecordCashOut` | Event order changed in the interface (moved after `CashOutTokens`); NatSpec added. No field changes. |
 
 ### 3.3 All Interfaces Gained NatSpec
 
