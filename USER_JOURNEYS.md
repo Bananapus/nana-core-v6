@@ -97,7 +97,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Events**: `CashOutTokens(rulesetId, rulesetCycleNumber, projectId, holder, beneficiary, cashOutCount, cashOutTaxRate, reclaimAmount, metadata, caller)`
 
-**Preview**: Call `JBTerminalStore.previewCashOutFor(terminal, holder, projectId, cashOutCount, accountingContext, balanceAccountingContexts, beneficiaryIsFeeless, metadata)` to simulate the full cash out on-chain -- including data hook effects on tax rate, supply, and hook specifications. This is a `view` function that does not modify state. For a simpler estimate without data hook effects, use `currentTotalReclaimableSurplusOf(projectId, cashOutCount, decimals, currency)` or the 6-param `currentReclaimableSurplusOf` overload.
+**Preview**: Call `JBTerminalStore.previewCashOutFrom(terminal, holder, projectId, cashOutCount, accountingContext, balanceAccountingContexts, beneficiaryIsFeeless, metadata)` to simulate the full cash out on-chain -- including data hook effects on tax rate, supply, and hook specifications. This is a `view` function that does not modify state. For a simpler estimate without data hook effects, use `currentTotalReclaimableSurplusOf(projectId, cashOutCount, decimals, currency)` or the 6-param `currentReclaimableSurplusOf` overload.
 
 **Edge cases**:
 - `cashOutCount = 0` with `totalSupply = 0` -- returns entire surplus (C-5 known bug)

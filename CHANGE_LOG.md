@@ -19,9 +19,9 @@ A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumul
 Two new `view` functions added to `JBTerminalStore` and `IJBTerminalStore`:
 
 - `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
-- `previewCashOutFor(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
+- `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
 
-Both functions use the explicit `terminal` parameter instead of `msg.sender`, allowing any caller to preview operations for any terminal. Internal computation logic was extracted into shared `_computePayment` and `_computeCashOut` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
+Both functions use the explicit `terminal` parameter instead of `msg.sender`, allowing any caller to preview operations for any terminal. Internal computation logic was extracted into shared `_computePayFrom` and `_computeCashOutFrom` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
 
 ### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
 

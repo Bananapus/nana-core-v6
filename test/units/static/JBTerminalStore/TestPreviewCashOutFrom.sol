@@ -132,7 +132,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             abi.encode(_totalSupply)
         );
 
-        (, uint256 previewReclaimAmount, uint256 previewTaxRate, JBCashOutHookSpecification[] memory previewSpecs) = _store.previewCashOutFor({
+        (, uint256 previewReclaimAmount, uint256 previewTaxRate, JBCashOutHookSpecification[] memory previewSpecs) = _store.previewCashOutFrom({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,
@@ -221,7 +221,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
         uint256 balanceBefore = _store.balanceOf(address(this), _projectId, address(_token));
 
-        _store.previewCashOutFor({
+        _store.previewCashOutFrom({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,
@@ -294,7 +294,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
                 JBTerminalStore.JBTerminalStore_InsufficientTokens.selector, _excessiveCashOutCount, _totalSupply
             )
         );
-        _store.previewCashOutFor({
+        _store.previewCashOutFrom({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,
@@ -367,7 +367,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             abi.encode(_totalSupply)
         );
 
-        (, uint256 reclaimAmount,,) = _store.previewCashOutFor({
+        (, uint256 reclaimAmount,,) = _store.previewCashOutFrom({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,

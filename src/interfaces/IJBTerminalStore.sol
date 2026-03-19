@@ -126,7 +126,7 @@ interface IJBTerminalStore {
     /// @return reclaimAmount The amount that would be reclaimed.
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
-    function previewCashOutFor(
+    function previewCashOutFrom(
         address terminal,
         address holder,
         uint256 projectId,

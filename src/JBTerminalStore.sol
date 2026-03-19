@@ -184,7 +184,7 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut({
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOutFrom({
             terminal: msg.sender,
             holder: holder,
             projectId: projectId,
@@ -250,7 +250,7 @@ contract JBTerminalStore is IJBTerminalStore {
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
         uint256 balanceDiff;
-        (ruleset, tokenCount, hookSpecifications, balanceDiff) = _computePayment({
+        (ruleset, tokenCount, hookSpecifications, balanceDiff) = _computePayFrom({
             terminal: msg.sender,
             payer: payer,
             amount: amount,
@@ -649,7 +649,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return reclaimAmount The amount that would be reclaimed.
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
-    function previewCashOutFor(
+    function previewCashOutFrom(
         address terminal,
         address holder,
         uint256 projectId,
@@ -669,7 +669,7 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut({
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOutFrom({
             terminal: terminal,
             holder: holder,
             projectId: projectId,
@@ -706,7 +706,7 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
-        (ruleset, tokenCount, hookSpecifications,) = _computePayment({
+        (ruleset, tokenCount, hookSpecifications,) = _computePayFrom({
             terminal: terminal,
             payer: payer,
             amount: amount,
@@ -731,7 +731,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return tokenCount The number of project tokens that would be minted.
     /// @return hookSpecifications Pay hook specifications from the data hook.
     /// @return balanceDiff The amount that would be added to the project's balance.
-    function _computePayment(
+    function _computePayFrom(
         address terminal,
         address payer,
         JBTokenAmount memory amount,
@@ -850,7 +850,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return reclaimAmount The amount of tokens reclaimed.
     /// @return cashOutTaxRate The cash out tax rate applied.
     /// @return hookSpecifications Cash out hook specifications from the data hook.
-    function _computeCashOut(
+    function _computeCashOutFrom(
         address terminal,
         address holder,
         uint256 projectId,
