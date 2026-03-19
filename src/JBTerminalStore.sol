@@ -184,16 +184,16 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
-            msg.sender,
-            holder,
-            projectId,
-            cashOutCount,
-            accountingContext,
-            balanceAccountingContexts,
-            beneficiaryIsFeeless,
-            metadata
-        );
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut({
+            terminal: msg.sender,
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            accountingContext: accountingContext,
+            balanceAccountingContexts: balanceAccountingContexts,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            metadata: metadata
+        });
 
         // Compute the total amount to subtract from the project's balance.
         uint256 balanceDiff = reclaimAmount;
@@ -250,8 +250,14 @@ contract JBTerminalStore is IJBTerminalStore {
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
         uint256 balanceDiff;
-        (ruleset, tokenCount, hookSpecifications, balanceDiff) =
-            _computePayment(msg.sender, payer, amount, projectId, beneficiary, metadata);
+        (ruleset, tokenCount, hookSpecifications, balanceDiff) = _computePayment({
+            terminal: msg.sender,
+            payer: payer,
+            amount: amount,
+            projectId: projectId,
+            beneficiary: beneficiary,
+            metadata: metadata
+        });
 
         // Add the correct balance difference to the token balance of the project.
         if (balanceDiff != 0) {
@@ -663,16 +669,16 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
-            terminal,
-            holder,
-            projectId,
-            cashOutCount,
-            accountingContext,
-            balanceAccountingContexts,
-            beneficiaryIsFeeless,
-            metadata
-        );
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut({
+            terminal: terminal,
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            accountingContext: accountingContext,
+            balanceAccountingContexts: balanceAccountingContexts,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            metadata: metadata
+        });
     }
 
     /// @notice Simulates a payment without modifying state.
@@ -700,8 +706,14 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
-        (ruleset, tokenCount, hookSpecifications,) =
-            _computePayment(terminal, payer, amount, projectId, beneficiary, metadata);
+        (ruleset, tokenCount, hookSpecifications,) = _computePayment({
+            terminal: terminal,
+            payer: payer,
+            amount: amount,
+            projectId: projectId,
+            beneficiary: beneficiary,
+            metadata: metadata
+        });
     }
 
     //*********************************************************************//
