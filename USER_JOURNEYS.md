@@ -95,6 +95,8 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Events**: `CashOutTokens(rulesetId, rulesetCycleNumber, projectId, holder, beneficiary, cashOutCount, cashOutTaxRate, reclaimAmount, metadata, caller)`
 
+**Preview**: Call `JBTerminalStore.currentTotalReclaimableSurplusOf(projectId, cashOutCount, decimals, currency)` to estimate the reclaim amount across all terminals before executing. For terminal-specific or filtered queries, use the 6-param `currentReclaimableSurplusOf` overload.
+
 **Edge cases**:
 - `cashOutCount = 0` with `totalSupply = 0` -- returns entire surplus (C-5 known bug)
 - `cashOutTaxRate = MAX (10,000)` -- returns 0 (all surplus locked)
