@@ -184,99 +184,25 @@ contract JBTerminalStore is IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        // Get a reference to the project's current ruleset.
-        ruleset = RULESETS.currentOf(projectId);
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
+            msg.sender,
+            holder,
+            projectId,
+            cashOutCount,
+            accountingContext,
+            balanceAccountingContexts,
+            beneficiaryIsFeeless,
+            metadata
+        );
 
-        // Store the current surplus in `reclaimAmount` temporarily to avoid allocating a separate local variable
-        // (saves one stack slot, which is needed to fit the 7th parameter without hitting stack-too-deep).
-        reclaimAmount = ruleset.useTotalSurplusForCashOuts()
-            ? JBSurplus.currentSurplusOf({
-                projectId: projectId,
-                terminals: DIRECTORY.terminalsOf(projectId),
-                accountingContexts: new JBAccountingContext[](0),
-                decimals: accountingContext.decimals,
-                currency: accountingContext.currency
-            })
-            : _surplusFrom({
-                terminal: msg.sender,
-                projectId: projectId,
-                accountingContexts: balanceAccountingContexts,
-                ruleset: ruleset,
-                targetDecimals: accountingContext.decimals,
-                targetCurrency: accountingContext.currency
-            });
-
-        // Scoped to keep `totalSupply` and `context` off the outer stack.
-        {
-            // Get the total number of outstanding project tokens.
-            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
-                .totalTokenSupplyWithReservedTokensOf(projectId);
-
-            // Can't cash out more tokens than are in the supply.
-            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
-
-            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
-            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
-            // completely overriding the terminal's bonding curve math. For example, setting
-            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
-            // Project owners MUST audit their data hooks with the same rigor as the terminal.
-
-            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
-            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
-                // Build the cash out context field-by-field to avoid stack-too-deep
-                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
-                JBBeforeCashOutRecordedContext memory context;
-                context.terminal = msg.sender;
-                context.holder = holder;
-                context.projectId = projectId;
-                context.rulesetId = ruleset.id;
-                context.cashOutCount = cashOutCount;
-                context.totalSupply = totalSupply;
-                context.surplus = JBTokenAmount({
-                    token: accountingContext.token,
-                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
-                    decimals: accountingContext.decimals,
-                    currency: accountingContext.currency
-                });
-                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
-                context.cashOutTaxRate = ruleset.cashOutTaxRate();
-                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
-                context.metadata = metadata;
-
-                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
-                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
-            } else {
-                cashOutTaxRate = ruleset.cashOutTaxRate();
-            }
-
-            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
-            // result.
-            if (reclaimAmount != 0) {
-                reclaimAmount = JBCashOuts.cashOutFrom({
-                    surplus: reclaimAmount,
-                    cashOutCount: cashOutCount,
-                    totalSupply: totalSupply,
-                    cashOutTaxRate: cashOutTaxRate
-                });
-            }
-        }
-
-        // Keep a reference to the amount that should be added to the project's balance.
+        // Compute the total amount to subtract from the project's balance.
         uint256 balanceDiff = reclaimAmount;
 
-        // Ensure that the specifications have valid amounts.
         if (hookSpecifications.length != 0) {
-            // Keep a reference to the number of cash out hooks specified.
             uint256 numberOfSpecifications = hookSpecifications.length;
-
-            // Loop through each specification.
             for (uint256 i; i < numberOfSpecifications; i++) {
-                // Get a reference to the specification's amount.
                 uint256 specificationAmount = hookSpecifications[i].amount;
-
-                // Ensure the amount is non-zero.
                 if (specificationAmount != 0) {
-                    // Increment the total amount being subtracted from the balance.
                     balanceDiff += specificationAmount;
                 }
             }
@@ -323,98 +249,15 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
-        // Get a reference to the project's current ruleset.
-        ruleset = RULESETS.currentOf(projectId);
-
-        // The project must have a ruleset.
-        if (ruleset.cycleNumber == 0) revert JBTerminalStore_RulesetNotFound(projectId);
-
-        // The ruleset must not have payments paused.
-        if (ruleset.pausePay()) revert JBTerminalStore_RulesetPaymentPaused();
-
-        // The weight according to which new tokens are to be minted, as a fixed point number with 18 decimals.
-        uint256 weight;
-
-        // SECURITY NOTE: The data hook has absolute control over payment token minting.
-        // It can return an arbitrary weight (overriding the ruleset's weight) and hook specifications
-        // that divert payment funds to external hooks before they reach the project's balance.
-        // Project owners MUST audit their data hooks with the same rigor as the terminal.
-
-        // If the ruleset has a data hook enabled for payments, use it to derive a weight and memo.
-        if (ruleset.useDataHookForPay() && ruleset.dataHook() != address(0)) {
-            // Create the pay context that'll be sent to the data hook.
-            JBBeforePayRecordedContext memory context = JBBeforePayRecordedContext({
-                terminal: msg.sender,
-                payer: payer,
-                amount: amount,
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                beneficiary: beneficiary,
-                weight: ruleset.weight,
-                reservedPercent: ruleset.reservedPercent(),
-                metadata: metadata
-            });
-
-            (weight, hookSpecifications) = IJBRulesetDataHook(ruleset.dataHook()).beforePayRecordedWith(context);
-        }
-        // Otherwise use the ruleset's weight
-        else {
-            weight = ruleset.weight;
-        }
-
-        // Keep a reference to the amount that should be added to the project's balance.
-        uint256 balanceDiff = amount.value;
-
-        // Scoped section preventing stack too deep.
-        {
-            // Keep a reference to the number of hook specifications.
-            uint256 numberOfSpecifications = hookSpecifications.length;
-
-            // Ensure that the specifications have valid amounts.
-            for (uint256 i; i < numberOfSpecifications; i++) {
-                // Get a reference to the specification's amount.
-                uint256 specifiedAmount = hookSpecifications[i].amount;
-
-                // Ensure the amount is non-zero.
-                if (specifiedAmount != 0) {
-                    // Can't send more to hook than was paid.
-                    if (specifiedAmount > balanceDiff) {
-                        revert JBTerminalStore_InvalidAmountToForwardHook(specifiedAmount, balanceDiff);
-                    }
-
-                    // Decrement the total amount being added to the local balance.
-                    balanceDiff -= specifiedAmount;
-                }
-            }
-        }
-
-        // If there's no amount being recorded, there's nothing left to do.
-        if (amount.value == 0) return (ruleset, 0, hookSpecifications);
+        uint256 balanceDiff;
+        (ruleset, tokenCount, hookSpecifications, balanceDiff) =
+            _computePayment(msg.sender, payer, amount, projectId, beneficiary, metadata);
 
         // Add the correct balance difference to the token balance of the project.
         if (balanceDiff != 0) {
             balanceOf[msg.sender][projectId][amount.token] =
                 balanceOf[msg.sender][projectId][amount.token] + balanceDiff;
         }
-
-        // If there's no weight, the token count must be 0, so there's nothing left to do.
-        if (weight == 0) return (ruleset, 0, hookSpecifications);
-
-        // If the terminal should base its weight on a currency other than the terminal's currency, determine the
-        // factor. The weight is always a fixed point mumber with 18 decimals. To ensure this, the ratio should use the
-        // same
-        // number of decimals as the `amount`.
-        uint256 weightRatio = amount.currency == ruleset.baseCurrency()
-            ? 10 ** amount.decimals
-            : PRICES.pricePerUnitOf({
-                projectId: projectId,
-                pricingCurrency: amount.currency,
-                unitCurrency: ruleset.baseCurrency(),
-                decimals: amount.decimals
-            });
-
-        // Find the number of tokens to mint, as a fixed point number with as many decimals as `weight` has.
-        tokenCount = mulDiv(amount.value, weight, weightRatio);
     }
 
     /// @notice Records a payout from a project.
@@ -785,9 +628,304 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
+    /// @notice Simulates a cash out without modifying state.
+    /// @dev Invokes data hooks if configured, but skips the balance sufficiency check (balance may change between
+    /// preview and execution).
+    /// @param terminal The terminal address to simulate the cash out from.
+    /// @param holder The address cashing out.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param cashOutCount The number of project tokens being cashed out.
+    /// @param accountingContext The accounting context of the token being reclaimed.
+    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
+    /// @param metadata Extra data to pass along to the data hook.
+    /// @return reclaimAmount The amount that would be reclaimed.
+    /// @return cashOutTaxRate The cash out tax rate that would be applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function previewCashOutFor(
+        address terminal,
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        JBAccountingContext calldata accountingContext,
+        JBAccountingContext[] calldata balanceAccountingContexts,
+        bool beneficiaryIsFeeless,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications)
+    {
+        (, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
+            terminal,
+            holder,
+            projectId,
+            cashOutCount,
+            accountingContext,
+            balanceAccountingContexts,
+            beneficiaryIsFeeless,
+            metadata
+        );
+    }
+
+    /// @notice Simulates a payment without modifying state.
+    /// @dev Invokes data hooks if configured. Returns the same token count and hook specifications that
+    /// `recordPaymentFrom` would produce.
+    /// @param terminal The terminal address to simulate the payment from.
+    /// @param payer The address of the payer.
+    /// @param amount The amount being paid.
+    /// @param projectId The ID of the project being paid.
+    /// @param beneficiary The address to mint project tokens to.
+    /// @param metadata Extra data to pass along to the data hook.
+    /// @return tokenCount The number of project tokens that would be minted.
+    /// @return hookSpecifications Any pay hook specifications from the data hook.
+    function previewPayFrom(
+        address terminal,
+        address payer,
+        JBTokenAmount memory amount,
+        uint256 projectId,
+        address beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
+    {
+        (, tokenCount, hookSpecifications,) = _computePayment(terminal, payer, amount, projectId, beneficiary, metadata);
+    }
+
     //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
+
+    /// @notice Computes payment results without writing state.
+    /// @param terminal The terminal recording the payment.
+    /// @param payer The address that made the payment.
+    /// @param amount The amount of tokens being paid.
+    /// @param projectId The ID of the project being paid.
+    /// @param beneficiary The beneficiary of the payment.
+    /// @param metadata Bytes to send to the data hook.
+    /// @return ruleset The ruleset the payment would be made during.
+    /// @return tokenCount The number of project tokens that would be minted.
+    /// @return hookSpecifications Pay hook specifications from the data hook.
+    /// @return balanceDiff The amount that would be added to the project's balance.
+    function _computePayment(
+        address terminal,
+        address payer,
+        JBTokenAmount memory amount,
+        uint256 projectId,
+        address beneficiary,
+        bytes memory metadata
+    )
+        internal
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 tokenCount,
+            JBPayHookSpecification[] memory hookSpecifications,
+            uint256 balanceDiff
+        )
+    {
+        // Get a reference to the project's current ruleset.
+        ruleset = RULESETS.currentOf(projectId);
+
+        // The project must have a ruleset.
+        if (ruleset.cycleNumber == 0) revert JBTerminalStore_RulesetNotFound(projectId);
+
+        // The ruleset must not have payments paused.
+        if (ruleset.pausePay()) revert JBTerminalStore_RulesetPaymentPaused();
+
+        // The weight according to which new tokens are to be minted, as a fixed point number with 18 decimals.
+        uint256 weight;
+
+        // SECURITY NOTE: The data hook has absolute control over payment token minting.
+        // It can return an arbitrary weight (overriding the ruleset's weight) and hook specifications
+        // that divert payment funds to external hooks before they reach the project's balance.
+        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
+        // If the ruleset has a data hook enabled for payments, use it to derive a weight and memo.
+        if (ruleset.useDataHookForPay() && ruleset.dataHook() != address(0)) {
+            // Create the pay context that'll be sent to the data hook.
+            JBBeforePayRecordedContext memory context = JBBeforePayRecordedContext({
+                terminal: terminal,
+                payer: payer,
+                amount: amount,
+                projectId: projectId,
+                rulesetId: ruleset.id,
+                beneficiary: beneficiary,
+                weight: ruleset.weight,
+                reservedPercent: ruleset.reservedPercent(),
+                metadata: metadata
+            });
+
+            (weight, hookSpecifications) = IJBRulesetDataHook(ruleset.dataHook()).beforePayRecordedWith(context);
+        }
+        // Otherwise use the ruleset's weight
+        else {
+            weight = ruleset.weight;
+        }
+
+        // Keep a reference to the amount that should be added to the project's balance.
+        balanceDiff = amount.value;
+
+        // Scoped section preventing stack too deep.
+        {
+            // Keep a reference to the number of hook specifications.
+            uint256 numberOfSpecifications = hookSpecifications.length;
+
+            // Ensure that the specifications have valid amounts.
+            for (uint256 i; i < numberOfSpecifications; i++) {
+                // Get a reference to the specification's amount.
+                uint256 specifiedAmount = hookSpecifications[i].amount;
+
+                // Ensure the amount is non-zero.
+                if (specifiedAmount != 0) {
+                    // Can't send more to hook than was paid.
+                    if (specifiedAmount > balanceDiff) {
+                        revert JBTerminalStore_InvalidAmountToForwardHook(specifiedAmount, balanceDiff);
+                    }
+
+                    // Decrement the total amount being added to the local balance.
+                    balanceDiff -= specifiedAmount;
+                }
+            }
+        }
+
+        // If there's no amount being recorded, there's nothing left to do.
+        if (amount.value == 0) return (ruleset, 0, hookSpecifications, 0);
+
+        // If there's no weight, the token count must be 0, so there's nothing left to do.
+        if (weight == 0) return (ruleset, 0, hookSpecifications, balanceDiff);
+
+        // If the terminal should base its weight on a currency other than the terminal's currency, determine the
+        // factor. The weight is always a fixed point mumber with 18 decimals. To ensure this, the ratio should use the
+        // same
+        // number of decimals as the `amount`.
+        uint256 weightRatio = amount.currency == ruleset.baseCurrency()
+            ? 10 ** amount.decimals
+            : PRICES.pricePerUnitOf({
+                projectId: projectId,
+                pricingCurrency: amount.currency,
+                unitCurrency: ruleset.baseCurrency(),
+                decimals: amount.decimals
+            });
+
+        // Find the number of tokens to mint, as a fixed point number with as many decimals as `weight` has.
+        tokenCount = mulDiv(amount.value, weight, weightRatio);
+    }
+
+    /// @notice Computes cash out results without writing state.
+    /// @param terminal The terminal recording the cash out.
+    /// @param holder The account that is cashing out tokens.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param accountingContext The accounting context of the token being reclaimed.
+    /// @param balanceAccountingContexts The accounting contexts of the tokens whose balances should contribute to the
+    /// surplus being reclaimed from.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
+    /// @param metadata Bytes to send to the data hook.
+    /// @return ruleset The ruleset during the cash out.
+    /// @return reclaimAmount The amount of tokens reclaimed.
+    /// @return cashOutTaxRate The cash out tax rate applied.
+    /// @return hookSpecifications Cash out hook specifications from the data hook.
+    function _computeCashOut(
+        address terminal,
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        JBAccountingContext calldata accountingContext,
+        JBAccountingContext[] calldata balanceAccountingContexts,
+        bool beneficiaryIsFeeless,
+        bytes memory metadata
+    )
+        internal
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
+    {
+        // Get a reference to the project's current ruleset.
+        ruleset = RULESETS.currentOf(projectId);
+
+        // Store the current surplus in `reclaimAmount` temporarily to avoid allocating a separate local variable
+        // (saves one stack slot, which is needed to fit the 7th parameter without hitting stack-too-deep).
+        reclaimAmount = ruleset.useTotalSurplusForCashOuts()
+            ? JBSurplus.currentSurplusOf({
+                projectId: projectId,
+                terminals: DIRECTORY.terminalsOf(projectId),
+                accountingContexts: new JBAccountingContext[](0),
+                decimals: accountingContext.decimals,
+                currency: accountingContext.currency
+            })
+            : _surplusFrom({
+                terminal: terminal,
+                projectId: projectId,
+                accountingContexts: balanceAccountingContexts,
+                ruleset: ruleset,
+                targetDecimals: accountingContext.decimals,
+                targetCurrency: accountingContext.currency
+            });
+
+        // Scoped to keep `totalSupply` and `context` off the outer stack.
+        {
+            // Get the total number of outstanding project tokens.
+            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
+                .totalTokenSupplyWithReservedTokensOf(projectId);
+
+            // Can't cash out more tokens than are in the supply.
+            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
+
+            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
+            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+            // completely overriding the terminal's bonding curve math. For example, setting
+            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+            // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
+            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
+            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
+                // Build the cash out context field-by-field to avoid stack-too-deep
+                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
+                JBBeforeCashOutRecordedContext memory context;
+                context.terminal = terminal;
+                context.holder = holder;
+                context.projectId = projectId;
+                context.rulesetId = ruleset.id;
+                context.cashOutCount = cashOutCount;
+                context.totalSupply = totalSupply;
+                context.surplus = JBTokenAmount({
+                    token: accountingContext.token,
+                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
+                    decimals: accountingContext.decimals,
+                    currency: accountingContext.currency
+                });
+                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
+                context.cashOutTaxRate = ruleset.cashOutTaxRate();
+                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
+                context.metadata = metadata;
+
+                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
+                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+            } else {
+                cashOutTaxRate = ruleset.cashOutTaxRate();
+            }
+
+            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
+            // result.
+            if (reclaimAmount != 0) {
+                reclaimAmount = JBCashOuts.cashOutFrom({
+                    surplus: reclaimAmount,
+                    cashOutCount: cashOutCount,
+                    totalSupply: totalSupply,
+                    cashOutTaxRate: cashOutTaxRate
+                });
+            }
+        }
+    }
 
     /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting
     /// contexts.

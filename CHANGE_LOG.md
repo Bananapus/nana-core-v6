@@ -14,6 +14,15 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 
 A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
 
+### 0.4 JBTerminalStore -- Preview Functions
+
+Two new `view` functions added to `JBTerminalStore` and `IJBTerminalStore`:
+
+- `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
+- `previewCashOutFor(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
+
+Both functions use the explicit `terminal` parameter instead of `msg.sender`, allowing any caller to preview operations for any terminal. Internal computation logic was extracted into shared `_computePayment` and `_computeCashOut` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
+
 ### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
 
 A `bool beneficiaryIsFeeless` field was added to the `JBBeforeCashOutRecordedContext` struct (before the `metadata` field). `recordCashOutFor` in `IJBTerminalStore` gained a corresponding `bool beneficiaryIsFeeless` parameter. The terminal passes the result of its feeless address check, allowing data hooks to skip their own fees when the beneficiary is already feeless (e.g., project-to-project routing via the router terminal). This is a **breaking change** to both the struct layout and the `recordCashOutFor` function signature.
