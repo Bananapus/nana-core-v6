@@ -83,7 +83,11 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `balanceOf(address terminal, uint256 projectId, address token)` | Returns the balance of a project at a terminal for a given token. |
 | `usedPayoutLimitOf(address terminal, uint256 projectId, address token, uint256 rulesetCycleNumber, uint256 currency)` | Returns the used payout limit for a project in a given cycle. |
 | `usedSurplusAllowanceOf(address terminal, uint256 projectId, address token, uint256 rulesetId, uint256 currency)` | Returns the used surplus allowance for a project in a given ruleset. |
+| `currentReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 totalSupply, uint256 surplus)` | Returns the reclaimable surplus given raw total supply and surplus values. Applies bonding curve from current ruleset. |
+| `currentReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, IJBTerminal[] terminals, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the reclaimable surplus across specified terminals. Empty arrays default to all terminals/contexts. |
+| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals using all accounting contexts. Mirrors `currentTotalSurplusOf`. |
 | `currentSurplusOf(address terminal, uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the current surplus for a project at a terminal. |
+| `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Returns the total surplus across all terminals. |
 
 ### JBRulesets
 
