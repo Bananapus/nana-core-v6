@@ -165,11 +165,7 @@ interface IJBTerminalStore {
     )
         external
         view
-        returns (
-            JBRuleset memory ruleset,
-            uint256 tokenCount,
-            JBPayHookSpecification[] memory hookSpecifications
-        );
+        returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications);
 
     /// @notice Returns the amount of payout limit used by a terminal for a project in a given cycle.
     /// @param terminal The terminal to get the used payout limit of.
