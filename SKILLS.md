@@ -88,6 +88,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals using all accounting contexts. Mirrors `currentTotalSurplusOf`. |
 | `currentSurplusOf(address terminal, uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the current surplus for a project at a terminal. |
 | `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Returns the total surplus across all terminals. |
+| `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Invokes data hooks if configured. Returns token count and hook specifications. |
+| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Invokes data hooks if configured. Returns reclaim amount, tax rate, and hook specifications. |
 
 ### JBRulesets
 

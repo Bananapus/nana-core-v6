@@ -69,6 +69,8 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - Data hook can return empty weight (0) to suppress minting while still recording payment
 - Fee-on-transfer tokens: actual amount received is `_balanceOf(token) - balanceBefore` (measured via balance diff)
 
+**Preview**: Call `JBTerminalStore.previewPayFrom(terminal, payer, amount, projectId, beneficiary, metadata)` to simulate the payment on-chain and see the exact token count and hook specifications that would be produced -- including data hook effects. This is a `view` function that does not modify state.
+
 ---
 
 ## 3. Cash Out Tokens
@@ -95,7 +97,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Events**: `CashOutTokens(rulesetId, rulesetCycleNumber, projectId, holder, beneficiary, cashOutCount, cashOutTaxRate, reclaimAmount, metadata, caller)`
 
-**Preview**: Call `JBTerminalStore.currentTotalReclaimableSurplusOf(projectId, cashOutCount, decimals, currency)` to estimate the reclaim amount across all terminals before executing. For terminal-specific or filtered queries, use the 6-param `currentReclaimableSurplusOf` overload.
+**Preview**: Call `JBTerminalStore.previewCashOutFrom(terminal, holder, projectId, cashOutCount, accountingContext, balanceAccountingContexts, beneficiaryIsFeeless, metadata)` to simulate the full cash out on-chain -- including data hook effects on tax rate, supply, and hook specifications. This is a `view` function that does not modify state. For a simpler estimate without data hook effects, use `currentTotalReclaimableSurplusOf(projectId, cashOutCount, decimals, currency)` or the 6-param `currentReclaimableSurplusOf` overload.
 
 **Edge cases**:
 - `cashOutCount = 0` with `totalSupply = 0` -- returns entire surplus (C-5 known bug)
