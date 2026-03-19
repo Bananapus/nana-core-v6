@@ -132,7 +132,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             abi.encode(_totalSupply)
         );
 
-        (uint256 previewReclaimAmount, uint256 previewTaxRate, JBCashOutHookSpecification[] memory previewSpecs) = _store.previewCashOutFor({
+        (, uint256 previewReclaimAmount, uint256 previewTaxRate, JBCashOutHookSpecification[] memory previewSpecs) = _store.previewCashOutFor({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,
@@ -367,7 +367,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             abi.encode(_totalSupply)
         );
 
-        (uint256 reclaimAmount,,) = _store.previewCashOutFor({
+        (, uint256 reclaimAmount,,) = _store.previewCashOutFor({
             terminal: address(this),
             holder: address(this),
             projectId: _projectId,

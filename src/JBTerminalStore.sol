@@ -639,6 +639,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
     /// @param metadata Extra data to pass along to the data hook.
+    /// @return ruleset The project's current ruleset.
     /// @return reclaimAmount The amount that would be reclaimed.
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
@@ -655,9 +656,14 @@ contract JBTerminalStore is IJBTerminalStore {
         external
         view
         override
-        returns (uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications)
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
     {
-        (, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOut(
             terminal,
             holder,
             projectId,
@@ -678,6 +684,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param projectId The ID of the project being paid.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook.
+    /// @return ruleset The project's current ruleset.
     /// @return tokenCount The number of project tokens that would be minted.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
@@ -691,9 +698,10 @@ contract JBTerminalStore is IJBTerminalStore {
         external
         view
         override
-        returns (uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
+        returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
-        (, tokenCount, hookSpecifications,) = _computePayment(terminal, payer, amount, projectId, beneficiary, metadata);
+        (ruleset, tokenCount, hookSpecifications,) =
+            _computePayment(terminal, payer, amount, projectId, beneficiary, metadata);
     }
 
     //*********************************************************************//

@@ -172,7 +172,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         // Mock for preview call
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
-        (uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
+        (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
             terminal: address(this),
             payer: address(this),
             amount: _tokenAmount,
@@ -260,7 +260,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             abi.encode(1e18 / 2, _spec)
         );
 
-        (uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
+        (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
             terminal: address(this),
             payer: address(this),
             amount: _tokenAmount,
@@ -401,7 +401,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         uint256 expectedCount = mulDiv(_defaultValue, 1e18, 2e18);
 
-        (uint256 tokenCount,) = _store.previewPayFrom({
+        (, uint256 tokenCount,) = _store.previewPayFrom({
             terminal: _terminal,
             payer: address(this),
             amount: _tokenAmount,
