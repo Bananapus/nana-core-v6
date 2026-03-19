@@ -91,6 +91,12 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 | `setTokenMetadataOf(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's ERC-20 token. Requires the `SET_TOKEN_METADATA` permission. |
 | `afterReceiveMigrationFrom(IERC165 from, uint256 projectId)` | Called by the directory after this controller has been set as the active controller. Added to the `IJBMigratable` interface. |
 
+#### IJBTerminalStore / JBTerminalStore
+
+| Function | Description |
+|----------|-------------|
+| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view that returns the reclaimable surplus across all terminals using all accounting contexts. Delegates to `currentReclaimableSurplusOf` with empty `terminals` and `accountingContexts` arrays. Mirrors the `currentTotalSurplusOf` pattern. |
+
 #### IJBTokens / JBTokens
 
 | Function | Description |
@@ -353,7 +359,7 @@ Throughout the codebase, function calls were updated to use named argument synta
 |----|----|-------|
 | `IJBController` | `IJBController` | Gained `setTokenMetadataOf`. `calldata` for terminal configs. |
 | `IJBRulesets` | `IJBRulesets` | `updateRulesetWeightCache` gained `rulesetId` parameter |
-| `IJBTerminalStore` | `IJBTerminalStore` | `tokenCount` renamed to `cashOutCount` in `currentReclaimableSurplusOf`. `recordCashOutFor` gained `beneficiaryIsFeeless` param. View functions reordered. |
+| `IJBTerminalStore` | `IJBTerminalStore` | `tokenCount` renamed to `cashOutCount` in `currentReclaimableSurplusOf`. `recordCashOutFor` gained `beneficiaryIsFeeless` param. New `currentTotalReclaimableSurplusOf` convenience view. View functions reordered. |
 | `IJBPayoutTerminal` | `IJBPayoutTerminal` | `sendPayoutsOf` returns `amountPaidOut` (was `netLeftoverPayoutAmount`). `SendPayoutToSplit` event moved. |
 | `IJBPermitTerminal` | `IJBPermitTerminal` | Gained `Permit2AllowanceFailed` event |
 | `IJBMigratable` | `IJBMigratable` | Gained `afterReceiveMigrationFrom` function |

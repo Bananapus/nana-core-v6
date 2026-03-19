@@ -444,4 +444,219 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
         uint256 reclaimable = _store.currentReclaimableSurplusOf(_projectId, _tokenCount, 1e18, 1e18);
         assertEq(1e18, reclaimable);
     }
+
+    function test_GivenTotalReclaimableWithSurplus() external whenProjectHasBalance {
+        // it will default to all terminals and all accounting contexts and return the reclaimable surplus
+
+        // setup calldata
+        JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
+        _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE / 2,
+            baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        // JBRulesets return calldata
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        // mock call to JBRulesets currentOf
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        // mock call to JBDirectory controllerOf
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
+
+        uint256 _supply = 1e19;
+        uint256 _surplus = 1e18;
+        uint256 _cashoutAmount = 1e18;
+
+        // mock JBDirectory terminalsOf to return the terminal
+        IJBTerminal[] memory _terminals = new IJBTerminal[](1);
+        _terminals[0] = _terminal;
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
+
+        // surplus call to the terminal (empty accounting contexts passed through)
+        JBAccountingContext[] memory _emptyContexts = new JBAccountingContext[](0);
+        mockExpect(
+            address(_terminal),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _emptyContexts, 18, _currency)),
+            abi.encode(_surplus)
+        );
+
+        // mock JBController totalTokenSupplyWithReservedTokensOf
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_supply)
+        );
+
+        // Call the new convenience function (no terminals, no accounting contexts).
+        uint256 reclaimable = _store.currentTotalReclaimableSurplusOf(_projectId, _cashoutAmount, 18, _currency);
+
+        // Should match the 6-param overload result.
+        uint256 assumed =
+            JBCashOuts.cashOutFrom(_surplus, _cashoutAmount, _supply, JBConstants.MAX_CASH_OUT_TAX_RATE / 2);
+
+        assertEq(assumed, reclaimable);
+    }
+
+    function test_GivenTotalReclaimableWithZeroSurplus() external {
+        // it will return zero when there is no surplus
+
+        JBAccountingContext[] memory _emptyContexts = new JBAccountingContext[](0);
+
+        // JBRulesets return calldata
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        // mock call to JBRulesets currentOf
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        // mock JBDirectory terminalsOf to return the terminal
+        IJBTerminal[] memory _terminals = new IJBTerminal[](1);
+        _terminals[0] = _terminal;
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
+
+        // mock current surplus as zero
+        mockExpect(
+            address(_terminal),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _emptyContexts, 18, _currency)),
+            abi.encode(0)
+        );
+
+        uint256 reclaimable = _store.currentTotalReclaimableSurplusOf(_projectId, _tokenCount, 18, _currency);
+        assertEq(0, reclaimable);
+    }
+
+    function test_GivenTotalReclaimableMatchesSixParamOverload() external whenProjectHasBalance {
+        // it will produce the same result as calling the 6-param overload with empty arrays
+
+        JBAccountingContext[] memory _emptyContexts = new JBAccountingContext[](0);
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE / 2,
+            baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        uint256 _supply = 1e19;
+        uint256 _surplus = 5e17;
+        uint256 _cashoutAmount = 1e18;
+
+        IJBTerminal[] memory _terminals = new IJBTerminal[](1);
+        _terminals[0] = _terminal;
+
+        // The new overload calls the 6-param via `this`, so JBRulesets.currentOf gets called twice.
+        // Mock it to return the same ruleset both times.
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
+
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
+
+        mockExpect(
+            address(_terminal),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _emptyContexts, 18, _currency)),
+            abi.encode(_surplus)
+        );
+
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_supply)
+        );
+
+        // Call the new convenience function.
+        uint256 reclaimableDefault = _store.currentTotalReclaimableSurplusOf(_projectId, _cashoutAmount, 18, _currency);
+
+        // Re-mock for the 6-param call (mocks are consumed).
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
+        mockExpect(
+            address(_terminal),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _emptyContexts, 18, _currency)),
+            abi.encode(_surplus)
+        );
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_supply)
+        );
+
+        // Call the 6-param overload with empty arrays.
+        uint256 reclaimableExplicit = _store.currentReclaimableSurplusOf(
+            _projectId, _cashoutAmount, new IJBTerminal[](0), new JBAccountingContext[](0), 18, _currency
+        );
+
+        assertEq(reclaimableDefault, reclaimableExplicit);
+    }
 }

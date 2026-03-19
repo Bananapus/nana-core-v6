@@ -65,6 +65,22 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
+    /// @notice Returns the reclaimable surplus for a project across all terminals using all accounting contexts.
+    /// @param projectId The ID of the project.
+    /// @param cashOutCount The number of tokens being cashed out.
+    /// @param decimals The number of decimals to express the result with.
+    /// @param currency The currency to express the result in.
+    /// @return The reclaimable surplus amount.
+    function currentTotalReclaimableSurplusOf(
+        uint256 projectId,
+        uint256 cashOutCount,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        returns (uint256);
+
     /// @notice Returns the current surplus for a terminal and project.
     /// @param terminal The terminal to get the surplus of.
     /// @param projectId The ID of the project.

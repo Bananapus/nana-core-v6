@@ -699,6 +699,34 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
+    /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given number of
+    /// tokens across all of a project's terminals using all accounting contexts.
+    /// @param projectId The ID of the project whose tokens would be cashed out.
+    /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
+    /// @param decimals The number of decimals to include in the resulting fixed point number.
+    /// @param currency The currency that the resulting number will be in terms of.
+    /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount` tokens.
+    function currentTotalReclaimableSurplusOf(
+        uint256 projectId,
+        uint256 cashOutCount,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return this.currentReclaimableSurplusOf({
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            terminals: new IJBTerminal[](0),
+            accountingContexts: new JBAccountingContext[](0),
+            decimals: decimals,
+            currency: currency
+        });
+    }
+
     /// @notice Gets the current surplus amount in a terminal for a specified project.
     /// @dev The surplus is the amount of funds a project has in a terminal in excess of its payout limit.
     /// @dev The surplus is represented as a fixed point number with the same amount of decimals as the specified
