@@ -4,22 +4,18 @@ pragma solidity 0.8.26;
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
-import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
-import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBSplit} from "../../../../src/structs/JBSplit.sol";
 import {JBSplitHookContext} from "../../../../src/structs/JBSplitHookContext.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -45,32 +41,11 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         super.multiTerminalSetup();
     }
 
-    function _acceptToken(address token, uint8 decimals, uint32 currency) internal {
-        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(0)));
-        mockExpect(
-            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
-        );
-
-        JBRuleset memory returnedRuleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-        mockExpect(token, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(decimals));
-
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] = JBAccountingContext({token: token, decimals: decimals, currency: currency});
-
-        vm.prank(address(this));
-        _terminal.addAccountingContextsFor(_projectId, contexts);
+    function _setAccountingContext(uint256 projectId, address token, uint8 decimals, uint32 currency) internal {
+        bytes32 contextSlot = keccak256(abi.encode(projectId, uint256(0)));
+        bytes32 slot = keccak256(abi.encode(token, contextSlot));
+        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
+        vm.store(address(_terminal), slot, packed);
     }
 
     modifier whenASplitHookIsConfigured() {
@@ -375,7 +350,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQThisAddress() external {
         // it will call internal _pay
 
-        _acceptToken(_usdc, 0, _usdcCurrency);
+        _setAccountingContext(_projectId, _usdc, 0, _usdcCurrency);
 
         // mock call to directory primaryTerminalOf
         mockExpect(

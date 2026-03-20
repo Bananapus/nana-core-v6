@@ -403,7 +403,8 @@ contract TestJBRulesetsUnits_Local is JBTest {
             mustStartAtOrAfter: _mustStartAt
         });
 
-        uint256 firstId = block.timestamp;
+        // Capture firstId from actual storage (avoid via_ir reordering of block.timestamp).
+        uint256 firstId = _rulesets.latestRulesetIdOf(_projectId);
 
         // Mock call to approval hook duration
         bytes memory _encodedDurationCall = abi.encodeCall(IJBRulesetApprovalHook.DURATION, ());
@@ -412,9 +413,9 @@ contract TestJBRulesetsUnits_Local is JBTest {
         mockExpect(address(_mockApprovalHook), _encodedDurationCall, _willReturnDuration);
 
         // avoid overwrite
-        vm.warp(block.timestamp + 1);
+        vm.warp(firstId + 1);
 
-        uint256 latestId = block.timestamp;
+        uint256 latestId;
 
         // Send: Anotha One! Call from this contract as it's been mock authorized above.
         _rulesets.queueFor({
@@ -424,12 +425,14 @@ contract TestJBRulesetsUnits_Local is JBTest {
             weightCutPercent: _weightCutPercent,
             approvalHook: _mockApprovalHook,
             metadata: _packedWithApprovalHook,
-            mustStartAtOrAfter: block.timestamp
+            mustStartAtOrAfter: 0
         });
 
+        // Capture latestId from storage (avoid via_ir reordering of block.timestamp).
+        latestId = _rulesets.latestRulesetIdOf(_projectId);
+
         // avoid overwrite
-        vm.warp(block.timestamp + 2 days);
-        uint256 previouslyApprovedDurationEnds = block.timestamp + 3 days - 2 days - 1;
+        vm.warp(latestId + 2 days);
 
         // Get the ruleset.
         JBRuleset memory latesetQueuedRuleset = _rulesets.getRulesetOf(_projectId, latestId);
@@ -449,16 +452,14 @@ contract TestJBRulesetsUnits_Local is JBTest {
             weightCutPercent: _weightCutPercent,
             approvalHook: _mockApprovalHook,
             metadata: _packedWithApprovalHook,
-            mustStartAtOrAfter: block.timestamp
+            mustStartAtOrAfter: 0
         });
 
-        latestId = block.timestamp;
+        latestId = _rulesets.latestRulesetIdOf(_projectId);
         latesetQueuedRuleset = _rulesets.getRulesetOf(_projectId, latestId);
 
         // avoid overwrite
-        vm.warp(block.timestamp + 1);
-
-        previouslyApprovedDurationEnds = block.timestamp + 6 days - 2 days - 2;
+        vm.warp(latestId + 1);
 
         // Mock call to approvalStatusOf and return an approvalExpected status
         _encodedApprovalCall = abi.encodeCall(IJBRulesetApprovalHook.approvalStatusOf, (1, latesetQueuedRuleset));
@@ -474,15 +475,14 @@ contract TestJBRulesetsUnits_Local is JBTest {
             weightCutPercent: _weightCutPercent,
             approvalHook: _mockApprovalHook,
             metadata: _packedWithApprovalHook,
-            mustStartAtOrAfter: block.timestamp
+            mustStartAtOrAfter: 0
         });
 
-        latestId = block.timestamp;
+        latestId = _rulesets.latestRulesetIdOf(_projectId);
         latesetQueuedRuleset = _rulesets.getRulesetOf(_projectId, latestId);
 
         // avoid overwrite
-        vm.warp(block.timestamp + 1);
-        previouslyApprovedDurationEnds = block.timestamp + 6 days - 2 days - 3;
+        vm.warp(latestId + 1);
 
         // Mock call to approvalStatusOf and return a failed status
         _encodedApprovalCall = abi.encodeCall(IJBRulesetApprovalHook.approvalStatusOf, (1, latesetQueuedRuleset));
@@ -498,16 +498,14 @@ contract TestJBRulesetsUnits_Local is JBTest {
             weightCutPercent: _weightCutPercent,
             approvalHook: _mockApprovalHook,
             metadata: _packedWithApprovalHook,
-            mustStartAtOrAfter: block.timestamp
+            mustStartAtOrAfter: 0
         });
 
-        latestId = block.timestamp;
+        latestId = _rulesets.latestRulesetIdOf(_projectId);
         latesetQueuedRuleset = _rulesets.getRulesetOf(_projectId, latestId);
 
         // avoid overwrite
-        vm.warp(block.timestamp + 1);
-
-        previouslyApprovedDurationEnds = block.timestamp + 6 days - 2 days - 4;
+        vm.warp(latestId + 1);
 
         // Mock call to approvalStatusOf and return an empty status
         _encodedApprovalCall = abi.encodeCall(IJBRulesetApprovalHook.approvalStatusOf, (1, latesetQueuedRuleset));
@@ -523,14 +521,17 @@ contract TestJBRulesetsUnits_Local is JBTest {
             weightCutPercent: _weightCutPercent,
             approvalHook: _mockApprovalHook,
             metadata: _packedWithApprovalHook,
-            mustStartAtOrAfter: block.timestamp
+            mustStartAtOrAfter: 0
         });
 
-        JBRuleset[] memory queuedRulesetsOf = _rulesets.allOf(_projectId, block.timestamp, 3);
+        // Capture final latestId from storage.
+        latestId = _rulesets.latestRulesetIdOf(_projectId);
 
-        // check: 2 rulesets will be enqueued, we just overwrote the last queued
+        JBRuleset[] memory queuedRulesetsOf = _rulesets.allOf(_projectId, latestId, 3);
+
+        // check: 3 rulesets will be enqueued
         assertEq(queuedRulesetsOf.length, 3);
-        assertEq(queuedRulesetsOf[0].id, block.timestamp);
+        assertEq(queuedRulesetsOf[0].id, latestId);
 
         // check first timestamp
         assertEq(queuedRulesetsOf[2].id, firstId);

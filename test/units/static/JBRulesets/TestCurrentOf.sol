@@ -191,12 +191,13 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
     {
         // it will return the ruleset the pending approval ruleset is basedOn
 
-        uint256 _firstRulesetId = block.timestamp;
-        uint256 _rulesetWithHookId = block.timestamp + 1;
+        // Capture IDs from actual storage (avoid via_ir reordering of block.timestamp).
+        uint256 _firstRulesetId = _rulesets.currentOf(_projectId).id;
+        uint256 _rulesetWithHookId = _firstRulesetId + 1;
 
         JBRuleset memory _queuedRuleset = _rulesets.getRulesetOf(_projectId, _rulesetWithHookId);
 
-        vm.warp(block.timestamp + 3 days);
+        vm.warp(_firstRulesetId + 3 days);
 
         // mock approvalStatusOf to return Pending
         mockExpect(
@@ -215,12 +216,13 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
     {
         // it will return the basedOn of the latest ruleset
 
-        uint256 _firstRulesetId = block.timestamp;
-        uint256 _rulesetWithHookId = block.timestamp + 1;
+        // Capture IDs from actual storage (avoid via_ir reordering of block.timestamp).
+        uint256 _firstRulesetId = _rulesets.currentOf(_projectId).id;
+        uint256 _rulesetWithHookId = _firstRulesetId + 1;
 
         JBRuleset memory _queuedRuleset = _rulesets.getRulesetOf(_projectId, _rulesetWithHookId);
 
-        vm.warp(block.timestamp + 4 days);
+        vm.warp(_firstRulesetId + 4 days);
 
         // mock approvalStatusOf to return Pending
         mockExpect(

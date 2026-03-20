@@ -929,7 +929,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to whether the beneficiary should be treated as feeless.
         bool beneficiaryIsFeeless = _isFeeless(beneficiary);
 
-        return STORE.previewCashOutFrom({
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.previewCashOutFrom({
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,

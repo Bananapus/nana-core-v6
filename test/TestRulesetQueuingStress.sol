@@ -236,10 +236,11 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
         /// @notice Mid-cycle queuing: new ruleset starts at next duration boundary.
         function test_midCycleQueuing_snapsToNextBoundary() external {
             uint256 pid = _launchProject(SEVEN_DAYS, INITIAL_WEIGHT, 0, IJBRulesetApprovalHook(address(0)));
-            uint256 originalStart = block.timestamp;
+            // Capture originalStart from the actual ruleset (avoid via_ir reordering of block.timestamp).
+            uint256 originalStart = _rulesets.currentOf(pid).start;
 
             // Warp to mid-cycle (day 3 of 7).
-            vm.warp(block.timestamp + 3 days);
+            vm.warp(originalStart + 3 days);
 
             _queueRuleset(pid, 0, SEVEN_DAYS, INITIAL_WEIGHT * 2, 0, IJBRulesetApprovalHook(address(0)));
 
@@ -573,7 +574,8 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
         /// @notice deriveStartFrom one second after boundary: snaps to next boundary.
         function test_deriveStartFrom_oneSecondAfterBoundary_snapsToNext() external {
             uint256 pid = _launchProject(SEVEN_DAYS, INITIAL_WEIGHT, 0, IJBRulesetApprovalHook(address(0)));
-            uint256 originalStart = block.timestamp;
+            // Capture originalStart from the actual ruleset (avoid via_ir reordering of block.timestamp).
+            uint256 originalStart = _rulesets.currentOf(pid).start;
 
             // 1 second after first boundary -> should snap to second boundary.
             _queueRuleset(

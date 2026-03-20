@@ -39,7 +39,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         super.setUp();
 
         // Foundry defaults block.timestamp to 1, which causes underflow in tests using past timestamps.
-        vm.warp(7 days);
+        vm.warp(1_000_001);
 
         _terminal = jbMultiTerminal();
         _controller = jbController();
@@ -637,9 +637,6 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         uint112 _weightFirstQueued = uint112(1234 * 10 ** 18);
         uint112 _weightSecondQueued = uint112(6969 * 10 ** 18);
 
-        // Keep a reference to the expected ruleset IDs (timestamps).
-        uint256 _initialRulesetId = block.timestamp;
-
         // Package up a config.
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);
         _rulesetConfig[0].mustStartAtOrAfter = 0;
@@ -657,10 +654,12 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         // Get the ruleset.
         JBRuleset memory _ruleset = jbRulesets().currentOf(projectId);
 
+        // Keep a reference to the expected ruleset IDs (use returned id to avoid via_ir reordering of block.timestamp).
+        uint256 _initialRulesetId = _ruleset.id;
+
         // Make sure the first ruleset has begun.
         assertEq(_ruleset.cycleNumber, 1);
         assertEq(_ruleset.weight, _weightInitial);
-        assertEq(_ruleset.id, block.timestamp);
 
         // Package up a new config.
         JBRulesetConfig[] memory _firstQueued = new JBRulesetConfig[](1);
