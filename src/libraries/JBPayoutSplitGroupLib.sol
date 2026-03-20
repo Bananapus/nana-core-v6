@@ -9,6 +9,9 @@ import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBSplit} from "../structs/JBSplit.sol";
 import {JBConstants} from "./JBConstants.sol";
 
+/// @notice Minimal callback surface used only by this library to call back into the terminal's `executePayout(...)`.
+/// @dev Kept local to this file because `executePayout(...)` is an implementation detail, not a shared public
+/// interface.
 interface IJBPayoutSplitGroupExecutor {
     function executePayout(
         JBSplit calldata split,
