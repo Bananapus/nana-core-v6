@@ -217,6 +217,21 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @return The pending reserved token balance.
     function pendingReservedTokenBalanceOf(uint256 projectId) external view returns (uint256);
 
+    /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
+    /// @param projectId The ID of the project whose tokens are being minted.
+    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
+    /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
+    /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of tokens that would be reserved.
+    function previewMintOf(
+        uint256 projectId,
+        uint256 tokenCount,
+        bool useReservedPercent
+    )
+        external
+        view
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount);
+
     /// @notice Returns a project's total token supply including pending reserved tokens.
     /// @param projectId The ID of the project to get the total token supply of.
     /// @return The total supply including pending reserved tokens.
@@ -315,21 +330,6 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     )
         external
         returns (uint256 beneficiaryTokenCount);
-
-    /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
-    /// @param projectId The ID of the project whose tokens are being minted.
-    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
-    /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
-    /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
-    /// @return reservedTokenCount The number of tokens that would be reserved.
-    function previewMintOf(
-        uint256 projectId,
-        uint256 tokenCount,
-        bool useReservedPercent
-    )
-        external
-        view
-        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount);
 
     /// @notice Queues one or more rulesets to the end of a project's ruleset queue.
     /// @param projectId The ID of the project to queue rulesets for.

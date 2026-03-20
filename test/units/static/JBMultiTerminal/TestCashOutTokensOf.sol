@@ -50,7 +50,9 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
     function _acceptToken(address token, uint8 decimals, uint32 currency) internal {
         mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(0)));
-        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this)));
+        mockExpect(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
 
         if (token != JBConstants.NATIVE_TOKEN) {
             mockExpect(token, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(decimals));
@@ -217,9 +219,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         vm.etch(_mockToken, abi.encode(1));
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector));
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, ""); // minReclaimAmount
         // = 1e18 but only 1e9 reclaimed
@@ -395,7 +395,10 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         JBTokenAmount memory reclaimedAmount = JBTokenAmount({
-            token: address(_mockToken2), decimals: 18, currency: uint32(uint160(address(_mockToken2))), value: reclaimAmount
+            token: address(_mockToken2),
+            decimals: 18,
+            currency: uint32(uint160(address(_mockToken2))),
+            value: reclaimAmount
         });
         JBTokenAmount memory forwardedAmount = JBTokenAmount({
             token: address(_mockToken2),
@@ -511,7 +514,10 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 passedAfterTax = _defaultAmount - hookTax;
 
         JBTokenAmount memory reclaimedAmount = JBTokenAmount({
-            token: address(_mockToken2), decimals: 18, currency: uint32(uint160(address(_mockToken2))), value: reclaimAmount
+            token: address(_mockToken2),
+            decimals: 18,
+            currency: uint32(uint160(address(_mockToken2))),
+            value: reclaimAmount
         });
         JBTokenAmount memory forwardedAmount = JBTokenAmount({
             token: address(_mockToken2),

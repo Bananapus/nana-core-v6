@@ -28,7 +28,9 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
 
     function _acceptToken(address token, uint8 decimals, uint32 currency) internal {
         mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(0)));
-        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this)));
+        mockExpect(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
 
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -53,9 +55,8 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
 
     function test_RevertsWhenTokenIsNotAccepted() external {
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _token));
-        JBMultiTerminal(address(_terminal)).previewCashOutFrom(
-            _holder, _projectId, _cashOutCount, _token, _beneficiary, ""
-        );
+        JBMultiTerminal(address(_terminal))
+            .previewCashOutFrom(_holder, _projectId, _cashOutCount, _token, _beneficiary, "");
     }
 
     function test_ReturnsRulesetAndCashOutPreviewValues() external {
@@ -83,9 +84,7 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
         accountingContexts[0] = accountingContext;
 
         mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeeless, (_beneficiary)),
-            abi.encode(true)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (_beneficiary)), abi.encode(true)
         );
 
         mockExpect(
@@ -102,9 +101,8 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
             uint256 reclaimAmount,
             uint256 cashOutTaxRate,
             JBCashOutHookSpecification[] memory previewSpecs
-        ) = JBMultiTerminal(address(_terminal)).previewCashOutFrom(
-            _holder, _projectId, _cashOutCount, _token, _beneficiary, ""
-        );
+        ) = JBMultiTerminal(address(_terminal))
+            .previewCashOutFrom(_holder, _projectId, _cashOutCount, _token, _beneficiary, "");
 
         assertEq(previewRuleset.id, ruleset.id);
         assertEq(reclaimAmount, 999);

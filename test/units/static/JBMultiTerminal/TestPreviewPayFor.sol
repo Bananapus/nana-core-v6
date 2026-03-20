@@ -63,14 +63,18 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
         mockExpect(
             address(store),
             abi.encodeCall(IJBTerminalStore.previewPayFrom, (_payer, tokenAmount, _projectId, _beneficiary, bytes(""))),
-            abi.encode(ruleset, 1_000, specs)
+            abi.encode(ruleset, 1000, specs)
         );
 
-        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(_controller)));
+        mockExpect(
+            address(directory),
+            abi.encodeCall(IJBDirectory.controllerOf, (_projectId)),
+            abi.encode(address(_controller))
+        );
 
         mockExpect(
             address(_controller),
-            abi.encodeCall(IJBController.previewMintOf, (_projectId, 1_000, true)),
+            abi.encodeCall(IJBController.previewMintOf, (_projectId, 1000, true)),
             abi.encode(750, 250)
         );
 

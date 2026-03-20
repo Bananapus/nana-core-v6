@@ -46,13 +46,26 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         returns (JBAccountingContext memory)
     {}
     function accountingContextsOf(uint256) external pure override returns (JBAccountingContext[] memory) {}
-    function previewCashOutFrom(address, uint256, uint256, address, address payable, bytes calldata)
+    function previewCashOutFrom(
+        address,
+        uint256,
+        uint256,
+        address,
+        address payable,
+        bytes calldata
+    )
         external
         pure
         override
         returns (JBRuleset memory, uint256, uint256, JBCashOutHookSpecification[] memory)
     {}
-    function previewPayFor(uint256, address, uint256, address, bytes calldata)
+    function previewPayFor(
+        uint256,
+        address,
+        uint256,
+        address,
+        bytes calldata
+    )
         external
         pure
         override
@@ -93,7 +106,15 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         return 0;
     }
 
-    function cashOutTokensOf(address, uint256, uint256, address, uint256, address payable, bytes calldata)
+    function cashOutTokensOf(
+        address,
+        uint256,
+        uint256,
+        address,
+        uint256,
+        address payable,
+        bytes calldata
+    )
         external
         pure
         override

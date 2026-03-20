@@ -535,7 +535,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
 
-        (beneficiaryTokenCount,) = _splitTokenCount(tokenCount, reservedPercent);
+        (beneficiaryTokenCount,) = _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
 
         if (beneficiaryTokenCount != 0) {
             // Mint the tokens.
@@ -557,24 +557,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (reservedPercent > 0) {
             pendingReservedTokenBalanceOf[projectId] += tokenCount - beneficiaryTokenCount;
         }
-    }
-
-    function previewMintOf(
-        uint256 projectId,
-        uint256 tokenCount,
-        bool useReservedPercent
-    )
-        external
-        view
-        override
-        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
-    {
-        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
-
-        JBRuleset memory ruleset = _currentRulesetOf(projectId);
-        uint256 reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
-
-        return _splitTokenCount(tokenCount, reservedPercent);
     }
 
     /// @notice Add one or more rulesets to the end of a project's ruleset queue. Rulesets take effect after the
@@ -812,6 +794,30 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     {
         (ruleset, approvalStatus) = RULESETS.latestQueuedOf(projectId);
         metadata = ruleset.expandMetadata();
+    }
+
+    /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
+    /// @param projectId The ID of the project whose tokens are being minted.
+    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
+    /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
+    /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of tokens that would be reserved.
+    function previewMintOf(
+        uint256 projectId,
+        uint256 tokenCount,
+        bool useReservedPercent
+    )
+        external
+        view
+        override
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
+    {
+        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
+
+        JBRuleset memory ruleset = _currentRulesetOf(projectId);
+        uint256 reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
+
+        return _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
     }
 
     /// @notice Check whether the project's controller can currently be set.
@@ -1172,6 +1178,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         return RULESETS.currentOf(projectId);
     }
 
+    /// @notice Splits a token count into beneficiary and reserved portions.
+    /// @param tokenCount The total token count, including reserved tokens.
+    /// @param reservedPercent The reserved percent to apply.
+    /// @return beneficiaryTokenCount The number of tokens for the beneficiary.
+    /// @return reservedTokenCount The number of tokens to reserve.
     function _splitTokenCount(
         uint256 tokenCount,
         uint256 reservedPercent

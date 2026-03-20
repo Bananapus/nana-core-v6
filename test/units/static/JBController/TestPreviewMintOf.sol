@@ -23,7 +23,7 @@ contract TestPreviewMintOf_Local is JBControllerSetup {
     }
 
     function test_ReturnsSplitCountsWhenUsingReservedPercent() external {
-        uint256 tokenCount = 1_000;
+        uint256 tokenCount = 1000;
 
         JBRulesetMetadata memory metadata = JBRulesetMetadata({
             reservedPercent: 2500,
@@ -69,7 +69,7 @@ contract TestPreviewMintOf_Local is JBControllerSetup {
     }
 
     function test_IgnoresReservedPercentWhenFlagIsFalse() external {
-        uint256 tokenCount = 1_000;
+        uint256 tokenCount = 1000;
 
         JBRulesetMetadata memory metadata = JBRulesetMetadata({
             reservedPercent: 9000,

@@ -137,7 +137,11 @@ contract TestTerminalPreviewParity_Local is TestBaseWorkflow {
         assertEq(_controller.pendingReservedTokenBalanceOf(projectId) - reservedBefore, previewReservedTokenCount);
     }
 
-    function testFuzzPreviewCashOutMatchesCashOut(uint96 payAmount, uint16 cashOutTaxRate, uint256 cashOutCountSeed)
+    function testFuzzPreviewCashOutMatchesCashOut(
+        uint96 payAmount,
+        uint16 cashOutTaxRate,
+        uint256 cashOutCountSeed
+    )
         external
     {
         payAmount = uint96(bound(payAmount, 1, 100 ether));
