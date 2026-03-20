@@ -875,6 +875,42 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Fees that are being held for a project.
+    /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
+    /// @dev Held fees can be processed at any time by this terminal's owner.
+    /// @param projectId The ID of the project that is holding fees.
+    /// @param token The token that the fees are held in.
+    function heldFeesOf(
+        uint256 projectId,
+        address token,
+        uint256 count
+    )
+        external
+        view
+        override
+        returns (JBFee[] memory heldFees)
+    {
+        // Keep a reference to the start index.
+        uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
+
+        // Get a reference to the number of held fees.
+        uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
+
+        // If the start index is greater than or equal to the number of held fees, return 0.
+        if (startIndex >= numberOfHeldFees) return new JBFee[](0);
+
+        // If the start index plus the count is greater than the number of fees, set the count to the number of fees
+        if (startIndex + count > numberOfHeldFees) count = numberOfHeldFees - startIndex;
+
+        // Create a new array to hold the fees.
+        heldFees = new JBFee[](count);
+
+        // Copy the fees into the array.
+        for (uint256 i; i < count; i++) {
+            heldFees[i] = _heldFeesOf[projectId][token][startIndex + i];
+        }
+    }
+
     /// @notice Simulates cashing out project tokens from this terminal without modifying state.
     /// @param holder The address whose tokens are being cashed out.
     /// @param projectId The ID of the project whose tokens are being cashed out.
@@ -904,9 +940,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
+        // Keep a reference to the accounting context for the reclaimed token.
         JBAccountingContext memory accountingContext =
             _accountingContextOf({projectId: projectId, token: tokenToReclaim});
+
+        // Keep a reference to the accounting contexts to include in the balance calculation.
         JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
+
+        // Keep a reference to whether the beneficiary should be treated as feeless.
         bool beneficiaryIsFeeless = _isFeeless(beneficiary);
 
         return STORE.previewCashOutFrom({
@@ -947,8 +988,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBPayHookSpecification[] memory hookSpecifications
         )
     {
+        // Keep a reference to the token count returned by the store preview.
         uint256 tokenCount;
 
+        // Preview the payment through the store.
         (ruleset, tokenCount, hookSpecifications) = STORE.previewPayFrom({
             payer: _msgSender(),
             amount: _tokenAmountOf({projectId: projectId, token: token, value: amount}),
@@ -957,44 +1000,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             metadata: metadata
         });
 
+        // Split the token count into beneficiary and reserved portions using the controller preview.
         (beneficiaryTokenCount, reservedTokenCount) = _controllerOf(projectId)
             .previewMintOf({projectId: projectId, tokenCount: tokenCount, useReservedPercent: true});
-    }
-
-    /// @notice Fees that are being held for a project.
-    /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
-    /// @dev Held fees can be processed at any time by this terminal's owner.
-    /// @param projectId The ID of the project that is holding fees.
-    /// @param token The token that the fees are held in.
-    function heldFeesOf(
-        uint256 projectId,
-        address token,
-        uint256 count
-    )
-        external
-        view
-        override
-        returns (JBFee[] memory heldFees)
-    {
-        // Keep a reference to the start index.
-        uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
-
-        // Get a reference to the number of held fees.
-        uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
-
-        // If the start index is greater than or equal to the number of held fees, return 0.
-        if (startIndex >= numberOfHeldFees) return new JBFee[](0);
-
-        // If the start index plus the count is greater than the number of fees, set the count to the number of fees
-        if (startIndex + count > numberOfHeldFees) count = numberOfHeldFees - startIndex;
-
-        // Create a new array to hold the fees.
-        heldFees = new JBFee[](count);
-
-        // Copy the fees into the array.
-        for (uint256 i; i < count; i++) {
-            heldFees[i] = _heldFeesOf[projectId][token][startIndex + i];
-        }
     }
 
     //*********************************************************************//
@@ -1360,6 +1368,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the specification being iterated on.
             JBCashOutHookSpecification memory specification = specifications[i];
 
+            // A noop specification is informational only and doesn't trigger the hook.
             if (specification.noop) continue;
 
             // Get the fee for the specified amount.
@@ -1445,6 +1454,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the specification being iterated on.
             JBPayHookSpecification memory specification = specifications[i];
 
+            // A noop specification is informational only and doesn't trigger the hook.
             if (specification.noop) continue;
 
             // Pass the correct token `forwardedAmount` to the hook.
@@ -1598,6 +1608,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
         }
+    }
+
+    /// @notice Records an added balance for a project.
+    /// @param projectId The ID of the project to record the added balance for.
+    /// @param token The token to record the added balance for.
+    /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
+    /// this
+    /// terminal.
+    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
+        // slither-disable-next-line calls-loop
+        STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
     /// @notice Returns held fees to the project who paid them based on the specified amount.
@@ -1959,6 +1980,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);
     }
 
+    /// @notice Checks this terminal's balance of a specific token.
+    /// @param token The address of the token to get this terminal's balance of.
+    /// @return This terminal's balance.
+    function _balanceOf(address token) internal view returns (uint256) {
+        // If the `token` is native, get the native token balance.
+        return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
+    }
+
     /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
     function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
         return super._contextSuffixLength();
@@ -2003,25 +2032,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return The primary terminal of the project for the token.
     function _primaryTerminalOf(uint256 projectId, address token) internal view returns (IJBTerminal) {
         return DIRECTORY.primaryTerminalOf({projectId: projectId, token: token});
-    }
-
-    /// @notice Records an added balance for a project.
-    /// @param projectId The ID of the project to record the added balance for.
-    /// @param token The token to record the added balance for.
-    /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
-    /// this
-    /// terminal.
-    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
-        // slither-disable-next-line calls-loop
-        STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
-    }
-
-    /// @notice Checks this terminal's balance of a specific token.
-    /// @param token The address of the token to get this terminal's balance of.
-    /// @return This terminal's balance.
-    function _balanceOf(address token) internal view returns (uint256) {
-        // If the `token` is native, get the native token balance.
-        return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
     }
 
     /// @notice Packages a payment amount with the token's accounting context.

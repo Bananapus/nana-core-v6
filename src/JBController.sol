@@ -1162,22 +1162,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    //*********************************************************************//
-    // -------------------------- internal views ------------------------- //
-    //*********************************************************************//
-
-    /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
-    function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
-        return super._contextSuffixLength();
-    }
-
-    /// @notice The project's current ruleset.
-    /// @param projectId The ID of the project to check.
-    /// @return The project's current ruleset.
-    function _currentRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
-        return RULESETS.currentOf(projectId);
-    }
-
     /// @notice Splits a token count into beneficiary and reserved portions.
     /// @param tokenCount The total token count, including reserved tokens.
     /// @param reservedPercent The reserved percent to apply.
@@ -1194,6 +1178,22 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         beneficiaryTokenCount =
             mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
         reservedTokenCount = tokenCount - beneficiaryTokenCount;
+    }
+
+    //*********************************************************************//
+    // -------------------------- internal views ------------------------- //
+    //*********************************************************************//
+
+    /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
+    function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
+        return super._contextSuffixLength();
+    }
+
+    /// @notice The project's current ruleset.
+    /// @param projectId The ID of the project to check.
+    /// @return The project's current ruleset.
+    function _currentRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
+        return RULESETS.currentOf(projectId);
     }
 
     /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.
