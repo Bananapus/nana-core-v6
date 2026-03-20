@@ -366,6 +366,155 @@ contract TestRecordPaymentFrom_Local is JBTerminalStoreSetup {
         });
     }
 
+    function test_GivenALaterHookReturnsANoopSpecWithAmount()
+        external
+        whenCurrentRulesetUseDataHookForPayEqTrueAndTheHookDneqZeroAddress
+    {
+        JBTokenAmount memory _tokenAmount = JBTokenAmount({
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
+        });
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: uint32(uint160(address(_token))),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: true,
+            useDataHookForCashOut: false,
+            dataHook: address(_dataHook),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        JBBeforePayRecordedContext memory _context = JBBeforePayRecordedContext({
+            terminal: address(this),
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            beneficiary: address(this),
+            weight: _returnedRuleset.weight,
+            reservedPercent: _returnedRuleset.reservedPercent(),
+            metadata: ""
+        });
+
+        JBPayHookSpecification[] memory _spec = new JBPayHookSpecification[](2);
+        _spec[0] = JBPayHookSpecification({hook: _payHook, noop: false, amount: 0, metadata: ""});
+        _spec[1] = JBPayHookSpecification({hook: _payHook, noop: true, amount: 1, metadata: ""});
+
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforePayRecordedWith, (_context)),
+            abi.encode(1e18 / 2, _spec)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_NoopHookSpecHasAmount.selector, 1));
+        _store.recordPaymentFrom({
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+        });
+    }
+
+    function test_GivenTheHookReturnsANoopSpecWithAmountThatExceedsPayment()
+        external
+        whenCurrentRulesetUseDataHookForPayEqTrueAndTheHookDneqZeroAddress
+    {
+        JBTokenAmount memory _tokenAmount = JBTokenAmount({
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
+        });
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: uint32(uint160(address(_token))),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: true,
+            useDataHookForCashOut: false,
+            dataHook: address(_dataHook),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        JBBeforePayRecordedContext memory _context = JBBeforePayRecordedContext({
+            terminal: address(this),
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            beneficiary: address(this),
+            weight: _returnedRuleset.weight,
+            reservedPercent: _returnedRuleset.reservedPercent(),
+            metadata: ""
+        });
+
+        JBPayHookSpecification[] memory _spec = new JBPayHookSpecification[](1);
+        _spec[0] = JBPayHookSpecification({hook: _payHook, noop: true, amount: _defaultValue * 2, metadata: ""});
+
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforePayRecordedWith, (_context)),
+            abi.encode(1e18 / 2, _spec)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_NoopHookSpecHasAmount.selector, _defaultValue * 2)
+        );
+        _store.recordPaymentFrom({
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+        });
+    }
+
     function test_GivenWeightReturnedByTheHookIsZero()
         external
         whenCurrentRulesetUseDataHookForPayEqTrueAndTheHookDneqZeroAddress

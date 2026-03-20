@@ -376,4 +376,100 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
         assertEq(reclaimAmount, 0);
     }
+
+    function test_WithDataHookAndZeroAmountNoopSpec() external {
+        _setBalance(address(this), _balance);
+        _mockUseTotalSurplus();
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: 0,
+            baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: true,
+            useDataHookForPay: false,
+            useDataHookForCashOut: true,
+            dataHook: address(_dataHook),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        JBAccountingContext memory _accountingContext =
+            JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
+
+        JBBeforeCashOutRecordedContext memory _context = JBBeforeCashOutRecordedContext({
+            terminal: address(this),
+            holder: address(this),
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            cashOutCount: 10e18,
+            totalSupply: _totalSupply,
+            surplus: JBTokenAmount({
+                token: _accountingContext.token,
+                value: 3e18,
+                decimals: _accountingContext.decimals,
+                currency: _accountingContext.currency
+            }),
+            useTotalSurplus: true,
+            cashOutTaxRate: 0,
+            beneficiaryIsFeeless: false,
+            metadata: ""
+        });
+
+        JBCashOutHookSpecification[] memory _spec = new JBCashOutHookSpecification[](1);
+        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, noop: true, amount: 0, metadata: "info"});
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_totalSupply)
+        );
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
+            abi.encode(0, 10e18, _totalSupply, _spec)
+        );
+
+        (, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications) = _store.previewCashOutFrom({
+            holder: address(this),
+            projectId: _projectId,
+            cashOutCount: 10e18,
+            accountingContext: _accountingContext,
+            balanceAccountingContexts: new JBAccountingContext[](0),
+            beneficiaryIsFeeless: false,
+            metadata: ""
+        });
+
+        assertEq(reclaimAmount, mulDiv(3e18, 10e18, _totalSupply));
+        assertEq(cashOutTaxRate, 0);
+        assertEq(hookSpecifications.length, 1);
+        assertEq(hookSpecifications[0].amount, 0);
+        assertEq(hookSpecifications[0].noop, true);
+        assertEq(hookSpecifications[0].metadata, bytes("info"));
+    }
 }

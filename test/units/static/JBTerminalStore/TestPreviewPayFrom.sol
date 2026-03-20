@@ -386,4 +386,79 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         assertEq(tokenCount, expectedCount);
     }
+
+    function test_WithDataHookAndZeroAmountNoopSpec() external {
+        JBTokenAmount memory _tokenAmount = JBTokenAmount({
+            token: address(_token), value: _defaultValue, decimals: _defaultDecimals, currency: _currency
+        });
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: uint32(uint160(address(_token))),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            useTotalSurplusForCashOuts: false,
+            useDataHookForPay: true,
+            useDataHookForCashOut: false,
+            dataHook: address(_dataHook),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        JBPayHookSpecification[] memory _spec = new JBPayHookSpecification[](1);
+        _spec[0] = JBPayHookSpecification({hook: _payHook, noop: true, amount: 0, metadata: "info"});
+
+        JBBeforePayRecordedContext memory _context = JBBeforePayRecordedContext({
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            beneficiary: address(this),
+            weight: _returnedRuleset.weight,
+            reservedPercent: _returnedRuleset.reservedPercent(),
+            metadata: ""
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforePayRecordedWith, (_context)),
+            abi.encode(1e18 / 2, _spec)
+        );
+
+        vm.prank(_terminal);
+        (, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = _store.previewPayFrom({
+            payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+        });
+
+        assertEq(tokenCount, 1e18 / 2);
+        assertEq(hookSpecifications.length, 1);
+        assertEq(hookSpecifications[0].amount, 0);
+        assertEq(hookSpecifications[0].noop, true);
+        assertEq(hookSpecifications[0].metadata, bytes("info"));
+    }
 }
