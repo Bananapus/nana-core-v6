@@ -71,9 +71,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
-    error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
-    error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
-    error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
+    error JBMultiTerminal_UnderMin();
     error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
@@ -360,7 +358,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // The amount being reclaimed must be at least as much as was expected.
         if (reclaimAmount < minTokensReclaimed) {
-            revert JBMultiTerminal_UnderMinTokensReclaimed(reclaimAmount, minTokensReclaimed);
+            revert JBMultiTerminal_UnderMin();
         }
     }
 
@@ -643,7 +641,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
         if (beneficiaryTokenCount < minReturnedTokens) {
-            revert JBMultiTerminal_UnderMinReturnedTokens(beneficiaryTokenCount, minReturnedTokens);
+            revert JBMultiTerminal_UnderMin();
         }
     }
 
@@ -735,9 +733,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // The amount being paid out must be at least as much as was expected.
-        if (amountPaidOut < minTokensPaidOut) {
-            revert JBMultiTerminal_UnderMinTokensPaidOut(amountPaidOut, minTokensPaidOut);
-        }
+        if (amountPaidOut < minTokensPaidOut) revert JBMultiTerminal_UnderMin();
     }
 
     /// @notice Allows a project to pay out funds from its surplus up to the current surplus allowance.
@@ -791,7 +787,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // The amount being withdrawn must be at least as much as was expected.
         if (netAmountPaidOut < minTokensPaidOut) {
-            revert JBMultiTerminal_UnderMinTokensPaidOut(netAmountPaidOut, minTokensPaidOut);
+            revert JBMultiTerminal_UnderMin();
         }
     }
 
@@ -843,7 +839,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         view
         override
         returns (uint256)
-    {
+        {
         return STORE.currentSurplusOf({
             terminal: address(this),
             projectId: projectId,
@@ -851,6 +847,81 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             decimals: decimals,
             currency: currency
         });
+    }
+
+    /// @notice Simulates cashing out project tokens from this terminal without modifying state.
+    /// @param holder The address whose tokens are being cashed out.
+    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim from the project's surplus.
+    /// @param beneficiary The address that would receive the reclaimed tokens.
+    /// @param metadata Extra data to send to the data hook and cash out hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return reclaimAmount The amount of tokens that would be reclaimed from the project's surplus.
+    /// @return cashOutTaxRate The cash out tax rate that would be applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function previewCashOutFrom(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        address payable beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
+    {
+        return STORE.previewCashOutFrom(
+            holder,
+            projectId,
+            cashOutCount,
+            _accountingContextOf(projectId, tokenToReclaim),
+            _accountingContextsOf[projectId],
+            _isFeeless(beneficiary),
+            metadata
+        );
+    }
+
+    /// @notice Simulates paying a project through this terminal without modifying state.
+    /// @param projectId The ID of the project being paid.
+    /// @param token The token being paid in.
+    /// @param amount The amount of tokens being paid.
+    /// @param beneficiary The address to mint project tokens to.
+    /// @param metadata Extra data to pass along to the data hook and pay hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return beneficiaryTokenCount The number of project tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of project tokens that would be reserved.
+    /// @return hookSpecifications Any pay hook specifications from the data hook.
+    function previewPayFor(
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (
+            JBRuleset memory ruleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory hookSpecifications
+        )
+    {
+        uint256 tokenCount;
+
+        (ruleset, tokenCount, hookSpecifications) =
+            STORE.previewPayFrom(_msgSender(), _tokenAmountOf(projectId, token, amount), projectId, beneficiary, metadata);
+
+        (beneficiaryTokenCount, reservedTokenCount) = _controllerOf(projectId).previewMintOf(projectId, tokenCount, true);
     }
 
     /// @notice Fees that are being held for a project.
@@ -923,10 +994,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256)
     {
-        // Make sure the project has an accounting context for the token being paid.
-        if (_accountingContextForTokenOf[projectId][token].token == address(0)) {
-            revert JBMultiTerminal_TokenNotAccepted(token);
-        }
+        _accountingContextOf(projectId, token);
 
         // If the terminal's token is the native token, override `amount` with `msg.value`.
         if (token == JBConstants.NATIVE_TOKEN) return msg.value;
@@ -1025,6 +1093,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return 0;
     }
 
+    function _accountingContextOf(uint256 projectId, address token) internal view returns (JBAccountingContext memory) {
+        JBAccountingContext memory context = _accountingContextForTokenOf[projectId][token];
+        if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);
+        return context;
+    }
+
+    function _tokenAmountOf(uint256 projectId, address token, uint256 value) internal view returns (JBTokenAmount memory) {
+        JBAccountingContext memory context = _accountingContextOf(projectId, token);
+        return JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
+    }
+
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
     /// by
     /// the project's current ruleset's data hook.
@@ -1061,7 +1140,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 cashOutTaxRate;
 
         // Keep a reference to the accounting context of the token being reclaimed.
-        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[projectId][tokenToReclaim];
+        JBAccountingContext memory accountingContext = _accountingContextOf(projectId, tokenToReclaim);
 
         // Scoped section prevents stack too deep.
         {
@@ -1437,18 +1516,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
-        // Keep a reference to the token amount to forward to the store.
-        JBTokenAmount memory tokenAmount;
-
-        // Scoped section prevents stack too deep. `context` only used within scope.
-        {
-            // Get a reference to the token's accounting context.
-            JBAccountingContext memory context = _accountingContextForTokenOf[projectId][token];
-
-            // Bundle the amount info into a `JBTokenAmount` struct.
-            tokenAmount =
-                JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: amount});
-        }
+        JBTokenAmount memory tokenAmount = _tokenAmountOf(projectId, token, amount);
 
         // Record the payment.
         // Keep a reference to the ruleset the payment is being made during.

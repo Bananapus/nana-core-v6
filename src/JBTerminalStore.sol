@@ -10,6 +10,7 @@ import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 import {JBCashOuts} from "./libraries/JBCashOuts.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
@@ -637,7 +638,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Simulates a cash out without modifying state.
     /// @dev Invokes data hooks if configured, but skips the balance sufficiency check (balance may change between
     /// preview and execution).
-    /// @param terminal The terminal address to simulate the cash out from.
     /// @param holder The address cashing out.
     /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens being cashed out.
@@ -650,7 +650,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
     function previewCashOutFrom(
-        address terminal,
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
@@ -670,7 +669,7 @@ contract JBTerminalStore is IJBTerminalStore {
         )
     {
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOutFrom({
-            terminal: terminal,
+            terminal: msg.sender,
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
@@ -684,17 +683,15 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Simulates a payment without modifying state.
     /// @dev Invokes data hooks if configured. Returns the same token count and hook specifications that
     /// `recordPaymentFrom` would produce.
-    /// @param terminal The terminal address to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount being paid.
     /// @param projectId The ID of the project being paid.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
-    /// @return tokenCount The number of project tokens that would be minted.
+    /// @return tokenCount The number of project tokens that would be minted, including reserved tokens.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
-        address terminal,
         address payer,
         JBTokenAmount memory amount,
         uint256 projectId,
@@ -707,7 +704,7 @@ contract JBTerminalStore is IJBTerminalStore {
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
         (ruleset, tokenCount, hookSpecifications,) = _computePayFrom({
-            terminal: terminal,
+            terminal: msg.sender,
             payer: payer,
             amount: amount,
             projectId: projectId,

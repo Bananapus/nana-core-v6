@@ -535,12 +535,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
 
-        if (reservedPercent != JBConstants.MAX_RESERVED_PERCENT) {
-            // Calculate the number of (non-reserved) tokens that will be minted to the beneficiary.
-            beneficiaryTokenCount = mulDiv(
-                tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT
-            );
+        (beneficiaryTokenCount,) = _splitTokenCount(tokenCount, reservedPercent);
 
+        if (beneficiaryTokenCount != 0) {
             // Mint the tokens.
             // slither-disable-next-line reentrancy-benign,reentrancy-events,unused-return
             TOKENS.mintFor({holder: beneficiary, projectId: projectId, count: beneficiaryTokenCount});
@@ -560,6 +557,24 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (reservedPercent > 0) {
             pendingReservedTokenBalanceOf[projectId] += tokenCount - beneficiaryTokenCount;
         }
+    }
+
+    function previewMintOf(
+        uint256 projectId,
+        uint256 tokenCount,
+        bool useReservedPercent
+    )
+        external
+        view
+        override
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
+    {
+        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
+
+        JBRuleset memory ruleset = _currentRulesetOf(projectId);
+        uint256 reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
+
+        return _splitTokenCount(tokenCount, reservedPercent);
     }
 
     /// @notice Add one or more rulesets to the end of a project's ruleset queue. Rulesets take effect after the
@@ -1155,6 +1170,19 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @return The project's current ruleset.
     function _currentRulesetOf(uint256 projectId) internal view returns (JBRuleset memory) {
         return RULESETS.currentOf(projectId);
+    }
+
+    function _splitTokenCount(
+        uint256 tokenCount,
+        uint256 reservedPercent
+    )
+        internal
+        pure
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
+    {
+        beneficiaryTokenCount =
+            mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
+        reservedTokenCount = tokenCount - beneficiaryTokenCount;
     }
 
     /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.

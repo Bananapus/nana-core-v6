@@ -184,7 +184,9 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         if (_coins == uint256(type(uint160).max) + 1) {
             vm.expectRevert(
-                abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_PermitAllowanceNotEnough.selector, _coins, 0)
+                abi.encodeWithSelector(
+                    JBMultiTerminal.JBMultiTerminal_PermitAllowanceNotEnough.selector, _coins, 0
+                )
             );
         }
 
@@ -257,7 +259,9 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
 
         if (_coins == uint256(type(uint160).max) + 1) {
             vm.expectRevert(
-                abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_PermitAllowanceNotEnough.selector, _coins, 0)
+                abi.encodeWithSelector(
+                    JBMultiTerminal.JBMultiTerminal_PermitAllowanceNotEnough.selector, _coins, 0
+                )
             );
         }
 

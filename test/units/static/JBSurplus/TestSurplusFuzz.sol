@@ -3,6 +3,9 @@ pragma solidity 0.8.26;
 
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
+import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBSurplus} from "../../../../src/libraries/JBSurplus.sol";
@@ -41,6 +44,18 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
         returns (JBAccountingContext memory)
     {}
     function accountingContextsOf(uint256) external pure override returns (JBAccountingContext[] memory) {}
+    function previewCashOutFrom(address, uint256, uint256, address, address payable, bytes calldata)
+        external
+        pure
+        override
+        returns (JBRuleset memory, uint256, uint256, JBCashOutHookSpecification[] memory)
+    {}
+    function previewPayFor(uint256, address, uint256, address, bytes calldata)
+        external
+        pure
+        override
+        returns (JBRuleset memory, uint256, uint256, JBPayHookSpecification[] memory)
+    {}
     function addAccountingContextsFor(uint256, JBAccountingContext[] calldata) external override {}
     function addToBalanceOf(
         uint256,

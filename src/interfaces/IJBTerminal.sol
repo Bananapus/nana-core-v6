@@ -6,6 +6,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IJBPayHook} from "./IJBPayHook.sol";
 import {JBAccountingContext} from "../structs/JBAccountingContext.sol";
 import {JBAfterPayRecordedContext} from "../structs/JBAfterPayRecordedContext.sol";
+import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
+import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../structs/JBRuleset.sol";
 
 /// @notice A terminal that accepts payments and can be migrated.
 interface IJBTerminal is IERC165 {
@@ -101,6 +104,60 @@ interface IJBTerminal is IERC165 {
         external
         view
         returns (uint256);
+
+    /// @notice Simulates cashing out project tokens from this terminal without modifying state.
+    /// @param holder The address whose tokens are being cashed out.
+    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim from the project's surplus.
+    /// @param beneficiary The address that would receive the reclaimed tokens.
+    /// @param metadata Extra data to send to the data hook and cash out hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return reclaimAmount The amount of tokens that would be reclaimed from the project's surplus.
+    /// @return cashOutTaxRate The cash out tax rate that would be applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function previewCashOutFrom(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        address payable beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        );
+
+    /// @notice Simulates paying a project through this terminal without modifying state.
+    /// @param projectId The ID of the project being paid.
+    /// @param token The token being paid in.
+    /// @param amount The amount of tokens being paid.
+    /// @param beneficiary The address to mint project tokens to.
+    /// @param metadata Extra data to pass along to the data hook and pay hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return beneficiaryTokenCount The number of project tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of project tokens that would be reserved.
+    /// @return hookSpecifications Any pay hook specifications from the data hook.
+    function previewPayFor(
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory hookSpecifications
+        );
 
     /// @notice Adds accounting contexts for a project's tokens.
     /// @param projectId The ID of the project to add accounting contexts for.

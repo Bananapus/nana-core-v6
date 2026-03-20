@@ -60,8 +60,8 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_RulesetNotFound.selector, _projectId));
+        vm.prank(_terminal);
         _store.previewPayFrom({
-            terminal: _terminal,
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
@@ -116,8 +116,8 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
         vm.expectRevert(JBTerminalStore.JBTerminalStore_RulesetPaymentPaused.selector);
+        vm.prank(_terminal);
         _store.previewPayFrom({
-            terminal: _terminal,
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
@@ -173,7 +173,6 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
         (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
-            terminal: address(this),
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
@@ -261,7 +260,6 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
-            terminal: address(this),
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
@@ -333,8 +331,8 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         uint256 balanceBefore = _store.balanceOf(_terminal, _projectId, address(_token));
 
+        vm.prank(_terminal);
         _store.previewPayFrom({
-            terminal: _terminal,
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
@@ -401,8 +399,8 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         uint256 expectedCount = mulDiv(_defaultValue, 1e18, 2e18);
 
+        vm.prank(_terminal);
         (, uint256 tokenCount,) = _store.previewPayFrom({
-            terminal: _terminal,
             payer: address(this),
             amount: _tokenAmount,
             projectId: _projectId,
