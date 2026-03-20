@@ -386,7 +386,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         netPayoutAmount = amount;
 
         // If there's a split hook set, transfer to its `process` function.
-        if (address(split.hook) != address(0)) {
+        if (split.hook != IJBSplitHook(address(0))) {
             // Make sure that the address supports the split hook interface.
             if (!split.hook.supportsInterface(type(IJBSplitHook).interfaceId)) {
                 revert JBMultiTerminal_SplitHookInvalid(split.hook);
@@ -421,7 +421,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             IJBTerminal terminal = _primaryTerminalOf({projectId: split.projectId, token: token});
 
             // The project must have a terminal to send funds to.
-            if (address(terminal) == address(0)) {
+            if (terminal == IJBTerminal(address(0))) {
                 revert JBMultiTerminal_RecipientProjectTerminalNotFound(split.projectId, token);
             }
 
