@@ -535,6 +535,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
 
+        // Split the requested token count into beneficiary and reserved portions.
         (beneficiaryTokenCount,) = _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
 
         if (beneficiaryTokenCount != 0) {

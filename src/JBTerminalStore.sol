@@ -704,6 +704,7 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
+        // Use the caller as the terminal context for the preview.
         (ruleset, tokenCount, hookSpecifications,) = _computePayFrom({
             terminal: msg.sender,
             payer: payer,
@@ -933,6 +934,7 @@ contract JBTerminalStore is IJBTerminalStore {
                 (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
                     IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
+                // Noop specifications are informational only, so they can't also request forwarded funds.
                 for (uint256 i; i < hookSpecifications.length; i++) {
                     if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
                         revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);

@@ -1018,6 +1018,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256)
     {
+        // Make sure the project has an accounting context for the token being paid.
         _accountingContextOf({projectId: projectId, token: token});
 
         // If the terminal's token is the native token, override `amount` with `msg.value`.
