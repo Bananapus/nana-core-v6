@@ -4,6 +4,8 @@ pragma solidity ^0.8.0;
 import {IJBCashOutHook} from "./IJBCashOutHook.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
+import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
+import {JBRuleset} from "../structs/JBRuleset.sol";
 
 /// @notice A terminal that can be cashed out from.
 interface IJBCashOutTerminal is IJBTerminal {
@@ -44,6 +46,34 @@ interface IJBCashOutTerminal is IJBTerminal {
         uint256 fee,
         address caller
     );
+
+    /// @notice Simulates cashing out project tokens from this terminal without modifying state.
+    /// @param holder The address whose tokens are being cashed out.
+    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim from the project's surplus.
+    /// @param beneficiary The address that would receive the reclaimed tokens.
+    /// @param metadata Extra data to send to the data hook and cash out hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return reclaimAmount The amount of tokens that would be reclaimed from the project's surplus.
+    /// @return cashOutTaxRate The cash out tax rate that would be applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function previewCashOutFrom(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        address payable beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        );
 
     /// @notice Cashes out a holder's tokens for a project, reclaiming the token's proportional share of the project's
     /// surplus.

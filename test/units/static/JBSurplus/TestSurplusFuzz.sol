@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
+import {IJBCashOutTerminal} from "../../../../src/interfaces/IJBCashOutTerminal.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
@@ -11,7 +12,7 @@ import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBSurplus} from "../../../../src/libraries/JBSurplus.sol";
 
 /// @notice Mock terminal that returns a fixed surplus for testing JBSurplus.
-contract MockSurplusTerminal is ERC165, IJBTerminal {
+contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
     uint256 public surplusAmount;
 
     constructor(uint256 _surplus) {
@@ -33,7 +34,8 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC165, IERC165) returns (bool) {
-        return interfaceId == type(IJBTerminal).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IJBTerminal).interfaceId || interfaceId == type(IJBCashOutTerminal).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     // Stub implementations for IJBTerminal
@@ -85,6 +87,15 @@ contract MockSurplusTerminal is ERC165, IJBTerminal {
     )
         external
         payable
+        override
+        returns (uint256)
+    {
+        return 0;
+    }
+
+    function cashOutTokensOf(address, uint256, uint256, address, uint256, address payable, bytes calldata)
+        external
+        pure
         override
         returns (uint256)
     {
