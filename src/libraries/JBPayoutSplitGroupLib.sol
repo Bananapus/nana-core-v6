@@ -62,10 +62,10 @@ library JBPayoutSplitGroupLib {
     {
         // The total percentage available to split.
         uint256 leftoverPercentage = JBConstants.SPLITS_TOTAL_PERCENT;
-        uint256 group = uint256(uint160(token));
 
         // Get a reference to the project's payout splits.
-        JBSplit[] memory payoutSplits = splits.splitsOf({projectId: projectId, rulesetId: rulesetId, groupId: group});
+        JBSplit[] memory payoutSplits =
+            splits.splitsOf({projectId: projectId, rulesetId: rulesetId, groupId: uint256(uint160(token))});
 
         leftoverAmount = amount;
 
@@ -102,7 +102,7 @@ library JBPayoutSplitGroupLib {
             emit SendPayoutToSplit({
                 projectId: projectId,
                 rulesetId: rulesetId,
-                group: group,
+                group: uint256(uint160(token)),
                 split: split,
                 amount: payoutAmount,
                 netAmount: netPayoutAmount,
