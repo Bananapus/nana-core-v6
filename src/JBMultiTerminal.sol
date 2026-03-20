@@ -926,16 +926,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the accounting contexts to include in the balance calculation.
         JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
 
-        // Keep a reference to whether the beneficiary should be treated as feeless.
-        bool beneficiaryIsFeeless = _isFeeless(beneficiary);
-
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.previewCashOutFrom({
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
             accountingContext: accountingContext,
             balanceAccountingContexts: balanceAccountingContexts,
-            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            beneficiaryIsFeeless: _isFeeless(beneficiary),
             metadata: metadata
         });
     }

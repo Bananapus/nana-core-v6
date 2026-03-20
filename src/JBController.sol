@@ -819,10 +819,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Keep a reference to the current ruleset.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
-        // Keep a reference to the reserved percent to apply.
-        uint256 reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
-
-        return _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
+        return
+            _splitTokenCount({
+                tokenCount: tokenCount, reservedPercent: useReservedPercent ? ruleset.reservedPercent() : 0
+            });
     }
 
     /// @notice Check whether the project's controller can currently be set.
