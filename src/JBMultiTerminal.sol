@@ -72,7 +72,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
-    error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
+    error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
+    error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
+    error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
     error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
@@ -358,7 +360,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being reclaimed must be at least as much as was expected.
-        _checkMin({value: reclaimAmount, min: minTokensReclaimed});
+        if (reclaimAmount < minTokensReclaimed) {
+            revert JBMultiTerminal_UnderMinTokensReclaimed(reclaimAmount, minTokensReclaimed);
+        }
     }
 
     /// @notice Executes a payout to a split.
@@ -660,7 +664,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
-        _checkMin({value: beneficiaryTokenCount, min: minReturnedTokens});
+        if (beneficiaryTokenCount < minReturnedTokens) {
+            revert JBMultiTerminal_UnderMinReturnedTokens(beneficiaryTokenCount, minReturnedTokens);
+        }
     }
 
     /// @notice Process any fees that are being held for the project.
@@ -751,7 +757,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // The amount being paid out must be at least as much as was expected.
-        _checkMin({value: amountPaidOut, min: minTokensPaidOut});
+        if (amountPaidOut < minTokensPaidOut) {
+            revert JBMultiTerminal_UnderMinTokensPaidOut(amountPaidOut, minTokensPaidOut);
+        }
     }
 
     /// @notice Allows a project to pay out funds from its surplus up to the current surplus allowance.
@@ -804,7 +812,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being withdrawn must be at least as much as was expected.
-        _checkMin({value: netAmountPaidOut, min: minTokensPaidOut});
+        if (netAmountPaidOut < minTokensPaidOut) {
+            revert JBMultiTerminal_UnderMinTokensPaidOut(netAmountPaidOut, minTokensPaidOut);
+        }
     }
 
     //*********************************************************************//
@@ -2012,13 +2022,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     function _balanceOf(address token) internal view returns (uint256) {
         // If the `token` is native, get the native token balance.
         return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
-    }
-
-    /// @notice Checks that a value meets a minimum.
-    /// @param value The value being checked.
-    /// @param min The minimum acceptable value.
-    function _checkMin(uint256 value, uint256 min) internal pure {
-        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
     }
 
     /// @notice Packages a payment amount with the token's accounting context.

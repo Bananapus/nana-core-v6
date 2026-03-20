@@ -219,7 +219,11 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         vm.etch(_mockToken, abi.encode(1));
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
-        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, reclaimAmount, 1e18));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_UnderMinTokensReclaimed.selector, reclaimAmount, 1e18
+            )
+        );
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, ""); // minReclaimAmount
         // = 1e18 but only 1e9 reclaimed
