@@ -52,6 +52,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `allRulesetsOf(uint256 projectId, uint256 startingId, uint256 size)` | Returns an array of rulesets with metadata, paginated. |
 | `pendingReservedTokenBalanceOf(uint256 projectId)` | Returns accumulated reserved tokens not yet distributed. |
 | `totalTokenSupplyWithReservedTokensOf(uint256 projectId)` | Returns total supply including pending reserved tokens. |
+| `previewMintOf(uint256 projectId, uint256 tokenCount, bool useReservedPercent)` | Simulates a mint under the current ruleset. Returns `(beneficiaryTokenCount, reservedTokenCount)`. Reverts if `tokenCount` is 0. |
 
 ### JBMultiTerminal
 
@@ -68,6 +69,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentSurplusOf(uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the project's current surplus in the specified currency. |
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
 | `accountingContextsOf(uint256 projectId)` | Returns all accounting contexts for a project. |
+| `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |
+| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
 | `heldFeesOf(uint256 projectId, address token, uint256 count)` | Returns up to `count` held fees for a project/token. |
 
 ### JBTerminalStore
@@ -88,8 +91,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals using all accounting contexts. Mirrors `currentTotalSurplusOf`. |
 | `currentSurplusOf(address terminal, uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the current surplus for a project at a terminal. |
 | `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Returns the total surplus across all terminals. |
-| `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Invokes data hooks if configured. Returns token count and hook specifications. |
-| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Invokes data hooks if configured. Returns reclaim amount, tax rate, and hook specifications. |
+| `previewPayFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
+| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 
 ### JBRulesets
 

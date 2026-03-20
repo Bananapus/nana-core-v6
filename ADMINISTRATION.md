@@ -115,6 +115,7 @@ Admin privileges and their scope in nana-core-v6.
 | `beforeReceiveMigrationFrom` | JBDirectory only | N/A (msg.sender == DIRECTORY) | Per project | Called before migration to prepare the new controller. Copies metadata URI and distributes pending reserved tokens from the old controller. |
 | `afterReceiveMigrationFrom` | JBDirectory only | N/A (msg.sender == DIRECTORY) | Per project | Called after migration completes. Currently a no-op. |
 | `executePayReservedTokenToTerminal` | Self only | N/A (msg.sender == address(this)) | Internal | Pays a terminal with reserved tokens. Called internally via try-catch during reserved token distribution. |
+| `previewMintOf` | Anyone | N/A (view) | Per project | Simulates a mint under the current ruleset and returns the beneficiary and reserved token counts. No state modification. |
 
 ### JBMultiTerminal
 
@@ -131,6 +132,8 @@ Admin privileges and their scope in nana-core-v6.
 | `executePayout` | Self only | N/A (msg.sender == address(this)) | Internal | Executes a single payout to a split. Called internally via try-catch during payout distribution. |
 | `executeProcessFee` | Self only | N/A (msg.sender == address(this)) | Internal | Processes a fee payment to the fee beneficiary project. Called internally via try-catch. |
 | `executeTransferTo` | Self only | N/A (msg.sender == address(this)) | Internal | Transfers tokens to an address. Called internally via try-catch during payout leftover distribution. |
+| `previewPayFor` | Anyone | N/A (view) | Per project | Simulates a payment and returns the ruleset, beneficiary token count, reserved token count, and hook specifications. No state modification. |
+| `previewCashOutFrom` | Anyone | N/A (view) | Per project | Simulates a cash out and returns the ruleset, reclaim amount, cash out tax rate, and hook specifications. No state modification. |
 
 ### JBTokens
 

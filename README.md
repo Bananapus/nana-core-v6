@@ -39,6 +39,16 @@ Credits and tokens can be **cashed out** to reclaim surplus funds along a bondin
 - A **100% tax rate** means nothing can be reclaimed (all surplus is locked).
 - Tax rates between 0% and 100% create a bonding curve that incentivizes holding -- later cashers-out get a better rate per token.
 
+### Preview APIs
+
+Every core user action -- paying, cashing out, and minting -- has a corresponding **preview** function that simulates the operation on-chain without modifying state. These are essential for building UIs with accurate slippage estimates and for integrators who need to know exact outcomes before committing transactions.
+
+- `JBMultiTerminal.previewPayFor(projectId, token, amount, beneficiary, metadata)` -- Returns the ruleset, beneficiary token count, reserved token count, and hook specifications that a payment would produce. Includes data hook effects.
+- `JBMultiTerminal.previewCashOutFrom(holder, projectId, cashOutCount, tokenToReclaim, beneficiary, metadata)` -- Returns the ruleset, reclaim amount, cash out tax rate, and hook specifications that a cash out would produce. Includes data hook effects.
+- `JBController.previewMintOf(projectId, tokenCount, useReservedPercent)` -- Returns the beneficiary and reserved token counts that a mint would produce under the current ruleset.
+
+All preview functions are `view` -- they read current state (including calling data hooks) but never write. They mirror the exact computation paths of their non-preview counterparts, so the returned values match what the real operation would produce at the same block.
+
 ### Reserved Tokens
 
 Each ruleset can define a `reservedPercent` (0-10,000 basis points). When tokens are minted from payments, this percentage is set aside. Reserved tokens accumulate in `pendingReservedTokenBalanceOf` and are distributed to the reserved token split group when `sendReservedTokensToSplitsOf` is called.
@@ -97,8 +107,8 @@ All contracts use Solidity `0.8.26`.
 | `JBProjects` | ERC-721 registry of projects. Minting an NFT creates a project. Optionally mints project #1 to a fee beneficiary owner. |
 | `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. Supports ROOT (1) for all-permissions and wildcard project ID (0). |
 | `JBDirectory` | Maps each project to its controller and terminals. Entry point for looking up where to interact with a project. Manages an allowlist of addresses permitted to set a project's first controller. |
-| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, updating token metadata, sending reserved tokens, setting project URIs, adding price feeds, and transferring credits. |
-| `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, manages surplus allowances, and handles fees. Integrates with Permit2 for ERC-20 approvals. |
+| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, updating token metadata, sending reserved tokens, setting project URIs, adding price feeds, transferring credits, and previewing mint outcomes via `previewMintOf`. |
+| `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, manages surplus allowances, and handles fees. Provides `previewPayFor` and `previewCashOutFrom` for simulating operations. Integrates with Permit2 for ERC-20 approvals. |
 | `JBTerminalStore` | Bookkeeping engine for all terminal inflows and outflows. Tracks balances, enforces payout limits and surplus allowances, computes cash out reclaim amounts via a bonding curve, and integrates with data hooks. |
 | `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, approval hook validation, and weight caching for long-running projects. |
 | `JBTokens` | Manages dual-balance token accounting (credits + ERC-20). Credits are minted by default; once an ERC-20 is deployed or set, credits can be claimed as tokens. Credits are burned before ERC-20 tokens. |

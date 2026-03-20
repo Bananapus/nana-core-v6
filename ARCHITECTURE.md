@@ -72,6 +72,30 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
      OR if cashOutTaxRate == 0 and project has unconsumed fee-free surplus (_feeFreeSurplusOf)
 ```
 
+### Preview Flow
+
+Every core user action has a `view` counterpart that simulates the operation without modifying state. These compose the same internal computation paths as their non-preview counterparts and include data hook effects.
+
+```
+Caller -> JBMultiTerminal.previewPayFor(projectId, token, amount, beneficiary, metadata)
+  -> JBTerminalStore.previewPayFrom()
+    -> Read current ruleset, apply data hook
+    -> Calculate token count from weight
+  -> JBController.previewMintOf()
+    -> Split token count into beneficiary + reserved portions
+  -> Returns (ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)
+
+Caller -> JBMultiTerminal.previewCashOutFrom(holder, projectId, cashOutCount, tokenToReclaim, beneficiary, metadata)
+  -> JBTerminalStore.previewCashOutFrom()
+    -> Calculate surplus, get totalSupply, apply data hook
+    -> JBCashOuts.cashOutFrom() — bonding curve
+  -> Returns (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)
+
+Caller -> JBController.previewMintOf(projectId, tokenCount, useReservedPercent)
+  -> Read current ruleset
+  -> Returns (beneficiaryTokenCount, reservedTokenCount)
+```
+
 ### Payout Flow
 
 ```

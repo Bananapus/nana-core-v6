@@ -124,7 +124,15 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - `sendPayoutsOf` is callable by anyone (unless `ownerMustSendPayouts` is set). A split recipient that always reverts will cause that split's payout to fail, but the try-catch returns the amount to the project balance. Payout limit is still consumed. The project owner must wait until the next cycle.
 - `addAccountingContextsFor` is gated by `allowAddAccountingContext` in the ruleset, but the contexts array is append-only and never shrinks. Over many rulesets, this could grow large enough to cause gas issues in functions that iterate over all contexts (e.g., `currentSurplusOf` when no explicit contexts are passed).
 
-## 6. Integration Risks
+## 6. Preview Functions
+
+`JBMultiTerminal.previewPayFor`, `JBMultiTerminal.previewCashOutFrom`, and `JBController.previewMintOf` are `view` functions that simulate operations without modifying state. They compose the same computation paths as the real operations.
+
+- **Data hooks are called during previews.** `previewPayFor` and `previewCashOutFrom` invoke `beforePayRecordedWith` and `beforeCashOutRecordedWith` on data hooks. A reverting data hook causes the preview to revert. A gas-consuming hook can cause the preview to run out of gas.
+- **Store previews use `msg.sender` as terminal.** `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` use `msg.sender` for balance/surplus lookups. Only a registered terminal calling these will get correct results. External callers should use the terminal-level functions (`JBMultiTerminal.previewPayFor` / `previewCashOutFrom`) which handle this automatically.
+- **No state modification risk.** Preview functions cannot change balances, mint/burn tokens, or consume limits. They are safe to call from any context.
+
+## 7. Integration Risks
 
 ### Non-Standard ERC-20s
 
@@ -148,7 +156,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 - `JBTerminalStore.recordAddedBalanceFor` has **no access control**. Any address can call it. The balance is keyed by `msg.sender` (the terminal address), so only a terminal can inflate its own recorded balance. This is safe as long as all terminals correctly track their actual holdings. A buggy or malicious terminal implementation could call `recordAddedBalanceFor` without actually receiving tokens, inflating the recorded balance above actual holdings.
 
-## 7. Invariants to Verify
+## 8. Invariants to Verify
 
 These should hold at all times and are the most productive targets for formal verification or invariant testing:
 
