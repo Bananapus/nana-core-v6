@@ -348,7 +348,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](1);
-        hookSpecifications[0] = JBCashOutHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
+        hookSpecifications[0] =
+            JBCashOutHookSpecification({hook: _mockHook, noop: false, amount: _defaultAmount, metadata: ""});
         JBAccountingContext memory mockTokenContext = JBAccountingContext({
             token: address(_mockToken2), decimals: 18, currency: uint32(uint160(address(_mockToken2)))
         });
@@ -464,7 +465,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](1);
         JBCashOutHookSpecification[] memory paySpecs = new JBCashOutHookSpecification[](0);
-        hookSpecifications[0] = JBCashOutHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
+        hookSpecifications[0] =
+            JBCashOutHookSpecification({hook: _mockHook, noop: false, amount: _defaultAmount, metadata: ""});
         JBAccountingContext memory mockTokenContext = JBAccountingContext({
             token: address(_mockToken2), decimals: 18, currency: uint32(uint160(address(_mockToken2)))
         });
@@ -569,5 +571,48 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "");
+    }
+
+    function test_GivenTheCashOutHookSpecIsNoop() external whenCallerHasPermission {
+        uint256 reclaimAmount = 1e9;
+        JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](1);
+        hookSpecifications[0] =
+            JBCashOutHookSpecification({hook: IJBCashOutHook(address(this)), noop: true, amount: 0, metadata: "info"});
+        JBAccountingContext memory mockTokenContext =
+            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
+        mockBalanceContext[0] = mockTokenContext;
+        JBRuleset memory returnedRuleset = JBRuleset({
+            cycleNumber: 1,
+            id: 1,
+            basedOnId: 0,
+            start: 0,
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        mockExpect(address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (_bene)), abi.encode(true));
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.recordCashOutFor,
+                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+            ),
+            abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
+        );
+        mockExpect(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
+        mockExpect(
+            address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
+        );
+
+        _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
+
+        vm.prank(_bene);
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
     }
 }

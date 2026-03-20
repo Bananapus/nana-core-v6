@@ -223,7 +223,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         });
 
         JBPayHookSpecification[] memory _spec = new JBPayHookSpecification[](1);
-        _spec[0] = JBPayHookSpecification({hook: _payHook, amount: _defaultValue / 2, metadata: ""});
+        _spec[0] = JBPayHookSpecification({hook: _payHook, noop: false, amount: _defaultValue / 2, metadata: ""});
 
         // The data hook context will use the terminal address passed to preview / msg.sender for record.
         // Since we call both from address(this), they match.

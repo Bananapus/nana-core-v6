@@ -156,8 +156,9 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         // Reference cash out hook specifications.
         JBCashOutHookSpecification[] memory _specifications = new JBCashOutHookSpecification[](1);
 
-        _specifications[0] =
-            JBCashOutHookSpecification({hook: IJBCashOutHook(_cashOutHook), amount: _halfPaid, metadata: ""});
+        _specifications[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(_cashOutHook), noop: false, amount: _halfPaid, metadata: ""
+        });
 
         vm.startPrank(multisig());
         // Set the hook as feeless.
@@ -260,8 +261,9 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         // Reference cash out hook specifications.
         JBCashOutHookSpecification[] memory _specifications = new JBCashOutHookSpecification[](1);
 
-        _specifications[0] =
-            JBCashOutHookSpecification({hook: IJBCashOutHook(_cashOutHook), amount: _halfPaid, metadata: ""});
+        _specifications[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(_cashOutHook), noop: false, amount: _halfPaid, metadata: ""
+        });
 
         uint256 _customCashOutTaxRate = JBConstants.MAX_CASH_OUT_TAX_RATE / 2;
         uint256 _customCashOutCount = 1 * 10 ** 18;

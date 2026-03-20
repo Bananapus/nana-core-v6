@@ -258,7 +258,8 @@ contract TestPay_Local is JBMultiTerminalSetup {
             value: _defaultAmount
         });
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
-        hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
+        hookSpecifications[0] =
+            JBPayHookSpecification({hook: _mockHook, noop: false, amount: _defaultAmount, metadata: ""});
 
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -349,7 +350,8 @@ contract TestPay_Local is JBMultiTerminalSetup {
         JBTokenAmount memory tokenAmount =
             JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
-        hookSpecifications[0] = JBPayHookSpecification({hook: _mockHook, amount: _defaultAmount, metadata: ""});
+        hookSpecifications[0] =
+            JBPayHookSpecification({hook: _mockHook, noop: false, amount: _defaultAmount, metadata: ""});
 
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -516,6 +518,66 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         vm.deal(address(_terminal), _defaultAmount);
         vm.prank(address(_terminal));
+        _terminal.pay{value: _defaultAmount}({
+            projectId: _projectId,
+            token: _native,
+            amount: _defaultAmount,
+            beneficiary: _bene,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: ""
+        });
+    }
+
+    function test_GivenThePayHookSpecIsNoop() external whenNativeTokenIsAccepted {
+        JBTokenAmount memory tokenAmount =
+            JBTokenAmount({token: _native, decimals: 18, currency: uint32(_nativeCurrency), value: _defaultAmount});
+        JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](1);
+        hookSpecifications[0] =
+            JBPayHookSpecification({hook: IJBPayHook(address(this)), noop: true, amount: 0, metadata: "info"});
+
+        JBRuleset memory returnedRuleset = JBRuleset({
+            cycleNumber: 1,
+            id: 1,
+            basedOnId: 0,
+            start: 0,
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.recordPaymentFrom, (address(this), tokenAmount, _projectId, _bene, bytes(""))
+            ),
+            abi.encode(returnedRuleset, 0, hookSpecifications)
+        );
+
+        bytes[] memory subsequentReturns = new bytes[](2);
+        subsequentReturns[0] = abi.encode(0);
+        subsequentReturns[1] = abi.encode(0);
+
+        mockExpectSubsequent(
+            address(tokens), abi.encodeCall(IJBTokens.totalBalanceOf, (_bene, _projectId)), subsequentReturns
+        );
+
+        vm.expectEmit();
+        emit IJBTerminal.Pay(
+            returnedRuleset.id,
+            returnedRuleset.cycleNumber,
+            _projectId,
+            address(this),
+            _bene,
+            _defaultAmount,
+            0,
+            "",
+            bytes(""),
+            address(this)
+        );
+
         _terminal.pay{value: _defaultAmount}({
             projectId: _projectId,
             token: _native,

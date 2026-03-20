@@ -75,8 +75,9 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
         });
 
         JBCashOutHookSpecification[] memory specs = new JBCashOutHookSpecification[](1);
-        specs[0] =
-            JBCashOutHookSpecification({hook: IJBCashOutHook(makeAddr("hook")), amount: 321, metadata: hex"5678"});
+        specs[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(makeAddr("hook")), noop: false, amount: 321, metadata: hex"5678"
+        });
 
         JBAccountingContext memory accountingContext =
             JBAccountingContext({token: _token, decimals: 18, currency: uint32(uint160(_token))});

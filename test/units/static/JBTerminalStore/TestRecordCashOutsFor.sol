@@ -428,7 +428,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
         // return data
         JBCashOutHookSpecification[] memory _spec = new JBCashOutHookSpecification[](1);
-        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, amount: 0, metadata: ""});
+        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, noop: false, amount: 0, metadata: ""});
 
         // mock call to data hook beforeCashOutRecordedWith
         mockExpect(
@@ -541,7 +541,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
         // return data
         JBCashOutHookSpecification[] memory _spec = new JBCashOutHookSpecification[](1);
-        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, amount: 0, metadata: ""});
+        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, noop: false, amount: 0, metadata: ""});
 
         // The mock will only match if the context has beneficiaryIsFeeless=true.
         mockExpect(
@@ -561,6 +561,61 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         });
 
         assertEq(expectedCashOuts, reclaimed);
+    }
+
+    function test_GivenTheHookReturnsANoopSpecWithAmount()
+        external
+        whenCurrentRulesetUseTotalSurplusForCashOutsEqTrueWithHook
+    {
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_totalSupply)
+        );
+
+        JBAccountingContext memory _accountingContexts =
+            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
+        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+
+        JBBeforeCashOutRecordedContext memory _context = JBBeforeCashOutRecordedContext({
+            terminal: address(this),
+            holder: address(this),
+            projectId: _projectId,
+            rulesetId: uint48(block.timestamp),
+            cashOutCount: 1e18,
+            totalSupply: _totalSupply,
+            surplus: JBTokenAmount({
+                token: _accountingContexts.token,
+                value: 3e18,
+                decimals: _accountingContexts.decimals,
+                currency: _accountingContexts.currency
+            }),
+            useTotalSurplus: true,
+            cashOutTaxRate: 0,
+            beneficiaryIsFeeless: false,
+            metadata: ""
+        });
+
+        JBCashOutHookSpecification[] memory _spec = new JBCashOutHookSpecification[](1);
+        _spec[0] = JBCashOutHookSpecification({hook: _cashOutHook, noop: true, amount: 1, metadata: ""});
+
+        mockExpect(
+            address(_dataHook),
+            abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
+            abi.encode(0, 1e18, _totalSupply, _spec)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_NoopHookSpecHasAmount.selector, 1));
+        _store.recordCashOutFor({
+            holder: address(this),
+            projectId: _projectId,
+            cashOutCount: 1e18,
+            accountingContext: _accountingContexts,
+            balanceAccountingContexts: _balanceContexts,
+            beneficiaryIsFeeless: false,
+            metadata: ""
+        });
     }
 
     // Probably unnecessary even though it may give us a bit of cov %.. skipping for now

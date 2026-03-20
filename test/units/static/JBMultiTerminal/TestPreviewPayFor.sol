@@ -55,7 +55,8 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
         });
 
         JBPayHookSpecification[] memory specs = new JBPayHookSpecification[](1);
-        specs[0] = JBPayHookSpecification({hook: IJBPayHook(makeAddr("hook")), amount: 123, metadata: hex"1234"});
+        specs[0] =
+            JBPayHookSpecification({hook: IJBPayHook(makeAddr("hook")), noop: false, amount: 123, metadata: hex"1234"});
 
         JBTokenAmount memory tokenAmount =
             JBTokenAmount({token: _token, decimals: 18, currency: uint32(uint160(_token)), value: _amount});

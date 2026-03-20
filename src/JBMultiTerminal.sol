@@ -1376,6 +1376,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the specification being iterated on.
             JBCashOutHookSpecification memory specification = specifications[i];
 
+            if (specification.noop) continue;
+
             // Get the fee for the specified amount.
             uint256 specificationAmountFee = _isFeeless(address(specification.hook))
                 ? 0
@@ -1458,6 +1460,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         for (uint256 i; i < specifications.length; i++) {
             // Set the specification being iterated on.
             JBPayHookSpecification memory specification = specifications[i];
+
+            if (specification.noop) continue;
 
             // Pass the correct token `forwardedAmount` to the hook.
             context.forwardedAmount = JBTokenAmount({

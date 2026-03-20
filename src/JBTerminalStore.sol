@@ -39,6 +39,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
     error JBTerminalStore_InsufficientTokens(uint256 count, uint256 totalSupply);
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
+    error JBTerminalStore_NoopHookSpecHasAmount(uint256 amount);
     error JBTerminalStore_RulesetNotFound(uint256 projectId);
     error JBTerminalStore_RulesetPaymentPaused();
     error JBTerminalStore_TerminalMigrationNotAllowed();
@@ -795,6 +796,10 @@ contract JBTerminalStore is IJBTerminalStore {
             // Ensure that the specifications have valid amounts.
             for (uint256 i; i < numberOfSpecifications; i++) {
                 // Get a reference to the specification's amount.
+                if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                    revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                }
+
                 uint256 specifiedAmount = hookSpecifications[i].amount;
 
                 // Ensure the amount is non-zero.
@@ -927,6 +932,12 @@ contract JBTerminalStore is IJBTerminalStore {
 
                 (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
                     IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+                for (uint256 i; i < hookSpecifications.length; i++) {
+                    if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                        revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                    }
+                }
             } else {
                 cashOutTaxRate = ruleset.cashOutTaxRate();
             }
