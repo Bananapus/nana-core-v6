@@ -147,7 +147,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         mockExpect(address(tokens), abi.encodeCall(IJBTokens.totalBalanceOf, (_bene, _projectId)), abi.encode(0));
 
-        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector));
+        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
         _terminal.pay{value: 1e18}({
             projectId: _projectId,
             token: _native,

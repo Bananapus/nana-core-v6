@@ -34,6 +34,7 @@ import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFees} from "./libraries/JBFees.sol";
 import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
+import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBAccountingContext} from "./structs/JBAccountingContext.sol";
 import {JBAfterPayRecordedContext} from "./structs/JBAfterPayRecordedContext.sol";
@@ -385,7 +386,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         netPayoutAmount = amount;
 
         // If there's a split hook set, transfer to its `process` function.
-        if (split.hook != IJBSplitHook(address(0))) {
+        if (address(split.hook) != address(0)) {
             // Make sure that the address supports the split hook interface.
             if (!split.hook.supportsInterface(type(IJBSplitHook).interfaceId)) {
                 revert JBMultiTerminal_SplitHookInvalid(split.hook);
@@ -420,7 +421,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             IJBTerminal terminal = _primaryTerminalOf({projectId: split.projectId, token: token});
 
             // The project must have a terminal to send funds to.
-            if (terminal == IJBTerminal(address(0))) {
+            if (address(terminal) == address(0)) {
                 revert JBMultiTerminal_RecipientProjectTerminalNotFound(split.projectId, token);
             }
 
@@ -446,7 +447,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             if (split.preferAddToBalance) {
                 // Efficient add-to-balance: call the internal path when this terminal is the recipient, otherwise
                 // bridge through the recipient terminal.
-                if (terminal == IJBTerminal(address(this))) {
+                if (terminal == this) {
                     _addToBalanceOf({
                         projectId: split.projectId,
                         token: token,
@@ -1589,17 +1590,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Records an added balance for a project.
-    /// @param projectId The ID of the project to record the added balance for.
-    /// @param token The token to record the added balance for.
-    /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
-    /// this
-    /// terminal.
-    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
-        // slither-disable-next-line calls-loop
-        STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
-    }
-
     /// @notice Returns held fees to the project who paid them based on the specified amount.
     /// @param projectId The project held fees are being returned to.
     /// @param token The token that the held fees are in.
@@ -1676,54 +1666,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Sends payouts to a project's current payout split group, according to its ruleset, up to its current
-    /// payout limit.
-    /// @dev If the percentages of the splits in the project's payout split group do not add up to 100%, the remainder
-    /// is sent to the project's owner.
-    /// @dev Anyone can send payouts on a project's behalf. Projects can include a wildcard split (a split with no
-    /// `hook`, `projectId`, or `beneficiary`) to send funds to the `_msgSender()` which calls this function. This can
-    /// be used to incentivize calling this function.
-    /// @dev Payouts sent to addresses which aren't feeless incur the protocol fee.
-    /// @notice Sends a payout to a split.
-    /// @param split The split to pay.
-    /// @param projectId The ID of the project the split was specified by.
-    /// @param token The address of the token being paid out.
-    /// @param amount The total amount that the split is being paid, as a fixed point number with the same number of
-    /// decimals as this terminal.
-    /// @return netPayoutAmount The amount sent to the split after subtracting fees.
-    function _sendPayoutToSplit(
-        JBSplit memory split,
-        uint256 projectId,
-        address token,
-        uint256 amount
-    )
-        internal
-        returns (uint256)
-    {
-        // Failed split payouts consume the payout limit by design. The try-catch prevents a single
-        // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
-        // `_recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
-        // distribution.
-        // slither-disable-next-line reentrancy-events
-        try this.executePayout({
-            split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: _msgSender()
-        }) returns (
-            uint256 netPayoutAmount
-        ) {
-            return netPayoutAmount;
-        } catch (bytes memory failureReason) {
-            emit PayoutReverted({
-                projectId: projectId, split: split, amount: amount, reason: failureReason, caller: _msgSender()
-            });
-
-            // Add balance back to the project.
-            _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
-
-            // Since the payout failed the netPayoutAmount is zero.
-            return 0;
-        }
-    }
-
     /// @param projectId The ID of the project to send the payouts of.
     /// @param token The token being paid out.
     /// @param amount The number of terminal tokens to pay out, as a fixed point number with same number of decimals as
@@ -1766,8 +1708,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Send payouts to the splits and get a reference to the amount left over after the splits have been paid.
         // Also get a reference to the amount which was paid out to splits that is eligible for fees.
-        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = _sendPayoutsToSplitGroupOf({
-            projectId: projectId, token: token, rulesetId: ruleset.id, amount: amountPaidOut
+        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = JBPayoutSplitGroupLib.sendPayoutsToSplitGroupOf({
+            splits: SPLITS,
+            store: STORE,
+            projectId: projectId,
+            token: token,
+            rulesetId: ruleset.id,
+            amount: amountPaidOut,
+            caller: _msgSender()
         });
 
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
@@ -1821,73 +1769,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             netLeftoverPayoutAmount: leftoverPayoutAmount,
             caller: _msgSender()
         });
-    }
-
-    /// @notice Sends payouts to the payout splits group specified in a project's ruleset.
-    /// @param projectId The ID of the project to send the payouts of.
-    /// @param token The address of the token being paid out.
-    /// @param rulesetId The ID of the ruleset of the split group being paid.
-    /// @param amount The total amount being paid out, as a fixed point number with the same number of decimals as this
-    /// terminal.
-    /// @return amount The leftover amount (zero if the splits add up to 100%).
-    /// @return amountEligibleForFees The total amount of funds which were paid out and are eligible for fees.
-    function _sendPayoutsToSplitGroupOf(
-        uint256 projectId,
-        address token,
-        uint256 rulesetId,
-        uint256 amount
-    )
-        internal
-        returns (uint256, uint256 amountEligibleForFees)
-    {
-        // The total percentage available to split
-        uint256 leftoverPercentage = JBConstants.SPLITS_TOTAL_PERCENT;
-
-        // Get a reference to the project's payout splits.
-        JBSplit[] memory splits =
-            SPLITS.splitsOf({projectId: projectId, rulesetId: rulesetId, groupId: uint256(uint160(token))});
-
-        // Transfer between all splits.
-        for (uint256 i; i < splits.length; i++) {
-            // Get a reference to the split being iterated on.
-            JBSplit memory split = splits[i];
-
-            // The amount to send to the split.
-            uint256 payoutAmount = mulDiv(amount, split.percent, leftoverPercentage);
-
-            // The final payout amount after taking out any fees.
-            uint256 netPayoutAmount =
-                _sendPayoutToSplit({split: split, projectId: projectId, token: token, amount: payoutAmount});
-
-            // If the split hook is a feeless address, this payout doesn't incur a fee.
-            if (netPayoutAmount != 0 && netPayoutAmount != payoutAmount) {
-                amountEligibleForFees += payoutAmount;
-            }
-
-            if (payoutAmount != 0) {
-                // Subtract from the amount to be sent to the beneficiary.
-                unchecked {
-                    amount -= payoutAmount;
-                }
-            }
-
-            unchecked {
-                // Decrement the leftover percentage.
-                leftoverPercentage -= split.percent;
-            }
-
-            emit SendPayoutToSplit({
-                projectId: projectId,
-                rulesetId: rulesetId,
-                group: uint256(uint160(token)),
-                split: split,
-                amount: payoutAmount,
-                netAmount: netPayoutAmount,
-                caller: _msgSender()
-            });
-        }
-
-        return (amount, amountEligibleForFees);
     }
 
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
@@ -2068,21 +1949,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);
     }
 
-    /// @notice Checks this terminal's balance of a specific token.
-    /// @param token The address of the token to get this terminal's balance of.
-    /// @return This terminal's balance.
-    function _balanceOf(address token) internal view returns (uint256) {
-        // If the `token` is native, get the native token balance.
-        return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
-    }
-
-    /// @notice Checks that a value meets a minimum.
-    /// @param value The value being checked.
-    /// @param min The minimum acceptable value.
-    function _checkMin(uint256 value, uint256 min) internal pure {
-        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
-    }
-
     /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
     function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
         return super._contextSuffixLength();
@@ -2127,6 +1993,32 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return The primary terminal of the project for the token.
     function _primaryTerminalOf(uint256 projectId, address token) internal view returns (IJBTerminal) {
         return DIRECTORY.primaryTerminalOf({projectId: projectId, token: token});
+    }
+
+    /// @notice Records an added balance for a project.
+    /// @param projectId The ID of the project to record the added balance for.
+    /// @param token The token to record the added balance for.
+    /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
+    /// this
+    /// terminal.
+    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
+        // slither-disable-next-line calls-loop
+        STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
+    }
+
+    /// @notice Checks this terminal's balance of a specific token.
+    /// @param token The address of the token to get this terminal's balance of.
+    /// @return This terminal's balance.
+    function _balanceOf(address token) internal view returns (uint256) {
+        // If the `token` is native, get the native token balance.
+        return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
+    }
+
+    /// @notice Checks that a value meets a minimum.
+    /// @param value The value being checked.
+    /// @param min The minimum acceptable value.
+    function _checkMin(uint256 value, uint256 min) internal pure {
+        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
     }
 
     /// @notice Packages a payment amount with the token's accounting context.
