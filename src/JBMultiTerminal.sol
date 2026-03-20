@@ -71,7 +71,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
-    error JBMultiTerminal_UnderMin();
+    error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
     error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
@@ -357,9 +357,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being reclaimed must be at least as much as was expected.
-        if (reclaimAmount < minTokensReclaimed) {
-            revert JBMultiTerminal_UnderMin();
-        }
+        _checkMin({value: reclaimAmount, min: minTokensReclaimed});
     }
 
     /// @notice Executes a payout to a split.
@@ -446,13 +444,34 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Add to balance if preferred.
             if (split.preferAddToBalance) {
-                _efficientAddToBalance({
-                    terminal: terminal,
-                    projectId: split.projectId,
-                    token: token,
-                    amount: netPayoutAmount,
-                    metadata: metadata
-                });
+                // Efficient add-to-balance: call the internal path when this terminal is the recipient, otherwise
+                // bridge through the recipient terminal.
+                if (terminal == IJBTerminal(address(this))) {
+                    _addToBalanceOf({
+                        projectId: split.projectId,
+                        token: token,
+                        amount: netPayoutAmount,
+                        shouldReturnHeldFees: false,
+                        memo: "",
+                        metadata: metadata
+                    });
+                } else {
+                    // Trigger any inherited pre-transfer logic.
+                    // Keep a reference to the amount that'll be paid as a `msg.value`.
+                    // slither-disable-next-line reentrancy-events
+                    uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: netPayoutAmount});
+
+                    // Add to balance.
+                    // If this terminal's token is the native token, send it in `msg.value`.
+                    terminal.addToBalanceOf{value: payValue}({
+                        projectId: split.projectId,
+                        token: token,
+                        amount: netPayoutAmount,
+                        shouldReturnHeldFees: false,
+                        memo: "",
+                        metadata: metadata
+                    });
+                }
             } else {
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
@@ -640,9 +659,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
-        if (beneficiaryTokenCount < minReturnedTokens) {
-            revert JBMultiTerminal_UnderMin();
-        }
+        _checkMin({value: beneficiaryTokenCount, min: minReturnedTokens});
     }
 
     /// @notice Process any fees that are being held for the project.
@@ -733,7 +750,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // The amount being paid out must be at least as much as was expected.
-        if (amountPaidOut < minTokensPaidOut) revert JBMultiTerminal_UnderMin();
+        _checkMin({value: amountPaidOut, min: minTokensPaidOut});
     }
 
     /// @notice Allows a project to pay out funds from its surplus up to the current surplus allowance.
@@ -786,9 +803,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being withdrawn must be at least as much as was expected.
-        if (netAmountPaidOut < minTokensPaidOut) {
-            revert JBMultiTerminal_UnderMin();
-        }
+        _checkMin({value: netAmountPaidOut, min: minTokensPaidOut});
     }
 
     //*********************************************************************//
@@ -878,13 +893,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
+        JBAccountingContext memory accountingContext =
+            _accountingContextOf({projectId: projectId, token: tokenToReclaim});
+        JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
+        bool beneficiaryIsFeeless = _isFeeless(beneficiary);
+
         return STORE.previewCashOutFrom({
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
-            accountingContext: _accountingContextOf({projectId: projectId, token: tokenToReclaim}),
-            balanceAccountingContexts: _accountingContextsOf[projectId],
-            beneficiaryIsFeeless: _isFeeless(beneficiary),
+            accountingContext: accountingContext,
+            balanceAccountingContexts: balanceAccountingContexts,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
             metadata: metadata
         });
     }
@@ -1000,7 +1020,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256)
     {
-        _checkAccountingContextOf({projectId: projectId, token: token});
+        _accountingContextOf({projectId: projectId, token: token});
 
         // If the terminal's token is the native token, override `amount` with `msg.value`.
         if (token == JBConstants.NATIVE_TOKEN) return msg.value;
@@ -1233,53 +1253,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             metadata: metadata,
             caller: _msgSender()
         });
-    }
-
-    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
-    /// recipient
-    /// terminal's `addToBalance` function.
-    /// @param terminal The terminal on which the project is expecting to receive funds.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
-    /// accounting context specifies.
-    /// @param metadata Additional metadata to include with the payment.
-    function _efficientAddToBalance(
-        IJBTerminal terminal,
-        uint256 projectId,
-        address token,
-        uint256 amount,
-        bytes memory metadata
-    )
-        internal
-    {
-        // Call the internal method if this terminal is being used.
-        if (terminal == IJBTerminal(address(this))) {
-            _addToBalanceOf({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        } else {
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
-
-            // Add to balance.
-            // If this terminal's token is the native token, send it in `msg.value`.
-            terminal.addToBalanceOf{value: payValue}({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        }
     }
 
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
@@ -2103,11 +2076,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
     }
 
-    /// @notice Checks whether a project accepts a token in this terminal.
-    /// @param projectId The ID of the project to check.
-    /// @param token The token to check.
-    function _checkAccountingContextOf(uint256 projectId, address token) internal view {
-        _accountingContextOf({projectId: projectId, token: token});
+    /// @notice Checks that a value meets a minimum.
+    /// @param value The value being checked.
+    /// @param min The minimum acceptable value.
+    function _checkMin(uint256 value, uint256 min) internal pure {
+        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
     }
 
     /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
