@@ -449,34 +449,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Add to balance if preferred.
             if (split.preferAddToBalance) {
-                // Efficient add-to-balance: call the internal path when this terminal is the recipient, otherwise
-                // bridge through the recipient terminal.
-                if (terminal == this) {
-                    _addToBalanceOf({
-                        projectId: split.projectId,
-                        token: token,
-                        amount: netPayoutAmount,
-                        shouldReturnHeldFees: false,
-                        memo: "",
-                        metadata: metadata
-                    });
-                } else {
-                    // Trigger any inherited pre-transfer logic.
-                    // Keep a reference to the amount that'll be paid as a `msg.value`.
-                    // slither-disable-next-line reentrancy-events
-                    uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: netPayoutAmount});
-
-                    // Add to balance.
-                    // If this terminal's token is the native token, send it in `msg.value`.
-                    terminal.addToBalanceOf{value: payValue}({
-                        projectId: split.projectId,
-                        token: token,
-                        amount: netPayoutAmount,
-                        shouldReturnHeldFees: false,
-                        memo: "",
-                        metadata: metadata
-                    });
-                }
+                _efficientAddToBalance({
+                    terminal: terminal,
+                    projectId: split.projectId,
+                    token: token,
+                    amount: netPayoutAmount,
+                    metadata: metadata
+                });
             } else {
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
@@ -1510,6 +1489,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
+        // Keep a reference to the token amount to forward to the store.
         JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
 
         // Record the payment.
@@ -1607,6 +1587,52 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
 
             _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
+        }
+    }
+
+    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
+    /// recipient terminal's `addToBalance` function.
+    /// @param terminal The terminal on which the project is expecting to receive funds.
+    /// @param projectId The ID of the project being funded.
+    /// @param token The token being used.
+    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
+    /// accounting context specifies.
+    /// @param metadata Additional metadata to include with the payment.
+    function _efficientAddToBalance(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        bytes memory metadata
+    )
+        internal
+    {
+        // Call the internal method if this terminal is being used.
+        if (terminal == IJBTerminal(address(this))) {
+            _addToBalanceOf({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
+        } else {
+            // Trigger any inherited pre-transfer logic.
+            // Keep a reference to the amount that'll be paid as a `msg.value`.
+            // slither-disable-next-line reentrancy-events
+            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
+
+            // Add to balance.
+            // If this terminal's token is the native token, send it in `msg.value`.
+            terminal.addToBalanceOf{value: payValue}({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
         }
     }
 
@@ -1976,7 +2002,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         view
         returns (JBAccountingContext memory context)
     {
+        // Keep a reference to the accounting context configured for the token.
         context = _accountingContextForTokenOf[projectId][token];
+
+        // Revert if the token is not accepted by the project.
         if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);
     }
 
@@ -2048,7 +2077,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         view
         returns (JBTokenAmount memory tokenAmount)
     {
+        // Keep a reference to the token's accounting context.
         JBAccountingContext memory context = _accountingContextOf({projectId: projectId, token: token});
+
+        // Bundle the amount info into a `JBTokenAmount` struct.
         tokenAmount =
             JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
     }

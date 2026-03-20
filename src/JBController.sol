@@ -812,9 +812,13 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         override
         returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
     {
+        // Revert if there are no tokens to split.
         if (tokenCount == 0) revert JBController_ZeroTokensToMint();
 
+        // Keep a reference to the current ruleset.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
+
+        // Keep a reference to the reserved percent to apply.
         uint256 reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
 
         return _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
@@ -1175,8 +1179,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         pure
         returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
     {
+        // Compute the beneficiary's portion after removing the reserved share.
         beneficiaryTokenCount =
             mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
+
+        // The remaining tokens are reserved.
         reservedTokenCount = tokenCount - beneficiaryTokenCount;
     }
 
