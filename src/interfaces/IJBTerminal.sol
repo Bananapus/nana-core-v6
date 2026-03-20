@@ -6,6 +6,8 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IJBPayHook} from "./IJBPayHook.sol";
 import {JBAccountingContext} from "../structs/JBAccountingContext.sol";
 import {JBAfterPayRecordedContext} from "../structs/JBAfterPayRecordedContext.sol";
+import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../structs/JBRuleset.sol";
 
 /// @notice A terminal that accepts payments and can be migrated.
 interface IJBTerminal is IERC165 {
@@ -101,6 +103,32 @@ interface IJBTerminal is IERC165 {
         external
         view
         returns (uint256);
+
+    /// @notice Simulates paying a project through this terminal without modifying state.
+    /// @param projectId The ID of the project being paid.
+    /// @param token The token being paid in.
+    /// @param amount The amount of tokens being paid.
+    /// @param beneficiary The address to mint project tokens to.
+    /// @param metadata Extra data to pass along to the data hook and pay hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return beneficiaryTokenCount The number of project tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of project tokens that would be reserved.
+    /// @return hookSpecifications Any pay hook specifications from the data hook.
+    function previewPayFor(
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory hookSpecifications
+        );
 
     /// @notice Adds accounting contexts for a project's tokens.
     /// @param projectId The ID of the project to add accounting contexts for.

@@ -16,12 +16,25 @@ A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumul
 
 ### 0.4 JBTerminalStore -- Preview Functions
 
-Two new `view` functions added to `JBTerminalStore` and `IJBTerminalStore`:
+Two `view` functions on `JBTerminalStore` and `IJBTerminalStore`:
 
-- `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
-- `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Invokes data hooks if configured. Does not modify state.
+- `previewPayFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(JBRuleset ruleset, uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Does not modify state.
+- `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(JBRuleset ruleset, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Does not modify state.
 
-Both functions use the explicit `terminal` parameter instead of `msg.sender`, allowing any caller to preview operations for any terminal. Internal computation logic was extracted into shared `_computePayFrom` and `_computeCashOutFrom` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
+Internal computation logic was extracted into shared `_computePayFrom` and `_computeCashOutFrom` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
+
+### 0.5 Terminal-Level Preview APIs
+
+New `view` functions on `JBMultiTerminal`, `JBController`, and their interfaces provide user-facing preview entry points that compose the store-level previews with the mint token split:
+
+- `JBMultiTerminal.previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` -- Simulates a full payment including the reserved/beneficiary token split. Calls `STORE.previewPayFrom` then `controller.previewMintOf`. Returns `(JBRuleset ruleset, uint256 beneficiaryTokenCount, uint256 reservedTokenCount, JBPayHookSpecification[] hookSpecifications)`.
+- `JBMultiTerminal.previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address beneficiary, bytes metadata)` -- Simulates a full cash out. Resolves accounting context internally and delegates to `STORE.previewCashOutFrom`. Returns `(JBRuleset ruleset, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`.
+- `JBController.previewMintOf(uint256 projectId, uint256 tokenCount, bool useReservedPercent)` -- Previews how a mint splits between beneficiary and reserved tokens under the current ruleset. Returns `(uint256 beneficiaryTokenCount, uint256 reservedTokenCount)`.
+
+Also in this release:
+- **Error consolidation**: Three separate `UnderMin*` errors on `JBMultiTerminal` consolidated into a single `JBMultiTerminal_UnderMin()` error for bytecode size reduction.
+- **`via_ir = true`**: Added to `foundry.toml` to enable the Solidity IR optimizer pipeline, reducing deployed bytecode size (EIP-170 compliance).
+- Internal helpers extracted: `_accountingContextOf` and `_tokenAmountOf` on `JBMultiTerminal`, `_splitTokenCount` on `JBController`.
 
 ### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
 

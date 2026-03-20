@@ -206,6 +206,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         JBPayHookSpecification[] memory _specs = new JBPayHookSpecification[](1);
         _specs[0] = JBPayHookSpecification({
             hook: IJBPayHook(_payHook),
+            noop: false,
             amount: _payAmount + 1, // exceeds the paid amount
             metadata: ""
         });
@@ -327,7 +328,9 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         jbFeelessAddresses().setFeelessAddress(_cashOutHook, true);
 
         JBCashOutHookSpecification[] memory _specs = new JBCashOutHookSpecification[](1);
-        _specs[0] = JBCashOutHookSpecification({hook: IJBCashOutHook(_cashOutHook), amount: _hookAmount, metadata: ""});
+        _specs[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(_cashOutHook), noop: false, amount: _hookAmount, metadata: ""
+        });
 
         // Override: cashOutTaxRate=0, half the tokens cashed out, original totalSupply.
         vm.mockCall(
@@ -491,7 +494,8 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         // Cash out all tokens. With cashOutTaxRate=0, reclaim = full surplus = _payAmount.
         // Set hook spec amount to 1 wei -- total = _payAmount + 1 which exceeds balance.
         JBCashOutHookSpecification[] memory _specs = new JBCashOutHookSpecification[](1);
-        _specs[0] = JBCashOutHookSpecification({hook: IJBCashOutHook(makeAddr("hook")), amount: 1, metadata: ""});
+        _specs[0] =
+            JBCashOutHookSpecification({hook: IJBCashOutHook(makeAddr("hook")), noop: false, amount: 1, metadata: ""});
 
         vm.mockCall(
             _DATA_HOOK,

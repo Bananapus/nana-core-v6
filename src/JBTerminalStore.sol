@@ -10,6 +10,7 @@ import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 import {JBCashOuts} from "./libraries/JBCashOuts.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
@@ -38,6 +39,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
     error JBTerminalStore_InsufficientTokens(uint256 count, uint256 totalSupply);
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
+    error JBTerminalStore_NoopHookSpecHasAmount(uint256 amount);
     error JBTerminalStore_RulesetNotFound(uint256 projectId);
     error JBTerminalStore_RulesetPaymentPaused();
     error JBTerminalStore_TerminalMigrationNotAllowed();
@@ -637,7 +639,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Simulates a cash out without modifying state.
     /// @dev Invokes data hooks if configured, but skips the balance sufficiency check (balance may change between
     /// preview and execution).
-    /// @param terminal The terminal address to simulate the cash out from.
     /// @param holder The address cashing out.
     /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens being cashed out.
@@ -650,7 +651,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
     function previewCashOutFrom(
-        address terminal,
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
@@ -670,7 +670,7 @@ contract JBTerminalStore is IJBTerminalStore {
         )
     {
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOutFrom({
-            terminal: terminal,
+            terminal: msg.sender,
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
@@ -684,17 +684,15 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Simulates a payment without modifying state.
     /// @dev Invokes data hooks if configured. Returns the same token count and hook specifications that
     /// `recordPaymentFrom` would produce.
-    /// @param terminal The terminal address to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount being paid.
     /// @param projectId The ID of the project being paid.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
-    /// @return tokenCount The number of project tokens that would be minted.
+    /// @return tokenCount The number of project tokens that would be minted, including reserved tokens.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
-        address terminal,
         address payer,
         JBTokenAmount memory amount,
         uint256 projectId,
@@ -706,8 +704,9 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
+        // Use the caller as the terminal context for the preview.
         (ruleset, tokenCount, hookSpecifications,) = _computePayFrom({
-            terminal: terminal,
+            terminal: msg.sender,
             payer: payer,
             amount: amount,
             projectId: projectId,
@@ -798,6 +797,10 @@ contract JBTerminalStore is IJBTerminalStore {
             // Ensure that the specifications have valid amounts.
             for (uint256 i; i < numberOfSpecifications; i++) {
                 // Get a reference to the specification's amount.
+                if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                    revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                }
+
                 uint256 specifiedAmount = hookSpecifications[i].amount;
 
                 // Ensure the amount is non-zero.
@@ -930,6 +933,13 @@ contract JBTerminalStore is IJBTerminalStore {
 
                 (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
                     IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+                // Noop specifications are informational only, so they can't also request forwarded funds.
+                for (uint256 i; i < hookSpecifications.length; i++) {
+                    if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                        revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                    }
+                }
             } else {
                 cashOutTaxRate = ruleset.cashOutTaxRate();
             }

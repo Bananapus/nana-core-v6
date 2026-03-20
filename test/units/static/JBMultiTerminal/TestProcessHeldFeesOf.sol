@@ -59,9 +59,17 @@ contract TestProcessHeldFeesOf_Local is JBTest {
     IPermit2 public permit2 = IPermit2(makeAddr("permit2"));
     address trustedForwarder = makeAddr("forwarder");
 
+    uint256 _feeProjectId = 1;
     uint256 _projectId = 2;
     address _mockToken = makeAddr("token");
     address _beneficiary = makeAddr("beneficiary");
+
+    function _setAccountingContext(uint256 projectId, address token, uint8 decimals, uint32 currency) internal {
+        bytes32 contextSlot = keccak256(abi.encode(projectId, uint256(0)));
+        bytes32 slot = keccak256(abi.encode(token, contextSlot));
+        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
+        vm.store(address(_terminal), slot, packed);
+    }
 
     function setUp() public {
         // Constructor will call to find directory and rulesets from the terminal store
@@ -118,6 +126,9 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // The fee amount that will be calculated from the held amount
         uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: _terminal.FEE()});
 
+        // Set up accounting context for the fee beneficiary project (project 1) so _pay can build the token amount.
+        _setAccountingContext(_feeProjectId, _mockToken, 0, uint32(uint160(_mockToken)));
+
         // Mock the directory call to find the fee terminal - return _terminal itself so it uses internal _pay
         mockExpect(
             address(directory),
@@ -128,8 +139,6 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Mock executeProcessFee: when the terminal calls itself, it will call recordPaymentFrom on the store.
         // Since executeProcessFee is external and calls pay on the feeTerminal (which is _terminal itself),
         // we need to mock the internal pay path: recordPaymentFrom on the store.
-        // The token amount struct for the fee payment
-        // Note: accounting context for project 1 on _mockToken is unset, so decimals=0 and currency=0.
         vm.mockCall(
             address(store),
             abi.encodeWithSelector(IJBTerminalStore.recordPaymentFrom.selector),

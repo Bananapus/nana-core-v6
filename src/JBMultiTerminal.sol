@@ -34,6 +34,7 @@ import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFees} from "./libraries/JBFees.sol";
 import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
+import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBAccountingContext} from "./structs/JBAccountingContext.sol";
 import {JBAfterPayRecordedContext} from "./structs/JBAfterPayRecordedContext.sol";
@@ -889,6 +890,97 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
+    /// @notice Simulates cashing out project tokens from this terminal without modifying state.
+    /// @param holder The address whose tokens are being cashed out.
+    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim from the project's surplus.
+    /// @param beneficiary The address that would receive the reclaimed tokens.
+    /// @param metadata Extra data to send to the data hook and cash out hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return reclaimAmount The amount of tokens that would be reclaimed from the project's surplus.
+    /// @return cashOutTaxRate The cash out tax rate that would be applied.
+    /// @return hookSpecifications Any cash out hook specifications from the data hook.
+    function previewCashOutFrom(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        address payable beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
+    {
+        // Keep a reference to the accounting context for the reclaimed token.
+        JBAccountingContext memory accountingContext =
+            _accountingContextOf({projectId: projectId, token: tokenToReclaim});
+
+        // Keep a reference to the accounting contexts to include in the balance calculation.
+        JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
+
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.previewCashOutFrom({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            accountingContext: accountingContext,
+            balanceAccountingContexts: balanceAccountingContexts,
+            beneficiaryIsFeeless: _isFeeless(beneficiary),
+            metadata: metadata
+        });
+    }
+
+    /// @notice Simulates paying a project through this terminal without modifying state.
+    /// @param projectId The ID of the project being paid.
+    /// @param token The token being paid in.
+    /// @param amount The amount of tokens being paid.
+    /// @param beneficiary The address to mint project tokens to.
+    /// @param metadata Extra data to pass along to the data hook and pay hooks.
+    /// @return ruleset The project's current ruleset.
+    /// @return beneficiaryTokenCount The number of project tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of project tokens that would be reserved.
+    /// @return hookSpecifications Any pay hook specifications from the data hook.
+    function previewPayFor(
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        bytes calldata metadata
+    )
+        external
+        view
+        override
+        returns (
+            JBRuleset memory ruleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory hookSpecifications
+        )
+    {
+        // Keep a reference to the token count returned by the store preview.
+        uint256 tokenCount;
+
+        // Preview the payment through the store.
+        (ruleset, tokenCount, hookSpecifications) = STORE.previewPayFrom({
+            payer: _msgSender(),
+            amount: _tokenAmountOf({projectId: projectId, token: token, value: amount}),
+            projectId: projectId,
+            beneficiary: beneficiary,
+            metadata: metadata
+        });
+
+        // Split the token count into beneficiary and reserved portions using the controller preview.
+        (beneficiaryTokenCount, reservedTokenCount) = _controllerOf(projectId)
+            .previewMintOf({projectId: projectId, tokenCount: tokenCount, useReservedPercent: true});
+    }
+
     //*********************************************************************//
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
@@ -924,9 +1016,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (uint256)
     {
         // Make sure the project has an accounting context for the token being paid.
-        if (_accountingContextForTokenOf[projectId][token].token == address(0)) {
-            revert JBMultiTerminal_TokenNotAccepted(token);
-        }
+        _accountingContextOf({projectId: projectId, token: token});
 
         // If the terminal's token is the native token, override `amount` with `msg.value`.
         if (token == JBConstants.NATIVE_TOKEN) return msg.value;
@@ -1061,7 +1151,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 cashOutTaxRate;
 
         // Keep a reference to the accounting context of the token being reclaimed.
-        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[projectId][tokenToReclaim];
+        JBAccountingContext memory accountingContext =
+            _accountingContextOf({projectId: projectId, token: tokenToReclaim});
 
         // Scoped section prevents stack too deep.
         {
@@ -1160,53 +1251,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
-    /// recipient
-    /// terminal's `addToBalance` function.
-    /// @param terminal The terminal on which the project is expecting to receive funds.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
-    /// accounting context specifies.
-    /// @param metadata Additional metadata to include with the payment.
-    function _efficientAddToBalance(
-        IJBTerminal terminal,
-        uint256 projectId,
-        address token,
-        uint256 amount,
-        bytes memory metadata
-    )
-        internal
-    {
-        // Call the internal method if this terminal is being used.
-        if (terminal == IJBTerminal(address(this))) {
-            _addToBalanceOf({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        } else {
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
-
-            // Add to balance.
-            // If this terminal's token is the native token, send it in `msg.value`.
-            terminal.addToBalanceOf{value: payValue}({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        }
-    }
-
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
     /// terminal's `pay` function.
     /// @param terminal The terminal on which the project is expecting to receive payments.
@@ -1301,6 +1345,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the specification being iterated on.
             JBCashOutHookSpecification memory specification = specifications[i];
 
+            // A noop specification is informational only and doesn't trigger the hook.
+            if (specification.noop) continue;
+
             // Get the fee for the specified amount.
             uint256 specificationAmountFee = _isFeeless(address(specification.hook))
                 ? 0
@@ -1384,6 +1431,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the specification being iterated on.
             JBPayHookSpecification memory specification = specifications[i];
 
+            // A noop specification is informational only and doesn't trigger the hook.
+            if (specification.noop) continue;
+
             // Pass the correct token `forwardedAmount` to the hook.
             context.forwardedAmount = JBTokenAmount({
                 value: specification.amount,
@@ -1438,17 +1488,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
     {
         // Keep a reference to the token amount to forward to the store.
-        JBTokenAmount memory tokenAmount;
-
-        // Scoped section prevents stack too deep. `context` only used within scope.
-        {
-            // Get a reference to the token's accounting context.
-            JBAccountingContext memory context = _accountingContextForTokenOf[projectId][token];
-
-            // Bundle the amount info into a `JBTokenAmount` struct.
-            tokenAmount =
-                JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: amount});
-        }
+        JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
 
         // Record the payment.
         // Keep a reference to the ruleset the payment is being made during.
@@ -1548,6 +1588,52 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
+    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
+    /// recipient terminal's `addToBalance` function.
+    /// @param terminal The terminal on which the project is expecting to receive funds.
+    /// @param projectId The ID of the project being funded.
+    /// @param token The token being used.
+    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
+    /// accounting context specifies.
+    /// @param metadata Additional metadata to include with the payment.
+    function _efficientAddToBalance(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        bytes memory metadata
+    )
+        internal
+    {
+        // Call the internal method if this terminal is being used.
+        if (terminal == IJBTerminal(address(this))) {
+            _addToBalanceOf({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
+        } else {
+            // Trigger any inherited pre-transfer logic.
+            // Keep a reference to the amount that'll be paid as a `msg.value`.
+            // slither-disable-next-line reentrancy-events
+            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
+
+            // Add to balance.
+            // If this terminal's token is the native token, send it in `msg.value`.
+            terminal.addToBalanceOf{value: payValue}({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
+        }
+    }
+
     /// @notice Records an added balance for a project.
     /// @param projectId The ID of the project to record the added balance for.
     /// @param token The token to record the added balance for.
@@ -1635,54 +1721,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Sends payouts to a project's current payout split group, according to its ruleset, up to its current
-    /// payout limit.
-    /// @dev If the percentages of the splits in the project's payout split group do not add up to 100%, the remainder
-    /// is sent to the project's owner.
-    /// @dev Anyone can send payouts on a project's behalf. Projects can include a wildcard split (a split with no
-    /// `hook`, `projectId`, or `beneficiary`) to send funds to the `_msgSender()` which calls this function. This can
-    /// be used to incentivize calling this function.
-    /// @dev Payouts sent to addresses which aren't feeless incur the protocol fee.
-    /// @notice Sends a payout to a split.
-    /// @param split The split to pay.
-    /// @param projectId The ID of the project the split was specified by.
-    /// @param token The address of the token being paid out.
-    /// @param amount The total amount that the split is being paid, as a fixed point number with the same number of
-    /// decimals as this terminal.
-    /// @return netPayoutAmount The amount sent to the split after subtracting fees.
-    function _sendPayoutToSplit(
-        JBSplit memory split,
-        uint256 projectId,
-        address token,
-        uint256 amount
-    )
-        internal
-        returns (uint256)
-    {
-        // Failed split payouts consume the payout limit by design. The try-catch prevents a single
-        // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
-        // `_recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
-        // distribution.
-        // slither-disable-next-line reentrancy-events
-        try this.executePayout({
-            split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: _msgSender()
-        }) returns (
-            uint256 netPayoutAmount
-        ) {
-            return netPayoutAmount;
-        } catch (bytes memory failureReason) {
-            emit PayoutReverted({
-                projectId: projectId, split: split, amount: amount, reason: failureReason, caller: _msgSender()
-            });
-
-            // Add balance back to the project.
-            _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
-
-            // Since the payout failed the netPayoutAmount is zero.
-            return 0;
-        }
-    }
-
     /// @param projectId The ID of the project to send the payouts of.
     /// @param token The token being paid out.
     /// @param amount The number of terminal tokens to pay out, as a fixed point number with same number of decimals as
@@ -1725,8 +1763,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Send payouts to the splits and get a reference to the amount left over after the splits have been paid.
         // Also get a reference to the amount which was paid out to splits that is eligible for fees.
-        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = _sendPayoutsToSplitGroupOf({
-            projectId: projectId, token: token, rulesetId: ruleset.id, amount: amountPaidOut
+        (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = JBPayoutSplitGroupLib.sendPayoutsToSplitGroupOf({
+            splits: SPLITS,
+            store: STORE,
+            projectId: projectId,
+            token: token,
+            rulesetId: ruleset.id,
+            amount: amountPaidOut,
+            caller: _msgSender()
         });
 
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
@@ -1780,73 +1824,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             netLeftoverPayoutAmount: leftoverPayoutAmount,
             caller: _msgSender()
         });
-    }
-
-    /// @notice Sends payouts to the payout splits group specified in a project's ruleset.
-    /// @param projectId The ID of the project to send the payouts of.
-    /// @param token The address of the token being paid out.
-    /// @param rulesetId The ID of the ruleset of the split group being paid.
-    /// @param amount The total amount being paid out, as a fixed point number with the same number of decimals as this
-    /// terminal.
-    /// @return amount The leftover amount (zero if the splits add up to 100%).
-    /// @return amountEligibleForFees The total amount of funds which were paid out and are eligible for fees.
-    function _sendPayoutsToSplitGroupOf(
-        uint256 projectId,
-        address token,
-        uint256 rulesetId,
-        uint256 amount
-    )
-        internal
-        returns (uint256, uint256 amountEligibleForFees)
-    {
-        // The total percentage available to split
-        uint256 leftoverPercentage = JBConstants.SPLITS_TOTAL_PERCENT;
-
-        // Get a reference to the project's payout splits.
-        JBSplit[] memory splits =
-            SPLITS.splitsOf({projectId: projectId, rulesetId: rulesetId, groupId: uint256(uint160(token))});
-
-        // Transfer between all splits.
-        for (uint256 i; i < splits.length; i++) {
-            // Get a reference to the split being iterated on.
-            JBSplit memory split = splits[i];
-
-            // The amount to send to the split.
-            uint256 payoutAmount = mulDiv(amount, split.percent, leftoverPercentage);
-
-            // The final payout amount after taking out any fees.
-            uint256 netPayoutAmount =
-                _sendPayoutToSplit({split: split, projectId: projectId, token: token, amount: payoutAmount});
-
-            // If the split hook is a feeless address, this payout doesn't incur a fee.
-            if (netPayoutAmount != 0 && netPayoutAmount != payoutAmount) {
-                amountEligibleForFees += payoutAmount;
-            }
-
-            if (payoutAmount != 0) {
-                // Subtract from the amount to be sent to the beneficiary.
-                unchecked {
-                    amount -= payoutAmount;
-                }
-            }
-
-            unchecked {
-                // Decrement the leftover percentage.
-                leftoverPercentage -= split.percent;
-            }
-
-            emit SendPayoutToSplit({
-                projectId: projectId,
-                rulesetId: rulesetId,
-                group: uint256(uint160(token)),
-                split: split,
-                amount: payoutAmount,
-                netAmount: netPayoutAmount,
-                caller: _msgSender()
-            });
-        }
-
-        return (amount, amountEligibleForFees);
     }
 
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
@@ -2011,6 +1988,25 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
+    /// @notice Returns a project's accounting context for a token, reverting if it is not accepted.
+    /// @param projectId The ID of the project to get the accounting context for.
+    /// @param token The token to get the accounting context for.
+    /// @return context The project's accounting context for the token.
+    function _accountingContextOf(
+        uint256 projectId,
+        address token
+    )
+        internal
+        view
+        returns (JBAccountingContext memory context)
+    {
+        // Keep a reference to the accounting context configured for the token.
+        context = _accountingContextForTokenOf[projectId][token];
+
+        // Revert if the token is not accepted by the project.
+        if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);
+    }
+
     /// @notice Checks this terminal's balance of a specific token.
     /// @param token The address of the token to get this terminal's balance of.
     /// @return This terminal's balance.
@@ -2063,5 +2059,27 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return The primary terminal of the project for the token.
     function _primaryTerminalOf(uint256 projectId, address token) internal view returns (IJBTerminal) {
         return DIRECTORY.primaryTerminalOf({projectId: projectId, token: token});
+    }
+
+    /// @notice Packages a payment amount with the token's accounting context.
+    /// @param projectId The ID of the project the token amount belongs to.
+    /// @param token The token being paid.
+    /// @param value The token amount's value.
+    /// @return tokenAmount The packaged token amount.
+    function _tokenAmountOf(
+        uint256 projectId,
+        address token,
+        uint256 value
+    )
+        internal
+        view
+        returns (JBTokenAmount memory tokenAmount)
+    {
+        // Keep a reference to the token's accounting context.
+        JBAccountingContext memory context = _accountingContextOf({projectId: projectId, token: token});
+
+        // Bundle the amount info into a `JBTokenAmount` struct.
+        tokenAmount =
+            JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
     }
 }

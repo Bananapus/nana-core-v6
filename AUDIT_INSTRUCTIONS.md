@@ -26,8 +26,8 @@ Read [RISKS.md](./RISKS.md) for known risks, trust model, and reentrancy analysi
 
 | Contract | Lines | Role | Calls |
 |----------|-------|------|-------|
-| **JBMultiTerminal** | ~2024 | Payment terminal. Handles pay, cash out, payouts, surplus allowance, fees. Multi-token. Permit2 integration. | Store, Controller, Splits, Directory, Prices |
-| **JBController** | ~1186 | Orchestrator. Project lifecycle, ruleset queuing, token minting/burning, reserved token distribution. ERC-2771 meta-tx. | Rulesets, Tokens, Splits, FundAccessLimits, Directory, Prices |
+| **JBMultiTerminal** | ~2024 | Payment terminal. Handles pay, cash out, payouts, surplus allowance, fees, and previews (`previewPayFor`, `previewCashOutFrom`). Multi-token. Permit2 integration. | Store, Controller, Splits, Directory, Prices |
+| **JBController** | ~1186 | Orchestrator. Project lifecycle, ruleset queuing, token minting/burning, reserved token distribution, mint preview (`previewMintOf`). ERC-2771 meta-tx. | Rulesets, Tokens, Splits, FundAccessLimits, Directory, Prices |
 | **JBTerminalStore** | ~800 | Bookkeeping. Balances, payout limit tracking, surplus calculation, bonding curve reclaim math. Data hook integration point. | Rulesets, Prices, Directory |
 | **JBRulesets** | ~1093 | Ruleset lifecycle. Linked-list via `basedOnId`. Weight decay with cache (20k iteration threshold). Approval hooks. Bit-packed storage. | Directory (via JBControlled) |
 | **JBDirectory** | ~300 | Routes projects to terminals and controllers. Migration lifecycle (before/after). | Projects, Permissions |
@@ -262,6 +262,8 @@ These are the patterns that will trip you up if you are not aware of them:
 12. **Credits are burned before ERC-20 tokens** in `JBTokens.burnFrom()`.
 13. **`JBERC20` is cloned via `Clones.clone()`** -- constructor sets invalid name/symbol; real values set in `initialize()`.
 14. **Named returns auto-return** -- several functions use named return variables without explicit `return` statements.
+15. **Preview functions call data hooks** -- `previewPayFor`, `previewCashOutFrom`, and their store-level counterparts invoke data hooks during simulation. A reverting data hook will cause the preview to revert. Preview functions are `view` but still make external calls to hooks.
+16. **Store preview functions use `msg.sender` as terminal** -- `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` use `msg.sender` (not an explicit parameter) as the terminal context. Only terminal contracts calling these will get correct balance/surplus lookups. Use the terminal-level `JBMultiTerminal.previewPayFor` / `previewCashOutFrom` instead for general-purpose previews.
 
 ## Priority Areas to Audit
 

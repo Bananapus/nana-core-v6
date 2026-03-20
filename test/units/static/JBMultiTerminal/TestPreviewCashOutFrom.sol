@@ -1,0 +1,116 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {IJBCashOutHook} from "../../../../src/interfaces/IJBCashOutHook.sol";
+import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
+import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
+import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
+import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
+
+contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
+    uint256 _projectId = 1;
+    uint256 _cashOutCount = 1e18;
+    address _holder = makeAddr("holder");
+    address payable _beneficiary = payable(makeAddr("beneficiary"));
+    address _token = JBConstants.NATIVE_TOKEN;
+
+    function setUp() public {
+        super.multiTerminalSetup();
+    }
+
+    function _acceptToken(address token, uint8 decimals, uint32 currency) internal {
+        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(0)));
+        mockExpect(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
+
+        JBRuleset memory returnedRuleset = JBRuleset({
+            cycleNumber: 1,
+            id: 0,
+            basedOnId: 0,
+            start: 0,
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
+
+        JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
+        contexts[0] = JBAccountingContext({token: token, decimals: decimals, currency: currency});
+
+        vm.prank(address(this));
+        _terminal.addAccountingContextsFor(_projectId, contexts);
+    }
+
+    function test_RevertsWhenTokenIsNotAccepted() external {
+        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _token));
+        JBMultiTerminal(address(_terminal))
+            .previewCashOutFrom(_holder, _projectId, _cashOutCount, _token, _beneficiary, "");
+    }
+
+    function test_ReturnsRulesetAndCashOutPreviewValues() external {
+        _acceptToken(_token, 18, uint32(uint160(_token)));
+
+        JBRuleset memory ruleset = JBRuleset({
+            cycleNumber: 1,
+            id: 1,
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        JBCashOutHookSpecification[] memory specs = new JBCashOutHookSpecification[](1);
+        specs[0] = JBCashOutHookSpecification({
+            hook: IJBCashOutHook(makeAddr("hook")), noop: false, amount: 321, metadata: hex"5678"
+        });
+
+        JBAccountingContext memory accountingContext =
+            JBAccountingContext({token: _token, decimals: 18, currency: uint32(uint160(_token))});
+        JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](1);
+        accountingContexts[0] = accountingContext;
+
+        mockExpect(
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (_beneficiary)), abi.encode(true)
+        );
+
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.previewCashOutFrom,
+                (_holder, _projectId, _cashOutCount, accountingContext, accountingContexts, true, bytes(""))
+            ),
+            abi.encode(ruleset, 999, 1234, specs)
+        );
+
+        (
+            JBRuleset memory previewRuleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory previewSpecs
+        ) = JBMultiTerminal(address(_terminal))
+            .previewCashOutFrom(_holder, _projectId, _cashOutCount, _token, _beneficiary, "");
+
+        assertEq(previewRuleset.id, ruleset.id);
+        assertEq(reclaimAmount, 999);
+        assertEq(cashOutTaxRate, 1234);
+        assertEq(previewSpecs.length, 1);
+        assertEq(address(previewSpecs[0].hook), address(specs[0].hook));
+        assertEq(previewSpecs[0].amount, specs[0].amount);
+        assertEq(previewSpecs[0].metadata, specs[0].metadata);
+    }
+}

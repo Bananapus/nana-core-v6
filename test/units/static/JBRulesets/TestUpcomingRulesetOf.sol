@@ -457,8 +457,6 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
     function test_baseRulesetDurationDNEQZero() external {
         // it will simulate a ruleset basedOn
 
-        uint256 ogTimestamp = block.timestamp;
-
         // put code at hook address
         vm.etch(address(_mockApprovalHook), abi.encode(1));
 
@@ -476,20 +474,6 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
 
         mockExpect(address(directory), _encodedCall, _willReturn);
 
-        // Setup: expect ruleset event (RulesetQueued) is emitted
-        vm.expectEmit();
-        emit IJBRulesets.RulesetQueued(
-            block.timestamp,
-            _projectId,
-            _duration,
-            _weight,
-            _weightCutPercent,
-            _mockApprovalHook,
-            _packedWithApprovalHook,
-            block.timestamp,
-            address(this)
-        );
-
         // Send: Call from this contract as it's been mock authorized above.
         _rulesets.queueFor({
             projectId: _projectId,
@@ -500,6 +484,9 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
             metadata: _packedWithApprovalHook,
             mustStartAtOrAfter: _mustStartAt
         });
+
+        // Capture the first ruleset's id from storage (avoid via_ir reordering of block.timestamp).
+        uint256 ogTimestamp = _rulesets.currentOf(_projectId).id;
 
         // mock call to hook duration
         mockExpect(
@@ -517,7 +504,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
             mustStartAtOrAfter: 0
         });
 
-        vm.warp(block.timestamp + 3 days);
+        vm.warp(ogTimestamp + 3 days);
 
         uint256 _latestQueuedId = _rulesets.latestRulesetIdOf(_projectId);
         JBRuleset memory _queuedRuleset = _rulesets.getRulesetOf(_projectId, _latestQueuedId);

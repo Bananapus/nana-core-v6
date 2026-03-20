@@ -535,12 +535,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
 
-        if (reservedPercent != JBConstants.MAX_RESERVED_PERCENT) {
-            // Calculate the number of (non-reserved) tokens that will be minted to the beneficiary.
-            beneficiaryTokenCount = mulDiv(
-                tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT
-            );
+        // Split the requested token count into beneficiary and reserved portions.
+        (beneficiaryTokenCount,) = _splitTokenCount({tokenCount: tokenCount, reservedPercent: reservedPercent});
 
+        if (beneficiaryTokenCount != 0) {
             // Mint the tokens.
             // slither-disable-next-line reentrancy-benign,reentrancy-events,unused-return
             TOKENS.mintFor({holder: beneficiary, projectId: projectId, count: beneficiaryTokenCount});
@@ -797,6 +795,34 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     {
         (ruleset, approvalStatus) = RULESETS.latestQueuedOf(projectId);
         metadata = ruleset.expandMetadata();
+    }
+
+    /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
+    /// @param projectId The ID of the project whose tokens are being minted.
+    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
+    /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
+    /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
+    /// @return reservedTokenCount The number of tokens that would be reserved.
+    function previewMintOf(
+        uint256 projectId,
+        uint256 tokenCount,
+        bool useReservedPercent
+    )
+        external
+        view
+        override
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
+    {
+        // Revert if there are no tokens to split.
+        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
+
+        // Keep a reference to the current ruleset.
+        JBRuleset memory ruleset = _currentRulesetOf(projectId);
+
+        return
+            _splitTokenCount({
+                tokenCount: tokenCount, reservedPercent: useReservedPercent ? ruleset.reservedPercent() : 0
+            });
     }
 
     /// @notice Check whether the project's controller can currently be set.
@@ -1139,6 +1165,27 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 holder: address(this), projectId: projectId, recipient: recipient, count: tokenCount
             });
         }
+    }
+
+    /// @notice Splits a token count into beneficiary and reserved portions.
+    /// @param tokenCount The total token count, including reserved tokens.
+    /// @param reservedPercent The reserved percent to apply.
+    /// @return beneficiaryTokenCount The number of tokens for the beneficiary.
+    /// @return reservedTokenCount The number of tokens to reserve.
+    function _splitTokenCount(
+        uint256 tokenCount,
+        uint256 reservedPercent
+    )
+        internal
+        pure
+        returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
+    {
+        // Compute the beneficiary's portion after removing the reserved share.
+        beneficiaryTokenCount =
+            mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
+
+        // The remaining tokens are reserved.
+        reservedTokenCount = tokenCount - beneficiaryTokenCount;
     }
 
     //*********************************************************************//

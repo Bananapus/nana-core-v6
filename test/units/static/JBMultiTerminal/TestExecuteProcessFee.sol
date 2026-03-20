@@ -6,6 +6,7 @@ import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetAppro
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
@@ -24,6 +25,14 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
 
     function setUp() public {
         super.multiTerminalSetup();
+    }
+
+    function _setAccountingContext(address token, uint8 decimals, uint32 currency) internal {
+        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
+        bytes32 slot = keccak256(abi.encode(token, contextSlot));
+
+        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
+        vm.store(address(_terminal), slot, packed);
     }
 
     function test_WhenCallerIsNotItself() external {
@@ -87,9 +96,11 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     function test_WhenFeeTerminalEQItself() external {
         // it will call internal _pay
 
+        _setAccountingContext(_native, 0, 1);
+
         // needed for next mock call returns
         JBTokenAmount memory tokenAmount =
-            JBTokenAmount({token: _native, decimals: 0, currency: 0, value: _defaultAmount});
+            JBTokenAmount({token: _native, decimals: 0, currency: 1, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
@@ -151,9 +162,11 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     function test_GivenTokenDNEQNATIVE_TOKENAndPayingItself() external {
         // it will call external pay with zero msgvalue
 
+        _setAccountingContext(_usdc, 0, 1);
+
         // needed for next mock call returns
         JBTokenAmount memory tokenAmount =
-            JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
+            JBTokenAmount({token: _usdc, decimals: 0, currency: 1, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,

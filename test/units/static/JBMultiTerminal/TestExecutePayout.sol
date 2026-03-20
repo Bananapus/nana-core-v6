@@ -32,12 +32,20 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
     address _native = JBConstants.NATIVE_TOKEN;
     address _usdc = makeAddr("USDC");
+    uint32 _usdcCurrency = uint32(uint160(_usdc));
 
     JBSplit private _split;
     JBSplit private _emptySplit;
 
     function setUp() public {
         super.multiTerminalSetup();
+    }
+
+    function _setAccountingContext(uint256 projectId, address token, uint8 decimals, uint32 currency) internal {
+        bytes32 contextSlot = keccak256(abi.encode(projectId, uint256(0)));
+        bytes32 slot = keccak256(abi.encode(token, contextSlot));
+        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
+        vm.store(address(_terminal), slot, packed);
     }
 
     modifier whenASplitHookIsConfigured() {
@@ -342,6 +350,8 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQThisAddress() external {
         // it will call internal _pay
 
+        _setAccountingContext(_projectId, _usdc, 0, _usdcCurrency);
+
         // mock call to directory primaryTerminalOf
         mockExpect(
             address(directory),
@@ -360,7 +370,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         // needed for next mock call returns
         JBTokenAmount memory tokenAmount =
-            JBTokenAmount({token: _usdc, decimals: 0, currency: 0, value: _defaultAmount});
+            JBTokenAmount({token: _usdc, decimals: 0, currency: _usdcCurrency, value: _defaultAmount});
         JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
         JBRuleset memory returnedRuleset = JBRuleset({
             cycleNumber: 1,
