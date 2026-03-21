@@ -144,7 +144,8 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         _terminalA.pay{value: payAmount}(_projectId, JBConstants.NATIVE_TOKEN, payAmount, _beneficiary, 0, "", "");
 
         // Record surplus before migration
-        uint256 surplusBefore = _terminalA.currentSurplusOf(_projectId, new address[](0), 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
+        uint256 surplusBefore =
+            _terminalA.currentSurplusOf(_projectId, new address[](0), 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertGt(surplusBefore, 0, "should have surplus before migration");
 
         // Migrate
@@ -152,7 +153,8 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
         // Check surplus from terminal B
-        uint256 surplusAfter = _terminalB.currentSurplusOf(_projectId, new address[](0), 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
+        uint256 surplusAfter =
+            _terminalB.currentSurplusOf(_projectId, new address[](0), 18, uint32(uint160(JBConstants.NATIVE_TOKEN)));
         assertEq(surplusAfter, surplusBefore, "surplus should be preserved after migration");
     }
 

@@ -78,12 +78,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -159,12 +161,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -240,12 +244,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 

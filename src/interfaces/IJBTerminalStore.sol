@@ -228,7 +228,7 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Records an accounting context for a terminal's project token.
+    /// @notice Records accounting contexts for a terminal's project tokens.
     /// @param projectId The ID of the project.
     /// @param contexts The accounting contexts to record.
     function recordAccountingContextOf(uint256 projectId, JBAccountingContext[] calldata contexts) external;

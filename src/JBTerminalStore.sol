@@ -373,17 +373,17 @@ contract JBTerminalStore is IJBTerminalStore {
         // Convert the amount to the balance's currency.
         amountPaidOut = (currency == accountingContext.currency)
             ? amount
-            : mulDiv(
-                amount,
-                10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount`'s
-                // fidelity as possible when converting.
-                PRICES.pricePerUnitOf({
+            : mulDiv({
+                x: amount,
+                y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                // `_amount`'s fidelity as possible when converting.
+                denominator: PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: currency,
                     unitCurrency: accountingContext.currency,
                     decimals: _MAX_FIXED_POINT_FIDELITY
                 })
-            );
+            });
 
         // The amount being paid out must be available.
         if (amountPaidOut > balanceOf[msg.sender][projectId][token]) {
@@ -465,17 +465,17 @@ contract JBTerminalStore is IJBTerminalStore {
         // Convert the amount to this store's terminal's token.
         usedAmount = currency == accountingContext.currency
             ? amount
-            : mulDiv(
-                amount,
-                10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `amount`'s
-                // fidelity as possible when converting.
-                PRICES.pricePerUnitOf({
+            : mulDiv({
+                x: amount,
+                y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                // `amount`'s fidelity as possible when converting.
+                denominator: PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: currency,
                     unitCurrency: accountingContext.currency,
                     decimals: _MAX_FIXED_POINT_FIDELITY
                 })
-            );
+            });
 
         // Set the token being used as the only one to look for surplus within.
         JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](1);
@@ -661,7 +661,9 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
-        return _currentSurplusOf(projectId, terminals, tokens, decimals, currency);
+        return _currentSurplusOf({
+            projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
+        });
     }
 
     /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given number of
@@ -881,7 +883,9 @@ contract JBTerminalStore is IJBTerminalStore {
         ruleset = RULESETS.currentOf(projectId);
 
         // Compute surplus — delegated to keep stack shallow.
-        reclaimAmount = _cashOutSurplusOf(terminal, projectId, tokenToReclaim, ruleset);
+        reclaimAmount = _cashOutSurplusOf({
+            terminal: terminal, projectId: projectId, tokenToReclaim: tokenToReclaim, ruleset: ruleset
+        });
 
         // Scoped to keep `totalSupply` and `context` off the outer stack.
         {
@@ -1067,7 +1071,7 @@ contract JBTerminalStore is IJBTerminalStore {
             });
 
         // Find the number of tokens to mint, as a fixed point number with as many decimals as `weight` has.
-        tokenCount = mulDiv(amount.value, weight, weightRatio);
+        tokenCount = mulDiv({x: amount.value, y: weight, denominator: weightRatio});
     }
 
     /// @notice Gets the current surplus amount for a project across specified terminals and tokens.
@@ -1204,17 +1208,17 @@ contract JBTerminalStore is IJBTerminalStore {
         // Add up all the balances.
         surplus = (surplus == 0 || accountingContext.currency == targetCurrency)
             ? surplus
-            : mulDiv(
-                surplus,
-                10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+            : mulDiv({
+                x: surplus,
+                y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
                 // `_payoutLimitRemaining`'s fidelity as possible when converting.
-                PRICES.pricePerUnitOf({
+                denominator: PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: accountingContext.currency,
                     unitCurrency: targetCurrency,
                     decimals: _MAX_FIXED_POINT_FIDELITY
                 })
-            );
+            });
 
         // Get a reference to the payout limit during the ruleset for the token.
         JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
@@ -1253,17 +1257,17 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
             if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
-                uint256 converted = mulDiv(
-                    payoutLimit.amount,
-                    10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
+                uint256 converted = mulDiv({
+                    x: payoutLimit.amount,
+                    y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
                     // `payoutLimitRemaining`'s fidelity as possible when converting.
-                    PRICES.pricePerUnitOf({
+                    denominator: PRICES.pricePerUnitOf({
                         projectId: projectId,
                         pricingCurrency: payoutLimit.currency,
                         unitCurrency: targetCurrency,
                         decimals: _MAX_FIXED_POINT_FIDELITY
                     })
-                );
+                });
                 if (converted > type(uint224).max) revert JBTerminalStore_Uint224Overflow(converted);
                 // forge-lint: disable-next-line(unsafe-typecast)
                 payoutLimit.amount = uint224(converted);

@@ -61,7 +61,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_RulesetNotFound.selector, _projectId));
         _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
     }
 
@@ -112,7 +117,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         vm.expectRevert(JBTerminalStore.JBTerminalStore_RulesetPaymentPaused.selector);
         _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
     }
 
@@ -163,7 +173,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
         (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
 
         // Mock for record call
@@ -245,7 +260,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 previewTokenCount, JBPayHookSpecification[] memory previewSpecs) = _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
 
         // Mock for record call — recordPaymentFrom uses msg.sender as terminal, so prank _terminal.
@@ -314,7 +334,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         uint256 balanceBefore = _store.balanceOf(_terminal, _projectId, address(_token));
 
         _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
 
         uint256 balanceAfter = _store.balanceOf(_terminal, _projectId, address(_token));
@@ -377,7 +402,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         uint256 expectedCount = mulDiv(_defaultValue, 1e18, 2e18);
 
         (, uint256 tokenCount,) = _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
 
         assertEq(tokenCount, expectedCount);
@@ -447,7 +477,12 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = _store.previewPayFrom({
-            terminal: _terminal, payer: address(this), amount: _tokenAmount, projectId: _projectId, beneficiary: address(this), metadata: ""
+            terminal: _terminal,
+            payer: address(this),
+            amount: _tokenAmount,
+            projectId: _projectId,
+            beneficiary: address(this),
+            metadata: ""
         });
 
         assertEq(tokenCount, 1e18 / 2);

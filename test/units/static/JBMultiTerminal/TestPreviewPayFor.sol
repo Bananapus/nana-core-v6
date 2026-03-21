@@ -93,7 +93,9 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(store),
-            abi.encodeWithSelector(bytes4(0xdb6d7e03), address(_terminal), _payer, tokenAmount, _projectId, _beneficiary, bytes("")),
+            abi.encodeWithSelector(
+                bytes4(0xdb6d7e03), address(_terminal), _payer, tokenAmount, _projectId, _beneficiary, bytes("")
+            ),
             abi.encode(ruleset, 1000, specs)
         );
 

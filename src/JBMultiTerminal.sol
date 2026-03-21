@@ -748,7 +748,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param projectId The ID of the project to get the accepted tokens of.
     /// @return tokenContexts The accounting contexts of the accepted tokens.
     function accountingContextsOf(uint256 projectId) external view override returns (JBAccountingContext[] memory) {
-        return STORE.accountingContextsOf(address(this), projectId);
+        return STORE.accountingContextsOf({terminal: address(this), projectId: projectId});
     }
 
     /// @notice Gets the current surplus amount in this terminal for a project, in terms of a given currency.
@@ -782,6 +782,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Held fees can be processed at any time by this terminal's owner.
     /// @param projectId The ID of the project that is holding fees.
     /// @param token The token that the fees are held in.
+    /// @param count The maximum number of held fees to return.
+    /// @return heldFees The held fees.
     function heldFeesOf(
         uint256 projectId,
         address token,
@@ -1156,6 +1158,52 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
+    /// recipient terminal's `addToBalance` function.
+    /// @param terminal The terminal on which the project is expecting to receive funds.
+    /// @param projectId The ID of the project being funded.
+    /// @param token The token being used.
+    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
+    /// accounting context specifies.
+    /// @param metadata Additional metadata to include with the payment.
+    function _efficientAddToBalance(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        bytes memory metadata
+    )
+        internal
+    {
+        // Call the internal method if this terminal is being used.
+        if (terminal == IJBTerminal(address(this))) {
+            _addToBalanceOf({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
+        } else {
+            // Trigger any inherited pre-transfer logic.
+            // Keep a reference to the amount that'll be paid as a `msg.value`.
+            // slither-disable-next-line reentrancy-events
+            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
+
+            // Add to balance.
+            // If this terminal's token is the native token, send it in `msg.value`.
+            terminal.addToBalanceOf{value: payValue}({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                shouldReturnHeldFees: false,
+                memo: "",
+                metadata: metadata
+            });
+        }
+    }
+
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
     /// terminal's `pay` function.
     /// @param terminal The terminal on which the project is expecting to receive payments.
@@ -1493,52 +1541,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
-    /// recipient terminal's `addToBalance` function.
-    /// @param terminal The terminal on which the project is expecting to receive funds.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
-    /// accounting context specifies.
-    /// @param metadata Additional metadata to include with the payment.
-    function _efficientAddToBalance(
-        IJBTerminal terminal,
-        uint256 projectId,
-        address token,
-        uint256 amount,
-        bytes memory metadata
-    )
-        internal
-    {
-        // Call the internal method if this terminal is being used.
-        if (terminal == IJBTerminal(address(this))) {
-            _addToBalanceOf({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        } else {
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
-
-            // Add to balance.
-            // If this terminal's token is the native token, send it in `msg.value`.
-            terminal.addToBalanceOf{value: payValue}({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
-            });
-        }
-    }
-
     /// @notice Records an added balance for a project.
     /// @param projectId The ID of the project to record the added balance for.
     /// @param token The token to record the added balance for.
@@ -1626,6 +1628,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Sends payouts to a project's payout split group using the specified ruleset.
     /// @param projectId The ID of the project to send the payouts of.
     /// @param token The token being paid out.
     /// @param amount The number of terminal tokens to pay out, as a fixed point number with same number of decimals as
@@ -1881,6 +1884,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
+    //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
