@@ -32,4 +32,35 @@ library JBSurplus {
             surplus += terminals[i].currentSurplusOf({projectId: projectId, decimals: decimals, currency: currency});
         }
     }
+
+    /// @notice Gets the total current surplus amount across all of a project's terminals, considering only specific
+    /// tokens.
+    /// @param projectId The ID of the project to get the total surplus for.
+    /// @param terminals The terminals to look for surplus within.
+    /// @param tokens The tokens to include in the surplus calculation.
+    /// @param decimals The number of decimals that the fixed point surplus result should include.
+    /// @param currency The currency that the surplus result should be in terms of.
+    /// @return surplus The total surplus of a project's funds in terms of `currency`, as a fixed point number with the
+    /// specified number of decimals.
+    function currentSurplusOf(
+        uint256 projectId,
+        IJBTerminal[] memory terminals,
+        address[] calldata tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
+        // Keep a reference to the number of terminals.
+        uint256 numberOfTerminals = terminals.length;
+
+        // Add the current surplus for each terminal, filtered by the specified tokens.
+        for (uint256 i; i < numberOfTerminals; i++) {
+            surplus += terminals[i].currentSurplusOf({
+                projectId: projectId, tokens: tokens, decimals: decimals, currency: currency
+            });
+        }
+    }
 }

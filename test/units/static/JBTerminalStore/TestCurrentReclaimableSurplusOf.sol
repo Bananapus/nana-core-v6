@@ -79,7 +79,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // mock current surplus as zero
         mockExpect(
-            address(_terminal), abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)), abi.encode(0)
+            address(_terminal), abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency), abi.encode(0)
         );
 
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);
@@ -146,7 +146,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
         // surplus call to the terminal
         mockExpect(
             address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
+            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency),
             abi.encode(_supply - _payout)
         );
 
@@ -221,7 +221,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
         // mock call to get cumulative surplus
         mockExpect(
             address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
+            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency),
             abi.encode(_tokenCount)
         );
 
@@ -299,9 +299,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // mock current surplus
         mockExpect(
-            address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
-            abi.encode(1e18)
+            address(_terminal), abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency), abi.encode(1e18)
         );
 
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);
@@ -364,9 +362,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // mock current surplus
         mockExpect(
-            address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
-            abi.encode(1e18)
+            address(_terminal), abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency), abi.encode(1e18)
         );
 
         // mock JBController totalTokenSupplyWithReservedTokensOf
@@ -501,7 +497,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _emptyContexts = new JBAccountingContext[](0);
         mockExpect(
             address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
+            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency),
             abi.encode(_surplus)
         );
 
@@ -550,7 +546,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // mock current surplus as zero
         mockExpect(
-            address(_terminal), abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)), abi.encode(0)
+            address(_terminal), abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency), abi.encode(0)
         );
 
         uint256 reclaimable = _store.currentTotalReclaimableSurplusOf(_projectId, _tokenCount, 18, _currency);
@@ -615,7 +611,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         mockExpect(
             address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
+            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency),
             abi.encode(_surplus)
         );
 
@@ -634,7 +630,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
         mockExpect(
             address(_terminal),
-            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, 18, _currency)),
+            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, 18, _currency),
             abi.encode(_surplus)
         );
         mockExpect(

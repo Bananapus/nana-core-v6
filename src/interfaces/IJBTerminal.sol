@@ -95,6 +95,22 @@ interface IJBTerminal is IERC165 {
     /// @return The project's current surplus.
     function currentSurplusOf(uint256 projectId, uint256 decimals, uint256 currency) external view returns (uint256);
 
+    /// @notice Returns a project's current surplus, considering only specific tokens.
+    /// @param projectId The ID of the project to get the surplus of.
+    /// @param tokens The tokens to include in the surplus calculation.
+    /// @param decimals The number of decimals to express the surplus with.
+    /// @param currency The currency to express the surplus in.
+    /// @return The project's current surplus for the given tokens.
+    function currentSurplusOf(
+        uint256 projectId,
+        address[] calldata tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        returns (uint256);
+
     /// @notice Simulates paying a project through this terminal without modifying state.
     /// @param projectId The ID of the project being paid.
     /// @param token The token being paid in.

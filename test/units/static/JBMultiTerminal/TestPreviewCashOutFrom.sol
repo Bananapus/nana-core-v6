@@ -80,8 +80,8 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
         });
 
         JBAccountingContext memory accountingContext =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBAccountingContext({token: _token, decimals: 18, currency: uint32(uint160(_token))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _token, decimals: 18, currency: uint32(uint160(_token))});
         JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](1);
         accountingContexts[0] = accountingContext;
 

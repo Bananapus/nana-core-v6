@@ -122,8 +122,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
         JBRuleset memory returnedRuleset = JBRuleset({
@@ -176,8 +176,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
         JBRuleset memory returnedRuleset = JBRuleset({
@@ -239,8 +239,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
         JBRuleset memory returnedRuleset = JBRuleset({
@@ -586,8 +586,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         hookSpecifications[0] =
             JBCashOutHookSpecification({hook: IJBCashOutHook(address(this)), noop: true, amount: 0, metadata: "info"});
         JBAccountingContext memory mockTokenContext =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
         JBRuleset memory returnedRuleset = JBRuleset({

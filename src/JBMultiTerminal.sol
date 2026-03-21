@@ -775,6 +775,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
     }
 
+    /// @notice The current surplus for a project in this terminal, considering only specific tokens.
+    /// @param projectId The ID of the project to get the surplus of.
+    /// @param tokens The tokens to include in the surplus calculation.
+    /// @param decimals The number of decimals to express the surplus with.
+    /// @param currency The currency to express the surplus in.
+    /// @return The current surplus amount the project has in this terminal for the given tokens.
+    function currentSurplusOf(
+        uint256 projectId,
+        address[] calldata tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return STORE.currentSurplusOf({
+            terminal: address(this), projectId: projectId, tokens: tokens, decimals: decimals, currency: currency
+        });
+    }
+
     /// @notice Fees that are being held for a project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
     /// @dev Held fees can be processed at any time by this terminal's owner.

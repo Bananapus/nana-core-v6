@@ -23,6 +23,10 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         return surplusAmount;
     }
 
+    function currentSurplusOf(uint256, address[] calldata, uint256, uint256) external view override returns (uint256) {
+        return surplusAmount;
+    }
+
     function supportsInterface(bytes4 interfaceId) public view override(ERC165, IERC165) returns (bool) {
         return interfaceId == type(IJBTerminal).interfaceId || interfaceId == type(IJBCashOutTerminal).interfaceId
             || super.supportsInterface(interfaceId);

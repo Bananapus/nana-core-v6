@@ -69,8 +69,8 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
             JBPayHookSpecification({hook: IJBPayHook(makeAddr("hook")), noop: false, amount: 123, metadata: hex"1234"});
 
         JBTokenAmount memory tokenAmount =
-            // forge-lint: disable-next-line(unsafe-typecast)
-            JBTokenAmount({token: _token, decimals: 18, currency: uint32(uint160(_token)), value: _amount});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBTokenAmount({token: _token, decimals: 18, currency: uint32(uint160(_token)), value: _amount});
 
         mockExpect(
             address(store),
