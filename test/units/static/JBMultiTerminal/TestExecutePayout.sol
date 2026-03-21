@@ -10,6 +10,7 @@ import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBSplit} from "../../../../src/structs/JBSplit.sol";
@@ -32,6 +33,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
     address _native = JBConstants.NATIVE_TOKEN;
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 _usdcCurrency = uint32(uint160(_usdc));
 
     JBSplit private _split;
@@ -42,10 +44,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     }
 
     function _setAccountingContext(uint256 projectId, address token, uint8 decimals, uint32 currency) internal {
-        bytes32 contextSlot = keccak256(abi.encode(projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(token, contextSlot));
-        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
-        vm.store(address(_terminal), slot, packed);
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), projectId, token)),
+            abi.encode(JBAccountingContext({token: token, decimals: decimals, currency: currency}))
+        );
     }
 
     modifier whenASplitHookIsConfigured() {
@@ -65,6 +69,13 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
     function test_GivenTheSplitHookEQFeeless() external whenASplitHookIsConfigured {
         // it will not process a fee
+
+        // Mock accountingContextOf for the decimals lookup in executePayout
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _noProject, _native)),
+            abi.encode(JBAccountingContext({token: _native, decimals: 0, currency: 0}))
+        );
 
         // mock call to split hook supportsInterface
         mockExpect(
@@ -110,6 +121,13 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
     function test_GivenTheSplitHookDNEQFeeless() external whenASplitHookIsConfigured {
         // it will process a fee
+
+        // Mock accountingContextOf for the decimals lookup in executePayout
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _noProject, _native)),
+            abi.encode(JBAccountingContext({token: _native, decimals: 0, currency: 0}))
+        );
 
         // mock call to split hook supportsInterface
         mockExpect(

@@ -37,9 +37,8 @@ contract JBMultiTerminalSetup is JBTest {
     address trustedForwarder = makeAddr("forwarder");
 
     function multiTerminalSetup() public virtual {
-        // Constructor will call to find directory and rulesets from the terminal store
+        // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
-        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.RULESETS, ()), abi.encode(address(rulesets)));
 
         // Instantiate the contract being tested
         _terminal = new JBMultiTerminal(

@@ -13,6 +13,7 @@ import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBFee} from "../../../../src/structs/JBFee.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
@@ -65,16 +66,17 @@ contract TestProcessHeldFeesOf_Local is JBTest {
     address _beneficiary = makeAddr("beneficiary");
 
     function _setAccountingContext(uint256 projectId, address token, uint8 decimals, uint32 currency) internal {
-        bytes32 contextSlot = keccak256(abi.encode(projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(token, contextSlot));
-        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
-        vm.store(address(_terminal), slot, packed);
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), projectId, token)),
+            abi.encode(JBAccountingContext({token: token, decimals: decimals, currency: currency}))
+        );
     }
 
     function setUp() public {
-        // Constructor will call to find directory and rulesets from the terminal store
+        // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
-        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.RULESETS, ()), abi.encode(address(rulesets)));
 
         _terminal = new ForTest_JBMultiTerminal(
             feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder
@@ -127,6 +129,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: _terminal.FEE()});
 
         // Set up accounting context for the fee beneficiary project (project 1) so _pay can build the token amount.
+        // forge-lint: disable-next-line(unsafe-typecast)
         _setAccountingContext(_feeProjectId, _mockToken, 0, uint32(uint160(_mockToken)));
 
         // Mock the directory call to find the fee terminal - return _terminal itself so it uses internal _pay

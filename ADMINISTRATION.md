@@ -258,7 +258,6 @@ The following values are set at deploy time and cannot be changed:
 - `PERMISSIONS` -- the permissions contract
 - `PERMIT2` -- the Uniswap Permit2 contract
 - `PROJECTS` -- the projects NFT contract
-- `RULESETS` -- derived from STORE.RULESETS()
 - `SPLITS` -- the splits contract
 - `STORE` -- the terminal store contract
 - `TOKENS` -- the tokens contract

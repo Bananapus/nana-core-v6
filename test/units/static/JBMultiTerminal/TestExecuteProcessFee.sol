@@ -13,6 +13,8 @@ import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
+// Accounting context is now read from the store
+
 contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     uint256 _projectId = 1;
     uint256 _defaultAmount = 1e18;
@@ -28,11 +30,12 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     }
 
     function _setAccountingContext(address token, uint8 decimals, uint32 currency) internal {
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(token, contextSlot));
-
-        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
-        vm.store(address(_terminal), slot, packed);
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, token)),
+            abi.encode(JBAccountingContext({token: token, decimals: decimals, currency: currency}))
+        );
     }
 
     function test_WhenCallerIsNotItself() external {

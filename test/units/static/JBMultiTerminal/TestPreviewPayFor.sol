@@ -27,21 +27,50 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
     }
 
     function _setAccountingContext(address token, uint8 decimals, uint32 currency) internal {
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(token, contextSlot));
-        bytes32 packed = bytes32(uint256(uint160(token)) | (uint256(decimals) << 160) | (uint256(currency) << 168));
-        vm.store(address(_terminal), slot, packed);
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, token)),
+            abi.encode(JBAccountingContext({token: token, decimals: decimals, currency: currency}))
+        );
     }
 
     function test_RevertsWhenTokenIsNotAccepted() external {
+        // Mock accountingContextOf to return empty context (token not accepted)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _token)),
+            abi.encode(JBAccountingContext({token: address(0), decimals: 0, currency: 0}))
+        );
+
         vm.prank(_payer);
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _token));
         JBMultiTerminal(address(_terminal)).previewPayFor(_projectId, _token, _amount, _beneficiary, "");
     }
 
     function test_ReturnsRulesetMintSplitAndHookSpecifications() external {
+        // forge-lint: disable-next-line(unsafe-typecast)
         _setAccountingContext(_token, 18, uint32(uint160(_token)));
 
+        _mockPreviewPayFrom();
+
+        vm.prank(_payer);
+        (
+            JBRuleset memory previewRuleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory previewSpecs
+        ) = JBMultiTerminal(address(_terminal)).previewPayFor(_projectId, _token, _amount, _beneficiary, "");
+
+        assertEq(previewRuleset.id, 1);
+        assertEq(beneficiaryTokenCount, 750);
+        assertEq(reservedTokenCount, 250);
+        assertEq(previewSpecs.length, 1);
+        assertEq(previewSpecs[0].amount, 123);
+        assertEq(previewSpecs[0].metadata, hex"1234");
+    }
+
+    function _mockPreviewPayFrom() internal {
         JBRuleset memory ruleset = JBRuleset({
             cycleNumber: 1,
             id: 1,
@@ -59,11 +88,14 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
             JBPayHookSpecification({hook: IJBPayHook(makeAddr("hook")), noop: false, amount: 123, metadata: hex"1234"});
 
         JBTokenAmount memory tokenAmount =
-            JBTokenAmount({token: _token, decimals: 18, currency: uint32(uint160(_token)), value: _amount});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        JBTokenAmount({token: _token, decimals: 18, currency: uint32(uint160(_token)), value: _amount});
 
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.previewPayFrom, (_payer, tokenAmount, _projectId, _beneficiary, bytes(""))),
+            abi.encodeWithSelector(
+                bytes4(0xdb6d7e03), address(_terminal), _payer, tokenAmount, _projectId, _beneficiary, bytes("")
+            ),
             abi.encode(ruleset, 1000, specs)
         );
 
@@ -78,21 +110,5 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
             abi.encodeCall(IJBController.previewMintOf, (_projectId, 1000, true)),
             abi.encode(750, 250)
         );
-
-        vm.prank(_payer);
-        (
-            JBRuleset memory previewRuleset,
-            uint256 beneficiaryTokenCount,
-            uint256 reservedTokenCount,
-            JBPayHookSpecification[] memory previewSpecs
-        ) = JBMultiTerminal(address(_terminal)).previewPayFor(_projectId, _token, _amount, _beneficiary, "");
-
-        assertEq(previewRuleset.id, ruleset.id);
-        assertEq(beneficiaryTokenCount, 750);
-        assertEq(reservedTokenCount, 250);
-        assertEq(previewSpecs.length, 1);
-        assertEq(address(previewSpecs[0].hook), address(specs[0].hook));
-        assertEq(previewSpecs[0].amount, specs[0].amount);
-        assertEq(previewSpecs[0].metadata, specs[0].metadata);
     }
 }

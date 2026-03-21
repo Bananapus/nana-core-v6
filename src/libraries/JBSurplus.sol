@@ -2,7 +2,6 @@
 pragma solidity ^0.8.17;
 
 import {IJBTerminal} from "../interfaces/IJBTerminal.sol";
-import {JBAccountingContext} from "../structs/JBAccountingContext.sol";
 
 /// @notice Surplus calculations.
 library JBSurplus {
@@ -11,7 +10,7 @@ library JBSurplus {
     /// the project's payout limits.
     /// @param projectId The ID of the project to get the total surplus for.
     /// @param terminals The terminals to look for surplus within.
-    /// @param accountingContexts The accounting contexts to use to calculate the surplus.
+    /// @param tokens The tokens to include in the surplus calculation. If empty, all tokens are included.
     /// @param decimals The number of decimals that the fixed point surplus result should include.
     /// @param currency The currency that the surplus result should be in terms of.
     /// @return surplus The total surplus of a project's funds in terms of `currency`, as a fixed point number with the
@@ -19,7 +18,7 @@ library JBSurplus {
     function currentSurplusOf(
         uint256 projectId,
         IJBTerminal[] memory terminals,
-        JBAccountingContext[] memory accountingContexts,
+        address[] memory tokens,
         uint256 decimals,
         uint256 currency
     )
@@ -33,7 +32,7 @@ library JBSurplus {
         // Add the current surplus for each terminal.
         for (uint256 i; i < numberOfTerminals; i++) {
             surplus += terminals[i].currentSurplusOf({
-                projectId: projectId, accountingContexts: accountingContexts, decimals: decimals, currency: currency
+                projectId: projectId, tokens: tokens, decimals: decimals, currency: currency
             });
         }
     }

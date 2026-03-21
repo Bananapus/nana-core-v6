@@ -4,6 +4,7 @@ pragma solidity ^0.8.6;
 import {StdInvariant} from "forge-std/StdInvariant.sol";
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
+import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
 import {IJBSplitHook} from "../src/interfaces/IJBSplitHook.sol";
 import {IJBToken} from "../src/interfaces/IJBToken.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
@@ -236,16 +237,13 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 totalSupply = jbTokens().totalSupplyOf(projectId);
         if (totalSupply == 0) return;
 
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
-
+        IJBTerminal[] memory _terminals = new IJBTerminal[](1);
+        _terminals[0] = IJBTerminal(jbMultiTerminal());
         uint256 surplus = jbTerminalStore()
             .currentSurplusOf({
-                terminal: address(jbMultiTerminal()),
                 projectId: projectId,
-                accountingContexts: contexts,
+                terminals: _terminals,
+                tokens: new address[](0),
                 decimals: 18,
                 currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });

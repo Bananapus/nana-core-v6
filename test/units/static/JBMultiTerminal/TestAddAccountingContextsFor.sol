@@ -1,14 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
+import {JBTerminalStore} from "../../../../src/JBTerminalStore.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
-import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
-import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
-import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -43,44 +40,20 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
     function test_GivenTheContextIsAlreadySet() external whenCallerIsPermissioned {
         // it will revert ACCOUNTING_CONTEXT_ALREADY_SET
 
-        // Accounting Context to set
-        // forge-lint: disable-next-line(unsafe-typecast)
-        JBAccountingContext memory _context =
-        // forge-lint: disable-next-line(unsafe-typecast)
-        JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
-
-        // Find the storage slot
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(_usdc, contextSlot));
-
-        // Set storage
-        vm.store(address(_terminal), slot, bytes32(abi.encode(_context)));
-
-        // setup: return data
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _usdc);
-        assertEq(_storedContext.token, _usdc);
-
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
+        // Mock recordAccountingContextOf to revert with AccountingContextAlreadySet
+        vm.mockCallRevert(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextAlreadySet.selector, _usdc)
+        );
+
         vm.expectRevert(
-            abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_AccountingContextAlreadySet.selector, _usdc)
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextAlreadySet.selector, _usdc)
         );
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
@@ -88,31 +61,24 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
     function test_GivenHappyPathERC20() external whenCallerIsPermissioned {
         // it will set the context and emit SetAccountingContext
 
-        // mock call to tokens decimals()
-        mockExpect(_usdc, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(6));
-
-        // setup: return data
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        // mock call to rulesets currentOf returning 0 to bypass ruleset checking
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
+        // Mock recordAccountingContextOf in the store (validation now happens there)
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock the store to return the context when queried
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _usdc)),
+            abi.encode(_tokens[0])
+        );
 
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _usdc);
         assertEq(_storedContext.token, _usdc);
@@ -128,24 +94,21 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        // mock call to rulesets currentOf returning 0 to bypass ruleset checking
-
-        // setup: return data
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
+        // Mock recordAccountingContextOf in the store (validation now happens there)
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
+        );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock the store to return the context when queried
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, JBConstants.NATIVE_TOKEN)
+            ),
+            abi.encode(_tokens[0])
+        );
 
         JBAccountingContext memory _storedContext =
             _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN);
@@ -173,22 +136,21 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        // setup: return data
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
+        // Mock recordAccountingContextOf in the store (validation now happens there)
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
+        );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock the store to return the context when queried
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, JBConstants.NATIVE_TOKEN)
+            ),
+            abi.encode(_tokens[0])
+        );
 
         JBAccountingContext memory _storedContext =
             _terminal.accountingContextForTokenOf(_projectId, JBConstants.NATIVE_TOKEN);
@@ -216,18 +178,19 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        // setup: return data
-        JBRuleset memory ruleset = generateUnfriendlyRuleset();
+        // Mock recordAccountingContextOf to revert with AddingAccountingContextNotAllowed (validation now in store)
+        vm.mockCallRevert(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector)
+        );
 
-        // mock rulesets call
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_AddingAccountingContextNotAllowed.selector);
+        vm.expectRevert(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
     function test_WhenCurrencyIsNativeButDecimalsDNEQ18() external {
-        // it will revert JBMultiTerminal_AccountingContextDecimalsMismatch
+        // it will revert JBTerminalStore_AccountingContextDecimalsMismatch
 
         // mock call to JBProjects ownerOf(_projectId)
         bytes memory _projectsCall = abi.encodeCall(IERC721.ownerOf, (_projectId));
@@ -247,18 +210,19 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        // setup: return data
-        JBRuleset memory ruleset = generateFriendlyRuleset();
+        // Mock recordAccountingContextOf to revert with DecimalsMismatch (validation now in store)
+        vm.mockCallRevert(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
+        );
 
-        // mock rulesets call
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_AccountingContextDecimalsMismatch.selector);
+        vm.expectRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
     function test_WhenTokenDecimalsDoesNotMatchAccountingContext() external {
-        // it will revert JBMultiTerminal_AccountingContextDecimalsMismatch
+        // it will revert JBTerminalStore_AccountingContextDecimalsMismatch
 
         // mock call to JBProjects ownerOf(_projectId)
         bytes memory _projectsCall = abi.encodeCall(IERC721.ownerOf, (_projectId));
@@ -281,21 +245,19 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             currency: uint32(uint160(someToken))
         });
 
-        // setup: return data
-        JBRuleset memory ruleset = generateFriendlyRuleset();
+        // Mock recordAccountingContextOf to revert with DecimalsMismatch (validation now in store)
+        vm.mockCallRevert(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
+        );
 
-        // mock rulesets call
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        // mock token call
-        mockExpect(address(someToken), abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
-
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_AccountingContextDecimalsMismatch.selector);
+        vm.expectRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
     function test_WhenCurrencyEQZero() external {
-        // it will revert JBMultiTerminal_ZeroAccountingContextCurrency
+        // it will revert JBTerminalStore_ZeroAccountingContextCurrency
 
         // mock call to JBProjects ownerOf(_projectId)
         bytes memory _projectsCall = abi.encodeCall(IERC721.ownerOf, (_projectId));
@@ -314,16 +276,14 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: someToken, decimals: 18, currency: uint32(uint160(0))});
 
-        // setup: return data
-        JBRuleset memory ruleset = generateFriendlyRuleset();
+        // Mock recordAccountingContextOf to revert with ZeroAccountingContextCurrency (validation now in store)
+        vm.mockCallRevert(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector)
+        );
 
-        // mock rulesets call
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        // mock token call
-        mockExpect(address(someToken), abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
-
-        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_ZeroAccountingContextCurrency.selector);
+        vm.expectRevert(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 }

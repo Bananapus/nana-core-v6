@@ -45,6 +45,11 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
     function setUp() public {
         super.terminalStoreSetup();
+
+        // Register accounting context so the store can look up decimals/currency for the token.
+        JBAccountingContext[] memory _ctxs = new JBAccountingContext[](1);
+        _ctxs[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _store.recordAccountingContextOf(_projectId, _ctxs);
     }
 
     modifier whenCurrentRulesetUseTotalSurplusForCashOutsEqTrue() {
@@ -73,16 +78,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -158,16 +161,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -243,16 +244,14 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal1Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeCall(
-            IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-        );
+        bytes memory _terminal2Call =
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -318,13 +317,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
 
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
         uint256 _cashOutCount = 4e18; // greater than token total supply
 
         vm.expectRevert(
@@ -334,8 +326,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -354,13 +345,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
 
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
         uint256 _cashOutCount = 6; // within balance bounds
         uint256 expectedCashOuts = mulDiv(3e18, _cashOutCount, _totalSupply);
 
@@ -368,8 +352,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -443,8 +426,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -469,13 +451,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             abi.encode(_totalTokens)
         );
 
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
         uint256 _cashOutCount = 4e18; // greater than caller balance
 
         uint256 reclaimAmount = mulDiv(_currentSurplus, _cashOutCount, _totalTokens);
@@ -489,8 +464,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -554,8 +528,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: true,
             metadata: ""
         });
@@ -611,8 +584,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: 1e18,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -667,8 +639,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: 1e18,
-            accountingContext: _accountingContexts,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: address(_token),
             beneficiaryIsFeeless: false,
             metadata: ""
         });

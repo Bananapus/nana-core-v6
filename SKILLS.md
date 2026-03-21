@@ -66,7 +66,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `migrateBalanceOf(uint256 projectId, address token, IJBTerminal to)` | Migrates a project's token balance to another terminal. Requires `allowTerminalMigration`. |
 | `processHeldFeesOf(uint256 projectId, address token, uint256 count)` | Processes up to `count` held fees for a project, sending them to the fee beneficiary project. |
 | `addAccountingContextsFor(uint256 projectId, JBAccountingContext[] accountingContexts)` | Adds new accounting contexts (token types) to a terminal for a project. |
-| `currentSurplusOf(uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the project's current surplus in the specified currency. |
+| `currentSurplusOf(uint256 projectId, address[] tokens, uint256 decimals, uint256 currency)` | Returns the project's current surplus in this terminal. Empty `tokens` = all tokens. |
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
 | `accountingContextsOf(uint256 projectId)` | Returns all accounting contexts for a project. |
 | `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |
@@ -87,12 +87,12 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `usedPayoutLimitOf(address terminal, uint256 projectId, address token, uint256 rulesetCycleNumber, uint256 currency)` | Returns the used payout limit for a project in a given cycle. |
 | `usedSurplusAllowanceOf(address terminal, uint256 projectId, address token, uint256 rulesetId, uint256 currency)` | Returns the used surplus allowance for a project in a given ruleset. |
 | `currentReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 totalSupply, uint256 surplus)` | Returns the reclaimable surplus given raw total supply and surplus values. Applies bonding curve from current ruleset. |
-| `currentReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, IJBTerminal[] terminals, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the reclaimable surplus across specified terminals. Empty arrays default to all terminals/contexts. |
-| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals using all accounting contexts. Mirrors `currentTotalSurplusOf`. |
-| `currentSurplusOf(address terminal, uint256 projectId, JBAccountingContext[] accountingContexts, uint256 decimals, uint256 currency)` | Returns the current surplus for a project at a terminal. |
-| `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Returns the total surplus across all terminals. |
-| `previewPayFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
-| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `currentReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, IJBTerminal[] terminals, address[] tokens, uint256 decimals, uint256 currency)` | Returns the reclaimable surplus across specified terminals and tokens. Empty arrays default to all. |
+| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals and all tokens. |
+| `currentSurplusOf(uint256 projectId, IJBTerminal[] terminals, address[] tokens, uint256 decimals, uint256 currency)` | Returns the current surplus across specified terminals and tokens. Empty arrays default to all. |
+| `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Convenience view: total surplus across all terminals and all tokens. |
+| `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
+| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 
 ### JBRulesets
 
@@ -246,7 +246,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 - Project #1 is the fee beneficiary project (receives all protocol fees)
 - **Fee-free cashout exemption is scoped to fee-free intra-terminal payout amounts.** `_feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free payouts. During cashout with `cashOutTaxRate=0`, the 2.5% fee applies only up to this surplus, then depletes. Once consumed, subsequent cashouts are fee-free again. This prevents a round-trip fee bypass (intra-terminal payout → zero-tax cashout) while scoping fees precisely to the fee-free inflow.
 - `JBProjects` constructor optionally mints project #1 to `feeProjectOwner` -- if `address(0)`, no fee project is created
-- `JBMultiTerminal` derives `DIRECTORY` and `RULESETS` from the provided `store` in its constructor -- not passed directly
+- `JBMultiTerminal` derives `DIRECTORY` from the provided `store` in its constructor -- not passed directly
 - `JBPrices.pricePerUnitOf()` checks project-specific feed, then inverse, then falls back to `DEFAULT_PROJECT_ID = 0`
 - `useAllowanceOf()` takes 8 args including `address payable feeBeneficiary` -- do NOT omit it
 - Cash out tax rate of 0% = proportional (1:1) redemption; 100% = nothing reclaimable (all surplus locked). Do NOT confuse with a "cash out rate" where 100% means full redemption.

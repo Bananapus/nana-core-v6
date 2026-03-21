@@ -131,15 +131,15 @@ contract TestCashOut_Local is TestBaseWorkflow {
         // Fuzz 1 to full balance cash out.
         _tokenAmountToCashOut = bound(_tokenAmountToCashOut, 1, _beneficiaryTokenBalance);
 
-        JBAccountingContext[] memory _tokensContext = new JBAccountingContext[](1);
-        _tokensContext[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
-
         // Get the expected gross per a different view.
         uint256 _grossPerReclaimable = jbTerminalStore()
             .currentReclaimableSurplusOf(
-                _projectId, _tokenAmountToCashOut, new IJBTerminal[](0), _tokensContext, 18, _tokensContext[0].currency
+                _projectId,
+                _tokenAmountToCashOut,
+                new IJBTerminal[](0),
+                new address[](0),
+                18,
+                uint32(uint160(JBConstants.NATIVE_TOKEN))
             );
 
         // Test: cash out.

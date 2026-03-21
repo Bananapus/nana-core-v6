@@ -18,8 +18,8 @@ A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumul
 
 Two `view` functions on `JBTerminalStore` and `IJBTerminalStore`:
 
-- `previewPayFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(JBRuleset ruleset, uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Does not modify state.
-- `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(JBRuleset ruleset, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Uses `msg.sender` as the terminal context. Invokes data hooks if configured. Does not modify state.
+- `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` -- Simulates a payment and returns `(JBRuleset ruleset, uint256 tokenCount, JBPayHookSpecification[] hookSpecifications)`. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Does not modify state.
+- `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` -- Simulates a cash out and returns `(JBRuleset ruleset, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] hookSpecifications)`. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Does not modify state.
 
 Internal computation logic was extracted into shared `_computePayFrom` and `_computeCashOutFrom` view helpers; the existing `recordPaymentFrom` and `recordCashOutFor` functions were refactored to call these helpers before writing state.
 
@@ -117,7 +117,7 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 
 | Function | Description |
 |----------|-------------|
-| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view that returns the reclaimable surplus across all terminals using all accounting contexts. Delegates to `currentReclaimableSurplusOf` with empty `terminals` and `accountingContexts` arrays. Mirrors the `currentTotalSurplusOf` pattern. |
+| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view that returns the reclaimable surplus across all terminals using all tokens. Delegates to `currentReclaimableSurplusOf` with empty `terminals` and `tokens` arrays. Mirrors the `currentTotalSurplusOf` pattern. |
 
 #### IJBTokens / JBTokens
 

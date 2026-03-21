@@ -37,6 +37,21 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
     }
 
+    /// @notice Helper to register an accounting context with the store (pranks as the terminal).
+    function _registerContext(JBAccountingContext memory ctx) internal {
+        JBAccountingContext[] memory ctxs = new JBAccountingContext[](1);
+        ctxs[0] = ctx;
+        vm.prank(address(_terminal));
+        _store.recordAccountingContextOf(_projectId, ctxs);
+    }
+
+    /// @notice Helper to call currentSurplusOf with the new multi-terminal signature.
+    function _currentSurplusOf(uint256 decimals, uint256 currency) internal view returns (uint256) {
+        IJBTerminal[] memory terminals = new IJBTerminal[](1);
+        terminals[0] = _terminal;
+        return _store.currentSurplusOf(_projectId, terminals, new address[](0), decimals, currency);
+    }
+
     modifier whenProjectHasBalance() {
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(_terminal), uint256(0)));
@@ -62,6 +77,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -101,7 +117,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _payoutLimitsReturn = abi.encode(_payoutLimits);
         mockExpect(address(_accessLimits), _payoutLimitsCall, _payoutLimitsReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 6, _currency);
+        uint256 currentSurplus = _currentSurplusOf(6, _currency);
 
         // assert correct calcs
         uint256 expectedSurplus = (1e18 - 1e17) / 10 ** (18 - 6);
@@ -116,6 +132,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -161,7 +178,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _pricePerReturn = abi.encode(uint256(1));
         mockExpect(address(prices), _pricePerCall, _pricePerReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 6, _nativeCurrency);
+        uint256 currentSurplus = _currentSurplusOf(6, _nativeCurrency);
 
         // assert correct calcs
         uint256 expectedSurplus = ((1e18 - 1e17) * 1e18) / 10 ** (18 - 6);
@@ -174,6 +191,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -213,7 +231,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _payoutLimitsReturn = abi.encode(_payoutLimits);
         mockExpect(address(_accessLimits), _payoutLimitsCall, _payoutLimitsReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        uint256 currentSurplus = _currentSurplusOf(18, _currency);
 
         // assert correct calcs
         uint256 expectedSurplus = 1e18 - 1e17;
@@ -225,6 +243,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -270,7 +289,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _pricePerReturn = abi.encode(uint256(1));
         mockExpect(address(prices), _pricePerCall, _pricePerReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _nativeCurrency);
+        uint256 currentSurplus = _currentSurplusOf(18, _nativeCurrency);
 
         // assert correct calcs
         uint256 expectedSurplus = (1e18 - 1e17) * 1e18;
@@ -283,6 +302,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -322,7 +342,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _payoutLimitsReturn = abi.encode(_payoutLimits);
         mockExpect(address(_accessLimits), _payoutLimitsCall, _payoutLimitsReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        uint256 currentSurplus = _currentSurplusOf(18, _currency);
 
         // assert correct calcs
         uint256 expectedSurplus = (1e18 - 1e17);
@@ -335,6 +355,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _nativeCurrency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -380,7 +401,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _pricePerReturn = abi.encode(uint256(1e18));
         mockExpect(address(prices), _pricePerCall, _pricePerReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _nativeCurrency);
+        uint256 currentSurplus = _currentSurplusOf(18, _nativeCurrency);
 
         // assert correct calcs
         uint256 expectedSurplus = 1e18 - 1e17;
@@ -393,6 +414,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
 
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // JBRulesets calldata
         JBRuleset memory _returnedRuleset = JBRuleset({
@@ -432,7 +454,7 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
         bytes memory _payoutLimitsReturn = abi.encode(_payoutLimits);
         mockExpect(address(_accessLimits), _payoutLimitsCall, _payoutLimitsReturn);
 
-        uint256 currentSurplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        uint256 currentSurplus = _currentSurplusOf(18, _currency);
 
         // assert correct calcs
         uint256 expectedSurplus = 0;

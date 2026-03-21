@@ -5,11 +5,11 @@ import {IJBDirectory} from "./IJBDirectory.sol";
 import {IJBPrices} from "./IJBPrices.sol";
 import {IJBRulesets} from "./IJBRulesets.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
-import {JBAccountingContext} from "./../structs/JBAccountingContext.sol";
-import {JBCashOutHookSpecification} from "./../structs/JBCashOutHookSpecification.sol";
-import {JBPayHookSpecification} from "./../structs/JBPayHookSpecification.sol";
-import {JBRuleset} from "./../structs/JBRuleset.sol";
-import {JBTokenAmount} from "./../structs/JBTokenAmount.sol";
+import {JBAccountingContext} from "../structs/JBAccountingContext.sol";
+import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
+import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../structs/JBRuleset.sol";
+import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 
 /// @notice Manages the bookkeeping for payments, cash outs, payouts, and surplus allowance usage for terminals.
 interface IJBTerminalStore {
@@ -21,6 +21,32 @@ interface IJBTerminalStore {
 
     /// @notice The contract storing and managing project rulesets.
     function RULESETS() external view returns (IJBRulesets);
+
+    /// @notice Returns the accounting context for a terminal's project token.
+    /// @param terminal The terminal the accounting context applies to.
+    /// @param projectId The ID of the project.
+    /// @param token The token to get the accounting context for.
+    /// @return The accounting context.
+    function accountingContextOf(
+        address terminal,
+        uint256 projectId,
+        address token
+    )
+        external
+        view
+        returns (JBAccountingContext memory);
+
+    /// @notice Returns all accounting contexts for a terminal's project.
+    /// @param terminal The terminal the accounting contexts apply to.
+    /// @param projectId The ID of the project.
+    /// @return The accounting contexts.
+    function accountingContextsOf(
+        address terminal,
+        uint256 projectId
+    )
+        external
+        view
+        returns (JBAccountingContext[] memory);
 
     /// @notice Returns the balance of a terminal for a project and token.
     /// @param terminal The terminal to get the balance of.
@@ -45,11 +71,12 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Returns the reclaimable surplus for a project across multiple terminals.
+    /// @notice Returns the reclaimable surplus for a project across multiple terminals, considering only specific
+    /// tokens.
     /// @param projectId The ID of the project.
     /// @param cashOutCount The number of tokens being cashed out.
-    /// @param terminals The terminals to include in the surplus calculation.
-    /// @param accountingContexts The accounting contexts to include.
+    /// @param terminals The terminals to include in the surplus calculation. If empty, all project terminals are used.
+    /// @param tokens The tokens to include in the surplus calculation.
     /// @param decimals The number of decimals to express the result with.
     /// @param currency The currency to express the result in.
     /// @return The reclaimable surplus amount.
@@ -57,7 +84,25 @@ interface IJBTerminalStore {
         uint256 projectId,
         uint256 cashOutCount,
         IJBTerminal[] calldata terminals,
-        JBAccountingContext[] calldata accountingContexts,
+        address[] calldata tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        returns (uint256);
+
+    /// @notice Returns the current surplus for a project across specified terminals and tokens.
+    /// @param projectId The ID of the project.
+    /// @param terminals The terminals to include. If empty, all project terminals are used.
+    /// @param tokens The tokens to include. If empty, all tokens per terminal are used.
+    /// @param decimals The number of decimals to express the result with.
+    /// @param currency The currency to express the result in.
+    /// @return The current surplus.
+    function currentSurplusOf(
+        uint256 projectId,
+        IJBTerminal[] calldata terminals,
+        address[] calldata tokens,
         uint256 decimals,
         uint256 currency
     )
@@ -81,24 +126,6 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Returns the current surplus for a terminal and project.
-    /// @param terminal The terminal to get the surplus of.
-    /// @param projectId The ID of the project.
-    /// @param accountingContexts The accounting contexts to include.
-    /// @param decimals The number of decimals to express the result with.
-    /// @param currency The currency to express the result in.
-    /// @return The current surplus.
-    function currentSurplusOf(
-        address terminal,
-        uint256 projectId,
-        JBAccountingContext[] calldata accountingContexts,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
-
     /// @notice Returns the current total surplus for a project across all terminals.
     /// @param projectId The ID of the project.
     /// @param decimals The number of decimals to express the result with.
@@ -114,11 +141,11 @@ interface IJBTerminalStore {
         returns (uint256);
 
     /// @notice Simulates a cash out without modifying state.
+    /// @param terminal The terminal to simulate the cash out from.
     /// @param holder The address cashing out.
     /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param accountingContext The accounting context of the token being reclaimed.
-    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param tokenToReclaim The token being reclaimed.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
@@ -126,11 +153,11 @@ interface IJBTerminalStore {
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
     function previewCashOutFrom(
+        address terminal,
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
+        address tokenToReclaim,
         bool beneficiaryIsFeeless,
         bytes calldata metadata
     )
@@ -144,6 +171,7 @@ interface IJBTerminalStore {
         );
 
     /// @notice Simulates a payment without modifying state.
+    /// @param terminal The terminal to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount being paid.
     /// @param projectId The ID of the project being paid.
@@ -153,6 +181,7 @@ interface IJBTerminalStore {
     /// @return tokenCount The number of project tokens that would be minted, including reserved tokens.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
+        address terminal,
         address payer,
         JBTokenAmount memory amount,
         uint256 projectId,
@@ -199,6 +228,11 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
+    /// @notice Records accounting contexts for a terminal's project tokens.
+    /// @param projectId The ID of the project.
+    /// @param contexts The accounting contexts to record.
+    function recordAccountingContextOf(uint256 projectId, JBAccountingContext[] calldata contexts) external;
+
     /// @notice Records a balance addition for a project.
     /// @param projectId The ID of the project.
     /// @param token The token being added.
@@ -209,8 +243,7 @@ interface IJBTerminalStore {
     /// @param holder The address cashing out.
     /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param accountingContext The accounting context of the token being reclaimed.
-    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param tokenToReclaim The token being reclaimed.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
     /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Extra data to pass along to the data hook.
@@ -222,8 +255,7 @@ interface IJBTerminalStore {
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
+        address tokenToReclaim,
         bool beneficiaryIsFeeless,
         bytes calldata metadata
     )
@@ -256,14 +288,14 @@ interface IJBTerminalStore {
 
     /// @notice Records a payout from a project.
     /// @param projectId The ID of the project paying out.
-    /// @param accountingContext The accounting context of the token being paid out.
+    /// @param token The token being paid out.
     /// @param amount The amount being paid out.
     /// @param currency The currency the amount is denominated in.
     /// @return ruleset The project's current ruleset.
     /// @return amountPaidOut The amount paid out in the token's native decimals.
     function recordPayoutFor(
         uint256 projectId,
-        JBAccountingContext calldata accountingContext,
+        address token,
         uint256 amount,
         uint256 currency
     )
@@ -278,14 +310,14 @@ interface IJBTerminalStore {
 
     /// @notice Records surplus allowance usage for a project.
     /// @param projectId The ID of the project using surplus allowance.
-    /// @param accountingContext The accounting context of the token being used.
+    /// @param token The token being used.
     /// @param amount The amount of surplus allowance to use.
     /// @param currency The currency the amount is denominated in.
     /// @return ruleset The project's current ruleset.
     /// @return usedAmount The amount used in the token's native decimals.
     function recordUsedAllowanceOf(
         uint256 projectId,
-        JBAccountingContext calldata accountingContext,
+        address token,
         uint256 amount,
         uint256 currency
     )
