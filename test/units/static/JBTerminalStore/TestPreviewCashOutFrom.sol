@@ -16,7 +16,6 @@ import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMeta
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBBeforeCashOutRecordedContext} from "../../../../src/structs/JBBeforeCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
-import {JBCurrencyAmount} from "../../../../src/structs/JBCurrencyAmount.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
@@ -42,6 +41,12 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
     function setUp() public {
         super.terminalStoreSetup();
+
+        // Register accounting context so the store can look up decimals/currency for the token.
+        // address(this) acts as the terminal for both preview and record calls.
+        _store.recordAccountingContextOf(
+            _projectId, JBAccountingContext({token: address(_token), decimals: 18, currency: _currency})
+        );
     }
 
     function _setBalance(address terminal, uint256 balance) internal {
@@ -60,16 +65,12 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
         mockExpect(
             address(_terminal1),
-            abi.encodeCall(
-                IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-            ),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _decimals, _currency)),
             abi.encode(1e18)
         );
         mockExpect(
             address(_terminal2),
-            abi.encodeCall(
-                IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-            ),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _decimals, _currency)),
             abi.encode(2e18)
         );
     }
@@ -133,11 +134,11 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 previewReclaimAmount, uint256 previewTaxRate, JBCashOutHookSpecification[] memory previewSpecs) = _store.previewCashOutFrom({
+            terminal: address(this),
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -156,8 +157,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _cashOutCount,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: _balanceContexts,
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -221,11 +221,11 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         uint256 balanceBefore = _store.balanceOf(address(this), _projectId, address(_token));
 
         _store.previewCashOutFrom({
+            terminal: address(this),
             holder: address(this),
             projectId: _projectId,
             cashOutCount: 5e18,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: new JBAccountingContext[](0),
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -293,11 +293,11 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             )
         );
         _store.previewCashOutFrom({
+            terminal: address(this),
             holder: address(this),
             projectId: _projectId,
             cashOutCount: _excessiveCashOutCount,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: new JBAccountingContext[](0),
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -352,9 +352,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
         mockExpect(
             address(_terminal1),
-            abi.encodeCall(
-                IJBTerminal.currentSurplusOf, (_projectId, new JBAccountingContext[](0), _decimals, _currency)
-            ),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, _decimals, _currency)),
             abi.encode(0)
         );
         mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
@@ -365,11 +363,11 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 reclaimAmount,,) = _store.previewCashOutFrom({
+            terminal: address(this),
             holder: address(this),
             projectId: _projectId,
             cashOutCount: 5e18,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: new JBAccountingContext[](0),
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });
@@ -456,11 +454,11 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         );
 
         (, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications) = _store.previewCashOutFrom({
+            terminal: address(this),
             holder: address(this),
             projectId: _projectId,
             cashOutCount: 10e18,
-            accountingContext: _accountingContext,
-            balanceAccountingContexts: new JBAccountingContext[](0),
+            tokenToReclaim: _accountingContext.token,
             beneficiaryIsFeeless: false,
             metadata: ""
         });

@@ -55,7 +55,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // recordUsedAllowance
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockTokenContext, 0, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockTokenContext.token, 0, 0)),
             abi.encode(returnedRuleset, 0)
         );
 
@@ -88,12 +88,10 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        JBAccountingContext memory mockTokenContext = JBAccountingContext({token: address(0), decimals: 0, currency: 0});
-
-        // recordUsedAllowance
+        // recordUsedAllowance — terminal now passes token address directly.
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockTokenContext, 100, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockToken, 100, 0)),
             abi.encode(returnedRuleset, 100)
         );
 
@@ -140,12 +138,10 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        JBAccountingContext memory mockTokenContext = JBAccountingContext({token: address(0), decimals: 0, currency: 0});
-
-        // recordUsedAllowance
+        // recordUsedAllowance — terminal now passes token address directly
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockTokenContext, 100, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, mockToken, 100, 0)),
             abi.encode(returnedRuleset, 100)
         );
 
@@ -232,14 +228,26 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock accountingContextOf for subsequent reads (used by _tokenAmountOf during fee processing)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, mockToken)),
+            abi.encode(_tokens[0])
+        );
 
         _terminal.accountingContextForTokenOf(_projectId, mockToken);
 
         // recordUsedAllowance
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0], 100, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0].token, 100, 0)),
             abi.encode(returnedRuleset, 100)
         );
 
@@ -380,12 +388,17 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
 
         // recordUsedAllowance
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0], 100, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0].token, 100, 0)),
             abi.encode(returnedRuleset, 100)
         );
 
@@ -509,12 +522,24 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock accountingContextOf for subsequent reads (used by _tokenAmountOf during fee processing)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, mockToken)),
+            abi.encode(_tokens[0])
+        );
 
         // recordUsedAllowance
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0], 100, 0)),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0].token, 100, 0)),
             abi.encode(returnedRuleset, 100)
         );
 

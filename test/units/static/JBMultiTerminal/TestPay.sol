@@ -75,7 +75,21 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock accountingContextOf for subsequent reads
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, JBConstants.NATIVE_TOKEN)
+            ),
+            abi.encode(_tokens[0])
+        );
 
         _;
     }
@@ -112,7 +126,19 @@ contract TestPay_Local is JBMultiTerminalSetup {
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock accountingContextOf for subsequent reads
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, address(_mockToken))),
+            abi.encode(_tokens[0])
+        );
 
         _;
     }
@@ -441,7 +467,15 @@ contract TestPay_Local is JBMultiTerminalSetup {
     function test_WhenTheProjectDNHAccountingContextForTheToken() external {
         // it will revert TOKEN_NOT_ACCEPTED
 
+        // Mock totalBalanceOf (called before _acceptFundsFor)
         mockExpect(address(tokens), abi.encodeCall(IJBTokens.totalBalanceOf, (_bene, _projectId)), abi.encode(0));
+
+        // Mock accountingContextOf to return empty context (token not accepted)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _native)),
+            abi.encode(JBAccountingContext({token: address(0), decimals: 0, currency: 0}))
+        );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _native));
         _terminal.pay{value: 1e18}({
@@ -463,7 +497,15 @@ contract TestPay_Local is JBMultiTerminalSetup {
     function test_WhenTheTerminalsTokenEqNativeTokenAndMsgvalueEqZero() external {
         // it will revert NO_MSG_VALUE_ALLOWED
 
+        // Mock totalBalanceOf (called before _acceptFundsFor)
         mockExpect(address(tokens), abi.encodeCall(IJBTokens.totalBalanceOf, (_bene, _projectId)), abi.encode(0));
+
+        // Mock accountingContextOf to return empty context (token not accepted)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _native)),
+            abi.encode(JBAccountingContext({token: address(0), decimals: 0, currency: 0}))
+        );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _native));
         _terminal.pay{value: 0}({

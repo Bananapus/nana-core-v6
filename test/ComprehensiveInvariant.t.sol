@@ -236,16 +236,10 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 totalSupply = jbTokens().totalSupplyOf(projectId);
         if (totalSupply == 0) return;
 
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
-
         uint256 surplus = jbTerminalStore()
             .currentSurplusOf({
                 terminal: address(jbMultiTerminal()),
                 projectId: projectId,
-                accountingContexts: contexts,
                 decimals: 18,
                 currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
             });

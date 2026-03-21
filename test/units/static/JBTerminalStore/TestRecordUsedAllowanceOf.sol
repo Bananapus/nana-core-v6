@@ -35,6 +35,11 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
 
     function setUp() public {
         super.terminalStoreSetup();
+
+        // Register accounting context so the store can look up decimals/currency for the token.
+        _store.recordAccountingContextOf(
+            _projectId, JBAccountingContext({token: address(_token), decimals: 18, currency: _currency})
+        );
     }
 
     modifier whenAmountIsWithinRangeToUseSurplusAllowance() {
@@ -134,12 +139,17 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         JBAccountingContext memory _context =
             JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
 
-        (, uint256 usedAmount) = _store.recordUsedAllowanceOf(_projectId, _context, _defaultAmount, _currency);
+        (, uint256 usedAmount) = _store.recordUsedAllowanceOf(_projectId, _context.token, _defaultAmount, _currency);
         assertEq(usedAmount, _defaultAmount);
     }
 
     function test_GivenCallingCurrencyDneqAccountingCurrency() external {
         // it will convert prices
+
+        // Register accounting context for the native token so the store can look up decimals/currency.
+        _store.recordAccountingContextOf(
+            _projectId, JBAccountingContext({token: address(_nativeAddress), decimals: 18, currency: _nativeCurrency})
+        );
 
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
@@ -238,7 +248,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
             JBAccountingContext({token: address(_nativeAddress), decimals: 18, currency: _nativeCurrency});
 
         // price is 1:1
-        (, uint256 usedAmount) = _store.recordUsedAllowanceOf(_projectId, _context, _defaultAmount, _currency);
+        (, uint256 usedAmount) = _store.recordUsedAllowanceOf(_projectId, _context.token, _defaultAmount, _currency);
         assertEq(usedAmount, _defaultAmount);
     }
 
@@ -317,7 +327,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
                 JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _defaultAmount, 0
             )
         );
-        _store.recordUsedAllowanceOf(_projectId, _context, _defaultAmount, _currency);
+        _store.recordUsedAllowanceOf(_projectId, _context.token, _defaultAmount, _currency);
     }
 
     function test_WhenAmountIsNotWithinRangeToUseSurplusAllowance() external {
@@ -400,6 +410,6 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
                 0 // no balance
             )
         );
-        _store.recordUsedAllowanceOf(_projectId, _context, _defaultAmount, _currency);
+        _store.recordUsedAllowanceOf(_projectId, _context.token, _defaultAmount, _currency);
     }
 }

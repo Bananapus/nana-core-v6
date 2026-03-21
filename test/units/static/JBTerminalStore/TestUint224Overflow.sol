@@ -35,6 +35,12 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
     }
 
+    /// @notice Helper to register an accounting context with the store (pranks as the terminal).
+    function _registerContext(JBAccountingContext memory ctx) internal {
+        vm.prank(address(_terminal));
+        _store.recordAccountingContextOf(_projectId, ctx);
+    }
+
     /// @notice Helper to set balance for a terminal/project/token via vm.store.
     function _setBalance(address terminal, uint256 projectId, address token, uint256 balance) internal {
         bytes32 balanceOfSlot = keccak256(abi.encode(terminal, uint256(0)));
@@ -121,11 +127,12 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         // Accounting context: token has 6 decimals.
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 6, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // Query surplus with 18 target decimals — triggers decimal adjustment overflow.
         uint256 adjusted = uint256(amount) * 1e12;
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_Uint224Overflow.selector, adjusted));
-        _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
     }
 
     /// @notice Verifies that currency conversion overflow reverts with Uint224Overflow.
@@ -163,10 +170,11 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         // Same decimals so no decimal adjustment.
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _registerContext(_contexts[0]);
 
         // The conversion: mulDiv(type(uint224).max, 10^18, 1) = type(uint224).max * 10^18 → overflows uint224.
         vm.expectRevert();
-        _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
     }
 
     /// @notice Verifies that normal amounts below uint224.max pass through without reverting.
@@ -194,8 +202,9 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         // Balance: 100e6 → 100e18. Payout limit: 50e6 → 50e18. Surplus = 50e18.
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 6, currency: _currency});
+        _registerContext(_contexts[0]);
 
-        uint256 surplus = _store.currentSurplusOf(address(_terminal), _projectId, _contexts, 18, _currency);
+        uint256 surplus = _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
         assertEq(surplus, 50e18);
     }
 }

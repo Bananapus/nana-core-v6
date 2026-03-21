@@ -2,7 +2,6 @@
 pragma solidity ^0.8.26;
 
 import {TestTerminalPreviewParity_Local} from "../TestTerminalPreviewParity.sol";
-import {IJBController} from "../../src/interfaces/IJBController.sol";
 import {IJBTerminal} from "../../src/interfaces/IJBTerminal.sol";
 import {IJBCashOutTerminal} from "../../src/interfaces/IJBCashOutTerminal.sol";
 import {JBConstants} from "../../src/libraries/JBConstants.sol";

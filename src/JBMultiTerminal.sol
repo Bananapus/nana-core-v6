@@ -9,7 +9,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {mulDiv} from "@prb/math/src/Common.sol";
 import {IAllowanceTransfer} from "@uniswap/permit2/src/interfaces/IAllowanceTransfer.sol";
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 
@@ -61,7 +60,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBMultiTerminal_AccountingContextAlreadySet(address token);
     error JBMultiTerminal_AccountingContextDecimalsMismatch();
     error JBMultiTerminal_AddingAccountingContextNotAllowed();
     error JBMultiTerminal_FeeTerminalNotFound(address token);
@@ -127,15 +125,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
-
-    /// @notice Context describing how a token is accounted for by a project.
-    /// @custom:param projectId The ID of the project that the token accounting context applies to.
-    /// @custom:param token The address of the token being accounted for.
-    mapping(uint256 projectId => mapping(address token => JBAccountingContext)) internal _accountingContextForTokenOf;
-
-    /// @notice A list of tokens accepted by each project.
-    /// @custom:param projectId The ID of the project to get a list of accepted tokens for.
-    mapping(uint256 projectId => JBAccountingContext[]) internal _accountingContextsOf;
 
     /// @notice The cumulative amount of fee-free intra-terminal payouts a project has received for a given token.
     /// @dev Incremented each time a fee-free payout lands (same terminal, no fee charged). During cashout with
@@ -234,15 +223,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the accounting context being iterated on.
             JBAccountingContext memory accountingContext = accountingContexts[i];
 
-            // Get a storage reference to the currency accounting context for the token.
-            JBAccountingContext storage storedAccountingContext =
-                _accountingContextForTokenOf[projectId][accountingContext.token];
-
-            // Make sure the token accounting context isn't already set.
-            if (storedAccountingContext.token != address(0)) {
-                revert JBMultiTerminal_AccountingContextAlreadySet(storedAccountingContext.token);
-            }
-
             // Keep track of a flag indiciating if we know the provided decimals are incorrect.
             bool knownInvalidDecimals;
 
@@ -272,15 +252,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Make sure the currency is non-zero.
             if (accountingContext.currency == 0) revert JBMultiTerminal_ZeroAccountingContextCurrency();
 
-            // Define the context from the config.
-            storedAccountingContext.token = accountingContext.token;
-            storedAccountingContext.decimals = accountingContext.decimals;
-            storedAccountingContext.currency = accountingContext.currency;
+            // Record the accounting context in the store (reverts if already set).
+            STORE.recordAccountingContextOf(projectId, accountingContext);
 
-            // Add the token to the list of accepted tokens of the project.
-            _accountingContextsOf[projectId].push(storedAccountingContext);
-
-            emit SetAccountingContext({projectId: projectId, context: storedAccountingContext, caller: _msgSender()});
+            emit SetAccountingContext({projectId: projectId, context: accountingContext, caller: _msgSender()});
         }
     }
 
@@ -406,7 +381,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBSplitHookContext memory context = JBSplitHookContext({
                 token: token,
                 amount: netPayoutAmount,
-                decimals: _accountingContextForTokenOf[projectId][token].decimals,
+                decimals: STORE.accountingContextOf(address(this), projectId, token).decimals,
                 projectId: projectId,
                 groupId: uint256(uint160(token)),
                 split: split
@@ -814,29 +789,26 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (JBAccountingContext memory)
     {
-        return _accountingContextForTokenOf[projectId][token];
+        return STORE.accountingContextOf(address(this), projectId, token);
     }
 
     /// @notice The tokens accepted by a project.
     /// @param projectId The ID of the project to get the accepted tokens of.
     /// @return tokenContexts The accounting contexts of the accepted tokens.
     function accountingContextsOf(uint256 projectId) external view override returns (JBAccountingContext[] memory) {
-        return _accountingContextsOf[projectId];
+        return STORE.accountingContextsOf(address(this), projectId);
     }
 
     /// @notice Gets the total current surplus amount in this terminal for a project, in terms of a given currency.
     /// @dev This total surplus only includes tokens that the project accepts (as returned by
     /// `accountingContextsOf(...)`).
     /// @param projectId The ID of the project to get the current total surplus of.
-    /// @param accountingContexts The accounting contexts to use to calculate the surplus. Pass an empty array to use
-    /// all of the project's accounting contexts.
     /// @param decimals The number of decimals to include in the fixed point returned value.
     /// @param currency The currency to express the returned value in terms of.
     /// @return The current surplus amount the project has in this terminal, in terms of `currency` and with the
     /// specified number of decimals.
     function currentSurplusOf(
         uint256 projectId,
-        JBAccountingContext[] memory accountingContexts,
         uint256 decimals,
         uint256 currency
     )
@@ -845,13 +817,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256)
     {
-        return STORE.currentSurplusOf({
-            terminal: address(this),
-            projectId: projectId,
-            accountingContexts: accountingContexts.length != 0 ? accountingContexts : _accountingContextsOf[projectId],
-            decimals: decimals,
-            currency: currency
-        });
+        return
+            STORE.currentSurplusOf({
+                terminal: address(this), projectId: projectId, decimals: decimals, currency: currency
+            });
     }
 
     /// @notice Fees that are being held for a project.
@@ -919,22 +888,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
-        // Keep a reference to the accounting context for the reclaimed token.
-        JBAccountingContext memory accountingContext =
-            _accountingContextOf({projectId: projectId, token: tokenToReclaim});
-
-        // Keep a reference to the accounting contexts to include in the balance calculation.
-        JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
-
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.previewCashOutFrom({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            accountingContext: accountingContext,
-            balanceAccountingContexts: balanceAccountingContexts,
-            beneficiaryIsFeeless: _isFeeless(beneficiary),
-            metadata: metadata
-        });
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) =
+            STORE.previewCashOutFrom({
+                terminal: address(this),
+                holder: holder,
+                projectId: projectId,
+                cashOutCount: cashOutCount,
+                tokenToReclaim: tokenToReclaim,
+                beneficiaryIsFeeless: _isFeeless(beneficiary),
+                metadata: metadata
+            });
     }
 
     /// @notice Simulates paying a project through this terminal without modifying state.
@@ -1150,25 +1113,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the cash out tax rate being used.
         uint256 cashOutTaxRate;
 
-        // Keep a reference to the accounting context of the token being reclaimed.
-        JBAccountingContext memory accountingContext =
-            _accountingContextOf({projectId: projectId, token: tokenToReclaim});
-
-        // Scoped section prevents stack too deep.
-        {
-            JBAccountingContext[] memory balanceAccountingContexts = _accountingContextsOf[projectId];
-
-            // Record the cash out.
-            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-                holder: holder,
-                projectId: projectId,
-                accountingContext: accountingContext,
-                balanceAccountingContexts: balanceAccountingContexts,
-                cashOutCount: cashOutCount,
-                beneficiaryIsFeeless: _isFeeless(beneficiary),
-                metadata: metadata
-            });
-        }
+        // Record the cash out.
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: _isFeeless(beneficiary),
+            metadata: metadata
+        });
 
         // Burn the project tokens.
         if (cashOutCount != 0) {
@@ -1215,11 +1168,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 ruleset: ruleset,
                 cashOutTaxRate: cashOutTaxRate,
                 beneficiary: beneficiary,
-                beneficiaryReclaimAmount: JBTokenAmount({
-                    token: tokenToReclaim,
-                    decimals: accountingContext.decimals,
-                    currency: accountingContext.currency,
-                    value: reclaimAmount
+                beneficiaryReclaimAmount: _tokenAmountOf({
+                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
                 }),
                 specifications: hookSpecifications,
                 metadata: metadata
@@ -1741,12 +1691,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         JBRuleset memory ruleset;
 
         // Record the payout.
-        (ruleset, amountPaidOut) = STORE.recordPayoutFor({
-            projectId: projectId,
-            accountingContext: _accountingContextForTokenOf[projectId][token],
-            amount: amount,
-            currency: currency
-        });
+        (ruleset, amountPaidOut) =
+            STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
@@ -1943,12 +1889,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 amountPaidOut;
 
         // Record the use of the allowance.
-        (ruleset, amountPaidOut) = STORE.recordUsedAllowanceOf({
-            projectId: projectId,
-            accountingContext: _accountingContextForTokenOf[projectId][token],
-            amount: amount,
-            currency: currency
-        });
+        (ruleset, amountPaidOut) =
+            STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
@@ -1984,7 +1926,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
@@ -2001,7 +1942,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (JBAccountingContext memory context)
     {
         // Keep a reference to the accounting context configured for the token.
-        context = _accountingContextForTokenOf[projectId][token];
+        context = STORE.accountingContextOf(address(this), projectId, token);
 
         // Revert if the token is not accepted by the project.
         if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);

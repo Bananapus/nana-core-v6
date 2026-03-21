@@ -4,6 +4,7 @@ pragma solidity 0.8.26;
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
+import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -57,7 +58,19 @@ contract TestAccountingContextsOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         _tokens[0] = JBAccountingContext({token: _usdc, decimals: 6, currency: uint32(uint160(_usdc))});
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock the store to return all contexts when queried
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextsOf, (address(_terminal), _projectId)),
+            abi.encode(_tokens)
+        );
 
         JBAccountingContext[] memory _storedContexts = _terminal.accountingContextsOf(_projectId);
         assertEq(_storedContexts[0].currency, _usdcCurrency);
@@ -65,8 +78,17 @@ contract TestAccountingContextsOf_Local is JBMultiTerminalSetup {
         assertEq(_storedContexts[0].decimals, 6);
     }
 
-    function test_WhenAccountingContextsAreNotSet() external view {
+    function test_WhenAccountingContextsAreNotSet() external {
         // it will return an empty array
+
+        // Mock the store to return empty array
+        JBAccountingContext[] memory _empty = new JBAccountingContext[](0);
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextsOf, (address(_terminal), _projectId)),
+            abi.encode(_empty)
+        );
+
         JBAccountingContext[] memory _storedContexts = _terminal.accountingContextsOf(_projectId);
         assertEq(_storedContexts.length, 0);
     }

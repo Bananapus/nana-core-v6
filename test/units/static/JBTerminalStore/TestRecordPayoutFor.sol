@@ -36,6 +36,13 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
     }
 
+    /// @notice Helper to register an accounting context with the store (from address(this) as terminal).
+    function _registerContext(address token, uint32 currency) internal {
+        _store.recordAccountingContextOf(
+            _projectId, JBAccountingContext({token: token, decimals: 18, currency: currency})
+        );
+    }
+
     modifier whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRuleset() {
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
             reservedPercent: 0,
@@ -147,6 +154,9 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
     {
         // it will revert JBTerminalStore_InadequateTerminalStoreBalance
 
+        // Register accounting context so the store can look up decimals/currency for the token.
+        _registerContext(address(_token), _currency);
+
         // setup calldata
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
@@ -156,7 +166,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
                 JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _defaultValue, 0
             )
         );
-        _store.recordPayoutFor(_projectId, _contexts[0], _defaultValue, _currency);
+        _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
     }
 
     function test_GivenTheCallingCurrencyEqTheContextCurrency()
@@ -164,6 +174,9 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRuleset
     {
         // it will not convert prices, update balances and return
+
+        // Register accounting context so the store can look up decimals/currency for the token.
+        _registerContext(address(_token), _currency);
 
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
@@ -193,7 +206,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
 
         uint256 balanceBefore = _store.balanceOf(address(this), _projectId, address(_token));
 
-        (, uint256 amountPaid) = _store.recordPayoutFor(_projectId, _contexts[0], _defaultValue, _currency);
+        (, uint256 amountPaid) = _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
         assertEq(amountPaid, _defaultValue);
 
         // check usedPayoutLimit updated correctly
@@ -212,6 +225,10 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRuleset
     {
         // it will convert prices and return
+
+        // Register accounting context with _nativeCurrency so currency != accountingContext.currency triggers
+        // conversion.
+        _registerContext(address(_token), _nativeCurrency);
 
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
@@ -245,7 +262,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         bytes memory _pricesReturn = abi.encode(2e18);
         mockExpect(address(prices), _pricesCall, _pricesReturn);
 
-        (, uint256 amountPaid) = _store.recordPayoutFor(_projectId, _contexts[0], _defaultValue, _currency);
+        (, uint256 amountPaid) = _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
         assertEq(amountPaid, _defaultValue / 2);
     }
 
@@ -254,6 +271,9 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRulesetAndAccessLimitsIsntCalled
     {
         // it will revert INADEQUATE_TERMINAL_STORE_BALANCE
+
+        // Register accounting context so the store can look up decimals/currency for the token.
+        _registerContext(address(_token), _currency);
 
         // setup calldata
         JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
@@ -264,6 +284,6 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
                 JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _defaultValue, 0
             )
         );
-        _store.recordPayoutFor(_projectId, _contexts[0], _defaultValue, _currency);
+        _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
     }
 }

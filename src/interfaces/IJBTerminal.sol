@@ -88,21 +88,12 @@ interface IJBTerminal is IERC165 {
     /// @return The accounting contexts for the project.
     function accountingContextsOf(uint256 projectId) external view returns (JBAccountingContext[] memory);
 
-    /// @notice Returns a project's current surplus for a set of accounting contexts.
+    /// @notice Returns a project's current surplus.
     /// @param projectId The ID of the project to get the surplus of.
-    /// @param accountingContexts The accounting contexts to include in the surplus calculation.
     /// @param decimals The number of decimals to express the surplus with.
     /// @param currency The currency to express the surplus in.
     /// @return The project's current surplus.
-    function currentSurplusOf(
-        uint256 projectId,
-        JBAccountingContext[] memory accountingContexts,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
+    function currentSurplusOf(uint256 projectId, uint256 decimals, uint256 currency) external view returns (uint256);
 
     /// @notice Simulates paying a project through this terminal without modifying state.
     /// @param projectId The ID of the project being paid.

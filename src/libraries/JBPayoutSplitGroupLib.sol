@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import {mulDiv} from "@prb/math/src/Common.sol";
 
-import {IJBPayoutTerminal} from "../interfaces/IJBPayoutTerminal.sol";
 import {IJBSplits} from "../interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBSplit} from "../structs/JBSplit.sol";

@@ -75,8 +75,20 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+        );
+
         vm.prank(address(this));
         _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // Mock accountingContextOf for subsequent reads (not all code paths call it, so use mockCall only)
+        vm.mockCall(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, token)),
+            abi.encode(_tokens[0])
+        );
     }
 
     function test_WhenCallerDNHavePermission() external {
@@ -148,7 +160,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, true, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
         );
@@ -200,7 +212,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, true, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
         );
@@ -261,7 +273,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, false, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, false, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _halfCashOutTaxRate, hookSpecifications)
         );
@@ -378,7 +390,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, true, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
         );
@@ -495,7 +507,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, true, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
         );
@@ -603,7 +615,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.recordCashOutFor,
-                (_holder, _projectId, _defaultAmount, mockTokenContext, mockBalanceContext, true, "")
+                (_holder, _projectId, _defaultAmount, mockTokenContext.token, true, "")
             ),
             abi.encode(returnedRuleset, reclaimAmount, _maxCashOutTaxRate, hookSpecifications)
         );

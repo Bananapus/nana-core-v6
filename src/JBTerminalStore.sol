@@ -10,9 +10,8 @@ import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
-import {JBConstants} from "./libraries/JBConstants.sol";
-import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 import {JBCashOuts} from "./libraries/JBCashOuts.sol";
+import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBSurplus} from "./libraries/JBSurplus.sol";
 import {JBAccountingContext} from "./structs/JBAccountingContext.sol";
@@ -34,6 +33,7 @@ contract JBTerminalStore is IJBTerminalStore {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBTerminalStore_AccountingContextAlreadySet(address token);
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
     error JBTerminalStore_InadequateControllerPayoutLimit(uint256 amount, uint256 limit);
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
@@ -121,6 +121,22 @@ contract JBTerminalStore is IJBTerminalStore {
         override usedSurplusAllowanceOf;
 
     //*********************************************************************//
+    // --------------------- internal stored properties ------------------ //
+    //*********************************************************************//
+
+    /// @notice The accounting context for a terminal's project token.
+    /// @custom:param terminal The terminal the accounting context applies to.
+    /// @custom:param projectId The ID of the project.
+    /// @custom:param token The token to get the accounting context for.
+    mapping(address terminal => mapping(uint256 projectId => mapping(address token => JBAccountingContext))) internal
+        _accountingContextForTokenOf;
+
+    /// @notice A list of accounting contexts for each terminal's project.
+    /// @custom:param terminal The terminal the accounting contexts apply to.
+    /// @custom:param projectId The ID of the project.
+    mapping(address terminal => mapping(uint256 projectId => JBAccountingContext[])) internal _accountingContextsOf;
+
+    //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
@@ -136,6 +152,23 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
+
+    /// @notice Records an accounting context for a terminal's project token.
+    /// @dev Uses msg.sender as the terminal.
+    /// @param projectId The ID of the project.
+    /// @param context The accounting context to record.
+    function recordAccountingContextOf(uint256 projectId, JBAccountingContext calldata context) external override {
+        // Make sure the token accounting context isn't already set.
+        if (_accountingContextForTokenOf[msg.sender][projectId][context.token].token != address(0)) {
+            revert JBTerminalStore_AccountingContextAlreadySet(context.token);
+        }
+
+        // Store the accounting context.
+        _accountingContextForTokenOf[msg.sender][projectId][context.token] = context;
+
+        // Add the context to the list.
+        _accountingContextsOf[msg.sender][projectId].push(context);
+    }
 
     /// @notice Records funds being added to a project's balance.
     /// @param projectId The ID of the project which funds are being added to the balance of.
@@ -155,9 +188,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param holder The account that is cashing out tokens.
     /// @param projectId The ID of the project being cashing out from.
     /// @param cashOutCount The number of project tokens to cash out, as a fixed point number with 18 decimals.
-    /// @param accountingContext The accounting context of the token being reclaimed by the cash out.
-    /// @param balanceAccountingContexts The accounting contexts of the tokens whose balances should contribute to the
-    /// surplus being reclaimed from.
+    /// @param tokenToReclaim The token being reclaimed by the cash out.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
     /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Bytes to send to the data hook, if the project's current ruleset specifies one.
@@ -172,8 +203,7 @@ contract JBTerminalStore is IJBTerminalStore {
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
+        address tokenToReclaim,
         bool beneficiaryIsFeeless,
         bytes memory metadata
     )
@@ -191,8 +221,7 @@ contract JBTerminalStore is IJBTerminalStore {
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
-            accountingContext: accountingContext,
-            balanceAccountingContexts: balanceAccountingContexts,
+            tokenToReclaim: tokenToReclaim,
             beneficiaryIsFeeless: beneficiaryIsFeeless,
             metadata: metadata
         });
@@ -211,17 +240,17 @@ contract JBTerminalStore is IJBTerminalStore {
         }
 
         // The amount being reclaimed must be within the project's balance.
-        if (balanceDiff > balanceOf[msg.sender][projectId][accountingContext.token]) {
+        if (balanceDiff > balanceOf[msg.sender][projectId][tokenToReclaim]) {
             revert JBTerminalStore_InadequateTerminalStoreBalance(
-                balanceDiff, balanceOf[msg.sender][projectId][accountingContext.token]
+                balanceDiff, balanceOf[msg.sender][projectId][tokenToReclaim]
             );
         }
 
         // Remove the reclaimed funds from the project's balance.
         if (balanceDiff != 0) {
             unchecked {
-                balanceOf[msg.sender][projectId][accountingContext.token] =
-                    balanceOf[msg.sender][projectId][accountingContext.token] - balanceDiff;
+                balanceOf[msg.sender][projectId][tokenToReclaim] =
+                    balanceOf[msg.sender][projectId][tokenToReclaim] - balanceDiff;
             }
         }
     }
@@ -273,7 +302,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// This is safe because the entire transaction reverts atomically if the validation fails, but callers should
     /// be aware of this ordering.
     /// @param projectId The ID of the project that is paying out funds.
-    /// @param accountingContext The context of the token being paid out.
+    /// @param token The token being paid out.
     /// @param amount The amount to pay out (use from the payout limit), as a fixed point number.
     /// @param currency The currency of the `amount`. This must match the project's current ruleset's currency.
     /// @return ruleset The ruleset the payout was made during, as a `JBRuleset` struct.
@@ -281,7 +310,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// decimals as its relative terminal.
     function recordPayoutFor(
         uint256 projectId,
-        JBAccountingContext calldata accountingContext,
+        address token,
         uint256 amount,
         uint256 currency
     )
@@ -289,6 +318,9 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 amountPaidOut)
     {
+        // Look up the accounting context from storage.
+        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[msg.sender][projectId][token];
+
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
@@ -308,34 +340,28 @@ contract JBTerminalStore is IJBTerminalStore {
             );
 
         // The amount being paid out must be available.
-        if (amountPaidOut > balanceOf[msg.sender][projectId][accountingContext.token]) {
+        if (amountPaidOut > balanceOf[msg.sender][projectId][token]) {
             revert JBTerminalStore_InadequateTerminalStoreBalance(
-                amountPaidOut, balanceOf[msg.sender][projectId][accountingContext.token]
+                amountPaidOut, balanceOf[msg.sender][projectId][token]
             );
         }
 
         // Removed the paid out funds from the project's token balance.
         unchecked {
-            balanceOf[msg.sender][projectId][accountingContext.token] =
-                balanceOf[msg.sender][projectId][accountingContext.token] - amountPaidOut;
+            balanceOf[msg.sender][projectId][token] = balanceOf[msg.sender][projectId][token] - amountPaidOut;
         }
 
         // The new total amount which has been paid out during this ruleset.
         uint256 newUsedPayoutLimitOf =
-            usedPayoutLimitOf[msg.sender][projectId][accountingContext.token][ruleset.cycleNumber][currency] + amount;
+            usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] + amount;
 
         // Store the new amount.
-        usedPayoutLimitOf[msg.sender][projectId][accountingContext.token][ruleset.cycleNumber][currency] =
-        newUsedPayoutLimitOf;
+        usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = newUsedPayoutLimitOf;
 
         // Amount must be within what is still available to pay out.
         uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .payoutLimitOf({
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                terminal: msg.sender,
-                token: accountingContext.token,
-                currency: currency
+                projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
             });
 
         // Make sure the new used amount is within the payout limit.
@@ -368,8 +394,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Records a use of a project's surplus allowance.
     /// @dev When surplus allowance is "used", it is taken out of the project's surplus within a terminal.
     /// @param projectId The ID of the project to use the surplus allowance of.
-    /// @param accountingContext The accounting context of the token whose balances should contribute to the surplus
-    /// allowance being reclaimed from.
+    /// @param token The token whose balances should contribute to the surplus allowance being reclaimed from.
     /// @param amount The amount to use from the surplus allowance, as a fixed point number.
     /// @param currency The currency of the `amount`. Must match the currency of the surplus allowance.
     /// @return ruleset The ruleset during the surplus allowance is being used during, as a `JBRuleset` struct.
@@ -377,7 +402,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// as its relative terminal.
     function recordUsedAllowanceOf(
         uint256 projectId,
-        JBAccountingContext calldata accountingContext,
+        address token,
         uint256 amount,
         uint256 currency
     )
@@ -385,6 +410,9 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 usedAmount)
     {
+        // Look up the accounting context from storage.
+        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[msg.sender][projectId][token];
+
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
@@ -420,25 +448,19 @@ contract JBTerminalStore is IJBTerminalStore {
         if (usedAmount > surplus) revert JBTerminalStore_InadequateTerminalStoreBalance(usedAmount, surplus);
 
         // Update the project's balance.
-        balanceOf[msg.sender][projectId][accountingContext.token] =
-            balanceOf[msg.sender][projectId][accountingContext.token] - usedAmount;
+        balanceOf[msg.sender][projectId][token] = balanceOf[msg.sender][projectId][token] - usedAmount;
 
         // Get a reference to the new used surplus allowance for this ruleset ID.
         uint256 newUsedSurplusAllowanceOf =
-            usedSurplusAllowanceOf[msg.sender][projectId][accountingContext.token][ruleset.id][currency] + amount;
+            usedSurplusAllowanceOf[msg.sender][projectId][token][ruleset.id][currency] + amount;
 
         // Store the incremented value.
-        usedSurplusAllowanceOf[msg.sender][projectId][accountingContext.token][ruleset.id][currency] =
-        newUsedSurplusAllowanceOf;
+        usedSurplusAllowanceOf[msg.sender][projectId][token][ruleset.id][currency] = newUsedSurplusAllowanceOf;
 
         // There must be sufficient surplus allowance available.
         uint256 surplusAllowance = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .surplusAllowanceOf({
-                projectId: projectId,
-                rulesetId: ruleset.id,
-                terminal: msg.sender,
-                token: accountingContext.token,
-                currency: currency
+                projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
             });
 
         // Make sure the new used amount is within the allowance.
@@ -450,6 +472,40 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
+
+    /// @notice Returns the accounting context for a terminal's project token.
+    /// @param terminal The terminal the accounting context applies to.
+    /// @param projectId The ID of the project.
+    /// @param token The token to get the accounting context for.
+    /// @return The accounting context.
+    function accountingContextOf(
+        address terminal,
+        uint256 projectId,
+        address token
+    )
+        external
+        view
+        override
+        returns (JBAccountingContext memory)
+    {
+        return _accountingContextForTokenOf[terminal][projectId][token];
+    }
+
+    /// @notice Returns all accounting contexts for a terminal's project.
+    /// @param terminal The terminal the accounting contexts apply to.
+    /// @param projectId The ID of the project.
+    /// @return The accounting contexts.
+    function accountingContextsOf(
+        address terminal,
+        uint256 projectId
+    )
+        external
+        view
+        override
+        returns (JBAccountingContext[] memory)
+    {
+        return _accountingContextsOf[terminal][projectId];
+    }
 
     /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given project's
     /// tokens based on its current ruleset and the given total project token supply and total terminal token surplus.
@@ -498,8 +554,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
     /// @param terminals The terminals that would be cashed out from. If this is an empty array, surplus within all
     /// the project's terminals are considered.
-    /// @param accountingContexts The accounting contexts of the surplus terminal tokens that would be reclaimed. Pass
-    /// an empty array to use all of the project's accounting contexts.
     /// @param decimals The number of decimals to include in the resulting fixed point number.
     /// @param currency The currency that the resulting number will be in terms of.
     /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount`
@@ -508,7 +562,6 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 projectId,
         uint256 cashOutCount,
         IJBTerminal[] calldata terminals,
-        JBAccountingContext[] calldata accountingContexts,
         uint256 decimals,
         uint256 currency
     )
@@ -526,7 +579,6 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 currentSurplus = JBSurplus.currentSurplusOf({
             projectId: projectId,
             terminals: terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId),
-            accountingContexts: accountingContexts,
             decimals: decimals,
             currency: currency
         });
@@ -547,6 +599,37 @@ contract JBTerminalStore is IJBTerminalStore {
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
             cashOutTaxRate: ruleset.cashOutTaxRate()
+        });
+    }
+
+    /// @notice Gets the current surplus amount in a terminal for a specified project.
+    /// @dev The surplus is the amount of funds a project has in a terminal in excess of its payout limit.
+    /// @dev The surplus is represented as a fixed point number with the same amount of decimals as the specified
+    /// terminal.
+    /// @param terminal The terminal the surplus is being calculated for.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @return The current surplus amount the project has in the specified terminal.
+    function currentSurplusOf(
+        address terminal,
+        uint256 projectId,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        // Return the surplus during the project's current ruleset.
+        return _surplusFrom({
+            terminal: terminal,
+            projectId: projectId,
+            accountingContexts: _accountingContextsOf[terminal][projectId],
+            ruleset: RULESETS.currentOf(projectId),
+            targetDecimals: decimals,
+            targetCurrency: currency
         });
     }
 
@@ -572,43 +655,8 @@ contract JBTerminalStore is IJBTerminalStore {
             projectId: projectId,
             cashOutCount: cashOutCount,
             terminals: new IJBTerminal[](0),
-            accountingContexts: new JBAccountingContext[](0),
             decimals: decimals,
             currency: currency
-        });
-    }
-
-    /// @notice Gets the current surplus amount in a terminal for a specified project.
-    /// @dev The surplus is the amount of funds a project has in a terminal in excess of its payout limit.
-    /// @dev The surplus is represented as a fixed point number with the same amount of decimals as the specified
-    /// terminal.
-    /// @param terminal The terminal the surplus is being calculated for.
-    /// @param projectId The ID of the project to get surplus for.
-    /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
-    /// being calculated.
-    /// @param currency The currency the resulting amount should be in terms of.
-    /// @param decimals The number of decimals to expect in the resulting fixed point number.
-    /// @return The current surplus amount the project has in the specified terminal.
-    function currentSurplusOf(
-        address terminal,
-        uint256 projectId,
-        JBAccountingContext[] calldata accountingContexts,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        // Return the surplus during the project's current ruleset.
-        return _surplusFrom({
-            terminal: terminal,
-            projectId: projectId,
-            accountingContexts: accountingContexts,
-            ruleset: RULESETS.currentOf(projectId),
-            targetDecimals: decimals,
-            targetCurrency: currency
         });
     }
 
@@ -628,22 +676,18 @@ contract JBTerminalStore is IJBTerminalStore {
         returns (uint256)
     {
         return JBSurplus.currentSurplusOf({
-            projectId: projectId,
-            terminals: DIRECTORY.terminalsOf(projectId),
-            accountingContexts: new JBAccountingContext[](0),
-            decimals: decimals,
-            currency: currency
+            projectId: projectId, terminals: DIRECTORY.terminalsOf(projectId), decimals: decimals, currency: currency
         });
     }
 
     /// @notice Simulates a cash out without modifying state.
     /// @dev Invokes data hooks if configured, but skips the balance sufficiency check (balance may change between
     /// preview and execution).
+    /// @param terminal The terminal to simulate the cash out from.
     /// @param holder The address cashing out.
     /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param accountingContext The accounting context of the token being reclaimed.
-    /// @param balanceAccountingContexts The accounting contexts to include in the balance calculation.
+    /// @param tokenToReclaim The token being reclaimed.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
@@ -651,11 +695,11 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return cashOutTaxRate The cash out tax rate that would be applied.
     /// @return hookSpecifications Any cash out hook specifications from the data hook.
     function previewCashOutFrom(
+        address terminal,
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
+        address tokenToReclaim,
         bool beneficiaryIsFeeless,
         bytes calldata metadata
     )
@@ -670,12 +714,11 @@ contract JBTerminalStore is IJBTerminalStore {
         )
     {
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _computeCashOutFrom({
-            terminal: msg.sender,
+            terminal: terminal,
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
-            accountingContext: accountingContext,
-            balanceAccountingContexts: balanceAccountingContexts,
+            tokenToReclaim: tokenToReclaim,
             beneficiaryIsFeeless: beneficiaryIsFeeless,
             metadata: metadata
         });
@@ -718,6 +761,144 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
+
+    /// @notice Computes the surplus relevant for a cash out (total or local, depending on ruleset flag).
+    /// @param terminal The terminal the cash out is being recorded from.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param tokenToReclaim The token being reclaimed.
+    /// @param ruleset The ruleset during the cash out.
+    /// @return The surplus amount in the token's native decimals and currency.
+    function _cashOutSurplusOf(
+        address terminal,
+        uint256 projectId,
+        address tokenToReclaim,
+        JBRuleset memory ruleset
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
+
+        return ruleset.useTotalSurplusForCashOuts()
+            ? JBSurplus.currentSurplusOf({
+                projectId: projectId,
+                terminals: DIRECTORY.terminalsOf(projectId),
+                decimals: accountingContext.decimals,
+                currency: accountingContext.currency
+            })
+            : _surplusFrom({
+                terminal: terminal,
+                projectId: projectId,
+                accountingContexts: _accountingContextsOf[terminal][projectId],
+                ruleset: ruleset,
+                targetDecimals: accountingContext.decimals,
+                targetCurrency: accountingContext.currency
+            });
+    }
+
+    /// @notice Computes cash out results without writing state.
+    /// @param terminal The terminal recording the cash out.
+    /// @param holder The account that is cashing out tokens.
+    /// @param projectId The ID of the project being cashed out from.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token being reclaimed.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
+    /// @param metadata Bytes to send to the data hook.
+    /// @return ruleset The ruleset during the cash out.
+    /// @return reclaimAmount The amount of tokens reclaimed.
+    /// @return cashOutTaxRate The cash out tax rate applied.
+    /// @return hookSpecifications Cash out hook specifications from the data hook.
+    function _computeCashOutFrom(
+        address terminal,
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        bool beneficiaryIsFeeless,
+        bytes memory metadata
+    )
+        internal
+        view
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
+    {
+        // Get a reference to the project's current ruleset.
+        ruleset = RULESETS.currentOf(projectId);
+
+        // Compute surplus — delegated to keep stack shallow.
+        reclaimAmount = _cashOutSurplusOf(terminal, projectId, tokenToReclaim, ruleset);
+
+        // Scoped to keep `totalSupply` and `context` off the outer stack.
+        {
+            // Re-read accounting context for the data hook context (stack-safe in this scope).
+            JBAccountingContext memory accountingContext =
+                _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
+
+            // Get the total number of outstanding project tokens.
+            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
+                .totalTokenSupplyWithReservedTokensOf(projectId);
+
+            // Can't cash out more tokens than are in the supply.
+            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
+
+            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
+            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+            // completely overriding the terminal's bonding curve math. For example, setting
+            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+            // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
+            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
+            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
+                // Build the cash out context field-by-field to avoid stack-too-deep
+                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
+                JBBeforeCashOutRecordedContext memory context;
+                context.terminal = terminal;
+                context.holder = holder;
+                context.projectId = projectId;
+                context.rulesetId = ruleset.id;
+                context.cashOutCount = cashOutCount;
+                context.totalSupply = totalSupply;
+                context.surplus = JBTokenAmount({
+                    token: accountingContext.token,
+                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
+                    decimals: accountingContext.decimals,
+                    currency: accountingContext.currency
+                });
+                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
+                context.cashOutTaxRate = ruleset.cashOutTaxRate();
+                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
+                context.metadata = metadata;
+
+                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
+                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+                // Noop specifications are informational only, so they can't also request forwarded funds.
+                for (uint256 i; i < hookSpecifications.length; i++) {
+                    if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                        revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                    }
+                }
+            } else {
+                cashOutTaxRate = ruleset.cashOutTaxRate();
+            }
+
+            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
+            // result.
+            if (reclaimAmount != 0) {
+                reclaimAmount = JBCashOuts.cashOutFrom({
+                    surplus: reclaimAmount,
+                    cashOutCount: cashOutCount,
+                    totalSupply: totalSupply,
+                    cashOutTaxRate: cashOutTaxRate
+                });
+            }
+        }
+    }
 
     /// @notice Computes payment results without writing state.
     /// @param terminal The terminal recording the payment.
@@ -837,124 +1018,6 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Find the number of tokens to mint, as a fixed point number with as many decimals as `weight` has.
         tokenCount = mulDiv(amount.value, weight, weightRatio);
-    }
-
-    /// @notice Computes cash out results without writing state.
-    /// @param terminal The terminal recording the cash out.
-    /// @param holder The account that is cashing out tokens.
-    /// @param projectId The ID of the project being cashed out from.
-    /// @param cashOutCount The number of project tokens to cash out.
-    /// @param accountingContext The accounting context of the token being reclaimed.
-    /// @param balanceAccountingContexts The accounting contexts of the tokens whose balances should contribute to the
-    /// surplus being reclaimed from.
-    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
-    /// @param metadata Bytes to send to the data hook.
-    /// @return ruleset The ruleset during the cash out.
-    /// @return reclaimAmount The amount of tokens reclaimed.
-    /// @return cashOutTaxRate The cash out tax rate applied.
-    /// @return hookSpecifications Cash out hook specifications from the data hook.
-    function _computeCashOutFrom(
-        address terminal,
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        JBAccountingContext calldata accountingContext,
-        JBAccountingContext[] calldata balanceAccountingContexts,
-        bool beneficiaryIsFeeless,
-        bytes memory metadata
-    )
-        internal
-        view
-        returns (
-            JBRuleset memory ruleset,
-            uint256 reclaimAmount,
-            uint256 cashOutTaxRate,
-            JBCashOutHookSpecification[] memory hookSpecifications
-        )
-    {
-        // Get a reference to the project's current ruleset.
-        ruleset = RULESETS.currentOf(projectId);
-
-        // Store the current surplus in `reclaimAmount` temporarily to avoid allocating a separate local variable
-        // (saves one stack slot, which is needed to fit the 7th parameter without hitting stack-too-deep).
-        reclaimAmount = ruleset.useTotalSurplusForCashOuts()
-            ? JBSurplus.currentSurplusOf({
-                projectId: projectId,
-                terminals: DIRECTORY.terminalsOf(projectId),
-                accountingContexts: new JBAccountingContext[](0),
-                decimals: accountingContext.decimals,
-                currency: accountingContext.currency
-            })
-            : _surplusFrom({
-                terminal: terminal,
-                projectId: projectId,
-                accountingContexts: balanceAccountingContexts,
-                ruleset: ruleset,
-                targetDecimals: accountingContext.decimals,
-                targetCurrency: accountingContext.currency
-            });
-
-        // Scoped to keep `totalSupply` and `context` off the outer stack.
-        {
-            // Get the total number of outstanding project tokens.
-            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
-                .totalTokenSupplyWithReservedTokensOf(projectId);
-
-            // Can't cash out more tokens than are in the supply.
-            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
-
-            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
-            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
-            // completely overriding the terminal's bonding curve math. For example, setting
-            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
-            // Project owners MUST audit their data hooks with the same rigor as the terminal.
-
-            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
-            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
-                // Build the cash out context field-by-field to avoid stack-too-deep
-                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
-                JBBeforeCashOutRecordedContext memory context;
-                context.terminal = terminal;
-                context.holder = holder;
-                context.projectId = projectId;
-                context.rulesetId = ruleset.id;
-                context.cashOutCount = cashOutCount;
-                context.totalSupply = totalSupply;
-                context.surplus = JBTokenAmount({
-                    token: accountingContext.token,
-                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
-                    decimals: accountingContext.decimals,
-                    currency: accountingContext.currency
-                });
-                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
-                context.cashOutTaxRate = ruleset.cashOutTaxRate();
-                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
-                context.metadata = metadata;
-
-                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
-                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
-
-                // Noop specifications are informational only, so they can't also request forwarded funds.
-                for (uint256 i; i < hookSpecifications.length; i++) {
-                    if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                        revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
-                    }
-                }
-            } else {
-                cashOutTaxRate = ruleset.cashOutTaxRate();
-            }
-
-            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
-            // result.
-            if (reclaimAmount != 0) {
-                reclaimAmount = JBCashOuts.cashOutFrom({
-                    surplus: reclaimAmount,
-                    cashOutCount: cashOutCount,
-                    totalSupply: totalSupply,
-                    cashOutTaxRate: cashOutTaxRate
-                });
-            }
-        }
     }
 
     /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting

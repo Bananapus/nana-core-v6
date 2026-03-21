@@ -19,17 +19,7 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         surplusAmount = _surplus;
     }
 
-    function currentSurplusOf(
-        uint256,
-        JBAccountingContext[] memory,
-        uint256,
-        uint256
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
+    function currentSurplusOf(uint256, uint256, uint256) external view override returns (uint256) {
         return surplusAmount;
     }
 
@@ -131,9 +121,8 @@ contract TestSurplusFuzz_Local is JBTest {
     /// @notice Surplus with no terminals is 0.
     function testFuzz_noTerminals_returnsZero(uint256 projectId) external view {
         IJBTerminal[] memory terminals = new IJBTerminal[](0);
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](0);
 
-        uint256 surplus = JBSurplus.currentSurplusOf(projectId, terminals, contexts, 18, 1);
+        uint256 surplus = JBSurplus.currentSurplusOf(projectId, terminals, 18, 1);
         assertEq(surplus, 0, "surplus with no terminals should be 0");
     }
 
@@ -146,9 +135,7 @@ contract TestSurplusFuzz_Local is JBTest {
         terminals[0] = terminal1;
         terminals[1] = terminal2;
 
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](0);
-
-        uint256 total = JBSurplus.currentSurplusOf(1, terminals, contexts, 18, 1);
+        uint256 total = JBSurplus.currentSurplusOf(1, terminals, 18, 1);
         assertEq(total, uint256(surplus1) + uint256(surplus2), "surplus should be sum of all terminals");
     }
 
@@ -165,10 +152,8 @@ contract TestSurplusFuzz_Local is JBTest {
         IJBTerminal[] memory terminals2 = new IJBTerminal[](1);
         terminals2[0] = terminal2;
 
-        JBAccountingContext[] memory contexts = new JBAccountingContext[](0);
-
-        uint256 total1 = JBSurplus.currentSurplusOf(1, terminals1, contexts, 18, 1);
-        uint256 total2 = JBSurplus.currentSurplusOf(1, terminals2, contexts, 18, 1);
+        uint256 total1 = JBSurplus.currentSurplusOf(1, terminals1, 18, 1);
+        uint256 total2 = JBSurplus.currentSurplusOf(1, terminals2, 18, 1);
 
         assertLe(total1, total2, "surplus should be monotonically increasing");
     }

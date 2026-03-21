@@ -55,12 +55,12 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
-        // Find the storage slot
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(_native, contextSlot));
-
-        // Set storage
-        vm.store(address(_terminal), slot, bytes32(abi.encode(_context)));
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _native)),
+            abi.encode(_context)
+        );
 
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _native);
         assertEq(_storedContext.token, _native);
@@ -75,18 +75,18 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext({token: _native, decimals: 18, currency: uint32(_nativeCurrency)});
 
-        // Find the storage slot
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(_native, contextSlot));
-
-        // Set storage
-        vm.store(address(_terminal), slot, bytes32(abi.encode(_context)));
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _native)),
+            abi.encode(_context)
+        );
 
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _native);
         assertEq(_storedContext.token, _native);
 
-        // Find the storage slot for fees array (_heldFeesOf is at storage slot 3)
-        bytes32 feeSlot = keccak256(abi.encode(_projectId, uint256(3)));
+        // Find the storage slot for fees array (_heldFeesOf is at storage slot 1)
+        bytes32 feeSlot = keccak256(abi.encode(_projectId, uint256(1)));
         bytes32 slotForArrayLength = keccak256(abi.encode(_native, feeSlot));
 
         // Set the length of the fees array in the storage slot
@@ -223,6 +223,13 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
     function test_WhenTheProjectDNHAccountingContextForTheToken() external {
         // it will revert TOKEN_NOT_ACCEPTED
 
+        // Mock accountingContextOf to return empty context (token not accepted)
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _native)),
+            abi.encode(JBAccountingContext({token: address(0), decimals: 0, currency: 0}))
+        );
+
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _native));
 
         _terminal.addToBalanceOf{value: payAmount}({
@@ -244,12 +251,12 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
 
-        // Find the storage slot
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(_usdc, contextSlot));
-
-        // Set storage
-        vm.store(address(_terminal), slot, bytes32(abi.encode(_context)));
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _usdc)),
+            abi.encode(_context)
+        );
 
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _usdc);
         assertEq(_storedContext.token, _usdc);
@@ -273,12 +280,12 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext({token: _usdc, decimals: 18, currency: uint32(_usdcCurrency)});
 
-        // Find the storage slot
-        bytes32 contextSlot = keccak256(abi.encode(_projectId, uint256(0)));
-        bytes32 slot = keccak256(abi.encode(_usdc, contextSlot));
-
-        // Set storage
-        vm.store(address(_terminal), slot, bytes32(abi.encode(_context)));
+        // Mock the store to return this accounting context
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, _usdc)),
+            abi.encode(_context)
+        );
 
         JBAccountingContext memory _storedContext = _terminal.accountingContextForTokenOf(_projectId, _usdc);
         assertEq(_storedContext.token, _usdc);

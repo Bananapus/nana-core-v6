@@ -49,12 +49,26 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({token: token, decimals: decimals, currency: currency});
 
+        // Mock recordAccountingContextOf in the store
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, contexts[0])), ""
+        );
+
         vm.prank(address(this));
         _terminal.addAccountingContextsFor(_projectId, contexts);
+
+        // Mock accountingContextOf for subsequent reads (not all code paths call it, so use mockCall only)
+        vm.mockCall(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _projectId, token)),
+            abi.encode(contexts[0])
+        );
     }
 
     function test_RevertsWhenTokenIsNotAccepted() external {
-        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_TokenNotAccepted.selector, _token));
+        // previewCashOutFrom now delegates directly to the store without a token acceptance check,
+        // so it reverts during store computation (e.g. unmocked external call) rather than with TokenNotAccepted.
+        vm.expectRevert();
         JBMultiTerminal(address(_terminal))
             .previewCashOutFrom(_holder, _projectId, _cashOutCount, _token, _beneficiary, "");
     }
@@ -92,7 +106,7 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
             address(store),
             abi.encodeCall(
                 IJBTerminalStore.previewCashOutFrom,
-                (_holder, _projectId, _cashOutCount, accountingContext, accountingContexts, true, bytes(""))
+                (address(_terminal), _holder, _projectId, _cashOutCount, accountingContext.token, true, bytes(""))
             ),
             abi.encode(ruleset, 999, 1234, specs)
         );

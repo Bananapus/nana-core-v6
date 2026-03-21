@@ -47,7 +47,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         // record payout mock call
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext, 0, 0)),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
             abi.encode(returnedRuleset, 0)
         );
 
@@ -86,7 +86,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         // record payout mock call
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext, 0, 0)),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
             abi.encode(returnedRuleset, 0)
         );
 
@@ -134,7 +134,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         // record payout mock call
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext, 0, 0)),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
             abi.encode(returnedRuleset, 0)
         );
 
@@ -204,7 +204,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         // record payout mock call
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext, 0, 100)),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 100)),
             abi.encode(returnedRuleset, 100)
         );
 
