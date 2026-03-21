@@ -37,9 +37,9 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
 
         // Register accounting context so the store can look up decimals/currency for the token.
-        _store.recordAccountingContextOf(
-            _projectId, JBAccountingContext({token: address(_token), decimals: 18, currency: _currency})
-        );
+        JBAccountingContext[] memory _ctxs = new JBAccountingContext[](1);
+        _ctxs[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _store.recordAccountingContextOf(_projectId, _ctxs);
     }
 
     modifier whenAmountIsWithinRangeToUseSurplusAllowance() {
@@ -147,9 +147,9 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         // it will convert prices
 
         // Register accounting context for the native token so the store can look up decimals/currency.
-        _store.recordAccountingContextOf(
-            _projectId, JBAccountingContext({token: address(_nativeAddress), decimals: 18, currency: _nativeCurrency})
-        );
+        JBAccountingContext[] memory _nativeCtxs = new JBAccountingContext[](1);
+        _nativeCtxs[0] = JBAccountingContext({token: address(_nativeAddress), decimals: 18, currency: _nativeCurrency});
+        _store.recordAccountingContextOf(_projectId, _nativeCtxs);
 
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));

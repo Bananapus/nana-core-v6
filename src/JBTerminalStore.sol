@@ -158,16 +158,11 @@ contract JBTerminalStore is IJBTerminalStore {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Records an accounting context for a terminal's project token.
+    /// @notice Records accounting contexts for a terminal's project tokens.
     /// @dev Uses msg.sender as the terminal.
     /// @param projectId The ID of the project.
-    /// @param context The accounting context to record.
-    function recordAccountingContextOf(uint256 projectId, JBAccountingContext calldata context) external override {
-        // Make sure the token accounting context isn't already set.
-        if (_accountingContextForTokenOf[msg.sender][projectId][context.token].token != address(0)) {
-            revert JBTerminalStore_AccountingContextAlreadySet(context.token);
-        }
-
+    /// @param contexts The accounting contexts to record.
+    function recordAccountingContextOf(uint256 projectId, JBAccountingContext[] calldata contexts) external override {
         // Get a reference to the project's current ruleset.
         JBRuleset memory ruleset = RULESETS.currentOf(projectId);
 
@@ -176,39 +171,49 @@ contract JBTerminalStore is IJBTerminalStore {
             revert JBTerminalStore_AddingAccountingContextNotAllowed();
         }
 
-        // Keep track of a flag indicating if we know the provided decimals are incorrect.
-        bool knownInvalidDecimals;
+        // Record each accounting context.
+        for (uint256 i; i < contexts.length; i++) {
+            JBAccountingContext calldata context = contexts[i];
 
-        // Check if the token is the native token and has the correct decimals.
-        if (context.token == JBConstants.NATIVE_TOKEN && context.decimals != 18) {
-            knownInvalidDecimals = true;
-        } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
-            // slither-disable-next-line calls-loop
-            try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
-                if (context.decimals != decimals) {
-                    knownInvalidDecimals = true;
-                }
-            } catch {
-                // The token didn't support `decimals`.
-                // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
-                // The caller is responsible for providing the correct decimals for such tokens.
-                knownInvalidDecimals = false;
+            // Make sure the token accounting context isn't already set.
+            if (_accountingContextForTokenOf[msg.sender][projectId][context.token].token != address(0)) {
+                revert JBTerminalStore_AccountingContextAlreadySet(context.token);
             }
+
+            // Keep track of a flag indicating if we know the provided decimals are incorrect.
+            bool knownInvalidDecimals;
+
+            // Check if the token is the native token and has the correct decimals.
+            if (context.token == JBConstants.NATIVE_TOKEN && context.decimals != 18) {
+                knownInvalidDecimals = true;
+            } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
+                // slither-disable-next-line calls-loop
+                try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
+                    if (context.decimals != decimals) {
+                        knownInvalidDecimals = true;
+                    }
+                } catch {
+                    // The token didn't support `decimals`.
+                    // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
+                    // The caller is responsible for providing the correct decimals for such tokens.
+                    knownInvalidDecimals = false;
+                }
+            }
+
+            // Make sure the decimals are correct.
+            if (knownInvalidDecimals) {
+                revert JBTerminalStore_AccountingContextDecimalsMismatch();
+            }
+
+            // Make sure the currency is non-zero.
+            if (context.currency == 0) revert JBTerminalStore_ZeroAccountingContextCurrency();
+
+            // Store the accounting context.
+            _accountingContextForTokenOf[msg.sender][projectId][context.token] = context;
+
+            // Add the context to the list.
+            _accountingContextsOf[msg.sender][projectId].push(context);
         }
-
-        // Make sure the decimals are correct.
-        if (knownInvalidDecimals) {
-            revert JBTerminalStore_AccountingContextDecimalsMismatch();
-        }
-
-        // Make sure the currency is non-zero.
-        if (context.currency == 0) revert JBTerminalStore_ZeroAccountingContextCurrency();
-
-        // Store the accounting context.
-        _accountingContextForTokenOf[msg.sender][projectId][context.token] = context;
-
-        // Add the context to the list.
-        _accountingContextsOf[msg.sender][projectId].push(context);
     }
 
     /// @notice Records funds being added to a project's balance.
@@ -610,11 +615,8 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
-        // Get a reference to the project's current ruleset.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
         // Aggregate surplus across the terminals, optionally filtered by the specified tokens.
-        uint256 currentSurplus = this.currentSurplusOf({
+        uint256 currentSurplus = _currentSurplusOf({
             projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
         });
 
@@ -628,12 +630,15 @@ contract JBTerminalStore is IJBTerminalStore {
         // Can't cash out more tokens than are in the total supply.
         if (cashOutCount > totalSupply) return 0;
 
+        // Get the cash out tax rate from the current ruleset.
+        uint256 cashOutTaxRate = RULESETS.currentOf(projectId).cashOutTaxRate();
+
         // Return the amount of surplus terminal tokens that would be reclaimed.
         return JBCashOuts.cashOutFrom({
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
-            cashOutTaxRate: ruleset.cashOutTaxRate()
+            cashOutTaxRate: cashOutTaxRate
         });
     }
 
@@ -654,38 +659,9 @@ contract JBTerminalStore is IJBTerminalStore {
         external
         view
         override
-        returns (uint256 surplus)
+        returns (uint256)
     {
-        // Resolve which terminals to query.
-        IJBTerminal[] memory resolvedTerminals = terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId);
-
-        // Get the project's current ruleset.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
-        // Aggregate surplus across each terminal.
-        for (uint256 i; i < resolvedTerminals.length; i++) {
-            address terminal = address(resolvedTerminals[i]);
-
-            // Resolve the accounting contexts: use filtered tokens or all tokens for this terminal.
-            JBAccountingContext[] memory accountingContexts;
-            if (tokens.length != 0) {
-                accountingContexts = new JBAccountingContext[](tokens.length);
-                for (uint256 j; j < tokens.length; j++) {
-                    accountingContexts[j] = _accountingContextForTokenOf[terminal][projectId][tokens[j]];
-                }
-            } else {
-                accountingContexts = _accountingContextsOf[terminal][projectId];
-            }
-
-            surplus += _surplusFrom({
-                terminal: terminal,
-                projectId: projectId,
-                accountingContexts: accountingContexts,
-                ruleset: ruleset,
-                targetDecimals: decimals,
-                targetCurrency: currency
-            });
-        }
+        return _currentSurplusOf(projectId, terminals, tokens, decimals, currency);
     }
 
     /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given number of
@@ -731,7 +707,7 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
-        return this.currentSurplusOf({
+        return _currentSurplusOf({
             projectId: projectId,
             terminals: new IJBTerminal[](0),
             tokens: new address[](0),
@@ -787,6 +763,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Simulates a payment without modifying state.
     /// @dev Invokes data hooks if configured. Returns the same token count and hook specifications that
     /// `recordPaymentFrom` would produce.
+    /// @param terminal The terminal to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount being paid.
     /// @param projectId The ID of the project being paid.
@@ -796,6 +773,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @return tokenCount The number of project tokens that would be minted, including reserved tokens.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
+        address terminal,
         address payer,
         JBTokenAmount memory amount,
         uint256 projectId,
@@ -807,9 +785,8 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications)
     {
-        // Use the caller as the terminal context for the preview.
         (ruleset, tokenCount, hookSpecifications,) = _computePayFrom({
-            terminal: msg.sender,
+            terminal: terminal,
             payer: payer,
             amount: amount,
             projectId: projectId,
@@ -838,22 +815,28 @@ contract JBTerminalStore is IJBTerminalStore {
         view
         returns (uint256)
     {
+        // Look up the accounting context (decimals, currency) for the token being reclaimed at this terminal.
         JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
 
+        // If the ruleset uses total surplus, aggregate across ALL terminals and ALL tokens.
         if (ruleset.useTotalSurplusForCashOuts()) {
             return JBSurplus.currentSurplusOf({
                 projectId: projectId,
+                // Get every terminal the project has registered.
                 terminals: DIRECTORY.terminalsOf(projectId),
+                // Empty tokens array = include all tokens at each terminal.
                 tokens: new address[](0),
+                // Express the result in the reclaimed token's decimals and currency.
                 decimals: accountingContext.decimals,
                 currency: accountingContext.currency
             });
         }
 
-        // Only account for the specific token's surplus.
+        // Otherwise, only account for the specific token's surplus at this terminal.
         JBAccountingContext[] memory singleContext = new JBAccountingContext[](1);
         singleContext[0] = accountingContext;
 
+        // Compute surplus from only this terminal using only the reclaimed token's balance.
         return _surplusFrom({
             terminal: terminal,
             projectId: projectId,
@@ -1087,6 +1070,59 @@ contract JBTerminalStore is IJBTerminalStore {
         tokenCount = mulDiv(amount.value, weight, weightRatio);
     }
 
+    /// @notice Gets the current surplus amount for a project across specified terminals and tokens.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param terminals The terminals to include. If empty, all project terminals are used.
+    /// @param tokens The tokens to include. If empty, all tokens per terminal are used.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @return surplus The current surplus amount.
+    function _currentSurplusOf(
+        uint256 projectId,
+        IJBTerminal[] memory terminals,
+        address[] memory tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
+        // If specific terminals were provided, use them. Otherwise, get all terminals from the directory.
+        IJBTerminal[] memory resolvedTerminals = terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId);
+
+        // The ruleset determines payout limits, which affect surplus. Fetch it once for all terminals.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
+        // Sum surplus across each terminal.
+        for (uint256 i; i < resolvedTerminals.length; i++) {
+            address terminal = address(resolvedTerminals[i]);
+
+            // Build the list of accounting contexts to include in this terminal's surplus calculation.
+            JBAccountingContext[] memory accountingContexts;
+            if (tokens.length != 0) {
+                // Specific tokens requested: look up each token's accounting context at this terminal.
+                accountingContexts = new JBAccountingContext[](tokens.length);
+                for (uint256 j; j < tokens.length; j++) {
+                    accountingContexts[j] = _accountingContextForTokenOf[terminal][projectId][tokens[j]];
+                }
+            } else {
+                // No token filter: use all accounting contexts registered at this terminal.
+                accountingContexts = _accountingContextsOf[terminal][projectId];
+            }
+
+            // Add this terminal's surplus (balance minus payout limits) converted to the target decimals/currency.
+            surplus += _surplusFrom({
+                terminal: terminal,
+                projectId: projectId,
+                accountingContexts: accountingContexts,
+                ruleset: ruleset,
+                targetDecimals: decimals,
+                targetCurrency: currency
+            });
+        }
+    }
+
     /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting
     /// contexts.
     /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
@@ -1095,7 +1131,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param projectId The ID of the project to get the surplus for.
     /// @param accountingContexts The accounting contexts of tokens whose balances should contribute to the surplus
     /// being calculated.
-    /// @param ruleset The ID of the ruleset to base the surplus on.
+    /// @param ruleset The ruleset to base the surplus on.
     /// @param targetDecimals The number of decimals to include in the resulting fixed point number.
     /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
     /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with

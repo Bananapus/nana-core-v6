@@ -37,7 +37,7 @@ contract TestAccountingContextsOf_Local is JBMultiTerminalSetup {
 
         // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
-            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
         );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);

@@ -52,6 +52,25 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         _setAccountingContext(_token, 18, uint32(uint160(_token)));
 
+        _mockPreviewPayFrom();
+
+        vm.prank(_payer);
+        (
+            JBRuleset memory previewRuleset,
+            uint256 beneficiaryTokenCount,
+            uint256 reservedTokenCount,
+            JBPayHookSpecification[] memory previewSpecs
+        ) = JBMultiTerminal(address(_terminal)).previewPayFor(_projectId, _token, _amount, _beneficiary, "");
+
+        assertEq(previewRuleset.id, 1);
+        assertEq(beneficiaryTokenCount, 750);
+        assertEq(reservedTokenCount, 250);
+        assertEq(previewSpecs.length, 1);
+        assertEq(previewSpecs[0].amount, 123);
+        assertEq(previewSpecs[0].metadata, hex"1234");
+    }
+
+    function _mockPreviewPayFrom() internal {
         JBRuleset memory ruleset = JBRuleset({
             cycleNumber: 1,
             id: 1,
@@ -74,7 +93,7 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.previewPayFrom, (_payer, tokenAmount, _projectId, _beneficiary, bytes(""))),
+            abi.encodeWithSelector(bytes4(0xdb6d7e03), address(_terminal), _payer, tokenAmount, _projectId, _beneficiary, bytes("")),
             abi.encode(ruleset, 1000, specs)
         );
 
@@ -89,21 +108,5 @@ contract TestPreviewPayFor_Local is JBMultiTerminalSetup {
             abi.encodeCall(IJBController.previewMintOf, (_projectId, 1000, true)),
             abi.encode(750, 250)
         );
-
-        vm.prank(_payer);
-        (
-            JBRuleset memory previewRuleset,
-            uint256 beneficiaryTokenCount,
-            uint256 reservedTokenCount,
-            JBPayHookSpecification[] memory previewSpecs
-        ) = JBMultiTerminal(address(_terminal)).previewPayFor(_projectId, _token, _amount, _beneficiary, "");
-
-        assertEq(previewRuleset.id, ruleset.id);
-        assertEq(beneficiaryTokenCount, 750);
-        assertEq(reservedTokenCount, 250);
-        assertEq(previewSpecs.length, 1);
-        assertEq(address(previewSpecs[0].hook), address(specs[0].hook));
-        assertEq(previewSpecs[0].amount, specs[0].amount);
-        assertEq(previewSpecs[0].metadata, specs[0].metadata);
     }
 }

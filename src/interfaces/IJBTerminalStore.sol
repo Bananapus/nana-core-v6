@@ -171,6 +171,7 @@ interface IJBTerminalStore {
         );
 
     /// @notice Simulates a payment without modifying state.
+    /// @param terminal The terminal to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount being paid.
     /// @param projectId The ID of the project being paid.
@@ -180,6 +181,7 @@ interface IJBTerminalStore {
     /// @return tokenCount The number of project tokens that would be minted, including reserved tokens.
     /// @return hookSpecifications Any pay hook specifications from the data hook.
     function previewPayFrom(
+        address terminal,
         address payer,
         JBTokenAmount memory amount,
         uint256 projectId,
@@ -228,8 +230,8 @@ interface IJBTerminalStore {
 
     /// @notice Records an accounting context for a terminal's project token.
     /// @param projectId The ID of the project.
-    /// @param context The accounting context to record.
-    function recordAccountingContextOf(uint256 projectId, JBAccountingContext calldata context) external;
+    /// @param contexts The accounting contexts to record.
+    function recordAccountingContextOf(uint256 projectId, JBAccountingContext[] calldata contexts) external;
 
     /// @notice Records a balance addition for a project.
     /// @param projectId The ID of the project.

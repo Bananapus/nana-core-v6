@@ -47,9 +47,9 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
 
         // Register accounting context so the store can look up decimals/currency for the token.
-        _store.recordAccountingContextOf(
-            _projectId, JBAccountingContext({token: address(_token), decimals: 18, currency: _currency})
-        );
+        JBAccountingContext[] memory _ctxs = new JBAccountingContext[](1);
+        _ctxs[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _store.recordAccountingContextOf(_projectId, _ctxs);
     }
 
     modifier whenCurrentRulesetUseTotalSurplusForCashOutsEqTrue() {

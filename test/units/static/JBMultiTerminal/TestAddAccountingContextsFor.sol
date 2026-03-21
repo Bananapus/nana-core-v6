@@ -48,7 +48,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // Mock recordAccountingContextOf to revert with AccountingContextAlreadySet
         vm.mockCallRevert(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextAlreadySet.selector, _usdc)
         );
 
@@ -68,7 +68,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
-            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
         );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
@@ -96,7 +96,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
-            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
         );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
@@ -138,7 +138,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
 
         // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
-            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
         );
 
         _terminal.addAccountingContextsFor(_projectId, _tokens);
@@ -181,7 +181,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // Mock recordAccountingContextOf to revert with AddingAccountingContextNotAllowed (validation now in store)
         vm.mockCallRevert(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector)
         );
 
@@ -213,7 +213,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // Mock recordAccountingContextOf to revert with DecimalsMismatch (validation now in store)
         vm.mockCallRevert(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
         );
 
@@ -248,7 +248,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // Mock recordAccountingContextOf to revert with DecimalsMismatch (validation now in store)
         vm.mockCallRevert(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
         );
 
@@ -279,7 +279,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
         // Mock recordAccountingContextOf to revert with ZeroAccountingContextCurrency (validation now in store)
         vm.mockCallRevert(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])),
+            abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)),
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector)
         );
 

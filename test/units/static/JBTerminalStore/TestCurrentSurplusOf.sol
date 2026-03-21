@@ -39,8 +39,10 @@ contract TestCurrentSurplusOf_Local is JBTerminalStoreSetup {
 
     /// @notice Helper to register an accounting context with the store (pranks as the terminal).
     function _registerContext(JBAccountingContext memory ctx) internal {
+        JBAccountingContext[] memory ctxs = new JBAccountingContext[](1);
+        ctxs[0] = ctx;
         vm.prank(address(_terminal));
-        _store.recordAccountingContextOf(_projectId, ctx);
+        _store.recordAccountingContextOf(_projectId, ctxs);
     }
 
     /// @notice Helper to call currentSurplusOf with the new multi-terminal signature.

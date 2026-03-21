@@ -36,7 +36,7 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
 
         // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
-            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, contexts[0])), ""
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, contexts)), ""
         );
 
         vm.prank(address(this));

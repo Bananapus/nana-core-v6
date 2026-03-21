@@ -201,11 +201,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             alsoGrantAccessIf: _msgSender() == address(_controllerOf(projectId))
         });
 
-        // Start accepting each token.
-        for (uint256 i; i < accountingContexts.length; i++) {
-            // Record the accounting context in the store (validates and reverts if invalid).
-            STORE.recordAccountingContextOf(projectId, accountingContexts[i]);
+        // Record all accounting contexts in the store (validates each and reverts if invalid).
+        STORE.recordAccountingContextOf({projectId: projectId, contexts: accountingContexts});
 
+        // Emit an event for each accounting context.
+        for (uint256 i; i < accountingContexts.length; i++) {
             emit SetAccountingContext({projectId: projectId, context: accountingContexts[i], caller: _msgSender()});
         }
     }
@@ -886,6 +886,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Preview the payment through the store.
         (ruleset, tokenCount, hookSpecifications) = STORE.previewPayFrom({
+            terminal: address(this),
             payer: _msgSender(),
             amount: _tokenAmountOf({projectId: projectId, token: token, value: amount}),
             projectId: projectId,

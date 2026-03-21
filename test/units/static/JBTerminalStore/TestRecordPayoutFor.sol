@@ -38,9 +38,9 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
 
     /// @notice Helper to register an accounting context with the store (from address(this) as terminal).
     function _registerContext(address token, uint32 currency) internal {
-        _store.recordAccountingContextOf(
-            _projectId, JBAccountingContext({token: token, decimals: 18, currency: currency})
-        );
+        JBAccountingContext[] memory ctxs = new JBAccountingContext[](1);
+        ctxs[0] = JBAccountingContext({token: token, decimals: 18, currency: currency});
+        _store.recordAccountingContextOf(_projectId, ctxs);
     }
 
     modifier whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRuleset() {

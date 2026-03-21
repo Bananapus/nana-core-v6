@@ -44,9 +44,9 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
         // Register accounting context so the store can look up decimals/currency for the token.
         // address(this) acts as the terminal for both preview and record calls.
-        _store.recordAccountingContextOf(
-            _projectId, JBAccountingContext({token: address(_token), decimals: 18, currency: _currency})
-        );
+        JBAccountingContext[] memory _ctxs = new JBAccountingContext[](1);
+        _ctxs[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
+        _store.recordAccountingContextOf(_projectId, _ctxs);
     }
 
     function _setBalance(address terminal, uint256 balance) internal {

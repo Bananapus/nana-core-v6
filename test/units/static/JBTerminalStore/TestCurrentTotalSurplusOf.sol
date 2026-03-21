@@ -40,8 +40,10 @@ contract TestCurrentTotalSurplusOf_Local is JBTerminalStoreSetup {
 
     /// @notice Helper to register an accounting context with the store (pranks as the terminal).
     function _registerContext(address terminal, JBAccountingContext memory ctx) internal {
+        JBAccountingContext[] memory ctxs = new JBAccountingContext[](1);
+        ctxs[0] = ctx;
         vm.prank(terminal);
-        _store.recordAccountingContextOf(_projectId, ctx);
+        _store.recordAccountingContextOf(_projectId, ctxs);
     }
 
     function test_WhenTerminalsAreConfiguredInJBDirectory() external {
