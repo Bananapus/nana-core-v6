@@ -887,70 +887,66 @@ contract JBTerminalStore is IJBTerminalStore {
             terminal: terminal, projectId: projectId, tokenToReclaim: tokenToReclaim, ruleset: ruleset
         });
 
-        // Scoped to keep `totalSupply` and `context` off the outer stack.
-        {
-            // Re-read accounting context for the data hook context (stack-safe in this scope).
-            JBAccountingContext memory accountingContext =
-                _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
+        // Get the accounting context for the token being reclaimed.
+        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
 
-            // Get the total number of outstanding project tokens.
-            uint256 totalSupply = IJBController(address(DIRECTORY.controllerOf(projectId)))
-                .totalTokenSupplyWithReservedTokensOf(projectId);
+        // Get the total number of outstanding project tokens.
+        uint256 totalSupply =
+            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
 
-            // Can't cash out more tokens than are in the supply.
-            if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
+        // Can't cash out more tokens than are in the supply.
+        if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
 
-            // SECURITY NOTE: The data hook has absolute control over cash-out economics.
-            // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
-            // completely overriding the terminal's bonding curve math. For example, setting
-            // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
-            // Project owners MUST audit their data hooks with the same rigor as the terminal.
+        // SECURITY NOTE: The data hook has absolute control over cash-out economics.
+        // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+        // completely overriding the terminal's bonding curve math. For example, setting
+        // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+        // Project owners MUST audit their data hooks with the same rigor as the terminal.
 
-            // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
-            if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
-                // Build the cash out context field-by-field to avoid stack-too-deep
-                // (the struct has 11 fields — a struct literal would require all values on the stack at once).
-                JBBeforeCashOutRecordedContext memory context;
-                context.terminal = terminal;
-                context.holder = holder;
-                context.projectId = projectId;
-                context.rulesetId = ruleset.id;
-                context.cashOutCount = cashOutCount;
-                context.totalSupply = totalSupply;
-                context.surplus = JBTokenAmount({
-                    token: accountingContext.token,
-                    value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
-                    decimals: accountingContext.decimals,
-                    currency: accountingContext.currency
-                });
-                context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
-                context.cashOutTaxRate = ruleset.cashOutTaxRate();
-                context.beneficiaryIsFeeless = beneficiaryIsFeeless;
-                context.metadata = metadata;
+        // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
+        if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
+            // Build the cash out context field-by-field to avoid stack-too-deep
+            // (the struct has 11 fields — a struct literal would require all values on the stack at once).
+            JBBeforeCashOutRecordedContext memory context;
+            context.terminal = terminal;
+            context.holder = holder;
+            context.projectId = projectId;
+            context.rulesetId = ruleset.id;
+            context.cashOutCount = cashOutCount;
+            context.totalSupply = totalSupply;
+            context.surplus = JBTokenAmount({
+                token: accountingContext.token,
+                value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
+                decimals: accountingContext.decimals,
+                currency: accountingContext.currency
+            });
+            context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
+            context.cashOutTaxRate = ruleset.cashOutTaxRate();
+            context.beneficiaryIsFeeless = beneficiaryIsFeeless;
+            context.metadata = metadata;
 
-                (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
-                    IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+            (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
+                IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
-                // Noop specifications are informational only, so they can't also request forwarded funds.
-                for (uint256 i; i < hookSpecifications.length; i++) {
-                    if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                        revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
-                    }
+            // Noop specifications are informational only, so they can't also request forwarded funds.
+            for (uint256 i; i < hookSpecifications.length; i++) {
+                if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                    revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
                 }
-            } else {
-                cashOutTaxRate = ruleset.cashOutTaxRate();
             }
+        } else {
+            cashOutTaxRate = ruleset.cashOutTaxRate();
+        }
 
-            // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
-            // result.
-            if (reclaimAmount != 0) {
-                reclaimAmount = JBCashOuts.cashOutFrom({
-                    surplus: reclaimAmount,
-                    cashOutCount: cashOutCount,
-                    totalSupply: totalSupply,
-                    cashOutTaxRate: cashOutTaxRate
-                });
-            }
+        // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
+        // result.
+        if (reclaimAmount != 0) {
+            reclaimAmount = JBCashOuts.cashOutFrom({
+                surplus: reclaimAmount,
+                cashOutCount: cashOutCount,
+                totalSupply: totalSupply,
+                cashOutTaxRate: cashOutTaxRate
+            });
         }
     }
 
@@ -1024,30 +1020,22 @@ contract JBTerminalStore is IJBTerminalStore {
         // Keep a reference to the amount that should be added to the project's balance.
         balanceDiff = amount.value;
 
-        // Scoped section preventing stack too deep.
-        {
-            // Keep a reference to the number of hook specifications.
-            uint256 numberOfSpecifications = hookSpecifications.length;
+        // Ensure that the specifications have valid amounts.
+        for (uint256 i; i < hookSpecifications.length; i++) {
+            if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+            }
 
-            // Ensure that the specifications have valid amounts.
-            for (uint256 i; i < numberOfSpecifications; i++) {
-                // Get a reference to the specification's amount.
-                if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                    revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+            uint256 specifiedAmount = hookSpecifications[i].amount;
+
+            // Can't send more to hook than was paid.
+            if (specifiedAmount != 0) {
+                if (specifiedAmount > balanceDiff) {
+                    revert JBTerminalStore_InvalidAmountToForwardHook(specifiedAmount, balanceDiff);
                 }
 
-                uint256 specifiedAmount = hookSpecifications[i].amount;
-
-                // Ensure the amount is non-zero.
-                if (specifiedAmount != 0) {
-                    // Can't send more to hook than was paid.
-                    if (specifiedAmount > balanceDiff) {
-                        revert JBTerminalStore_InvalidAmountToForwardHook(specifiedAmount, balanceDiff);
-                    }
-
-                    // Decrement the total amount being added to the local balance.
-                    balanceDiff -= specifiedAmount;
-                }
+                // Decrement the total amount being added to the local balance.
+                balanceDiff -= specifiedAmount;
             }
         }
 
