@@ -10,6 +10,7 @@ library JBSurplus {
     /// the project's payout limits.
     /// @param projectId The ID of the project to get the total surplus for.
     /// @param terminals The terminals to look for surplus within.
+    /// @param tokens The tokens to include in the surplus calculation. If empty, all tokens are included.
     /// @param decimals The number of decimals that the fixed point surplus result should include.
     /// @param currency The currency that the surplus result should be in terms of.
     /// @return surplus The total surplus of a project's funds in terms of `currency`, as a fixed point number with the
@@ -17,6 +18,7 @@ library JBSurplus {
     function currentSurplusOf(
         uint256 projectId,
         IJBTerminal[] memory terminals,
+        address[] memory tokens,
         uint256 decimals,
         uint256 currency
     )
@@ -31,7 +33,7 @@ library JBSurplus {
         for (uint256 i; i < numberOfTerminals; i++) {
             surplus += terminals[i].currentSurplusOf({
                 projectId: projectId,
-                tokens: new address[](0),
+                tokens: tokens,
                 decimals: decimals,
                 currency: currency
             });

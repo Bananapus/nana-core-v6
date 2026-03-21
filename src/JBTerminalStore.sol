@@ -844,6 +844,7 @@ contract JBTerminalStore is IJBTerminalStore {
             return JBSurplus.currentSurplusOf({
                 projectId: projectId,
                 terminals: DIRECTORY.terminalsOf(projectId),
+                tokens: new address[](0),
                 decimals: accountingContext.decimals,
                 currency: accountingContext.currency
             });
