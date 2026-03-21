@@ -35,6 +35,13 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         super.terminalStoreSetup();
     }
 
+    /// @notice Helper to call currentSurplusOf with the new multi-terminal signature.
+    function _currentSurplusOf(uint256 decimals, uint256 currency) internal view returns (uint256) {
+        IJBTerminal[] memory terminals = new IJBTerminal[](1);
+        terminals[0] = _terminal;
+        return _store.currentSurplusOf(_projectId, terminals, new address[](0), decimals, currency);
+    }
+
     /// @notice Helper to register an accounting context with the store (pranks as the terminal).
     function _registerContext(JBAccountingContext memory ctx) internal {
         vm.prank(address(_terminal));
@@ -132,7 +139,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         // Query surplus with 18 target decimals — triggers decimal adjustment overflow.
         uint256 adjusted = uint256(amount) * 1e12;
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_Uint224Overflow.selector, adjusted));
-        _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
+        _currentSurplusOf(18, _currency);
     }
 
     /// @notice Verifies that currency conversion overflow reverts with Uint224Overflow.
@@ -174,7 +181,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
 
         // The conversion: mulDiv(type(uint224).max, 10^18, 1) = type(uint224).max * 10^18 → overflows uint224.
         vm.expectRevert();
-        _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
+        _currentSurplusOf(18, _currency);
     }
 
     /// @notice Verifies that normal amounts below uint224.max pass through without reverting.
@@ -204,7 +211,7 @@ contract TestUint224Overflow_Local is JBTerminalStoreSetup {
         _contexts[0] = JBAccountingContext({token: address(_token), decimals: 6, currency: _currency});
         _registerContext(_contexts[0]);
 
-        uint256 surplus = _store.currentSurplusOf(address(_terminal), _projectId, 18, _currency);
+        uint256 surplus = _currentSurplusOf(18, _currency);
         assertEq(surplus, 50e18);
     }
 }

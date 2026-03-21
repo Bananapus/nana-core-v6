@@ -769,10 +769,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256)
     {
-        return
-            STORE.currentSurplusOf({
-                terminal: address(this), projectId: projectId, decimals: decimals, currency: currency
-            });
+        IJBTerminal[] memory self = new IJBTerminal[](1);
+        self[0] = IJBTerminal(address(this));
+        return STORE.currentSurplusOf({
+            projectId: projectId, terminals: self, tokens: new address[](0), decimals: decimals, currency: currency
+        });
     }
 
     /// @notice The current surplus for a project in this terminal, considering only specific tokens.
@@ -792,8 +793,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256)
     {
+        IJBTerminal[] memory self = new IJBTerminal[](1);
+        self[0] = IJBTerminal(address(this));
         return STORE.currentSurplusOf({
-            terminal: address(this), projectId: projectId, tokens: tokens, decimals: decimals, currency: currency
+            projectId: projectId, terminals: self, tokens: tokens, decimals: decimals, currency: currency
         });
     }
 

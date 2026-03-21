@@ -134,7 +134,12 @@ contract TestCashOut_Local is TestBaseWorkflow {
         // Get the expected gross per a different view.
         uint256 _grossPerReclaimable = jbTerminalStore()
             .currentReclaimableSurplusOf(
-                _projectId, _tokenAmountToCashOut, new IJBTerminal[](0), 18, uint32(uint160(JBConstants.NATIVE_TOKEN))
+                _projectId,
+                _tokenAmountToCashOut,
+                new IJBTerminal[](0),
+                new address[](0),
+                18,
+                uint32(uint160(JBConstants.NATIVE_TOKEN))
             );
 
         // Test: cash out.

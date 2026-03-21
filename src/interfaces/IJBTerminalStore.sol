@@ -71,24 +71,6 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Returns the reclaimable surplus for a project across multiple terminals.
-    /// @param projectId The ID of the project.
-    /// @param cashOutCount The number of tokens being cashed out.
-    /// @param terminals The terminals to include in the surplus calculation.
-    /// @param decimals The number of decimals to express the result with.
-    /// @param currency The currency to express the result in.
-    /// @return The reclaimable surplus amount.
-    function currentReclaimableSurplusOf(
-        uint256 projectId,
-        uint256 cashOutCount,
-        IJBTerminal[] calldata terminals,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
-
     /// @notice Returns the reclaimable surplus for a project across multiple terminals, considering only specific
     /// tokens.
     /// @param projectId The ID of the project.
@@ -110,33 +92,17 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Returns the current surplus for a terminal and project.
-    /// @param terminal The terminal to get the surplus of.
+    /// @notice Returns the current surplus for a project across specified terminals and tokens.
     /// @param projectId The ID of the project.
+    /// @param terminals The terminals to include. If empty, all project terminals are used.
+    /// @param tokens The tokens to include. If empty, all tokens per terminal are used.
     /// @param decimals The number of decimals to express the result with.
     /// @param currency The currency to express the result in.
     /// @return The current surplus.
     function currentSurplusOf(
-        address terminal,
         uint256 projectId,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        returns (uint256);
-
-    /// @notice Returns the current surplus for a terminal and project, considering only specific tokens.
-    /// @param terminal The terminal to get the surplus of.
-    /// @param projectId The ID of the project.
-    /// @param tokens The tokens to include in the surplus calculation.
-    /// @param decimals The number of decimals to express the result with.
-    /// @param currency The currency to express the result in.
-    /// @return The current surplus for the given tokens.
-    function currentSurplusOf(
-        address terminal,
-        uint256 projectId,
-        address[] memory tokens,
+        IJBTerminal[] calldata terminals,
+        address[] calldata tokens,
         uint256 decimals,
         uint256 currency
     )
