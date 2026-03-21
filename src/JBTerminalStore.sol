@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {mulDiv} from "@prb/math/src/Common.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import {IJBController} from "./interfaces/IJBController.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
@@ -11,6 +12,7 @@ import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
 import {JBCashOuts} from "./libraries/JBCashOuts.sol";
+import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBSurplus} from "./libraries/JBSurplus.sol";
@@ -34,6 +36,8 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
 
     error JBTerminalStore_AccountingContextAlreadySet(address token);
+    error JBTerminalStore_AccountingContextDecimalsMismatch();
+    error JBTerminalStore_AddingAccountingContextNotAllowed();
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
     error JBTerminalStore_InadequateControllerPayoutLimit(uint256 amount, uint256 limit);
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
@@ -44,6 +48,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_RulesetPaymentPaused();
     error JBTerminalStore_TerminalMigrationNotAllowed();
     error JBTerminalStore_Uint224Overflow(uint256 value);
+    error JBTerminalStore_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
     // -------------------------- internal constants --------------------- //
@@ -162,6 +167,42 @@ contract JBTerminalStore is IJBTerminalStore {
         if (_accountingContextForTokenOf[msg.sender][projectId][context.token].token != address(0)) {
             revert JBTerminalStore_AccountingContextAlreadySet(context.token);
         }
+
+        // Get a reference to the project's current ruleset.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
+        // Make sure that if there's a ruleset, it allows adding accounting contexts.
+        if (ruleset.id != 0 && !ruleset.allowAddAccountingContext()) {
+            revert JBTerminalStore_AddingAccountingContextNotAllowed();
+        }
+
+        // Keep track of a flag indicating if we know the provided decimals are incorrect.
+        bool knownInvalidDecimals;
+
+        // Check if the token is the native token and has the correct decimals.
+        if (context.token == JBConstants.NATIVE_TOKEN && context.decimals != 18) {
+            knownInvalidDecimals = true;
+        } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
+            // slither-disable-next-line calls-loop
+            try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
+                if (context.decimals != decimals) {
+                    knownInvalidDecimals = true;
+                }
+            } catch {
+                // The token didn't support `decimals`.
+                // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
+                // The caller is responsible for providing the correct decimals for such tokens.
+                knownInvalidDecimals = false;
+            }
+        }
+
+        // Make sure the decimals are correct.
+        if (knownInvalidDecimals) {
+            revert JBTerminalStore_AccountingContextDecimalsMismatch();
+        }
+
+        // Make sure the currency is non-zero.
+        if (context.currency == 0) revert JBTerminalStore_ZeroAccountingContextCurrency();
 
         // Store the accounting context.
         _accountingContextForTokenOf[msg.sender][projectId][context.token] = context;

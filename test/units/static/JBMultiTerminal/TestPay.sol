@@ -7,7 +7,6 @@ import {IJBController} from "../../../../src/interfaces/IJBController.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBPayHook} from "../../../../src/interfaces/IJBPayHook.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
-import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
@@ -17,7 +16,6 @@ import {JBAfterPayRecordedContext} from "../../../../src/structs/JBAfterPayRecor
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -60,22 +58,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
-        // setup: return data
-        JBRuleset memory returnedRuleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );
@@ -103,30 +86,12 @@ contract TestPay_Local is JBMultiTerminalSetup {
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
         );
 
-        // mock call to token decimals
-        mockExpect(address(_mockToken), abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(6));
-
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({
             token: address(_mockToken), decimals: 6, currency: uint32(uint160(address(_mockToken)))
         });
 
-        // setup: return data
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(ruleset));
-
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );
@@ -280,6 +245,7 @@ contract TestPay_Local is JBMultiTerminalSetup {
             // forge-lint: disable-next-line(unsafe-typecast)
             token: address(_mockToken),
             decimals: 6,
+            // forge-lint: disable-next-line(unsafe-typecast)
             currency: uint32(_mockTokenCurrency),
             value: _defaultAmount
         });

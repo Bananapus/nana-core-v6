@@ -33,6 +33,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
     address _native = JBConstants.NATIVE_TOKEN;
     address _usdc = makeAddr("USDC");
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 _usdcCurrency = uint32(uint160(_usdc));
 
     JBSplit private _split;

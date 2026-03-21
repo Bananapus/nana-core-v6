@@ -8,7 +8,6 @@ import {IJBFeeTerminal} from "../../../../src/interfaces/IJBFeeTerminal.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
 import {IJBPayoutTerminal} from "../../../../src/interfaces/IJBPayoutTerminal.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
-import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
@@ -18,7 +17,6 @@ import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMeta
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -218,17 +216,11 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        // mock call to tokens decimals()
-        mockExpect(mockToken, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
-
-        // mock call to rulesets currentOf returning 0 to bypass ruleset checking
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-
         // call params
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );
@@ -378,17 +370,11 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             metadata: packedMetadata
         });
 
-        // mock call to tokens decimals()
-        mockExpect(mockToken, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
-
-        // mock call to rulesets currentOf
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-
         // Set up accounting context so the token is recognized
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );
@@ -512,17 +498,11 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             metadata: packedMetadata
         });
 
-        // mock call to tokens decimals()
-        mockExpect(mockToken, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(18));
-
-        // mock call to rulesets currentOf
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-
         // Set up accounting context
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
 
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );

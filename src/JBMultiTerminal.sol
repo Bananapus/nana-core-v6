@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
@@ -24,7 +23,6 @@ import {IJBPermissioned} from "./interfaces/IJBPermissioned.sol";
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBPermitTerminal} from "./interfaces/IJBPermitTerminal.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
-import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
 import {IJBSplitHook} from "./interfaces/IJBSplitHook.sol";
 import {IJBSplits} from "./interfaces/IJBSplits.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
@@ -60,8 +58,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBMultiTerminal_AccountingContextDecimalsMismatch();
-    error JBMultiTerminal_AddingAccountingContextNotAllowed();
     error JBMultiTerminal_FeeTerminalNotFound(address token);
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
@@ -73,7 +69,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
     error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
     error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
-    error JBMultiTerminal_ZeroAccountingContextCurrency();
 
     //*********************************************************************//
     // ------------------------- public constants ------------------------ //
@@ -109,9 +104,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Mints ERC-721s that represent project ownership and transfers.
     IJBProjects public immutable override PROJECTS;
-
-    /// @notice The contract storing and managing project rulesets.
-    IJBRulesets public immutable override RULESETS;
 
     /// @notice The contract that stores splits for each project.
     IJBSplits public immutable override SPLITS;
@@ -178,7 +170,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         DIRECTORY = store.DIRECTORY();
         FEELESS_ADDRESSES = feelessAddresses;
         PROJECTS = projects;
-        RULESETS = store.RULESETS();
         SPLITS = splits;
         STORE = store;
         TOKENS = tokens;
@@ -210,52 +201,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             alsoGrantAccessIf: _msgSender() == address(_controllerOf(projectId))
         });
 
-        // Get a reference to the project's current ruleset.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
-        // Make sure that if there's a ruleset, it allows adding accounting contexts.
-        if (ruleset.id != 0 && !ruleset.allowAddAccountingContext()) {
-            revert JBMultiTerminal_AddingAccountingContextNotAllowed();
-        }
-
         // Start accepting each token.
         for (uint256 i; i < accountingContexts.length; i++) {
-            // Set the accounting context being iterated on.
-            JBAccountingContext memory accountingContext = accountingContexts[i];
+            // Record the accounting context in the store (validates and reverts if invalid).
+            STORE.recordAccountingContextOf(projectId, accountingContexts[i]);
 
-            // Keep track of a flag indiciating if we know the provided decimals are incorrect.
-            bool knownInvalidDecimals;
-
-            // Check if the token is the native token and has the correct decimals
-            if (accountingContext.token == JBConstants.NATIVE_TOKEN && accountingContext.decimals != 18) {
-                knownInvalidDecimals = true;
-            } else if (accountingContext.token != JBConstants.NATIVE_TOKEN) {
-                // slither-disable-next-line calls-loop
-                try IERC20Metadata(accountingContext.token).decimals() returns (uint8 decimals) {
-                    // slither-disable-next-line calls-loop
-                    if (accountingContext.decimals != decimals) {
-                        knownInvalidDecimals = true;
-                    }
-                } catch {
-                    // The token didn't support `decimals`.
-                    // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
-                    // The caller is responsible for providing the correct decimals for such tokens.
-                    knownInvalidDecimals = false;
-                }
-            }
-
-            // Make sure the decimals are correct.
-            if (knownInvalidDecimals) {
-                revert JBMultiTerminal_AccountingContextDecimalsMismatch();
-            }
-
-            // Make sure the currency is non-zero.
-            if (accountingContext.currency == 0) revert JBMultiTerminal_ZeroAccountingContextCurrency();
-
-            // Record the accounting context in the store (reverts if already set).
-            STORE.recordAccountingContextOf(projectId, accountingContext);
-
-            emit SetAccountingContext({projectId: projectId, context: accountingContext, caller: _msgSender()});
+            emit SetAccountingContext({projectId: projectId, context: accountingContexts[i], caller: _msgSender()});
         }
     }
 
@@ -381,7 +332,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBSplitHookContext memory context = JBSplitHookContext({
                 token: token,
                 amount: netPayoutAmount,
-                decimals: STORE.accountingContextOf(address(this), projectId, token).decimals,
+                decimals: STORE.accountingContextOf({terminal: address(this), projectId: projectId, token: token})
+                .decimals,
                 projectId: projectId,
                 groupId: uint256(uint160(token)),
                 split: split
@@ -789,7 +741,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (JBAccountingContext memory)
     {
-        return STORE.accountingContextOf(address(this), projectId, token);
+        return STORE.accountingContextOf({terminal: address(this), projectId: projectId, token: token});
     }
 
     /// @notice The tokens accepted by a project.
@@ -1942,7 +1894,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (JBAccountingContext memory context)
     {
         // Keep a reference to the accounting context configured for the token.
-        context = STORE.accountingContextOf(address(this), projectId, token);
+        context = STORE.accountingContextOf({terminal: address(this), projectId: projectId, token: token});
 
         // Revert if the token is not accepted by the project.
         if (context.token == address(0)) revert JBMultiTerminal_TokenNotAccepted(token);

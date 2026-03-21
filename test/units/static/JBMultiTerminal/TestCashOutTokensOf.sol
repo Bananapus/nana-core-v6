@@ -10,7 +10,6 @@ import {IJBController} from "../../../../src/interfaces/IJBController.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
 import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
-import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
@@ -22,7 +21,6 @@ import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -54,28 +52,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
         );
 
-        if (token != JBConstants.NATIVE_TOKEN) {
-            mockExpect(token, abi.encodeCall(IERC20Metadata.decimals, ()), abi.encode(decimals));
+        // Mock ERC20 transfer for non-contract token addresses (needed for SafeERC20 calls later).
+        if (token != JBConstants.NATIVE_TOKEN && token.code.length == 0) {
+            vm.mockCall(token, abi.encodeWithSelector(IERC20.transfer.selector), abi.encode(true));
         }
 
         JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
         _tokens[0] = JBAccountingContext({token: token, decimals: decimals, currency: currency});
 
-        JBRuleset memory returnedRuleset = JBRuleset({
-            cycleNumber: 1,
-            id: 0,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(returnedRuleset));
-
-        // Mock recordAccountingContextOf in the store
+        // Mock recordAccountingContextOf in the store (validation now happens there)
         mockExpect(
             address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens[0])), ""
         );
@@ -137,6 +122,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
@@ -177,6 +163,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         // put code at mockToken address to pass OZ Address check
         vm.etch(_mockToken, abi.encode(1));
+        // forge-lint: disable-next-line(unsafe-typecast)
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         vm.prank(_bene);
@@ -189,6 +176,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
@@ -229,6 +217,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         // put code at mockToken address to pass OZ Address check
         vm.etch(_mockToken, abi.encode(1));
+        // forge-lint: disable-next-line(unsafe-typecast)
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         vm.expectRevert(
@@ -250,6 +239,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](0);
         JBAccountingContext memory mockTokenContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
@@ -290,6 +280,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         // put code at mockToken address to pass OZ Address check
         vm.etch(_mockToken, abi.encode(1));
+        // forge-lint: disable-next-line(unsafe-typecast)
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         // get fee amount
@@ -595,6 +586,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         hookSpecifications[0] =
             JBCashOutHookSpecification({hook: IJBCashOutHook(address(this)), noop: true, amount: 0, metadata: "info"});
         JBAccountingContext memory mockTokenContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         JBAccountingContext[] memory mockBalanceContext = new JBAccountingContext[](1);
         mockBalanceContext[0] = mockTokenContext;
@@ -626,6 +618,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
         );
 
+        // forge-lint: disable-next-line(unsafe-typecast)
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         vm.prank(_bene);

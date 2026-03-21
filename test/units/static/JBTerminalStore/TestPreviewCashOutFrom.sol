@@ -120,6 +120,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         uint256 _cashOutCount = 10e18;
 
         JBAccountingContext memory _accountingContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
 
         JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](0);
@@ -208,6 +209,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         });
 
         JBAccountingContext memory _accountingContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
@@ -275,6 +277,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         });
 
         JBAccountingContext memory _accountingContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
@@ -343,6 +346,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         });
 
         JBAccountingContext memory _accountingContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
 
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);
@@ -416,6 +420,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         });
 
         JBAccountingContext memory _accountingContext =
+            // forge-lint: disable-next-line(unsafe-typecast)
             JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
 
         JBBeforeCashOutRecordedContext memory _context = JBBeforeCashOutRecordedContext({

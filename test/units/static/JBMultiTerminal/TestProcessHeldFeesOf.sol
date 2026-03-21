@@ -75,9 +75,8 @@ contract TestProcessHeldFeesOf_Local is JBTest {
     }
 
     function setUp() public {
-        // Constructor will call to find directory and rulesets from the terminal store
+        // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
-        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.RULESETS, ()), abi.encode(address(rulesets)));
 
         _terminal = new ForTest_JBMultiTerminal(
             feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder
@@ -130,6 +129,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: _terminal.FEE()});
 
         // Set up accounting context for the fee beneficiary project (project 1) so _pay can build the token amount.
+        // forge-lint: disable-next-line(unsafe-typecast)
         _setAccountingContext(_feeProjectId, _mockToken, 0, uint32(uint160(_mockToken)));
 
         // Mock the directory call to find the fee terminal - return _terminal itself so it uses internal _pay
