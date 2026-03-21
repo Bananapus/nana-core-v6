@@ -263,7 +263,7 @@ These are the patterns that will trip you up if you are not aware of them:
 13. **`JBERC20` is cloned via `Clones.clone()`** -- constructor sets invalid name/symbol; real values set in `initialize()`.
 14. **Named returns auto-return** -- several functions use named return variables without explicit `return` statements.
 15. **Preview functions call data hooks** -- `previewPayFor`, `previewCashOutFrom`, and their store-level counterparts invoke data hooks during simulation. A reverting data hook will cause the preview to revert. Preview functions are `view` but still make external calls to hooks.
-16. **Store preview functions use `msg.sender` as terminal** -- `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` use `msg.sender` (not an explicit parameter) as the terminal context. Only terminal contracts calling these will get correct balance/surplus lookups. Use the terminal-level `JBMultiTerminal.previewPayFor` / `previewCashOutFrom` instead for general-purpose previews.
+16. **Store preview functions take an explicit terminal parameter** -- `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` take an explicit `terminal` address for balance/surplus lookups. Callers must pass a registered terminal to get correct results. The terminal-level `JBMultiTerminal.previewPayFor` / `previewCashOutFrom` handle this automatically by passing `address(this)`.
 
 ## Priority Areas to Audit
 

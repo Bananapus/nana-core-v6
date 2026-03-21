@@ -129,7 +129,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 `JBMultiTerminal.previewPayFor`, `JBMultiTerminal.previewCashOutFrom`, and `JBController.previewMintOf` are `view` functions that simulate operations without modifying state. They compose the same computation paths as the real operations.
 
 - **Data hooks are called during previews.** `previewPayFor` and `previewCashOutFrom` invoke `beforePayRecordedWith` and `beforeCashOutRecordedWith` on data hooks. A reverting data hook causes the preview to revert. A gas-consuming hook can cause the preview to run out of gas.
-- **Store previews use `msg.sender` as terminal.** `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` use `msg.sender` for balance/surplus lookups. Only a registered terminal calling these will get correct results. External callers should use the terminal-level functions (`JBMultiTerminal.previewPayFor` / `previewCashOutFrom`) which handle this automatically.
+- **Store previews take an explicit terminal parameter.** `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` take an explicit `terminal` address for balance/surplus lookups. Callers must pass a registered terminal to get correct results. The terminal-level functions (`JBMultiTerminal.previewPayFor` / `previewCashOutFrom`) handle this automatically by passing `address(this)`.
 - **No state modification risk.** Preview functions cannot change balances, mint/burn tokens, or consume limits. They are safe to call from any context.
 
 ## 7. Integration Risks

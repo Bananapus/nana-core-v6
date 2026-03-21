@@ -69,7 +69,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - Data hook can return empty weight (0) to suppress minting while still recording payment
 - Fee-on-transfer tokens: actual amount received is `_balanceOf(token) - balanceBefore` (measured via balance diff)
 
-**Preview**: Call `JBMultiTerminal.previewPayFor(projectId, token, amount, beneficiary, metadata)` to simulate the full payment on-chain -- including data hook effects and the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. This is a `view` function that does not modify state. For lower-level access without the mint split, the terminal delegates to `JBTerminalStore.previewPayFrom(payer, amount, projectId, beneficiary, metadata)` which returns the raw `(ruleset, tokenCount, hookSpecifications)`.
+**Preview**: Call `JBMultiTerminal.previewPayFor(projectId, token, amount, beneficiary, metadata)` to simulate the full payment on-chain -- including data hook effects and the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. This is a `view` function that does not modify state. For lower-level access without the mint split, the terminal delegates to `JBTerminalStore.previewPayFrom(terminal, payer, amount, projectId, beneficiary, metadata)` which returns the raw `(ruleset, tokenCount, hookSpecifications)`.
 
 ---
 
