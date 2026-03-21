@@ -39,7 +39,7 @@ What must be true for the system to remain safe:
 
 ### Surplus Manipulation
 
-- **Cross-terminal surplus aggregation.** When `useTotalSurplusForCashOuts` is enabled, `recordCashOutFor` aggregates surplus across all terminals via `JBSurplus.currentSurplusOf()`, which calls `terminal.currentSurplusOf()` on each. If a malicious terminal is added to the project's directory, it could report inflated surplus. Defense: `InadequateTerminalStoreBalance` revert prevents extracting more than the actual terminal balance.
+- **Cross-terminal surplus aggregation.** When `useTotalSurplusForCashOuts` is enabled, `recordCashOutFor` aggregates surplus across all terminals via `JBSurplus.currentSurplusOf()`, which calls `terminal.currentSurplusOf()` on each. If a malicious terminal is added to the project's directory, it could report inflated surplus. Defense: `InadequateTerminalStoreBalance` revert prevents extracting more than the actual terminal balance. When `useTotalSurplusForCashOuts` is false, only the single token being reclaimed contributes to the surplus calculation.
 - **Price feed inconsistency across terminals.** Different tokens in different terminals are converted to a common currency via `JBPrices`. If price feeds between terminals are stale or inconsistent, aggregated surplus can be inflated/deflated, affecting cash out reclaim amounts.
 
 ## 3. Reentrancy Surface
@@ -149,7 +149,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 ### Cross-Terminal Surplus Aggregation
 
-- `JBSurplus.currentSurplusOf` calls `terminal.currentSurplusOf()` on each terminal. These are external view calls with no gas limit. A malicious or gas-expensive terminal can cause this aggregation to revert, blocking cash outs for any project that has `useTotalSurplusForCashOuts` enabled and uses that terminal.
+- `JBSurplus.currentSurplusOf` calls `terminal.currentSurplusOf()` on each terminal. These are external view calls with no gas limit. A malicious or gas-expensive terminal can cause this aggregation to revert, blocking cash outs for any project that has `useTotalSurplusForCashOuts` enabled and uses that terminal. When `useTotalSurplusForCashOuts` is false, surplus is computed internally by the store for only the reclaimed token, avoiding cross-terminal external calls.
 - The surplus calculation converts each terminal's balance to a common currency via price feeds. Rounding accumulates across terminals. With N terminals and M tokens each, there are N*M price conversions, each with up to 1 wei of rounding error.
 
 ### `recordAddedBalanceFor` Access Control

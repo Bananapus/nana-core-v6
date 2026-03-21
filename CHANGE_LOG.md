@@ -117,7 +117,7 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 
 | Function | Description |
 |----------|-------------|
-| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view that returns the reclaimable surplus across all terminals using all accounting contexts. Delegates to `currentReclaimableSurplusOf` with empty `terminals` and `accountingContexts` arrays. Mirrors the `currentTotalSurplusOf` pattern. |
+| `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view that returns the reclaimable surplus across all terminals using all tokens. Delegates to `currentReclaimableSurplusOf` with empty `terminals` and `tokens` arrays. Mirrors the `currentTotalSurplusOf` pattern. |
 
 #### IJBTokens / JBTokens
 
