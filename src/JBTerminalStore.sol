@@ -882,8 +882,8 @@ contract JBTerminalStore is IJBTerminalStore {
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
-        // Compute surplus — delegated to keep stack shallow.
-        reclaimAmount = _cashOutSurplusOf({
+        // Get the project's current surplus for the token being reclaimed.
+        uint256 surplus = _cashOutSurplusOf({
             terminal: terminal, projectId: projectId, tokenToReclaim: tokenToReclaim, ruleset: ruleset
         });
 
@@ -905,8 +905,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
-            // Build the cash out context field-by-field to avoid stack-too-deep
-            // (the struct has 11 fields — a struct literal would require all values on the stack at once).
+            // Build the cash out context field-by-field — the struct has 11 fields, too many for a literal.
             JBBeforeCashOutRecordedContext memory context;
             context.terminal = terminal;
             context.holder = holder;
@@ -916,7 +915,7 @@ contract JBTerminalStore is IJBTerminalStore {
             context.totalSupply = totalSupply;
             context.surplus = JBTokenAmount({
                 token: accountingContext.token,
-                value: reclaimAmount, // reclaimAmount temporarily holds the current surplus.
+                value: surplus,
                 decimals: accountingContext.decimals,
                 currency: accountingContext.currency
             });
@@ -938,14 +937,10 @@ contract JBTerminalStore is IJBTerminalStore {
             cashOutTaxRate = ruleset.cashOutTaxRate();
         }
 
-        // Calculate the reclaim amount. `reclaimAmount` currently holds the surplus — overwrite it with the
-        // result.
-        if (reclaimAmount != 0) {
+        // Apply the bonding curve to calculate how much of the surplus is reclaimable.
+        if (surplus != 0) {
             reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: reclaimAmount,
-                cashOutCount: cashOutCount,
-                totalSupply: totalSupply,
-                cashOutTaxRate: cashOutTaxRate
+                surplus: surplus, cashOutCount: cashOutCount, totalSupply: totalSupply, cashOutTaxRate: cashOutTaxRate
             });
         }
     }
