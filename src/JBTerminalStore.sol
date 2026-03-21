@@ -674,6 +674,42 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
+    /// @notice Gets the current surplus amount in a terminal for a specified project, considering only specific tokens.
+    /// @param terminal The terminal the surplus is being calculated for.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param tokens The tokens to include in the surplus calculation.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @return The current surplus amount the project has in the specified terminal for the given tokens.
+    function currentSurplusOf(
+        address terminal,
+        uint256 projectId,
+        address[] memory tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        // Build the accounting contexts from the stored contexts for each token.
+        JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](tokens.length);
+        for (uint256 i; i < tokens.length; i++) {
+            accountingContexts[i] = _accountingContextForTokenOf[terminal][projectId][tokens[i]];
+        }
+
+        // Return the surplus during the project's current ruleset.
+        return _surplusFrom({
+            terminal: terminal,
+            projectId: projectId,
+            accountingContexts: accountingContexts,
+            ruleset: RULESETS.currentOf(projectId),
+            targetDecimals: decimals,
+            targetCurrency: currency
+        });
+    }
+
     /// @notice Returns the number of surplus terminal tokens that would be reclaimed by cashing out a given number of
     /// tokens across all of a project's terminals using all accounting contexts.
     /// @param projectId The ID of the project whose tokens would be cashed out.
@@ -821,21 +857,27 @@ contract JBTerminalStore is IJBTerminalStore {
     {
         JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
 
-        return ruleset.useTotalSurplusForCashOuts()
-            ? JBSurplus.currentSurplusOf({
+        if (ruleset.useTotalSurplusForCashOuts()) {
+            return JBSurplus.currentSurplusOf({
                 projectId: projectId,
                 terminals: DIRECTORY.terminalsOf(projectId),
                 decimals: accountingContext.decimals,
                 currency: accountingContext.currency
-            })
-            : _surplusFrom({
-                terminal: terminal,
-                projectId: projectId,
-                accountingContexts: _accountingContextsOf[terminal][projectId],
-                ruleset: ruleset,
-                targetDecimals: accountingContext.decimals,
-                targetCurrency: accountingContext.currency
             });
+        }
+
+        // Only account for the specific token's surplus.
+        JBAccountingContext[] memory singleContext = new JBAccountingContext[](1);
+        singleContext[0] = accountingContext;
+
+        return _surplusFrom({
+            terminal: terminal,
+            projectId: projectId,
+            accountingContexts: singleContext,
+            ruleset: ruleset,
+            targetDecimals: accountingContext.decimals,
+            targetCurrency: accountingContext.currency
+        });
     }
 
     /// @notice Computes cash out results without writing state.
