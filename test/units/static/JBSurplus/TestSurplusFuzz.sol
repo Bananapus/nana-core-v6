@@ -19,10 +19,6 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         surplusAmount = _surplus;
     }
 
-    function currentSurplusOf(uint256, uint256, uint256) external view override returns (uint256) {
-        return surplusAmount;
-    }
-
     function currentSurplusOf(uint256, address[] calldata, uint256, uint256) external view override returns (uint256) {
         return surplusAmount;
     }

@@ -66,8 +66,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `migrateBalanceOf(uint256 projectId, address token, IJBTerminal to)` | Migrates a project's token balance to another terminal. Requires `allowTerminalMigration`. |
 | `processHeldFeesOf(uint256 projectId, address token, uint256 count)` | Processes up to `count` held fees for a project, sending them to the fee beneficiary project. |
 | `addAccountingContextsFor(uint256 projectId, JBAccountingContext[] accountingContexts)` | Adds new accounting contexts (token types) to a terminal for a project. |
-| `currentSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Returns the project's current surplus in this terminal in the specified currency. |
-| `currentSurplusOf(uint256 projectId, address[] tokens, uint256 decimals, uint256 currency)` | Returns the project's current surplus in this terminal for specific tokens. |
+| `currentSurplusOf(uint256 projectId, address[] tokens, uint256 decimals, uint256 currency)` | Returns the project's current surplus in this terminal. Empty `tokens` = all tokens. |
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
 | `accountingContextsOf(uint256 projectId)` | Returns all accounting contexts for a project. |
 | `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |

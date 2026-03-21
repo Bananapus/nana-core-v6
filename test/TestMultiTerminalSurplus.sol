@@ -162,13 +162,13 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         // Check ETH-only surplus from terminal 1.
         JBAccountingContext[] memory ethCtx = new JBAccountingContext[](1);
         ethCtx[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
-        uint256 ethSurplus = _terminal1.currentSurplusOf(_projectId, 18, _nativeCurrency);
+        uint256 ethSurplus = _terminal1.currentSurplusOf(_projectId, new address[](0), 18, _nativeCurrency);
         assertEq(ethSurplus, ethAmount, "terminal1 ETH surplus should match payment");
 
         // Check USDC-only surplus from terminal 2.
         JBAccountingContext[] memory usdcCtx = new JBAccountingContext[](1);
         usdcCtx[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
-        uint256 usdcSurplus = _terminal2.currentSurplusOf(_projectId, 6, _usdcCurrency);
+        uint256 usdcSurplus = _terminal2.currentSurplusOf(_projectId, new address[](0), 6, _usdcCurrency);
         assertEq(usdcSurplus, usdcAmount, "terminal2 USDC surplus should match payment");
 
         // Check total surplus in ETH terms from the store.
@@ -330,12 +330,12 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         // Get individual surpluses in ETH terms.
         JBAccountingContext[] memory ethCtx = new JBAccountingContext[](1);
         ethCtx[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
-        uint256 t1Surplus = _terminal1.currentSurplusOf(_projectId, 18, _nativeCurrency);
+        uint256 t1Surplus = _terminal1.currentSurplusOf(_projectId, new address[](0), 18, _nativeCurrency);
 
         JBAccountingContext[] memory usdcCtx = new JBAccountingContext[](1);
         usdcCtx[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
         // Get terminal 2 surplus in ETH terms.
-        uint256 t2SurplusInEth = _terminal2.currentSurplusOf(_projectId, 18, _nativeCurrency);
+        uint256 t2SurplusInEth = _terminal2.currentSurplusOf(_projectId, new address[](0), 18, _nativeCurrency);
 
         // Get total surplus from the store.
         uint256 totalSurplus = jbTerminalStore().currentTotalSurplusOf(_projectId, 18, _nativeCurrency);

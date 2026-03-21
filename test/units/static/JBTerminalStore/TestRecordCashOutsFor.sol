@@ -78,12 +78,12 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -159,12 +159,12 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -240,12 +240,12 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), _directoryCall, _returned);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal1Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal1Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal1Return = abi.encode(1e18);
         mockExpect(address(_terminal1), _terminal1Call, _terminal1Return);
 
         // mock call to first terminal currentSurplusOf
-        bytes memory _terminal2Call = abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency);
+        bytes memory _terminal2Call = abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency));
         bytes memory _terminal2Return = abi.encode(2e18);
         mockExpect(address(_terminal2), _terminal2Call, _terminal2Return);
 
@@ -311,13 +311,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
 
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
         uint256 _cashOutCount = 4e18; // greater than token total supply
 
         vm.expectRevert(
@@ -345,13 +338,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
-
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
 
         uint256 _cashOutCount = 6; // within balance bounds
         uint256 expectedCashOuts = mulDiv(3e18, _cashOutCount, _totalSupply);
@@ -458,13 +444,6 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
             abi.encode(_totalTokens)
         );
-
-        // call params
-        JBAccountingContext memory _accountingContexts =
-            JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](1);
-
-        _balanceContexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
 
         uint256 _cashOutCount = 4e18; // greater than caller balance
 

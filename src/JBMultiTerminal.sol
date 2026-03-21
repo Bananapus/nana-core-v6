@@ -751,37 +751,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return STORE.accountingContextsOf(address(this), projectId);
     }
 
-    /// @notice Gets the total current surplus amount in this terminal for a project, in terms of a given currency.
-    /// @dev This total surplus only includes tokens that the project accepts (as returned by
-    /// `accountingContextsOf(...)`).
-    /// @param projectId The ID of the project to get the current total surplus of.
+    /// @notice Gets the current surplus amount in this terminal for a project, in terms of a given currency.
+    /// @dev If `tokens` is empty, includes all tokens the project accepts (as returned by `accountingContextsOf(...)`).
+    /// @param projectId The ID of the project to get the current surplus of.
+    /// @param tokens The tokens to include in the surplus calculation. If empty, all tokens are included.
     /// @param decimals The number of decimals to include in the fixed point returned value.
     /// @param currency The currency to express the returned value in terms of.
     /// @return The current surplus amount the project has in this terminal, in terms of `currency` and with the
     /// specified number of decimals.
-    function currentSurplusOf(
-        uint256 projectId,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        IJBTerminal[] memory self = new IJBTerminal[](1);
-        self[0] = IJBTerminal(address(this));
-        return STORE.currentSurplusOf({
-            projectId: projectId, terminals: self, tokens: new address[](0), decimals: decimals, currency: currency
-        });
-    }
-
-    /// @notice The current surplus for a project in this terminal, considering only specific tokens.
-    /// @param projectId The ID of the project to get the surplus of.
-    /// @param tokens The tokens to include in the surplus calculation.
-    /// @param decimals The number of decimals to express the surplus with.
-    /// @param currency The currency to express the surplus in.
-    /// @return The current surplus amount the project has in this terminal for the given tokens.
     function currentSurplusOf(
         uint256 projectId,
         address[] calldata tokens,

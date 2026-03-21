@@ -59,7 +59,7 @@ contract TestSequencerPriceFeedFork is Test {
     // ------------------------------------------------------------------
 
     /// @notice Under normal conditions (sequencer up, grace period elapsed), currentUnitPrice returns a sane price.
-    function test_normalOperation_returnsValidPrice() public skipIfNoRpc {
+    function test_normalOperation_returnsValidPrice() public view skipIfNoRpc {
         uint256 price18 = feed.currentUnitPrice(18);
 
         // ETH price should be between $500 and $50,000.

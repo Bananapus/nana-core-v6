@@ -65,12 +65,12 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
 
         mockExpect(
             address(_terminal1),
-            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency)),
             abi.encode(1e18)
         );
         mockExpect(
             address(_terminal2),
-            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency)),
             abi.encode(2e18)
         );
     }
@@ -122,8 +122,6 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         JBAccountingContext memory _accountingContext =
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext({token: address(_token), decimals: uint8(_decimals), currency: _currency});
-
-        JBAccountingContext[] memory _balanceContexts = new JBAccountingContext[](0);
 
         // Mock for preview call
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
@@ -356,7 +354,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         mockExpect(address(directory), abi.encodeCall(IJBDirectory.terminalsOf, (_projectId)), abi.encode(_terminals));
         mockExpect(
             address(_terminal1),
-            abi.encodeWithSelector(bytes4(0xcc680127), _projectId, _decimals, _currency),
+            abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency)),
             abi.encode(0)
         );
         mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));

@@ -114,7 +114,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
 
-        uint256 surplus = _terminal.currentSurplusOf(_projectId, 18, _nativeCurrency);
+        uint256 surplus = _terminal.currentSurplusOf(_projectId, new address[](0), 18, _nativeCurrency);
         assertEq(surplus, payAmount, "ETH surplus should match payment");
     }
 
@@ -137,7 +137,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
         contexts[0] = JBAccountingContext({token: address(_usdc), decimals: 6, currency: _usdcCurrency});
 
-        uint256 surplus = _terminal.currentSurplusOf(_projectId, 6, _usdcCurrency);
+        uint256 surplus = _terminal.currentSurplusOf(_projectId, new address[](0), 6, _usdcCurrency);
         assertEq(surplus, usdcAmount, "USDC surplus should match payment");
     }
 
@@ -163,7 +163,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
         _terminal.pay(_projectId, address(_usdc), usdcAmount, _beneficiary, 0, "", "");
 
         // Check surplus (now includes all registered contexts automatically)
-        uint256 ethSurplus = _terminal.currentSurplusOf(_projectId, 18, _nativeCurrency);
+        uint256 ethSurplus = _terminal.currentSurplusOf(_projectId, new address[](0), 18, _nativeCurrency);
 
         // Total should include ETH amount + USDC converted to ETH
         // 1 ETH + (2000 USDC / 2000 per ETH) = 2 ETH
