@@ -1221,14 +1221,14 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             MockPriceFeed _priceFeedNativeUsd = new MockPriceFeed(_USD_PRICE_PER_NATIVE, _PRICE_FEED_DECIMALS);
             vm.label(address(_priceFeedNativeUsd), "Mock Price Feed Native-USDC");
 
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: 1,
                 pricingCurrency: uint32(uint160(address(_usdcToken))),
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
                 feed: _priceFeedNativeUsd
             });
 
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: 2,
                 pricingCurrency: uint32(uint160(address(_usdcToken))),
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
@@ -1898,14 +1898,14 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
             MockPriceFeed _priceFeedNativeUsd = new MockPriceFeed(_USD_PRICE_PER_NATIVE, _PRICE_FEED_DECIMALS);
             vm.label(address(_priceFeedNativeUsd), "Mock Price Feed Native-USDC");
 
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: 1,
                 pricingCurrency: uint32(uint160(address(_usdcToken))),
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
                 feed: _priceFeedNativeUsd
             });
 
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: 2,
                 pricingCurrency: uint32(uint160(address(_usdcToken))),
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),

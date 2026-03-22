@@ -164,7 +164,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency being priced by the feed.
     /// @param feed The address of the price feed to add.
-    function addPriceFeed(
+    function addPriceFeedFor(
         uint256 projectId,
         uint256 pricingCurrency,
         uint256 unitCurrency,

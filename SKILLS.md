@@ -46,7 +46,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `setUriOf(uint256 projectId, string uri)` | Sets the project's metadata URI. |
 | `transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 creditCount)` | Transfers credits between addresses (reverts if `pauseCreditTransfers` is set in ruleset). |
 | `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in ruleset). |
-| `migrateController(uint256 projectId, IJBMigratable to)` | Migrates the project to a new controller. Calls `beforeReceiveMigrationFrom`, `migrate`, updates directory, then `afterReceiveMigrationFrom`. |
+| `migrate(uint256 projectId, IERC165 to)` | Migrates the project to a new controller. Calls `beforeReceiveMigrationFrom`, `migrate`, updates directory, then `afterReceiveMigrationFrom`. |
 | `currentRulesetOf(uint256 projectId)` | Returns the current ruleset and unpacked metadata. |
 | `upcomingRulesetOf(uint256 projectId)` | Returns the upcoming ruleset and unpacked metadata. |
 | `allRulesetsOf(uint256 projectId, uint256 startingId, uint256 size)` | Returns an array of rulesets with metadata, paginated. |
@@ -78,9 +78,9 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Function | What it does |
 |----------|--------------|
 | `recordPaymentFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Records a payment. Applies data hook if enabled. Returns ruleset, token count, hook specifications. |
-| `recordPayoutFor(uint256 projectId, JBAccountingContext accountingContext, uint256 amount, uint256 currency)` | Records a payout. Enforces payout limits. Returns ruleset and amount paid out. |
-| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, JBAccountingContext accountingContext, JBAccountingContext[] balanceAccountingContexts, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via bonding curve. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
-| `recordUsedAllowanceOf(uint256 projectId, JBAccountingContext accountingContext, uint256 amount, uint256 currency)` | Records surplus allowance usage. Enforces allowance limits. Returns ruleset and used amount. |
+| `recordPayoutFor(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records a payout. Enforces payout limits. Returns ruleset and amount paid out. |
+| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via bonding curve. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `recordUsedAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records surplus allowance usage. Enforces allowance limits. Returns ruleset and used amount. |
 | `recordAddedBalanceFor(uint256 projectId, address token, uint256 amount)` | Records funds added to a project's balance. |
 | `recordTerminalMigration(uint256 projectId, address token)` | Records a terminal migration, returning the full balance. |
 | `balanceOf(address terminal, uint256 projectId, address token)` | Returns the balance of a project at a terminal for a given token. |
@@ -186,8 +186,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBBeforeCashOutRecordedContext` | `terminal`, `holder`, `projectId`, `rulesetId`, `cashOutCount`, `totalSupply`, `surplus (JBTokenAmount)`, `useTotalSurplus`, `cashOutTaxRate`, `beneficiaryIsFeeless`, `metadata` | `IJBRulesetDataHook.beforeCashOutRecordedWith()` input |
 | `JBAfterPayRecordedContext` | `payer`, `projectId`, `rulesetId`, `amount (JBTokenAmount)`, `forwardedAmount (JBTokenAmount)`, `weight`, `newlyIssuedTokenCount`, `beneficiary`, `hookMetadata`, `payerMetadata` | `IJBPayHook.afterPayRecordedWith()` input |
 | `JBAfterCashOutRecordedContext` | `holder`, `projectId`, `rulesetId`, `cashOutCount`, `reclaimedAmount (JBTokenAmount)`, `forwardedAmount (JBTokenAmount)`, `cashOutTaxRate`, `beneficiary`, `hookMetadata`, `cashOutMetadata` | `IJBCashOutHook.afterCashOutRecordedWith()` input |
-| `JBPayHookSpecification` | `hook (IJBPayHook)`, `amount`, `metadata` | Returned by data hook; specifies which pay hooks to call and how much to forward |
-| `JBCashOutHookSpecification` | `hook (IJBCashOutHook)`, `amount`, `metadata` | Returned by data hook; specifies which cash out hooks to call and how much to forward |
+| `JBPayHookSpecification` | `hook (IJBPayHook)`, `noop (bool)`, `amount`, `metadata` | Returned by data hook; specifies which pay hooks to call and how much to forward. `noop = true` means informational-only (callback skipped, amount must be 0). |
+| `JBCashOutHookSpecification` | `hook (IJBCashOutHook)`, `noop (bool)`, `amount`, `metadata` | Returned by data hook; specifies which cash out hooks to call and how much to forward. `noop = true` means informational-only (callback skipped, amount must be 0). |
 | `JBSplitHookContext` | `token`, `amount`, `decimals`, `projectId`, `groupId`, `split (JBSplit)` | `IJBSplitHook.processSplitWith()` input |
 
 ### Constants (`JBConstants`)
@@ -265,6 +265,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 - **`JBAccountingContext.currency` is NOT `baseCurrency` — by design.** `baseCurrency` in ruleset metadata uses abstract real-world values (1 = ETH, 2 = USD) so rulesets are portable across chains — `baseCurrency=2` means "issue X tokens per USD" whether on Ethereum, Base, or Arbitrum. `JBAccountingContext.currency` uses token-derived values (`uint32(uint160(tokenAddress))`) because terminals track specific tokens at specific addresses — e.g. NATIVE_TOKEN = 61166, USDC on Ethereum = 909516616, USDC on Base = 3169378579. `JBPrices` mediates between the two: it converts token-derived currencies to/from abstract currencies (e.g. USDC token → USD concept, NATIVE_TOKEN → ETH concept) so that payout limits denominated in USD work correctly regardless of which token the terminal holds. The separation is what makes cross-chain consistency possible: same ruleset, different terminal accounting per chain.
 - **Don't queue multiple identical rulesets.** A ruleset with a `duration` automatically cycles — no need to queue copies. Queue multiple rulesets only when configuration actually changes between periods (e.g. different weight, splits, or limits).
 - **`NATIVE_TOKEN` represents a different token on each chain.** `NATIVE_TOKEN` (`0x000000000000000000000000000000000000EEEe`) is the token received via `msg.value` — ETH on Ethereum/Base/Optimism/Arbitrum, CELO on Celo, etc. Its currency is `uint32(uint160(NATIVE_TOKEN))` = 61166. A `JBMatchingPriceFeed` (returns 1:1) is deployed for `ETH:NATIVE_TOKEN` on ETH-native chains so that `baseCurrency=ETH` resolves correctly to the native token. On non-ETH-native chains, a different price feed would be needed.
+- **Noop hook specifications are informational-only.** `noop = true` + `amount != 0` reverts with `JBTerminalStore_NoopHookSpecHasAmount`. Data hooks use noop specs to return diagnostics to preview clients without triggering a hook callback. The `noop` flag only suppresses the callback — parameter overrides (weight, tax rate, supply) from the data hook still apply.
 
 ## Example Integration
 

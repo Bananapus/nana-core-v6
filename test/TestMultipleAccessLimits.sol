@@ -135,7 +135,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         MockPriceFeed _priceFeedNativeUsd = new MockPriceFeed(_nativePricePerUsd, 18);
         vm.label(address(_priceFeedNativeUsd), "Mock Price Feed Native-USD");
 
-        _controller.addPriceFeed({
+        _controller.addPriceFeedFor({
             projectId: _projectId,
             pricingCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             unitCurrency: uint32(uint160(address(usdcToken()))),
@@ -473,13 +473,13 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             });
 
             vm.startPrank(address(_projectOwner));
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: _projectId,
                 pricingCurrency: JBCurrencyIds.USD,
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
                 feed: IJBPriceFeed(address(new MockPriceFeed(_nativePricePerUsd, 18)))
             });
-            _controller.addPriceFeed({
+            _controller.addPriceFeedFor({
                 projectId: _dummyy,
                 pricingCurrency: JBCurrencyIds.USD,
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
@@ -594,7 +594,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         MockPriceFeed _priceFeedNativeUsd = new MockPriceFeed(_price, 18);
         vm.label(address(_priceFeedNativeUsd), "Mock Price Feed MyToken-Native");
 
-        _controller.addPriceFeed({
+        _controller.addPriceFeedFor({
             projectId: _projectId,
             pricingCurrency: _nativeCurrency,
             unitCurrency: uint32(uint160(address(usdcToken()))),
