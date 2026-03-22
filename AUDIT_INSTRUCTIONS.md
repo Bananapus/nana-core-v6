@@ -341,4 +341,89 @@ For each finding:
 - **MEDIUM**: Value leakage, griefing with cost to attacker, incorrect accounting, degraded functionality.
 - **LOW**: Informational, cosmetic inconsistency, edge-case-only with no material impact.
 
+## Attack Vectors
+
+These are the attack patterns most likely to yield findings in core. Ordered by estimated likelihood of undiscovered bugs.
+
+### 1. Hook Composition Attacks
+
+Hooks execute after state is partially committed. Data hooks control weight and fund allocation absolutely. Pay/cashout hooks receive diverted funds and can re-enter the protocol.
+
+**Specific sequences to test:**
+- Data hook returns `totalSupply = surplus` during `beforeCashOutRecordedWith` → `reclaimAmount = cashOutCount`, completely bypassing the bonding curve. Verify all constraints on hook return values.
+- Data hook sets `weight = type(uint256).max` during pay → can this overflow in `mulDiv(amount.value, weight, weightRatio)`?
+- Pay hook calls `cashOutTokensOf` on the same project during `afterPayRecordedWith`. Tokens are minted and store is updated. Is the cashout profitable given the inflated balance?
+- Split hook calls `pay()` on the same project during `sendPayoutsOf`. Payout limit is consumed but new payment adds to balance and mints tokens. Does this create a value loop?
+- Cash out hook calls `pay()` on same project. Tokens are burned before hooks execute, but new tokens are minted. Can this inflate supply?
+
+### 2. Bonding Curve Economic Attacks
+
+The cash out formula: `reclaimAmount = (surplus * count / supply) * [(MAX - tax) + tax * (count / supply)] / MAX`
+
+**Sequences:**
+- Pay → immediate cash out in same block: should never profit after fees. Test with different hook configurations.
+- Pay with data hook that inflates weight → cash out before reserved tokens are distributed. Pending reserved tokens inflate `totalSupply` (H-4 finding).
+- Cash out with `cashOutCount >= totalSupply` returns entire surplus (C-5 finding, by design). Can you engineer this condition without being the last holder? (e.g., front-running a burn)
+- Cross-terminal surplus aggregation: `useTotalSurplusForCashOuts` aggregates surplus across all terminals via `JBSurplus`. Can you manipulate surplus in one terminal to inflate cashout value in another?
+
+### 3. Reentrancy Through CEI Ordering
+
+No contract uses `ReentrancyGuard`. The protocol relies on checks-effects-interactions ordering.
+
+**Critical surfaces (in order of risk):**
+1. **Pay hook → cash out**: After `recordPaymentFrom` + `mintTokensOf`, the hook executes. It could call `cashOutTokensOf`. Store balance and tokens are updated. Is the resulting cashout computed against post-payment state correctly?
+2. **Split hook → pay**: During `sendPayoutsOf`, splits receive funds. A hook could call `pay()`. Payout limit is consumed, but new payment updates state.
+3. **Fee processing → re-entry**: `_processFee` calls `terminal.pay()` on project #1's terminal. If project #1 has a pay hook that calls back into the originating terminal, the fee is already deducted.
+4. **processHeldFeesOf**: Re-reads storage index each iteration, updates index BEFORE external call. Verify this ordering prevents re-entrancy exploitation.
+
+### 4. Ruleset Transition Timing
+
+Rulesets transition at exact block timestamps. Transaction ordering at boundaries matters.
+
+**What to test:**
+- Payment at last second of ruleset vs. first second of next: both should execute with correct weights.
+- Approval hook rejection at boundary: fallback to `basedOnId` chain simulates cycling from last approved ruleset. Is this always equivalent?
+- `duration = 0` rulesets immediately replaced when new one queued. Can you pay and queue in the same tx to get old weight but new parameters?
+- Weight decay across 20,000+ cycles without cache: `WeightCacheRequired` revert = DoS. Can an attacker force a project into this state?
+
+## Anti-Patterns to Hunt
+
+| Pattern | Where to Look | Why It's Dangerous |
+|---------|--------------|-------------------|
+| `try-catch` swallowing errors | JBMultiTerminal (hooks, fees, splits) | Failed external calls silently change control flow. Fee try-catch enables temporary fee avoidance. |
+| `mulDiv` rounding direction | JBCashOuts, JBFees, JBTerminalStore | Rounding in attacker's favor compounds over many transactions. Verify rounding favors the protocol. |
+| Currency type confusion | JBTerminalStore, JBFundAccessLimits | Abstract (1=ETH, 2=USD) vs concrete (`uint32(address)`) currencies. `groupId` (`uint256`) vs `currency` (`uint32`) truncation. |
+| Named returns without explicit `return` | JBTerminalStore, JBRulesets | Auto-return of named variables. Easy to miss intermediate assignments that change the return value. |
+| Bit-packed metadata shifts | JBRulesetMetadataResolver | Off-by-one in shift amounts or mask widths corrupts adjacent fields. 256-bit layout with 17 fields. |
+| State before validation | `recordPayoutFor` | Balance deducted and limit incremented BEFORE validation. Safe due to atomic revert, but matters for reentrancy analysis. |
+| Lazy evaluation of pending state | `pendingReservedTokenBalanceOf` | Reserved tokens accumulate but aren't minted until `sendReservedTokensToSplitsOf`. `totalSupply` includes pending. |
+| External call in loop | Payout splits, `processHeldFeesOf` | Gas griefing via reverting external calls. Each caught by try-catch but still costs gas. |
+
+## Previous Audit Findings
+
+| ID | Severity | Status | Description |
+|----|----------|--------|-------------|
+| C-5 | Critical | Known/Accepted | `cashOut(0)` with `totalSupply == 0` returns entire surplus. By design — last holder gets everything. Documented in `FlashLoanAttacks.t.sol`. |
+| H-4 | High | Known/Accepted | Pending reserved tokens inflate `totalSupply` in bonding curve calculation, reducing cashout value by 50%+ in extreme cases. Distributing reserved tokens via `sendReservedTokensToSplitsOf` before cashing out mitigates. |
+| FV-1 | Low | Known/Accepted | Bonding curve subadditivity violation from `mulDiv` rounding. Measured at <0.01%, economically insignificant. Proven bounded in formal property tests. |
+
+## Coverage Gaps
+
+The 165 test files cover most flows, but these areas have limited or no coverage:
+
+- **Multi-hook composition**: No end-to-end tests for data hook + pay hook + cashout hook interacting in a single flow with reentrancy.
+- **Extreme weight decay**: Weight decay beyond 20,000 cycles tested for revert, but not for precision loss at exactly the cache threshold boundary.
+- **Cross-terminal surplus manipulation**: No tests where surplus is manipulated in terminal A to inflate cashout value in terminal B via `useTotalSurplusForCashOuts`.
+- **Approval hook edge cases**: Limited testing of approval hook state changes between `queueRulesetsOf` and ruleset start time.
+- **Concurrent held fee processing**: `processHeldFeesOf` tested sequentially but not under reentrancy from fee payment hooks.
+- **ERC-2771 meta-tx spoofing**: No tests verifying that a malicious forwarder cannot spoof `_msgSender()` to bypass permissions.
+
+## Compiler and Version Info
+
+- **Solidity**: 0.8.26
+- **EVM target**: Cancun (uses transient storage opcodes)
+- **Optimizer**: via-IR, 200 runs
+- **Dependencies**: OpenZeppelin 5.x, Solady, forge-std
+- **Build**: `forge build` (Foundry)
+
 Go break it.
