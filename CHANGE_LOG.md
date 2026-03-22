@@ -2,6 +2,14 @@
 
 This document describes all changes between `nana-core` (v5, Solidity 0.8.23) and `nana-core-v6` (v6, Solidity 0.8.26).
 
+## Summary
+
+- **Preview APIs**: New `previewPayFor` and `previewCashOutFrom` view functions on terminal and store for simulating payments/cashouts without state changes.
+- **Fee-free cashout bypass closed**: Intra-terminal payouts now tracked via `_feeFreeSurplusOf` to prevent round-trip fee evasion through zero-tax cashouts.
+- **Approval hook hardening**: Reverting approval hooks now return `Failed` status instead of propagating, preventing permanent project freezing.
+- **Weight cache overhaul**: Cache threshold raised from 1,000 to 20,000 iterations; exceeding the threshold now reverts instead of silently iterating.
+- **Token metadata now mutable**: New `setTokenMetadataOf` allows changing a project token's name and symbol post-deployment.
+
 ---
 
 ## 0. Post-Release Changes
@@ -13,6 +21,10 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 ### 0.2 JBMultiTerminal -- Fee-Free Cashout Bypass Prevention
 
 A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
+
+### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
+
+A `bool beneficiaryIsFeeless` field was added to the `JBBeforeCashOutRecordedContext` struct (before the `metadata` field). `recordCashOutFor` in `IJBTerminalStore` gained a corresponding `bool beneficiaryIsFeeless` parameter. The terminal passes the result of its feeless address check, allowing data hooks to skip their own fees when the beneficiary is already feeless (e.g., project-to-project routing via the router terminal). This is a **breaking change** to both the struct layout and the `recordCashOutFor` function signature.
 
 ### 0.4 JBTerminalStore -- Preview Functions
 
@@ -35,10 +47,6 @@ Also in this release:
 - **Error consolidation**: Three separate `UnderMin*` errors on `JBMultiTerminal` consolidated into a single `JBMultiTerminal_UnderMin()` error for bytecode size reduction.
 - **`via_ir = true`**: Added to `foundry.toml` to enable the Solidity IR optimizer pipeline, reducing deployed bytecode size (EIP-170 compliance).
 - Internal helpers extracted: `_accountingContextOf` and `_tokenAmountOf` on `JBMultiTerminal`, `_splitTokenCount` on `JBController`.
-
-### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
-
-A `bool beneficiaryIsFeeless` field was added to the `JBBeforeCashOutRecordedContext` struct (before the `metadata` field). `recordCashOutFor` in `IJBTerminalStore` gained a corresponding `bool beneficiaryIsFeeless` parameter. The terminal passes the result of its feeless address check, allowing data hooks to skip their own fees when the beneficiary is already feeless (e.g., project-to-project routing via the router terminal). This is a **breaking change** to both the struct layout and the `recordCashOutFor` function signature.
 
 ---
 
@@ -81,6 +89,7 @@ The return variable name was corrected from `netLeftoverPayoutAmount` to `amount
 | `launchRulesetsFor` terminal configs | `JBTerminalConfig[] memory terminalConfigurations` | `JBTerminalConfig[] calldata terminalConfigurations` |
 
 Parameters changed from `memory` to `calldata` for gas efficiency.
+> **Cross-repo impact**: The `calldata` change affects `nana-omnichain-deployers-v6` and `revnet-core-v6`, which call `launchProjectFor`/`launchRulesetsFor`.
 
 #### IJBSplits
 
@@ -167,6 +176,7 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 |------------|-------------|
 | `LAUNCH_RULESETS` | Required for `launchRulesetsFor`. In v5, `QUEUE_RULESETS` was used. |
 | `SET_TOKEN_METADATA` | Required for `setTokenMetadataOf`. |
+> **Cross-repo impact**: `nana-permission-ids-v6` defines these new IDs. `nana-omnichain-deployers-v6` and `revnet-core-v6` use `LAUNCH_RULESETS` for their deployment flows.
 
 ---
 
