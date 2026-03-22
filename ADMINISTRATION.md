@@ -26,7 +26,7 @@ Admin privileges and their scope in nana-core-v6.
 
 ### ROOT Permission Holder
 
-- **How assigned:** Granted the ROOT permission (ID 1) by an account via `JBPermissions`. ROOT on a specific project grants all permissions for that project. ROOT cannot be granted on the wildcard project ID (0) to prevent unlimited cross-project access.
+- **How assigned:** Granted the ROOT permission (ID 1) by an account via `JBPermissions`. ROOT on a specific project grants all permissions for that project. ROOT cannot be granted on the wildcard project ID (0) by operators. An account owner can set ROOT on their own wildcard, but ROOT operators acting on behalf of an account cannot.
 - **Scope:** ROOT holders for a project can do anything the project owner can do for that project. ROOT holders can also grant non-ROOT permissions to other operators for the same project but cannot grant ROOT to others or set wildcard permissions.
 
 ### Directory Owner
@@ -97,7 +97,7 @@ Admin privileges and their scope in nana-core-v6.
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `addPriceFeed` | Project owner or operator | ADD_PRICE_FEED (19) | Per project | Adds a price feed for a project. Requires the ruleset's `allowAddPriceFeed` flag. Price feeds are immutable once set. |
+| `addPriceFeedFor` | Project owner or operator | ADD_PRICE_FEED (19) | Per project | Adds a price feed for a project. Requires the ruleset's `allowAddPriceFeed` flag. Price feeds are immutable once set. |
 | `burnTokensOf` | Token holder, operator with BURN_TOKENS, or a project terminal | BURN_TOKENS (11) | Per project | Burns tokens or credits from a holder's balance. Terminals can burn without explicit permission (for cash outs). |
 | `claimTokensFor` | Credit holder or operator | CLAIM_TOKENS (12) | Per project | Redeems internal credits for ERC-20 tokens. |
 | `deployERC20For` | Project owner or operator | DEPLOY_ERC20 (8) | Per project | Deploys a new ERC-20 token contract for the project. Can only be called once per project. |
@@ -211,7 +211,7 @@ Contracts must be deployed in dependency order. The constructor dependency graph
 5. **Depends on (1-4):** JBController (← JBDirectory, JBFundAccessLimits, JBPermissions, JBPrices, JBProjects, JBRulesets, JBSplits, JBTokens + omnichainRulesetOperator address)
 6. **Depends on (1-4):** JBMultiTerminal (← JBTerminalStore, JBFeelessAddresses, JBPermissions, JBProjects, JBSplits, JBTokens, Permit2)
 
-After deployment, `JBDirectory.setIsAllowedToSetFirstController()` must be called to authorize the controller. The first project (ID 1, the fee project) is created automatically in the `JBProjects` constructor.
+After deployment, `JBDirectory.setIsAllowedToSetFirstController()` must be called to authorize the controller. The first project (ID 1, the fee project) is created automatically in the `JBProjects` constructor, provided a non-zero `feeProjectOwner` address is passed to the constructor.
 
 ## Permission System
 
@@ -245,7 +245,7 @@ JBPermissions implements a 256-bit packed permission bitmap system:
 | 16 | SET_PRIMARY_TERMINAL | `JBDirectory.setPrimaryTerminalOf` |
 | 17 | USE_ALLOWANCE | `JBMultiTerminal.useAllowanceOf` |
 | 18 | SET_SPLIT_GROUPS | `JBController.setSplitGroupsOf` |
-| 19 | ADD_PRICE_FEED | `JBController.addPriceFeed` |
+| 19 | ADD_PRICE_FEED | `JBController.addPriceFeedFor` |
 | 20 | ADD_ACCOUNTING_CONTEXTS | `JBMultiTerminal.addAccountingContextsFor` |
 | 21 | SET_TOKEN_METADATA | `JBController.setTokenMetadataOf` |
 
@@ -321,7 +321,7 @@ Several admin functions are further gated by boolean flags in the active ruleset
 | `allowSetTerminals` | Whether `setTerminalsOf` can be called by non-controller callers. |
 | `allowSetController` | Whether `setControllerOf` can be called (checked via `IJBDirectoryAccessControl`). |
 | `allowAddAccountingContext` | Whether `addAccountingContextsFor` can add new token contexts. |
-| `allowAddPriceFeed` | Whether `addPriceFeed` can add new price feeds. |
+| `allowAddPriceFeed` | Whether `addPriceFeedFor` can add new price feeds. |
 | `ownerMustSendPayouts` | Whether `sendPayoutsOf` requires SEND_PAYOUTS permission (otherwise anyone can call it). |
 | `pausePay` | Whether payments are paused (checked in JBTerminalStore). |
 | `pauseCreditTransfers` | Whether credit transfers are paused. |
