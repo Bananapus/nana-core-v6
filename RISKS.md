@@ -12,7 +12,7 @@ What must be true for the system to remain safe:
 - **ERC-20 tokens behave standardly.** `_acceptFundsFor` uses a balance-before/after pattern, which handles fee-on-transfer tokens. However, rebasing tokens that change balances between transactions will cause `balanceOf` in `JBTerminalStore` to diverge from actual terminal holdings. Missing-return-value tokens are handled by `SafeERC20`.
 - **Trusted forwarder is not compromised.** The ERC-2771 forwarder is immutable. If compromised, it can spoof `_msgSender()` for all permission-gated functions across `JBController`, `JBMultiTerminal`, `JBProjects`, `JBPrices`, and `JBPermissions`.
 - **Project #1 terminal remains functional.** If the fee beneficiary project's terminal reverts, `_processFee` catches the error and returns the fee amount to the originating project's balance. This is safe but means fees are silently forgiven during outages.
-- **`OMNICHAIN_RULESET_OPERATOR` is trusted.** This immutable address bypasses owner permission checks for `launchRulesetsFor`, `queueRulesetsOf`, and `setTerminalsOf`. A compromised operator can queue arbitrary rulesets for any project.
+- **`OMNICHAIN_RULESET_OPERATOR` is trusted.** This immutable address bypasses owner permission checks for `launchRulesetsFor` and `queueRulesetsOf`. It can also indirectly set terminals through `launchRulesetsFor`, but cannot call `setTerminalsOf` directly. A compromised operator can queue arbitrary rulesets for any project.
 
 ## 2. Economic Risks
 
@@ -26,7 +26,7 @@ What must be true for the system to remain safe:
 ### Fee Arithmetic
 
 - **Forward vs. backward fee asymmetry.** `feeAmountFrom` (forward) uses `mulDiv(amount, 25, 1000)`. `feeAmountResultingIn` (backward) uses `mulDiv(amount, 1000, 975) - amount`. These are algebraically equivalent but rounding differs. In `_returnHeldFees`, both are used on the same held fee entry (forward to compute `feeAmount`, backward when partially returning). Verify the interplay never undercharges.
-- **Held fee amount mutation.** `_returnHeldFees` mutates `heldFee.amount` in-place via unchecked subtraction (line 1583). If the accounting is off by even 1 wei in the wrong direction, this underflows and corrupts the held fee entry.
+- **Held fee amount mutation.** `_returnHeldFees` mutates `heldFee.amount` in-place via unchecked subtraction (line 1610). If the accounting is off by even 1 wei in the wrong direction, this underflows and corrupts the held fee entry.
 
 ### First Cycle Behavior
 
@@ -147,7 +147,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 - `_acceptFundsFor` tries direct ERC-20 `transferFrom` first (if allowance is sufficient), then falls back to Permit2. The Permit2 `permit` call is wrapped in try-catch -- failure emits an event but doesn't revert the payment.
 - `_transferFrom` for outbound transfers also falls back to Permit2 if direct allowance is insufficient. This means outbound transfers (to beneficiaries, split hooks) may unexpectedly use Permit2 state.
-- The `uint160` cast on line 1897 of `JBMultiTerminal.sol` limits Permit2 transfers to `type(uint160).max`. Amounts above this revert with `OverflowAlert`.
+- The `uint160` cast on line 1808 of `JBMultiTerminal.sol` limits Permit2 transfers to `type(uint160).max`. Amounts above this revert with `OverflowAlert`.
 
 ### Cross-Terminal Surplus Aggregation
 
