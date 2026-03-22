@@ -277,7 +277,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 1. `JBSplits` stores the new split groups for the project/ruleset/group combination
 2. Locked splits from existing configuration must be preserved (validated by `JBSplits`)
 
-**Events**: Emitted by `JBSplits` (not `JBController`)
+**Events**: `SetSplit(projectId, rulesetId, groupId, split, caller)` per split (emitted by `JBSplits`, not `JBController`)
 
 **Edge cases**:
 - Locked splits (`lockedUntil > block.timestamp`) cannot be removed or modified
@@ -320,6 +320,10 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 **Entry point**: `JBDirectory.setControllerOf(uint256 projectId, IERC165 controller)`
 
 **Who can call**: Project owner, address with `SET_CONTROLLER` permission, or an address in `isAllowedToSetFirstController` (for first controller only). The current controller's ruleset must have `allowSetController` enabled.
+
+**Parameters**:
+- `projectId` -- The project being migrated
+- `controller` -- The new controller (must support `IERC165`)
 
 **Flow**:
 1. `JBDirectory.setControllerOf(projectId, newController)` is called
@@ -383,6 +387,8 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 1. `JBTokens.creditBalanceOf[holder][projectId]` decreased by `tokenCount`
 2. ERC-20 tokens minted to `beneficiary` for `tokenCount`
 
+**Events**: `ClaimTokens(holder, projectId, creditBalance, count, beneficiary, caller)` (emitted by `JBTokens`)
+
 **Edge cases**:
 - Requires an ERC-20 token to be deployed for the project (reverts otherwise)
 - Credits and ERC-20 tokens are fungible -- this is a one-way conversion from internal credits to on-chain ERC-20
@@ -435,7 +441,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 1. `JBPrices` stores the feed for the `(projectId, pricingCurrency, unitCurrency)` triple
 2. Feed is **immutable** once set -- cannot be replaced or removed
 
-**Events**: Emitted by `JBPrices`
+**Events**: `AddPriceFeed(projectId, pricingCurrency, unitCurrency, feed, caller)` (emitted by `JBPrices`)
 
 **Edge cases**:
 - Requires `allowAddPriceFeed` in current ruleset
@@ -488,6 +494,8 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 2. All `PROJECTS.ownerOf(projectId)` calls now return the new owner
 3. All permission checks that reference the owner now apply to the new owner
 
+**Events**: `Transfer(from, to, tokenId)` (standard ERC-721 event)
+
 **Edge cases**:
 - This is a standard ERC-721 transfer. All ERC-721 rules apply (approval, operator, etc.)
 - **Permissions are NOT transferred**. Existing operators retain their permissions scoped to the account that granted them (the old owner). The new owner must grant their own permissions.
@@ -539,7 +547,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 1. `JBTokens.creditBalanceOf[holder][projectId]` decreased
 2. `JBTokens.creditBalanceOf[recipient][projectId]` increased
 
-**Events**: Emitted by `JBTokens`
+**Events**: `TransferCredits(holder, projectId, recipient, count, caller)` (emitted by `JBTokens`)
 
 **Edge cases**:
 - Reverts if `pauseCreditTransfers` is set in current ruleset
@@ -554,9 +562,17 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Who can call**: Project owner or address with `SET_PROJECT_URI` permission.
 
+**Parameters**:
+- `projectId` -- Target project
+- `uri` -- Metadata URI (typically an IPFS hash)
+
 **State changes**: `uriOf[projectId] = uri`
 
 **Events**: `SetUri(projectId, uri, caller)`
+
+**Edge cases**:
+- Empty string is valid -- clears the metadata URI
+- No ruleset flag required (always allowed with permission)
 
 ---
 
@@ -566,7 +582,13 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Who can call**: Project owner or address with `SET_TOKEN` permission.
 
+**Parameters**:
+- `projectId` -- Target project
+- `token` -- The custom token contract (must implement `IJBToken`)
+
 **State changes**: `JBTokens.tokenOf[projectId] = token`
+
+**Events**: `SetToken(projectId, token, caller)` (emitted by `JBTokens`)
 
 **Edge cases**:
 - Requires `allowSetCustomToken` in current or upcoming ruleset
@@ -581,7 +603,18 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Who can call**: Project owner or address with `SET_TOKEN_METADATA` permission.
 
+**Parameters**:
+- `projectId` -- Target project
+- `name` -- New ERC-20 token name
+- `symbol` -- New ERC-20 token symbol
+
 **State changes**: Updates the ERC-20 token's name and symbol via `JBERC20.setNameAndSymbol()`
+
+**Events**: `SetTokenMetadata(projectId, name, symbol, caller)` (emitted by `JBTokens`)
+
+**Edge cases**:
+- Requires an ERC-20 token to be deployed for the project (reverts if no token set)
+- Only works with `JBERC20` clones (custom tokens that implement `IJBToken` may not support `setNameAndSymbol`)
 
 ---
 
@@ -614,6 +647,10 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 **Entry point**: `JBMultiTerminal.addAccountingContextsFor(uint256 projectId, JBAccountingContext[] accountingContexts)`
 
 **Who can call**: Project owner, address with `ADD_ACCOUNTING_CONTEXTS` permission, or the project's controller.
+
+**Parameters**:
+- `projectId` -- Target project
+- `accountingContexts` -- Array of `JBAccountingContext` structs, each specifying a token address, decimals, and currency
 
 **State changes**:
 1. For each context: validates token decimals, stores `_accountingContextForTokenOf[projectId][token]`
