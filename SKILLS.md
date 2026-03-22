@@ -361,7 +361,7 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `SendReservedTokensToSplit` | `IJBController` | `projectId*`, `rulesetId*`, `groupId*`, `split`, `tokenCount` |
 | `LaunchProject` | `IJBController` | `rulesetId`, `projectId`, `projectUri` |
 | `QueueRulesets` | `IJBController` | `rulesetId`, `projectId` |
-| `DeployERC20` | `IJBController` | `projectId*`, `deployer*`, `salt` |
+| `DeployERC20` | `IJBController` | `projectId*`, `deployer*`, `salt`, `saltHash`, `caller` |
 | `SetUri` | `IJBController` | `projectId*`, `uri` |
 | `AddToBalance` | `IJBTerminal` | `projectId*`, `amount`, `returnedFees` |
 | `MigrateTerminal` | `IJBTerminal` | `projectId*`, `token*`, `to*`, `amount` |
@@ -370,7 +370,7 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `ReturnHeldFees` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `returnedFees`, `leftoverAmount` |
 | `Create` | `IJBProjects` | `projectId*`, `owner*` |
 | `OperatorPermissionsSet` | `IJBPermissions` | (operator, account, projectId, permissionIds, packed, caller) |
-| `RulesetQueued` | `IJBRulesets` | (rulesetId, projectId, duration, weight, weightCutPercent, approvalHook, metadata, caller) |
+| `RulesetQueued` | `IJBRulesets` | (rulesetId, projectId, duration, weight, weightCutPercent, approvalHook, metadata, mustStartAtOrAfter, caller) |
 | `SetSplit` | `IJBSplits` | (projectId, rulesetId, groupId, split, caller) |
 | `AddPriceFeed` | `IJBPrices` | (projectId, pricingCurrency, unitCurrency, feed, caller) |
 
