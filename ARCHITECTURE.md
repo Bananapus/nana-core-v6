@@ -27,14 +27,27 @@ src/
 ├── abstract/
 │   ├── JBPermissioned.sol — Base for permission-checked contracts
 │   └── JBControlled.sol   — Base for controller-gated contracts
+├── enums/
+│   └── JBApprovalStatus.sol       — Approval hook status enum
+├── periphery/
+│   ├── JBDeadline1Day.sol         — 1-day approval hook
+│   ├── JBDeadline3Days.sol        — 3-day approval hook
+│   ├── JBDeadline3Hours.sol       — 3-hour approval hook
+│   ├── JBDeadline7Days.sol        — 7-day approval hook
+│   └── JBMatchingPriceFeed.sol    — 1:1 price feed
+├── interfaces/                    — 30 interface files (IJBController, IJBTerminal, etc.)
+├── structs/                       — 22 struct files (JBRuleset, JBSplit, etc.)
 └── libraries/
     ├── JBCashOuts.sol              — Bonding curve math
-    ├── JBFees.sol                  — Fee calculation (forward/backward)
-    ├── JBRulesetMetadataResolver.sol — Bit-packed metadata (256 bits)
-    ├── JBMetadataResolver.sol      — Variable-length key-value metadata
-    ├── JBFixedPointNumber.sol      — Decimal adjustment
     ├── JBConstants.sol             — Protocol constants
-    └── JBSplitGroupIds.sol         — Split group ID constants
+    ├── JBCurrencyIds.sol           — Currency ID constants (ETH, USD)
+    ├── JBFees.sol                  — Fee calculation (forward/backward)
+    ├── JBFixedPointNumber.sol      — Decimal adjustment
+    ├── JBMetadataResolver.sol      — Variable-length key-value metadata
+    ├── JBPayoutSplitGroupLib.sol   — Payout split group helpers
+    ├── JBRulesetMetadataResolver.sol — Bit-packed metadata (256 bits)
+    ├── JBSplitGroupIds.sol         — Split group ID constants
+    └── JBSurplus.sol               — Cross-terminal surplus calculation
 ```
 
 ## Key Data Flows
@@ -66,10 +79,11 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
     -> JBCashOuts.cashOutFrom() — bonding curve
     -> Deduct balance
   -> JBController.burnTokensOf()
-  -> Transfer reclaimed tokens to beneficiary
+  -> Deduct fee from reclaim amount (if applicable), transfer remainder to beneficiary
   -> [Optional] Cash out hooks execute
-  -> Take fees (2.5% to project #1) if cashOutTaxRate > 0
-     OR if cashOutTaxRate == 0 and project has unconsumed fee-free surplus (_feeFreeSurplusOf)
+  -> Send accumulated fees to project #1
+     Fees apply when cashOutTaxRate > 0 (on full reclaim)
+     OR when cashOutTaxRate == 0 and project has unconsumed _feeFreeSurplusOf (on that portion only)
 ```
 
 ### Preview Flow
@@ -117,7 +131,7 @@ Owner -> JBMultiTerminal.sendPayoutsOf()
 | Data Hook (cashout) | `IJBRulesetDataHook.beforeCashOutRecordedWith` | JBTerminalStore |
 | Pay Hook | `IJBPayHook.afterPayRecordedWith` | JBMultiTerminal |
 | Cash Out Hook | `IJBCashOutHook.afterCashOutRecordedWith` | JBMultiTerminal |
-| Split Hook | `IJBSplitHook.processSplitWith` | JBMultiTerminal |
+| Split Hook | `IJBSplitHook.processSplitWith` | JBMultiTerminal, JBController |
 | Approval Hook | `IJBRulesetApprovalHook.approvalStatusOf` | JBRulesets |
 
 ## Dependencies
@@ -130,7 +144,7 @@ Owner -> JBMultiTerminal.sendPayoutsOf()
 
 ## Key Constants
 
-- FEE = 25 (2.5%), MAX_FEE = 1000
+- FEE = 25 (2.5%) — defined on JBMultiTerminal, MAX_FEE = 1000 — defined in JBConstants
 - MAX_RESERVED_PERCENT = 10,000 (basis points)
 - MAX_CASH_OUT_TAX_RATE = 10,000
 - MAX_WEIGHT_CUT_PERCENT = 1,000,000,000 (9 decimals)
