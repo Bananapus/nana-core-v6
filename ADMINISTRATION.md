@@ -200,6 +200,19 @@ JBTerminalStore has no explicit access control modifiers. Instead, it uses `msg.
 | `recordTerminalMigration` | Any address (terminal) | Records a full balance migration. Requires the ruleset's `allowTerminalMigration` flag. Zeros out the caller's balance. |
 | `recordUsedAllowanceOf` | Any address (terminal) | Records surplus allowance usage. Decrements the caller's balance. |
 
+## Deployment Dependencies
+
+Contracts must be deployed in dependency order. The constructor dependency graph:
+
+1. **No dependencies:** JBPermissions, JBProjects, JBERC20 (implementation), JBFeelessAddresses
+2. **Depends on (1):** JBDirectory (← JBPermissions, JBProjects)
+3. **Depends on (2):** JBRulesets, JBSplits, JBFundAccessLimits, JBTokens (← JBDirectory); JBPrices (← JBDirectory, JBPermissions, JBProjects)
+4. **Depends on (3):** JBTerminalStore (← JBDirectory, JBPrices, JBRulesets)
+5. **Depends on (1-4):** JBController (← JBDirectory, JBFundAccessLimits, JBPermissions, JBPrices, JBProjects, JBRulesets, JBSplits, JBTokens + omnichainRulesetOperator address)
+6. **Depends on (1-4):** JBMultiTerminal (← JBTerminalStore, JBFeelessAddresses, JBPermissions, JBProjects, JBSplits, JBTokens, Permit2)
+
+After deployment, `JBDirectory.setIsAllowedToSetFirstController()` must be called to authorize the controller. The first project (ID 1, the fee project) is created automatically in the `JBProjects` constructor.
+
 ## Permission System
 
 JBPermissions implements a 256-bit packed permission bitmap system:
