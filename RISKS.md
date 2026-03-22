@@ -131,6 +131,8 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - **Data hooks are called during previews.** `previewPayFor` and `previewCashOutFrom` invoke `beforePayRecordedWith` and `beforeCashOutRecordedWith` on data hooks. A reverting data hook causes the preview to revert. A gas-consuming hook can cause the preview to run out of gas.
 - **Store previews take an explicit terminal parameter.** `JBTerminalStore.previewPayFrom` and `previewCashOutFrom` take an explicit `terminal` address for balance/surplus lookups. Callers must pass a registered terminal to get correct results. The terminal-level functions (`JBMultiTerminal.previewPayFor` / `previewCashOutFrom`) handle this automatically by passing `address(this)`.
 - **No state modification risk.** Preview functions cannot change balances, mint/burn tokens, or consume limits. They are safe to call from any context.
+- **Preview-execution divergence.** Preview functions and their corresponding real operations share computation logic but execute in different contexts. `previewPayFor` calls `STORE.previewPayFrom` which invokes the data hook's `beforePayRecordedWith` via `staticcall`. The real `pay` path invokes the same hook but state changes between preview and execution (other payments, cash outs, ruleset transitions) can change the data hook's response. Callers should treat preview results as estimates, not guarantees — especially for projects with stateful data hooks.
+- **Gas griefing via data hooks in previews.** Since `previewPayFor` and `previewCashOutFrom` invoke data hooks, a gas-expensive data hook can make preview calls prohibitively expensive. This affects frontends and indexers that rely on preview functions for quote display. Unlike the real operations (which have economic incentive to complete), preview calls have no built-in gas limit on the data hook invocation.
 
 ## 7. Integration Risks
 
@@ -151,6 +153,10 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 - `JBSurplus.currentSurplusOf` calls `terminal.currentSurplusOf()` on each terminal. These are external view calls with no gas limit. A malicious or gas-expensive terminal can cause this aggregation to revert, blocking cash outs for any project that has `useTotalSurplusForCashOuts` enabled and uses that terminal. When `useTotalSurplusForCashOuts` is false, surplus is computed internally by the store for only the reclaimed token, avoiding cross-terminal external calls.
 - The surplus calculation converts each terminal's balance to a common currency via price feeds. Rounding accumulates across terminals. With N terminals and M tokens each, there are N*M price conversions, each with up to 1 wei of rounding error.
+
+### `addToBalanceOf` with Arbitrary Metadata
+
+- `addToBalanceOf` accepts arbitrary `metadata` which is not validated by the terminal or store. The metadata is passed through to `afterAddToBalanceRecordedWith` callbacks. If a project's data hook or terminal extension interprets this metadata, malformed metadata could cause unexpected behavior. The core protocol ignores metadata in `addToBalanceOf` — it only affects hook processing.
 
 ### `recordAddedBalanceFor` Access Control
 
