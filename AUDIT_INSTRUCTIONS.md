@@ -6,7 +6,7 @@ Read [RISKS.md](./RISKS.md) for known risks, trust model, and reentrancy analysi
 
 ## Architecture Overview
 
-16 contracts, ~6,300 lines in main contracts. All contracts use Solidity 0.8.26.
+16 contracts, ~8,100 lines in main contracts. All contracts use Solidity 0.8.26.
 
 ```
                               JBProjects (ERC-721)
@@ -28,20 +28,20 @@ Read [RISKS.md](./RISKS.md) for known risks, trust model, and reentrancy analysi
 |----------|-------|------|-------|
 | **JBMultiTerminal** | ~2024 | Payment terminal. Handles pay, cash out, payouts, surplus allowance, fees, and previews (`previewPayFor`, `previewCashOutFrom`). Multi-token. Permit2 integration. | Store, Controller, Splits, Directory, Prices |
 | **JBController** | ~1186 | Orchestrator. Project lifecycle, ruleset queuing, token minting/burning, reserved token distribution, mint preview (`previewMintOf`). ERC-2771 meta-tx. | Rulesets, Tokens, Splits, FundAccessLimits, Directory, Prices |
-| **JBTerminalStore** | ~800 | Bookkeeping. Balances, payout limit tracking, surplus calculation, bonding curve reclaim math. Data hook integration point. | Rulesets, Prices, Directory |
+| **JBTerminalStore** | ~1,267 | Bookkeeping. Balances, payout limit tracking, surplus calculation, bonding curve reclaim math. Data hook integration point. | Rulesets, Prices, Directory |
 | **JBRulesets** | ~1093 | Ruleset lifecycle. Linked-list via `basedOnId`. Weight decay with cache (20k iteration threshold). Approval hooks. Bit-packed storage. | Directory (via JBControlled) |
-| **JBDirectory** | ~300 | Routes projects to terminals and controllers. Migration lifecycle (before/after). | Projects, Permissions |
-| **JBTokens** | ~300 | Dual token system: credits (internal) + ERC-20. Credits burned first on burn. 18-decimal requirement. | JBERC20 (clone) |
-| **JBSplits** | ~300 | Packed split storage per project/ruleset/group. Locked splits enforcement. Fallback to ruleset 0. | -- |
-| **JBFundAccessLimits** | ~200 | Payout limits and surplus allowances per terminal/token/currency. Strictly increasing currency order. | -- |
-| **JBPrices** | ~200 | Price feed registry. Project-specific + default fallback. Immutable once set. Inverse auto-calculation. | Chainlink feeds |
+| **JBDirectory** | ~344 | Routes projects to terminals and controllers. Migration lifecycle (before/after). | Projects, Permissions |
+| **JBTokens** | ~415 | Dual token system: credits (internal) + ERC-20. Credits burned first on burn. 18-decimal requirement. | JBERC20 (clone) |
+| **JBSplits** | ~333 | Packed split storage per project/ruleset/group. Locked splits enforcement. Fallback to ruleset 0. | -- |
+| **JBFundAccessLimits** | ~318 | Payout limits and surplus allowances per terminal/token/currency. Strictly increasing currency order. | -- |
+| **JBPrices** | ~233 | Price feed registry. Project-specific + default fallback. Immutable once set. Inverse auto-calculation. | Chainlink feeds |
 | **JBPermissions** | ~260 | 256-bit packed permission bitmap. ROOT (1) grants all. Wildcard projectId=0. ERC-2771. | -- |
-| **JBProjects** | ~100 | ERC-721 project ownership. Auto-incrementing IDs. | -- |
-| **JBERC20** | ~200 | Cloneable ERC20Votes+Permit. Owned by JBTokens. Deployed via `Clones.clone()`. | -- |
+| **JBProjects** | ~126 | ERC-721 project ownership. Auto-incrementing IDs. | -- |
+| **JBERC20** | ~144 | Cloneable ERC20Votes+Permit. Owned by JBTokens. Deployed via `Clones.clone()`. | -- |
 | **JBFeelessAddresses** | ~50 | Fee-exempt address registry. Owner-only. | -- |
-| **JBDeadline** | ~100 | Approval hook. Rejects rulesets queued within DURATION seconds of start. Ships as 3h, 1d, 3d, 7d variants. | -- |
-| **JBChainlinkV3PriceFeed** | ~80 | Chainlink v3 feed with staleness threshold. Rejects negative/zero/incomplete. | Chainlink AggregatorV3 |
-| **JBChainlinkV3SequencerPriceFeed** | ~120 | L2 sequencer-aware Chainlink feed. Grace period after restart. | Chainlink AggregatorV3 + Sequencer feed |
+| **JBDeadline** | ~76 | Approval hook. Rejects rulesets queued within DURATION seconds of start. Ships as 3h, 1d, 3d, 7d variants. | -- |
+| **JBChainlinkV3PriceFeed** | ~74 | Chainlink v3 feed with staleness threshold. Rejects negative/zero/incomplete. | Chainlink AggregatorV3 |
+| **JBChainlinkV3SequencerPriceFeed** | ~75 | L2 sequencer-aware Chainlink feed. Grace period after restart. | Chainlink AggregatorV3 + Sequencer feed |
 
 ## Key Flows
 
@@ -301,7 +301,7 @@ forge test --match-contract Invariant
 forge test --gas-report
 ```
 
-The existing test suite has 165 test files including:
+The existing test suite has 185 test files including:
 - **Integration tests**: Full flow tests for pay, cash out, payouts
 - **Formal property tests**: 7 bonding curve properties + 6 fee properties
 - **Invariant tests**: TerminalStore (5), Phase3Deep (8), Rulesets (4), Tokens (4)
@@ -409,7 +409,7 @@ Rulesets transition at exact block timestamps. Transaction ordering at boundarie
 
 ## Coverage Gaps
 
-The 165 test files cover most flows, but these areas have limited or no coverage:
+The 185 test files cover most flows, but these areas have limited or no coverage:
 
 - **Multi-hook composition**: No end-to-end tests for data hook + pay hook + cashout hook interacting in a single flow with reentrancy.
 - **Extreme weight decay**: Weight decay beyond 20,000 cycles tested for revert, but not for precision loss at exactly the cache threshold boundary.
@@ -422,7 +422,7 @@ The 165 test files cover most flows, but these areas have limited or no coverage
 
 - **Solidity**: 0.8.26
 - **EVM target**: Cancun (uses transient storage opcodes)
-- **Optimizer**: via-IR, 200 runs
+- **Optimizer**: 200 runs (no via-IR)
 - **Dependencies**: OpenZeppelin 5.x, Solady, forge-std
 - **Build**: `forge build` (Foundry)
 
