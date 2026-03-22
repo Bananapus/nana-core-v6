@@ -100,6 +100,30 @@ Juicebox V6 separates concerns across specialized contracts that coordinate thro
 
 All contracts use Solidity `0.8.26`.
 
+```mermaid
+graph TD;
+    User([User / Frontend])
+    User -->|pay / cashOut / sendPayoutsOf| Terminal[JBMultiTerminal]
+    User -->|launchProjectFor / queueRulesetsOf / mintTokensOf| Controller[JBController]
+    Controller -->|reads & writes| Rulesets[JBRulesets]
+    Controller -->|reads & writes| Tokens[JBTokens]
+    Controller -->|reads & writes| Splits[JBSplits]
+    Controller -->|reads & writes| FAL[JBFundAccessLimits]
+    Controller -->|adds feeds to| Prices[JBPrices]
+    Terminal -->|records inflows & outflows| Store[JBTerminalStore]
+    Store -->|reads rulesets from| Rulesets
+    Store -->|reads limits from| FAL
+    Store -->|reads prices from| Prices
+    Terminal -->|distributes payouts via| Splits
+    Directory[JBDirectory] -->|maps projects to| Controller
+    Directory -->|maps projects to| Terminal
+    Controller -->|registers in| Directory
+    Terminal -->|looks up controllers via| Directory
+    Projects[JBProjects] -->|ERC-721 ownership| Directory
+    Permissions[JBPermissions] -->|authorizes calls on| Controller
+    Permissions -->|authorizes calls on| Terminal
+```
+
 ### Core Contracts
 
 | Contract | Description |
@@ -162,6 +186,35 @@ All contracts use Solidity `0.8.26`.
 | `IJBPayHook` | Called after a payment is recorded. Implements `afterPayRecordedWith`. |
 | `IJBCashOutHook` | Called after a cash out is recorded. Implements `afterCashOutRecordedWith`. |
 | `IJBSplitHook` | Called when processing a split. Implements `processSplitWith`. |
+
+## Risks
+
+This section summarizes known risks and design trade-offs. None of these are unmitigated vulnerabilities -- they are deliberate design decisions with well-understood boundaries.
+
+### Reentrancy
+
+The protocol does not use an explicit `ReentrancyGuard`. Instead, it relies on **state ordering**: all storage writes (balance updates, token mints/burns, payout limit usage) are completed before any external calls (hooks, split payouts, fee processing). This means re-entering a function sees already-updated state, preventing double-spends and double-payouts. The `try-catch` pattern around external calls ensures that hook failures do not leave the protocol in an inconsistent state -- failed calls return funds to the project balance.
+
+### Unbounded Arrays
+
+Several data structures grow without explicit caps:
+
+- **Held fees**: Bounded in practice by the 28-day holding window and auto-cleanup when processed. `processHeldFeesOf` accepts a `count` parameter to limit gas per call.
+- **Splits**: No explicit cap, but the percentage constraint (`SPLITS_TOTAL_PERCENT = 1_000_000_000`) limits the useful number to roughly 300-500. Gas cost scales linearly (~100k gas per split during payout distribution), so very large split groups may cause out-of-gas reverts.
+- **Accounting contexts**: Duplicate prevention limits growth. Realistic maximum is ~100-200 tokens per terminal.
+- **Payout limits / surplus allowances**: Currency ordering constraint limits each group to ~30-50 entries.
+
+### Price Feed DoS
+
+If a Chainlink price feed reverts (stale data, negative price, sequencer downtime on L2), any operation that requires that currency conversion will also revert. This is a **liveness** risk, not a fund-loss risk: no funds are at risk, but payments, payouts, or cash outs denominated in the affected currency pair will be temporarily blocked until the feed recovers. Projects using multiple currencies should be aware of this dependency.
+
+### Weight Cache Requirement
+
+Ruleset weight decay is calculated iteratively. For long-running projects with many elapsed cycles, the iteration count can exceed the block gas limit. The protocol caps iteration at 20,000 cycles per call and provides `updateRulesetWeightCache()` for progressive caching. Projects with very short durations (e.g., 1-second rulesets) that run for extended periods must periodically call this function to keep weight calculations within gas limits.
+
+### Flash Loan Considerations
+
+**C-5 (known, documented)**: Calling `cashOut` with `cashOutCount = 0` when `totalSupply == 0` returns the project's entire surplus. This is a known edge case -- it requires a project to have surplus but zero outstanding tokens, which is not a normal operating state. Projects that accumulate surplus without token holders should be aware of this behavior. The protocol's test suite includes 12 flash-loan attack vectors, all of which confirm that no profit is extractable under normal conditions (tokens minted during a payment are worth at most what was paid).
 
 ## Install
 
