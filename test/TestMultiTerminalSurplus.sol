@@ -106,7 +106,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
 
         // Add price feed: USDC priced in native token terms.
         vm.prank(_projectOwner);
-        _controller.addPriceFeed({
+        _controller.addPriceFeedFor({
             projectId: _projectId, pricingCurrency: _usdcCurrency, unitCurrency: _nativeCurrency, feed: _ethToUsdcFeed
         });
 

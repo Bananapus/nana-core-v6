@@ -45,7 +45,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `setTokenMetadataOf(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's ERC-20 token. Requires `SET_TOKEN_METADATA` permission. |
 | `setUriOf(uint256 projectId, string uri)` | Sets the project's metadata URI. |
 | `transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 creditCount)` | Transfers credits between addresses (reverts if `pauseCreditTransfers` is set in ruleset). |
-| `addPriceFeed(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in ruleset). |
+| `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in ruleset). |
 | `migrate(uint256 projectId, IERC165 to)` | Migrates the project to a new controller. Calls `beforeReceiveMigrationFrom`, `migrate`, updates directory, then `afterReceiveMigrationFrom`. |
 | `currentRulesetOf(uint256 projectId)` | Returns the current ruleset and unpacked metadata. |
 | `upcomingRulesetOf(uint256 projectId)` | Returns the upcoming ruleset and unpacked metadata. |
