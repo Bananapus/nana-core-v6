@@ -89,11 +89,11 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - `metadata` -- Hook-specific data
 
 **State changes**:
-1. `JBTerminalStore.balanceOf[terminal][projectId][token]` decremented by `reclaimAmount + hookSpec amounts`
-2. Project tokens burned via `JBController.burnTokensOf()` (credits first, then ERC-20)
+1. `STORE.recordCashOutFor()` -- computes the reclaim amount via bonding curve (using current `totalSupply` which still includes the tokens being cashed out), then decrements `JBTerminalStore.balanceOf[terminal][projectId][token]` by `reclaimAmount + hookSpec amounts`
+2. Project tokens burned via `JBController.burnTokensOf()` (credits first, then ERC-20) -- happens AFTER the reclaim calculation, so the bonding curve sees the pre-burn supply
 3. Reclaimed tokens transferred to beneficiary
 4. Cash out hooks execute (if data hook returns specifications)
-5. Fee taken (2.5%) on total amount eligible for fees, unless beneficiary is feeless. When `cashOutTaxRate == 0`, the fee applies only up to the project's unconsumed fee-free surplus (`_feeFreeSurplusOf`) from intra-terminal payouts — once depleted, cashouts are fee-free.
+5. Fee taken (2.5%) on total amount eligible for fees, unless beneficiary is feeless. When `cashOutTaxRate == 0`, the fee applies only up to the project's unconsumed fee-free surplus (`_feeFreeSurplusOf`) from intra-terminal payouts -- once depleted, cashouts are fee-free.
 
 **Events**: `CashOutTokens(rulesetId, rulesetCycleNumber, projectId, holder, beneficiary, cashOutCount, cashOutTaxRate, reclaimAmount, metadata, caller)`
 
@@ -169,7 +169,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - `usedAmount > surplus` -- reverts (`InadequateTerminalStoreBalance`)
 - Surplus allowance resets each ruleset (keyed by `rulesetId`, not `cycleNumber`)
 - Amount validated against surplus BEFORE checking allowance limit
-- If both owner and beneficiary are feeless, no fee is taken
+- If either the owner or the beneficiary is feeless, no fee is taken
 
 ---
 
@@ -327,13 +327,13 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 
 **Flow**:
 1. `JBDirectory.setControllerOf(projectId, newController)` is called
-2. Directory calls `newController.beforeReceiveMigrationFrom(oldController, projectId)`:
-   - Copies metadata URI from old controller
-   - Distributes pending reserved tokens from old controller
-3. Directory calls `oldController.migrate(projectId, newController)`:
+2. If old controller exists AND new controller supports `IJBMigratable`: directory calls `newController.beforeReceiveMigrationFrom(oldController, projectId)`:
+   - Copies metadata URI from old controller (if it supports `IJBProjectUriRegistry`)
+   - Distributes pending reserved tokens from old controller (if it supports `IJBController` and has pending tokens)
+3. If old controller exists AND old controller supports `IJBMigratable`: directory calls `oldController.migrate(projectId, newController)`:
    - Reverts if pending reserved tokens > 0 (must distribute first)
 4. Directory updates `controllerOf[projectId] = newController`
-5. Directory calls `newController.afterReceiveMigrationFrom(oldController, projectId)`
+5. If old controller exists AND new controller supports `IJBMigratable`: directory calls `newController.afterReceiveMigrationFrom(oldController, projectId)` (currently a no-op; verifies caller is the directory)
 
 **Events**: `Migrate(projectId, to, caller)` from old controller; `SetController(projectId, controller, caller)` from directory
 
@@ -362,7 +362,7 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 2. Clone's `initialize(name, symbol, owner=JBTokens)` is called
 3. `JBTokens.tokenOf[projectId]` set to the new token
 
-**Events**: `DeployERC20(projectId, deployer, salt, saltHash, caller)`
+**Events**: `DeployERC20(projectId, deployer, salt, saltHash, caller)` from `JBController`, `DeployERC20(projectId, token, name, symbol, salt, caller)` from `JBTokens`
 
 **Edge cases**:
 - Can only be called once per project. If a token is already set, `JBTokens` reverts.
@@ -608,13 +608,13 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - `name` -- New ERC-20 token name
 - `symbol` -- New ERC-20 token symbol
 
-**State changes**: Updates the ERC-20 token's name and symbol via `JBERC20.setNameAndSymbol()`
+**State changes**: Updates the ERC-20 token's name and symbol via `JBERC20.setMetadata()`
 
 **Events**: `SetTokenMetadata(projectId, name, symbol, caller)` (emitted by `JBTokens`)
 
 **Edge cases**:
 - Requires an ERC-20 token to be deployed for the project (reverts if no token set)
-- Only works with `JBERC20` clones (custom tokens that implement `IJBToken` may not support `setNameAndSymbol`)
+- Only works with `JBERC20` clones (custom tokens that implement `IJBToken` may not support `setMetadata`)
 
 ---
 
