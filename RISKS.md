@@ -137,8 +137,8 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 ### Permit2 Interactions
 
-- `_acceptFundsFor` tries direct ERC-20 `transferFrom` first (if allowance is sufficient), then falls back to Permit2. The Permit2 `permit` call is wrapped in try-catch -- failure emits an event but doesn't revert the payment.
-- `_transferFrom` for outbound transfers also falls back to Permit2 if direct allowance is insufficient. This means outbound transfers (to beneficiaries, split hooks) may unexpectedly use Permit2 state.
+- **Permit2 is only used for inbound transfers.** `_acceptFundsFor` tries direct ERC-20 `transferFrom` first (if allowance is sufficient), then falls back to Permit2. The Permit2 `permit` call is wrapped in try-catch -- failure emits an event but doesn't revert the payment.
+- **Outbound transfers never use Permit2.** All outbound `_transferFrom` calls pass `from: address(this)`, which takes the direct transfer path (`safeTransfer` for ERC-20s, `Address.sendValue` for native token) and returns before reaching the Permit2 fallback. The Permit2 fallback in `_transferFrom` only exists for the inbound case where `from` is the payer (`_msgSender()`).
 - The `uint160` cast on line 1808 of `JBMultiTerminal.sol` limits Permit2 transfers to `type(uint160).max`. Amounts above this revert with `OverflowAlert`.
 
 ### Cross-Terminal Surplus Aggregation
