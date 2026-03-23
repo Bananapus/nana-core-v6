@@ -387,8 +387,8 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, cashOutTaxRate: 5000
         });
 
-        // With pending reserves, the cashout value is lower (known behavior, H-4).
-        assertLt(reclaimWithReserves, reclaimWithoutReserves, "Pending reserves reduce cashout value (expected, H-4)");
+        // With pending reserves, the cashout value is lower (known behavior).
+        assertLt(reclaimWithReserves, reclaimWithoutReserves, "Pending reserves reduce cashout value (expected)");
 
         // Actually perform the cashout and confirm it matches the with-reserves calculation (net of fee).
         // cashOutTokensOf returns the NET reclaim after the 2.5% fee is deducted.

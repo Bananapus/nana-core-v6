@@ -57,6 +57,10 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
 
     /// @notice Sets permissions for an operator.
     /// @dev Only an address can give permissions to or revoke permissions from its operators.
+    /// @dev ROOT (permission ID 1) cannot be granted with `projectId = 0` (wildcard). This combination would give the
+    /// operator god-mode across every project — there is no legitimate use case for this, and allowing it would make a
+    /// single compromised operator key a protocol-wide catastrophe. This restriction is enforced unconditionally,
+    /// including for self-grants by the account itself.
     /// @param account The account setting its operators' permissions.
     /// @param permissionsData The data which specifies the permissions the operator is being given.
     function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
