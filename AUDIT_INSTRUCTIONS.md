@@ -27,7 +27,7 @@ Read [RISKS.md](./RISKS.md) for known risks, trust model, and reentrancy analysi
 | Contract | Lines | Role | Calls |
 |----------|-------|------|-------|
 | **JBMultiTerminal** | ~2024 | Payment terminal. Handles pay, cash out, payouts, surplus allowance, fees, and previews (`previewPayFor`, `previewCashOutFrom`). Multi-token. Permit2 integration. | Store, Controller, Splits, Directory, Prices |
-| **JBController** | ~1186 | Orchestrator. Project lifecycle, ruleset queuing, token minting/burning, reserved token distribution, mint preview (`previewMintOf`). ERC-2771 meta-tx. | Rulesets, Tokens, Splits, FundAccessLimits, Directory, Prices |
+| **JBController** | ~1,253 | Orchestrator. Project lifecycle, ruleset queuing, token minting/burning, reserved token distribution, mint preview (`previewMintOf`). ERC-2771 meta-tx. | Rulesets, Tokens, Splits, FundAccessLimits, Directory, Prices |
 | **JBTerminalStore** | ~1,267 | Bookkeeping. Balances, payout limit tracking, surplus calculation, bonding curve reclaim math. Data hook integration point. | Rulesets, Prices, Directory |
 | **JBRulesets** | ~1093 | Ruleset lifecycle. Linked-list via `basedOnId`. Weight decay with cache (20k iteration threshold). Approval hooks. Bit-packed storage. | Directory (via JBControlled) |
 | **JBDirectory** | ~344 | Routes projects to terminals and controllers. Migration lifecycle (before/after). | Projects, Permissions |
@@ -99,7 +99,7 @@ Anyone -> JBMultiTerminal.sendPayoutsOf()
      -> Deduct amount from balance
      -> Increment usedPayoutLimitOf
      -> Validate against FUND_ACCESS_LIMITS.payoutLimitOf()
-  -> _sendPayoutsToSplitGroupOf()
+  -> JBPayoutSplitGroupLib.sendPayoutsToSplitGroupOf()
      -> Get splits from JBSplits.splitsOf()
      -> For each split (try-catch per split):
         -> Split to hook: deduct fee, call hook.processSplitWith() with funds
@@ -258,7 +258,7 @@ These are the patterns that will trip you up if you are not aware of them:
 8. **`sendPayoutsOf()` reverts when `amount > payout limit`** -- does NOT auto-cap to limit.
 9. **Cash out tax rate semantics are inverted from what you might expect**: 0% = proportional (1:1) redemption. 100% = nothing reclaimable (all surplus locked).
 10. **`recordPayoutFor` deducts balance and increments used limit BEFORE validation** -- safe because the entire transaction reverts atomically, but the ordering matters for reentrancy analysis.
-11. **Try-catch on external calls** -- `_sendPayoutToSplit`, `_processFee`, `executePayReservedTokenToTerminal` all use try-catch. Failed calls return funds to project balance and emit events. This is NOT a bug -- it prevents single-point-of-failure DoS.
+11. **Try-catch on external calls** -- `JBPayoutSplitGroupLib._sendPayoutToSplit`, `_processFee`, `executePayReservedTokenToTerminal` all use try-catch. Failed calls return funds to project balance and emit events. This is NOT a bug -- it prevents single-point-of-failure DoS.
 12. **Credits are burned before ERC-20 tokens** in `JBTokens.burnFrom()`.
 13. **`JBERC20` is cloned via `Clones.clone()`** -- constructor sets invalid name/symbol; real values set in `initialize()`.
 14. **Named returns auto-return** -- several functions use named return variables without explicit `return` statements.
