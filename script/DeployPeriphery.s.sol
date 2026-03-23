@@ -253,16 +253,11 @@ contract DeployPeriphery is Script, Sphinx {
                 gracePeriod: L2GracePeriod
             });
         } else if (block.chainid == 84_532) {
-            // FIXME: 0xd30e2101... is the Arbitrum Sepolia ETH/USD feed and is WRONG for Base Sepolia USDC/USD.
-            // Replace with the correct Chainlink Base Sepolia USDC/USD address before deploying.
-            revert("FIXME: Base Sepolia USDC/USD feed address unverified");
-            /* solhint-disable no-unreachable */
             usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
             usdcFeed = new JBChainlinkV3PriceFeed({
                 feed: AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)),
                 threshold: 86_400 seconds
             });
-            /* solhint-enable no-unreachable */
         } else if (block.chainid == 42_161) {
             usdc = address(0xaf88d065e77c8cC2239327C5EDb3A432268e5831);
             usdcFeed = new JBChainlinkV3SequencerPriceFeed({
