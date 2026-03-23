@@ -59,7 +59,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Function | What it does |
 |----------|--------------|
 | `pay(uint256 projectId, address token, uint256 amount, address beneficiary, uint256 minReturnedTokens, string memo, bytes metadata)` | Pays a project. Mints project tokens to beneficiary based on ruleset weight. Returns token count. |
-| `cashOutTokensOf(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, uint256 minTokensReclaimed, address beneficiary, bytes metadata)` | Burns project tokens and reclaims surplus terminal tokens via bonding curve. |
+| `cashOutTokensOf(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, uint256 minTokensReclaimed, address payable beneficiary, bytes metadata)` | Burns project tokens and reclaims surplus terminal tokens via bonding curve. |
 | `sendPayoutsOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut)` | Distributes payouts from the project's balance to its payout split group, up to the payout limit. |
 | `useAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut, address payable beneficiary, address payable feeBeneficiary, string memo)` | Withdraws from the project's surplus allowance to a beneficiary. The `feeBeneficiary` receives tokens minted by the fee payment. |
 | `addToBalanceOf(uint256 projectId, address token, uint256 amount, bool shouldReturnHeldFees, string memo, bytes metadata)` | Adds funds to a project's balance without minting tokens. Can unlock held fees. |
@@ -70,7 +70,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
 | `accountingContextsOf(uint256 projectId)` | Returns all accounting contexts for a project. |
 | `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |
-| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
+| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address payable beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
 | `heldFeesOf(uint256 projectId, address token, uint256 count)` | Returns up to `count` held fees for a project/token. |
 
 ### JBTerminalStore
@@ -101,7 +101,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentOf(uint256 projectId)` | Returns the currently active ruleset with decayed weight and correct cycle number. |
 | `latestQueuedOf(uint256 projectId)` | Returns the latest queued ruleset and its approval status. |
 | `queueFor(uint256 projectId, uint256 duration, uint256 weight, uint256 weightCutPercent, IJBRulesetApprovalHook approvalHook, uint256 metadata, uint256 mustStartAtOrAfter)` | Queues a new ruleset. Only callable by the project's controller. |
-| `updateRulesetWeightCache(uint256 projectId)` | Updates the weight cache for long-running rulesets. Required when `weightCutMultiple > 20,000` to avoid gas limits. |
+| `updateRulesetWeightCache(uint256 projectId, uint256 rulesetId)` | Updates the weight cache for long-running rulesets. Required when `weightCutMultiple > 20,000` to avoid gas limits. |
 
 ### JBPermissions
 
