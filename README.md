@@ -175,6 +175,7 @@ graph TD;
 | `JBFees` | Fee calculation helpers. `feeAmountFrom` (forward) and `feeAmountResultingIn` (backward). |
 | `JBFixedPointNumber` | Decimal adjustment between fixed-point number precisions. |
 | `JBMetadataResolver` | Packs and unpacks variable-length `{id: data}` metadata entries with a lookup table. Used by pay/cash-out hooks. |
+| `JBPayoutSplitGroupLib` | External library for payout split-group distribution, called via `DELEGATECALL` from `JBMultiTerminal` to reduce terminal bytecode. Distributes payouts to splits with try-catch per split. |
 | `JBRulesetMetadataResolver` | Packs and unpacks the `uint256 metadata` field on `JBRuleset` into `JBRulesetMetadata`. Bit layout: version (4 bits), reservedPercent (16), cashOutTaxRate (16), baseCurrency (32), 14 boolean flags (1 bit each), dataHook address (160), metadata (14). |
 
 ### Hook Interfaces
@@ -231,5 +232,5 @@ npm install
 | `forge test -vvvv` | Run tests with full traces |
 | `forge fmt` | Format code |
 | `forge fmt --check` | Check formatting (CI lint) |
-| `FOUNDRY_PROFILE=fork forge test` | Run fork tests |
+| `FOUNDRY_PROFILE=CI forge test` | Run fork tests |
 | `forge coverage --match-path "./src/*.sol"` | Generate coverage report |
