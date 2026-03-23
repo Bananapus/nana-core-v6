@@ -66,6 +66,15 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         // Make sure the 0 permission is not set.
         if (_includesPermission({permissions: packed, permissionId: 0})) revert JBPermissions_NoZeroPermission();
 
+        // ROOT + wildcard projectId is unconditionally rejected — even for self-grants.
+        // This combination would grant god-mode across all projects, which is never safe.
+        if (
+            _includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
+                && permissionsData.projectId == WILDCARD_PROJECT_ID
+        ) {
+            revert JBPermissions_CantSetRootPermissionForWildcardProject();
+        }
+
         // Cache the sender.
         address msgSender = _msgSender();
 

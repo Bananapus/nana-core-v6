@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit, Nonces} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
@@ -13,7 +14,7 @@ import {IJBToken} from "./interfaces/IJBToken.sol";
 /// @dev By default, a project uses "credits" to track balances. Once a project sets their `IJBToken` using
 /// `JBController.deployERC20For(...)` or `JBController.setTokenFor(...)`, credits can be redeemed to claim tokens.
 /// @dev `JBController.deployERC20For(...)` deploys a `JBERC20` contract and sets it as the project's token.
-contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
+contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, Initializable, IJBToken {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -36,7 +37,11 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {}
+    /// @dev Disable initializers on the implementation contract to prevent it from being initialized directly.
+    /// Clones are initialized via `initialize(...)`.
+    constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {
+        _disableInitializers();
+    }
 
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //

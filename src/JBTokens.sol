@@ -398,6 +398,10 @@ contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
 
     /// @notice The total supply for a specific project, including both tokens and token credits.
+    /// @dev WARNING: Projects that use `setTokenFor` with an external ERC-20 inherit that token's supply manipulation
+    /// surface. If the external token has a separate minting authority, `totalSupply()` can be inflated outside of
+    /// this contract, which dilutes cash-out values for all holders. Projects using `deployERC20For` are safe because
+    /// the resulting `JBERC20` is exclusively owned by this `JBTokens` contract.
     /// @param projectId The ID of the project to get the total supply of.
     /// @return totalSupply The total supply of the project's tokens and token credits.
     function totalSupplyOf(uint256 projectId) public view override returns (uint256 totalSupply) {
