@@ -56,11 +56,11 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     //*********************************************************************//
 
     /// @notice Sets permissions for an operator.
-    /// @dev Only an address can give permissions to or revoke permissions from its operators.
-    /// @dev ROOT (permission ID 1) cannot be granted with `projectId = 0` (wildcard). This combination would give the
-    /// operator god-mode across every project — there is no legitimate use case for this, and allowing it would make a
-    /// single compromised operator key a protocol-wide catastrophe. This restriction is enforced unconditionally,
-    /// including for self-grants by the account itself.
+    /// @dev Only the `account` itself (i.e. `msg.sender == account`) can grant or revoke its operators' permissions
+    /// without restriction — including ROOT on the wildcard project ID (`projectId = 0`).
+    /// @dev A third-party caller who holds ROOT for a specific project may set *non-ROOT* permissions for that project
+    /// on someone else's behalf, but **cannot**: (a) grant ROOT to others, or (b) set any permissions on the wildcard
+    /// project ID. This prevents ROOT operators from escalating their own privileges.
     /// @param account The account setting its operators' permissions.
     /// @param permissionsData The data which specifies the permissions the operator is being given.
     function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
@@ -69,15 +69,6 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
 
         // Make sure the 0 permission is not set.
         if (_includesPermission({permissions: packed, permissionId: 0})) revert JBPermissions_NoZeroPermission();
-
-        // ROOT + wildcard projectId is unconditionally rejected — even for self-grants.
-        // This combination would grant god-mode across all projects, which is never safe.
-        if (
-            _includesPermission({permissions: packed, permissionId: JBPermissionIds.ROOT})
-                && permissionsData.projectId == WILDCARD_PROJECT_ID
-        ) {
-            revert JBPermissions_CantSetRootPermissionForWildcardProject();
-        }
 
         // Cache the sender.
         address msgSender = _msgSender();
