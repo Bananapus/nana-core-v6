@@ -63,7 +63,8 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
         );
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    // ── Helpers
+    // ──────────────────────────────────────────────────────────
 
     function _genRulesetConfig() internal pure returns (JBTerminalConfig[] memory, JBRulesetConfig[] memory) {
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](0);
@@ -172,8 +173,7 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
         vm.mockCall(
             address(fundAccessLimits),
             abi.encodeCall(
-                IJBFundAccessLimits.setFundAccessLimitsFor,
-                (projectId, ts, rulesetConfigs[0].fundAccessLimitGroups)
+                IJBFundAccessLimits.setFundAccessLimitsFor, (projectId, ts, rulesetConfigs[0].fundAccessLimitGroups)
             ),
             ""
         );
@@ -226,14 +226,14 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
         vm.mockCall(
             address(fundAccessLimits),
             abi.encodeCall(
-                IJBFundAccessLimits.setFundAccessLimitsFor,
-                (projectId, ts, rulesetConfigs[0].fundAccessLimitGroups)
+                IJBFundAccessLimits.setFundAccessLimitsFor, (projectId, ts, rulesetConfigs[0].fundAccessLimitGroups)
             ),
             ""
         );
     }
 
-    // ── Tests ────────────────────────────────────────────────────────────
+    // ── Tests
+    // ────────────────────────────────────────────────────────────
 
     function test_operatorCanLaunchRulesetsWithoutPermission() external {
         (JBTerminalConfig[] memory terminalConfigs, JBRulesetConfig[] memory rulesetConfigs) = _genRulesetConfig();

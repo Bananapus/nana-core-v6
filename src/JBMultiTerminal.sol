@@ -581,7 +581,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Phantom balance risk: after a terminal migration, held fees remain in this terminal but the backing tokens
     /// have been transferred to the new terminal via `migrateBalanceOf`. If `_processFee` reverts (e.g. the fee
     /// terminal rejects the payment), the catch block calls `_recordAddedBalanceFor`, which credits the project's
-    /// recorded balance without any actual tokens arriving — creating a phantom balance. This is an accepted trade-off:
+    /// recorded balance without any actual tokens arriving — creating a phantom balance. This is an accepted
+    /// trade-off:
     /// the alternative (losing the fee amount entirely on revert) is worse. Callers should be aware that processing
     /// held fees post-migration may inflate the project's recorded balance if any fee payments revert.
     /// @dev The index-increment-before-`_processFee` pattern is intentional: locked (not-yet-unlocked) fees are skipped
