@@ -78,6 +78,8 @@ Hooks are customizable contracts that plug into protocol flows:
 - Surplus allowance usage.
 - Cash outs when the cash out tax rate is above 0%. When the cash out tax rate is 0%, fees apply only up to the project's accumulated fee-free intra-terminal payout surplus (`_feeFreeSurplusOf`) — once that surplus is consumed, subsequent cashouts are fee-free.
 
+`_feeFreeSurplusOf` lifecycle: (a) capped at the project's terminal balance on each intra-terminal payout to prevent unbounded accumulation from repeated payout-to-self cycles, (b) decremented proportionally when surplus leaves via `useAllowanceOf`, and (c) cleared to zero on terminal migration via `migrateBalanceOf`.
+
 Fees are paid to **project #1** (the fee beneficiary project, minted in the `JBProjects` constructor). Addresses on the `JBFeelessAddresses` allowlist are exempt from fees.
 
 When a ruleset has `holdFees` enabled, fees are held for 28 days before being processed. During this period, if funds are returned to the project via `addToBalanceOf`, held fees can be unlocked and returned.
