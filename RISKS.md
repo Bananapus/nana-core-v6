@@ -18,7 +18,7 @@ What must be true for the system to remain safe:
 
 ### Bonding Curve
 
-- **Zero cash out guard.** `cashOutFrom` returns 0 when `cashOutCount == 0` (line 31 early return). Auditors should verify no code path bypasses this guard or reaches the `cashOutCount >= totalSupply` branch (line 37) with both values at 0.
+- **Zero cash out guard.** `cashOutFrom` returns 0 when `cashOutCount == 0` (early return). Auditors should verify no code path bypasses this guard or reaches the `cashOutCount >= totalSupply` branch with both values at 0.
 - **Pending reserved tokens inflate `totalSupply`.** `totalTokenSupplyWithReservedTokensOf()` adds `pendingReservedTokenBalanceOf` to `totalSupply`, reducing per-token cash out value. A project owner who delays calling `sendReservedTokensToSplitsOf()` can suppress cash out values. Auditors should model the magnitude of this effect for projects with large pending reserves.
 - **`mulDiv` rounding.** The bonding curve's subadditivity property (`cashOutFrom(a) + cashOutFrom(b) <= cashOutFrom(a+b)`) can be violated by <0.01% due to floor rounding. Economically insignificant per operation but could accumulate across many small cash outs.
 - **Binary search in `minCashOutCountFor`.** The inverse cash out function uses binary search over `[1, totalSupply]`. For large supplies (>2^128), this is ~128 iterations of `mulDiv` calls. Verify gas cost remains bounded.
@@ -26,7 +26,7 @@ What must be true for the system to remain safe:
 ### Fee Arithmetic
 
 - **Forward vs. backward fee asymmetry.** `feeAmountFrom` (forward) uses `mulDiv(amount, 25, 1000)`. `feeAmountResultingIn` (backward) uses `mulDiv(amount, 1000, 975) - amount`. These are algebraically equivalent but rounding differs. In `_returnHeldFees`, both are used on the same held fee entry (forward to compute `feeAmount`, backward when partially returning). Verify the interplay never undercharges.
-- **Held fee amount mutation.** `_returnHeldFees` mutates `heldFee.amount` in-place via unchecked subtraction (line 1610). If the accounting is off by even 1 wei in the wrong direction, this underflows and corrupts the held fee entry.
+- **Held fee amount mutation.** `_returnHeldFees` mutates `heldFee.amount` in-place via unchecked subtraction. If the accounting is off by even 1 wei in the wrong direction, this underflows and corrupts the held fee entry.
 
 ### Weight Decay
 
@@ -70,7 +70,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 ### Permission System
 
 - **ROOT (ID 1) grants all permissions.** Including permissions not yet defined. Future permission IDs automatically fall under ROOT.
-- **ROOT cannot be set for wildcard `projectId = 0`.** The actual enforcement in `setPermissionsFor` is: if the caller is not the account itself, they must have ROOT for the target project, AND they cannot set ROOT for others, AND they cannot set any permissions on the wildcard project. ROOT holders for a specific project can set non-ROOT permissions for operators on that project. Auditors should verify the exact boundary -- particularly whether a ROOT operator on project X can escalate to ROOT on project Y through any indirect path.
+- **ROOT + wildcard (`projectId = 0`) is allowed for self-grants only.** An account can grant its own operator ROOT on the wildcard project, giving that operator god-mode across all of the account's projects. This is powerful but legitimate — the account owner is explicitly choosing to delegate full control. However, a third-party caller who holds ROOT for a specific project **cannot** grant ROOT to others or set any permissions on the wildcard project on someone else's behalf. This prevents ROOT operators from escalating their own privileges beyond what the account owner originally granted. Auditors should verify that no indirect path allows a ROOT operator on project X to escalate to ROOT on project Y without the account owner's direct action.
 - **Empty permission arrays pass `hasPermissions`.** By design (vacuous truth). Any caller that expects "the operator has at least one of these permissions" must validate the array is non-empty.
 - **`OMNICHAIN_RULESET_OPERATOR` bypass.** This immutable address can `launchRulesetsFor`, `queueRulesetsOf`, and set terminals for any project without owner permission. The trust assumption is that this operator only queues rulesets that the omnichain deployer's logic permits. If this address is an EOA or an upgradeable contract, it is a single point of failure for all projects.
 
@@ -139,7 +139,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 - **Permit2 is only used for inbound transfers.** `_acceptFundsFor` tries direct ERC-20 `transferFrom` first (if allowance is sufficient), then falls back to Permit2. The Permit2 `permit` call is wrapped in try-catch -- failure emits an event but doesn't revert the payment.
 - **Outbound transfers never use Permit2.** All outbound `_transferFrom` calls pass `from: address(this)`, which takes the direct transfer path (`safeTransfer` for ERC-20s, `Address.sendValue` for native token) and returns before reaching the Permit2 fallback. The Permit2 fallback in `_transferFrom` only exists for the inbound case where `from` is the payer (`_msgSender()`).
-- The `uint160` cast on line 1808 of `JBMultiTerminal.sol` limits Permit2 transfers to `type(uint160).max`. Amounts above this revert with `OverflowAlert`.
+- The `uint160` cast in `JBMultiTerminal._acceptFundsFor` limits Permit2 transfers to `type(uint160).max`. Amounts above this revert with `OverflowAlert`.
 
 ### Cross-Terminal Surplus Aggregation
 

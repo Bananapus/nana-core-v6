@@ -36,7 +36,11 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {}
+    /// @dev Set `_name` on the implementation contract to prevent it from being initialized directly.
+    /// Clones start with empty `_name`, so `initialize(...)` works only on clones.
+    constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {
+        _name = "invalid";
+    }
 
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //

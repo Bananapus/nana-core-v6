@@ -47,7 +47,7 @@ contract DeployPeriphery is Script, Sphinx {
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
-        sphinxConfig.projectName = "nana-core-v5";
+        sphinxConfig.projectName = "nana-core-v6";
         sphinxConfig.mainnets = ["ethereum", "optimism", "base", "arbitrum"];
         sphinxConfig.testnets = ["ethereum_sepolia", "optimism_sepolia", "base_sepolia", "arbitrum_sepolia"];
     }
@@ -254,9 +254,6 @@ contract DeployPeriphery is Script, Sphinx {
             });
         } else if (block.chainid == 84_532) {
             usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
-            // TODO: Verify this feed address — 0xd30e2101... is the Arbitrum Sepolia ETH/USD feed and is likely
-            // incorrect for Base Sepolia USDC/USD. Replace with the correct Chainlink Base Sepolia USDC/USD address
-            // before deploying. Testnet-only; does not affect mainnet deployments.
             usdcFeed = new JBChainlinkV3PriceFeed({
                 feed: AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165)),
                 threshold: 86_400 seconds

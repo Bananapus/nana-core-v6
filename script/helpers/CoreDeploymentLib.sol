@@ -40,7 +40,7 @@ library CoreDeploymentLib {
     address internal constant VM_ADDRESS = address(uint160(uint256(keccak256("hevm cheat code"))));
     // forge-lint: disable-next-line(screaming-snake-case-const)
     Vm internal constant vm = Vm(VM_ADDRESS);
-    string constant PROJECT_NAME = "nana-core-v5";
+    string constant PROJECT_NAME = "nana-core-v6";
 
     function getDeployment(string memory path) internal returns (CoreDeployment memory deployment) {
         // get chainId for which we need to get the deployment.

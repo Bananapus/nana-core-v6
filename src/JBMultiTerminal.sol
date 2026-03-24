@@ -578,6 +578,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Process any fees that are being held for the project.
     /// @dev Reentrancy safety: the loop re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the
     /// index before the external `_processFee` call, so a reentrant call cannot double-process the same fee entry.
+    /// @dev Phantom balance risk: after a terminal migration, held fees remain in this terminal but the backing tokens
+    /// have been transferred to the new terminal via `migrateBalanceOf`. If `_processFee` reverts (e.g. the fee
+    /// terminal rejects the payment), the catch block calls `_recordAddedBalanceFor`, which credits the project's
+    /// recorded balance without any actual tokens arriving — creating a phantom balance. This is an accepted
+    /// trade-off:
+    /// the alternative (losing the fee amount entirely on revert) is worse. Callers should be aware that processing
+    /// held fees post-migration may inflate the project's recorded balance if any fee payments revert.
+    /// @dev The index-increment-before-`_processFee` pattern is intentional: locked (not-yet-unlocked) fees are skipped
+    /// via the `unlockTimestamp` check, and advancing the index before the external call prevents reentrancy from
+    /// reprocessing the same fee entry.
     /// @param projectId The ID of the project to process held fees for.
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.

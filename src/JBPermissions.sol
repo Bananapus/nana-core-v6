@@ -56,7 +56,11 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     //*********************************************************************//
 
     /// @notice Sets permissions for an operator.
-    /// @dev Only an address can give permissions to or revoke permissions from its operators.
+    /// @dev Only the `account` itself (i.e. `msg.sender == account`) can grant or revoke its operators' permissions
+    /// without restriction — including ROOT on the wildcard project ID (`projectId = 0`).
+    /// @dev A third-party caller who holds ROOT for a specific project may set *non-ROOT* permissions for that project
+    /// on someone else's behalf, but **cannot**: (a) grant ROOT to others, or (b) set any permissions on the wildcard
+    /// project ID. This prevents ROOT operators from escalating their own privileges.
     /// @param account The account setting its operators' permissions.
     /// @param permissionsData The data which specifies the permissions the operator is being given.
     function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {

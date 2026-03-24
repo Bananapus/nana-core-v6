@@ -95,11 +95,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     IJBTokens public immutable override TOKENS;
 
     /// @notice The address of the contract that manages omnichain ruleset ops.
-    /// @dev This is a deterministic CREATE2 deployment; bytecode verification at runtime would add
-    /// gas
-    /// cost for marginal security benefit since the address is verified at deploy time.
-    /// @dev Trust assumption is bounded: the operator can only queue rulesets that the omnichain
-    /// deployer's logic permits. It cannot drain funds or bypass access controls.
+    /// @dev This is a deterministic CREATE2 deployment; bytecode verification at runtime would add gas cost for
+    /// marginal security benefit since the address is verified at deploy time.
+    /// @dev TRUST BOUNDARY: This hardcoded address can call `launchRulesetsFor` and `queueRulesetsOf` for ANY project,
+    /// bypassing normal `JBPermissions` checks. If this address is compromised or its implementation is malicious:
+    ///   - Projects WITH approval hooks are partially protected: the attacker can queue rulesets, but they must pass
+    ///     the project's approval hook before becoming active.
+    ///   - Projects WITHOUT approval hooks (duration == 0 or no approval hook set) are IMMEDIATELY affected: queued
+    ///     rulesets take effect as soon as the current ruleset expires (or immediately if duration == 0).
+    /// @dev The operator can also call `setTerminalsOf` during `launchRulesetsFor`, which could redirect a project's
+    /// payment routing. This is limited to the initial launch flow (reverts if rulesets already exist).
+    /// @dev Mitigation: verify the deployed bytecode at this address matches the expected `JBOmnichainDeployer`
+    /// contract from `nana-omnichain-deployers-v6` on every target chain before running deployment scripts.
     address public immutable override OMNICHAIN_RULESET_OPERATOR;
 
     //*********************************************************************//

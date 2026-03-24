@@ -2,6 +2,7 @@
 pragma solidity 0.8.26;
 
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {JBERC20} from "../../../../src/JBERC20.sol";
 import {JBERC20Setup} from "./JBERC20Setup.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -11,6 +12,12 @@ contract TestInitialize_Local is JBERC20Setup {
 
     function setUp() public {
         super.erc20Setup();
+    }
+
+    function test_ImplementationCannotBeInitialized() external {
+        // The implementation has _name = "invalid" set in constructor, so initialize() must revert.
+        vm.expectRevert(JBERC20.JBERC20_AlreadyInitialized.selector);
+        _implementation.initialize(_name, _symbol, _owner);
     }
 
     function test_WhenANameIsAlreadySet() external {
