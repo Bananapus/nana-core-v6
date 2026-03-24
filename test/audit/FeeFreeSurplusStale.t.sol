@@ -76,9 +76,7 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
 
         JBRulesetConfig[] memory projectBRuleset = new JBRulesetConfig[](1);
         projectBRuleset[0] = _rulesetConfig({
-            metadata: _metadata(),
-            splitGroups: new JBSplitGroup[](0),
-            fundAccessLimitGroups: fundAccessLimitGroups
+            metadata: _metadata(), splitGroups: new JBSplitGroup[](0), fundAccessLimitGroups: fundAccessLimitGroups
         });
 
         _projectIdB = _controller.launchProjectFor({
@@ -115,11 +113,8 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
         });
 
         JBRulesetConfig[] memory projectARuleset = new JBRulesetConfig[](1);
-        projectARuleset[0] = _rulesetConfig({
-            metadata: _metadata(),
-            splitGroups: splitGroups,
-            fundAccessLimitGroups: projectALimits
-        });
+        projectARuleset[0] =
+            _rulesetConfig({metadata: _metadata(), splitGroups: splitGroups, fundAccessLimitGroups: projectALimits});
 
         _projectIdA = _controller.launchProjectFor({
             owner: _projectOwner,
@@ -196,8 +191,10 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
             metadata: new bytes(0)
         });
 
-        uint256 expectedNet = PAY_AMOUNT - mulDiv(PAY_AMOUNT, 25, 1000);
-        assertEq(reclaimAmount, expectedNet, "stale fee-free surplus still charges a fee");
+        // After the fix: useAllowanceOf proportionally reduces the fee-free surplus.
+        // Since the full balance was drained, the fee-free surplus is now 0.
+        // payerB's direct pay-in → cashout with cashOutTaxRate=0 and no fee-free surplus → fee-free.
+        assertEq(reclaimAmount, PAY_AMOUNT, "direct pay-in cashout is fee-free after surplus cleared by allowance");
     }
 
     function _metadata() private pure returns (JBRulesetMetadata memory) {

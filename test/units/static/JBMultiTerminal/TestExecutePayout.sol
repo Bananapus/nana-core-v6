@@ -294,6 +294,13 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
             ""
         );
 
+        // mock call to JBTerminalStore balanceOf for the fee-free surplus cap calculation
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.balanceOf, (address(_terminal), _projectId, _usdc)),
+            abi.encode(_defaultAmount)
+        );
+
         // for safe ERC20 check of code length at token address
         vm.prank(address(_terminal));
 
@@ -416,6 +423,13 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
                 )
             ),
             abi.encode(returnedRuleset, 0, hookSpecifications)
+        );
+
+        // mock call to JBTerminalStore balanceOf for the fee-free surplus cap calculation
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.balanceOf, (address(_terminal), _projectId, _usdc)),
+            abi.encode(_defaultAmount)
         );
 
         // for safe ERC20 check of code length at token address

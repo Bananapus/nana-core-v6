@@ -6,6 +6,7 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {mulDiv} from "@prb/math/src/Common.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IAllowanceTransfer} from "@uniswap/permit2/src/interfaces/IAllowanceTransfer.sol";
@@ -123,9 +124,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
     /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
     /// — legitimate cashouts beyond this amount remain fee-free.
-    /// @dev WARNING: This accumulator persists across rulesets and cannot be cleared. Once a fee-free payout
-    /// increments it, the balance remains until consumed by a zero-tax cashout. There is no admin function to reset
-    /// it. Projects switching from zero-tax to non-zero-tax rulesets will carry forward any unconsumed balance.
+    /// @dev Lifecycle: incremented on fee-free payouts (payout-to-self), capped at the project's current balance
+    /// to prevent unbounded accumulation. Decremented proportionally when surplus leaves via `useAllowanceOf`.
+    /// Consumed during zero-tax cashouts. Cleared on terminal migration (`migrateBalanceOf`).
+    /// @dev Persists across rulesets — projects switching from zero-tax to non-zero-tax carry forward any
+    /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
@@ -368,7 +371,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
             // only up to this accumulated amount, preventing round-trip fee bypass.
             if (terminal == this) {
-                _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
+                // Compute what the new fee-free surplus would be after adding this payout.
+                uint256 newFeeFreeSurplus = _feeFreeSurplusOf[split.projectId][token] + netPayoutAmount;
+
+                // Get the project's recorded balance in this terminal PLUS the incoming payout (not yet recorded).
+                uint256 balanceAfterPayout = STORE.balanceOf({
+                    terminal: address(this), projectId: split.projectId, token: token
+                }) + netPayoutAmount;
+
+                // Cap at the post-payout balance to prevent unbounded accumulation from repeated payout-to-self cycles.
+                _feeFreeSurplusOf[split.projectId][token] =
+                    newFeeFreeSurplus > balanceAfterPayout ? balanceAfterPayout : newFeeFreeSurplus;
             }
 
             // Send the `projectId` in the metadata as a referral.
@@ -489,6 +502,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
             revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
+
+        // Clear fee-free surplus tracking before migration. The new terminal has no fee-free history.
+        // This prevents stale fee-free surplus from persisting if the project later migrates back.
+        delete _feeFreeSurplusOf[projectId][token];
 
         // Terminal migration intentionally does not transfer held fees. Held fees belong to the
         // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
@@ -1860,6 +1877,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
+        // Proportionally reduce fee-free surplus when surplus leaves through allowance.
+        _reduceFeeFreeSurplus(projectId, token, amountPaidOut);
+
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
         // slither-disable-next-line reentrancy-events
@@ -1892,6 +1912,29 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (netAmountPaidOut != 0) {
             _transferFrom({from: address(this), to: beneficiary, token: token, amount: netAmountPaidOut});
         }
+    }
+
+    /// @notice Proportionally reduce fee-free surplus when surplus leaves through allowance or other outflows.
+    /// @param projectId The ID of the project.
+    /// @param token The token whose fee-free surplus to reduce.
+    /// @param amountOut The amount leaving the project's balance.
+    function _reduceFeeFreeSurplus(uint256 projectId, address token, uint256 amountOut) internal {
+        // Get the current fee-free surplus for this project/token pair.
+        uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
+
+        // Nothing to reduce if there's no fee-free surplus tracked.
+        if (feeFreeSurplus == 0) return;
+
+        // Get the project's current recorded balance in this terminal.
+        uint256 currentBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
+
+        // Calculate the proportional reduction: feeFreeSurplus * amountOut / (currentBalance + amountOut).
+        // If the balance is zero, the entire fee-free surplus is stale and should be cleared.
+        uint256 reduction =
+            currentBalance != 0 ? mulDiv(feeFreeSurplus, amountOut, currentBalance + amountOut) : feeFreeSurplus;
+
+        // Apply the reduction.
+        _feeFreeSurplusOf[projectId][token] = feeFreeSurplus - reduction;
     }
 
     //*********************************************************************//
