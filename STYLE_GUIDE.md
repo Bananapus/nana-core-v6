@@ -113,6 +113,10 @@ contract JBExample is JBPermissioned, IJBExample {
     //*********************************************************************//
 
     //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    //*********************************************************************//
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
@@ -141,10 +145,11 @@ contract JBExample is JBPermissioned, IJBExample {
 8. Constructor
 9. External transactions
 10. External views
-11. Public transactions
-12. Internal helpers
-13. Internal views
-14. Private helpers
+11. Public views
+12. Public transactions
+13. Internal helpers
+14. Internal views
+15. Private helpers
 
 Functions are alphabetized within each section.
 

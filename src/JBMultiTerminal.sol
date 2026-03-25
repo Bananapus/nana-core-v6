@@ -123,9 +123,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
     /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
     /// — legitimate cashouts beyond this amount remain fee-free.
-    /// @dev WARNING: This accumulator persists across rulesets and cannot be cleared. Once a fee-free payout
-    /// increments it, the balance remains until consumed by a zero-tax cashout. There is no admin function to reset
-    /// it. Projects switching from zero-tax to non-zero-tax rulesets will carry forward any unconsumed balance.
+    /// @dev Lifecycle: incremented on fee-free intra-terminal payouts. After any outflow (payouts, useAllowanceOf,
+    /// non-zero-tax or feeless cashouts), capped at remaining balance — non-fee-free funds are considered to leave
+    /// first, preserving the fee-free counter. Consumed during zero-tax cashouts. Cleared on terminal migration.
+    /// @dev Persists across rulesets — projects switching from zero-tax to non-zero-tax carry forward any
+    /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
@@ -489,6 +491,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
             revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
+
+        // Clear fee-free surplus tracking before migration. The new terminal has no fee-free history.
+        // This prevents stale fee-free surplus from persisting if the project later migrates back.
+        delete _feeFreeSurplusOf[projectId][token];
 
         // Terminal migration intentionally does not transfer held fees. Held fees belong to the
         // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
@@ -1107,6 +1113,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
                     reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
+                    // Cap fee-free surplus at remaining balance (non-fee-free funds leave first).
+                    _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
@@ -1117,6 +1125,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
                     }
                 }
+            } else {
+                // Feeless beneficiary: fee logic skipped, but still cap fee-free surplus at remaining balance.
+                _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
             }
 
             // Subtract the fee from the reclaim amount.
@@ -1662,6 +1673,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
+        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        _reduceFeeFreeSurplus({projectId: projectId, token: token});
+
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
         // payout splits.
@@ -1860,6 +1874,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
+        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        _reduceFeeFreeSurplus({projectId: projectId, token: token});
+
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
         // slither-disable-next-line reentrancy-events
@@ -1891,6 +1908,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Transfer any remaining balance to the beneficiary.
         if (netAmountPaidOut != 0) {
             _transferFrom({from: address(this), to: beneficiary, token: token, amount: netAmountPaidOut});
+        }
+    }
+
+    /// @notice Cap fee-free surplus at the project's remaining balance after an outflow.
+    /// @dev Non-fee-free funds are considered to leave first. Fee-free surplus only decreases when the remaining
+    /// balance can no longer support it. This prevents attackers from using outflows to drain the fee-free counter
+    /// and then cashing out without incurring fees.
+    /// @param projectId The ID of the project.
+    /// @param token The token whose fee-free surplus to cap.
+    function _reduceFeeFreeSurplus(uint256 projectId, address token) internal {
+        // Get the current fee-free surplus for this project/token pair.
+        uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
+
+        // Nothing to reduce if there's no fee-free surplus tracked.
+        if (feeFreeSurplus == 0) return;
+
+        // Get the project's remaining balance (already decremented by the store's record call).
+        uint256 remainingBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
+
+        // Cap fee-free surplus at the remaining balance.
+        if (feeFreeSurplus > remainingBalance) {
+            _feeFreeSurplusOf[projectId][token] = remainingBalance;
         }
     }
 

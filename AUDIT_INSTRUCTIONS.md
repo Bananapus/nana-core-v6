@@ -88,7 +88,7 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
      -> Fee skipped if beneficiary is feeless
 ```
 
-**Critical note**: The beneficiary receives the reclaim amount BEFORE cash out hooks execute. Fees are taken AFTER hooks. `_feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free intra-terminal payouts. During zero-tax cashout, the 2.5% fee applies only up to this surplus amount (then depletes it), preventing a round-trip fee bypass (payout via same terminal → zero-tax cashout) while scoping fees precisely to the fee-free inflow.
+**Critical note**: The beneficiary receives the reclaim amount BEFORE cash out hooks execute. Fees are taken AFTER hooks. `_feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free intra-terminal payouts. After any outflow (payouts, `useAllowanceOf`, non-zero-tax or feeless cashouts), the counter is capped at the remaining balance — non-fee-free funds leave first. During zero-tax cashout, the 2.5% fee applies only up to this surplus amount (then depletes it), preventing a round-trip fee bypass. Cleared on terminal migration.
 
 ### Payout Flow (`sendPayoutsOf`)
 
