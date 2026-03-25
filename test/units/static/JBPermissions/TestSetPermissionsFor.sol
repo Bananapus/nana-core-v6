@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.26;
 
 import {JBPermissions} from "../../../../src/JBPermissions.sol";
 import {JBPermissionsData} from "../../../../src/structs/JBPermissionsData.sol";

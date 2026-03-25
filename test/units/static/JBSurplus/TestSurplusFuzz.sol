@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.26;
 
 import {IJBCashOutTerminal} from "../../../../src/interfaces/IJBCashOutTerminal.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";

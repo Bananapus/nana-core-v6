@@ -1,6 +1,6 @@
 # nana-core-v6 Changelog (v5 -> v6)
 
-This document describes all changes between `nana-core` (v5, Solidity 0.8.23) and `nana-core-v6` (v6, Solidity 0.8.28).
+This document describes all changes between `nana-core` (v5, Solidity 0.8.23) and `nana-core-v6` (v6, Solidity ^0.8.26).
 
 ## Summary
 
@@ -375,7 +375,7 @@ No changes.
 
 ### 8.10 Solidity Version
 
-All contracts upgraded from `pragma solidity 0.8.23` to `pragma solidity 0.8.28`.
+All contracts upgraded from `pragma solidity 0.8.23` to `pragma solidity ^0.8.26`.
 
 ### 8.11 Named Arguments
 
