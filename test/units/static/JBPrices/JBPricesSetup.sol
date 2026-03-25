@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.28;
 
 import {JBPrices} from "../../../../src/JBPrices.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";

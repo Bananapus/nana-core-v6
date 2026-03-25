@@ -16,7 +16,6 @@ import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
 import {JBSplit} from "../../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
-import {mulDiv} from "@prb/math/src/Common.sol";
 
 contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
     IJBController private _controller;
@@ -63,8 +62,11 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
         });
 
         JBCurrencyAmount[] memory surplusAllowances = new JBCurrencyAmount[](1);
-        surplusAllowances[0] =
-            JBCurrencyAmount({amount: uint224(PAY_AMOUNT), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        surplusAllowances[0] = JBCurrencyAmount({
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint224(PAY_AMOUNT),
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
 
         JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
         fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
@@ -91,6 +93,7 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
         splits[0] = JBSplit({
             preferAddToBalance: true,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
             projectId: uint64(_projectIdB),
             beneficiary: payable(address(0)),
             lockedUntil: 0,
@@ -101,8 +104,11 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
         splitGroups[0] = JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: splits});
 
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] =
-            JBCurrencyAmount({amount: uint224(PAY_AMOUNT), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        payoutLimits[0] = JBCurrencyAmount({
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint224(PAY_AMOUNT),
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
 
         JBFundAccessLimitGroup[] memory projectALimits = new JBFundAccessLimitGroup[](1);
         projectALimits[0] = JBFundAccessLimitGroup({

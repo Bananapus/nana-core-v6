@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.28;
 
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBChainlinkV3PriceFeed} from "../../../../src/JBChainlinkV3PriceFeed.sol";

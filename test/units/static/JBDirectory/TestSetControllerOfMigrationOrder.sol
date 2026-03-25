@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.28;
 
 import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";

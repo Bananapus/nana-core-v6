@@ -150,6 +150,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
 
         // Grant Permit2 allowance for the terminal to pull tokens.
         vm.prank(payer);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(usdt), address(jbMultiTerminal()), uint160(payAmount), type(uint48).max);
 
         // Execute the payment — this is the critical call that must handle void returns.
@@ -196,6 +197,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
 
         // Grant Permit2 allowance for the terminal.
         vm.prank(payer);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(usdt), address(jbMultiTerminal()), uint160(payAmount), type(uint48).max);
 
         // Pay into the project to fund it.
@@ -254,6 +256,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
 
         // Grant Permit2 allowance for the terminal.
         vm.prank(payer);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(usdt), address(jbMultiTerminal()), uint160(payAmount), type(uint48).max);
 
         // Pay into the project to receive project tokens.
@@ -316,6 +319,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
 
         // Grant Permit2 allowance for the terminal.
         vm.prank(payer);
+        // forge-lint: disable-next-line(unsafe-typecast)
         permit2().approve(address(usdt), address(jbMultiTerminal()), uint160(payAmount), type(uint48).max);
 
         // Step 1: Pay into the project.
@@ -367,6 +371,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
     // =========================================================================
 
     /// @notice Launches a project that accepts MockUSDT with no splits and no payout limits.
+    // forge-lint: disable-next-line(mixed-case-function)
     function _launchUSDTProject() internal returns (uint256) {
         // Create a single-element array for the ruleset configuration.
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -428,6 +433,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
     }
 
     /// @notice Launches a project that accepts MockUSDT with a 100% split to splitBeneficiary.
+    // forge-lint: disable-next-line(mixed-case-function)
     function _launchUSDTProjectWithSplit() internal returns (uint256) {
         // Create a single-element array for the ruleset configuration.
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
