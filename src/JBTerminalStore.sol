@@ -591,57 +591,6 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
-    /// @notice Returns the number of surplus terminal tokens that would be reclaimed from terminals by cashing out a
-    /// given number of tokens, considering only specific tokens.
-    /// @param projectId The ID of the project whose tokens would be cashed out.
-    /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
-    /// @param terminals The terminals that would be cashed out from. If this is an empty array, surplus within all
-    /// the project's terminals are considered.
-    /// @param tokens The tokens to include in the surplus calculation.
-    /// @param decimals The number of decimals to include in the resulting fixed point number.
-    /// @param currency The currency that the resulting number will be in terms of.
-    /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount`
-    /// tokens.
-    function currentReclaimableSurplusOf(
-        uint256 projectId,
-        uint256 cashOutCount,
-        IJBTerminal[] calldata terminals,
-        address[] calldata tokens,
-        uint256 decimals,
-        uint256 currency
-    )
-        external
-        view
-        override
-        returns (uint256)
-    {
-        // Aggregate surplus across the terminals, optionally filtered by the specified tokens.
-        uint256 currentSurplus = _currentSurplusOf({
-            projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
-        });
-
-        // If there's no surplus, nothing can be reclaimed.
-        if (currentSurplus == 0) return 0;
-
-        // Get the project token's total supply.
-        uint256 totalSupply =
-            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
-
-        // Can't cash out more tokens than are in the total supply.
-        if (cashOutCount > totalSupply) return 0;
-
-        // Get the cash out tax rate from the current ruleset.
-        uint256 cashOutTaxRate = RULESETS.currentOf(projectId).cashOutTaxRate();
-
-        // Return the amount of surplus terminal tokens that would be reclaimed.
-        return JBCashOuts.cashOutFrom({
-            surplus: currentSurplus,
-            cashOutCount: cashOutCount,
-            totalSupply: totalSupply,
-            cashOutTaxRate: cashOutTaxRate
-        });
-    }
-
     /// @notice Gets the current surplus amount for a project across specified terminals and tokens.
     /// @param projectId The ID of the project to get surplus for.
     /// @param terminals The terminals to include. If empty, all project terminals are used.
@@ -684,7 +633,7 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
-        return this.currentReclaimableSurplusOf({
+        return currentReclaimableSurplusOf({
             projectId: projectId,
             cashOutCount: cashOutCount,
             terminals: new IJBTerminal[](0),
@@ -794,6 +743,61 @@ contract JBTerminalStore is IJBTerminalStore {
             projectId: projectId,
             beneficiary: beneficiary,
             metadata: metadata
+        });
+    }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice Returns the number of surplus terminal tokens that would be reclaimed from terminals by cashing out a
+    /// given number of tokens, considering only specific tokens.
+    /// @param projectId The ID of the project whose tokens would be cashed out.
+    /// @param cashOutCount The number of tokens that would be cashed out, as a fixed point number with 18 decimals.
+    /// @param terminals The terminals that would be cashed out from. If this is an empty array, surplus within all
+    /// the project's terminals are considered.
+    /// @param tokens The tokens to include in the surplus calculation.
+    /// @param decimals The number of decimals to include in the resulting fixed point number.
+    /// @param currency The currency that the resulting number will be in terms of.
+    /// @return The amount of surplus terminal tokens that would be reclaimed by cashing out `cashOutCount`
+    /// tokens.
+    function currentReclaimableSurplusOf(
+        uint256 projectId,
+        uint256 cashOutCount,
+        IJBTerminal[] memory terminals,
+        address[] memory tokens,
+        uint256 decimals,
+        uint256 currency
+    )
+        public
+        view
+        override
+        returns (uint256)
+    {
+        // Aggregate surplus across the terminals, optionally filtered by the specified tokens.
+        uint256 currentSurplus = _currentSurplusOf({
+            projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
+        });
+
+        // If there's no surplus, nothing can be reclaimed.
+        if (currentSurplus == 0) return 0;
+
+        // Get the project token's total supply.
+        uint256 totalSupply =
+            IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
+
+        // Can't cash out more tokens than are in the total supply.
+        if (cashOutCount > totalSupply) return 0;
+
+        // Get the cash out tax rate from the current ruleset.
+        uint256 cashOutTaxRate = RULESETS.currentOf(projectId).cashOutTaxRate();
+
+        // Return the amount of surplus terminal tokens that would be reclaimed.
+        return JBCashOuts.cashOutFrom({
+            surplus: currentSurplus,
+            cashOutCount: cashOutCount,
+            totalSupply: totalSupply,
+            cashOutTaxRate: cashOutTaxRate
         });
     }
 
