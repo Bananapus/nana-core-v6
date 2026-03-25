@@ -85,10 +85,9 @@ Holder -> JBMultiTerminal.cashOutTokensOf()
      Fees apply when cashOutTaxRate > 0 (on full reclaim)
      OR when cashOutTaxRate == 0 and project has unconsumed _feeFreeSurplusOf (on that portion only)
      _feeFreeSurplusOf lifecycle:
-       - Incremented on fee-free intra-terminal payouts (payout-to-self)
-       - Capped at the project's terminal balance to prevent unbounded accumulation
-       - Decremented proportionally when surplus leaves via useAllowanceOf
-       - Consumed (decremented) during zero-tax cashouts
+       - Incremented on fee-free intra-terminal payouts
+       - Capped at remaining balance after any outflow (payouts, useAllowanceOf, non-zero-tax/feeless cashouts) — non-fee-free funds leave first
+       - Consumed (decremented by feeable amount) during zero-tax cashouts
        - Cleared to zero on terminal migration (migrateBalanceOf)
 ```
 

@@ -20,7 +20,7 @@ This document describes all changes between `nana-core` (v5, Solidity 0.8.23) an
 
 ### 0.2 JBMultiTerminal -- Fee-Free Cashout Bypass Prevention
 
-A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. During a cashout with `cashOutTaxRate == 0`, fees are now charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
+A new `_feeFreeSurplusOf` mapping (`projectId => token => uint256`) tracks cumulative fee-free intra-terminal payouts received by each project. When a split payout lands on the same terminal (intra-terminal routing, i.e. `terminal == this`), the net payout amount is added to `_feeFreeSurplusOf[projectId][token]`. After any outflow (payouts via `sendPayoutsOf`, surplus allowance via `useAllowanceOf`, non-zero-tax or feeless cashouts), the counter is capped at the remaining balance — non-fee-free funds are considered to leave first, preserving the fee-free counter as long as possible. During a cashout with `cashOutTaxRate == 0`, fees are charged on the reclaim amount up to the tracked fee-free surplus (and the tracker is decremented accordingly). Cashouts beyond the fee-free surplus remain fee-free. The counter is cleared on terminal migration. This closes a round-trip fee bypass where funds could be routed fee-free into a project via an intra-terminal split payout and then cashed out fee-free via a zero-tax cashout.
 
 ### 0.3 JBBeforeCashOutRecordedContext -- beneficiaryIsFeeless Field
 
@@ -324,7 +324,7 @@ No changes.
 | **Migration held fees** | Migration intentionally does not transfer held fees (documented: held fees belong to fee beneficiary, not the migrating project). |
 | **Held fee processing (reentrancy hardening)** | `processHeldFeesOf` now re-reads the storage index each iteration (instead of caching), deletes the entry before the external call, and updates the index before the external call. |
 | **Split payout documentation** | Failed split payouts documented as consuming payout limit by design. |
-| **Fee-free cashout bypass prevention** | New `_feeFreeSurplusOf` mapping tracks cumulative fee-free intra-terminal payouts per project/token. During zero-tax cashouts, fees are charged up to this tracked amount (then decremented), preventing round-trip fee bypass. See Section 0.2. |
+| **Fee-free cashout bypass prevention** | New `_feeFreeSurplusOf` mapping tracks cumulative fee-free intra-terminal payouts per project/token. Capped at remaining balance after outflows including non-zero-tax/feeless cashouts (non-fee-free funds leave first). During zero-tax cashouts, fees are charged up to this tracked amount (then decremented). Cleared on migration. See Section 0.2. |
 | **beneficiaryIsFeeless passthrough** | `cashOutTokensOf` now passes `_isFeeless(beneficiary)` to `recordCashOutFor`, which forwards it to data hooks via `JBBeforeCashOutRecordedContext.beneficiaryIsFeeless`. |
 
 ### 8.3 JBRulesets

@@ -6,7 +6,6 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {mulDiv} from "@prb/math/src/Common.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IAllowanceTransfer} from "@uniswap/permit2/src/interfaces/IAllowanceTransfer.sol";
@@ -124,9 +123,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
     /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
     /// — legitimate cashouts beyond this amount remain fee-free.
-    /// @dev Lifecycle: incremented on fee-free payouts (payout-to-self), capped at the project's current balance
-    /// to prevent unbounded accumulation. Decremented proportionally when surplus leaves via `useAllowanceOf`.
-    /// Consumed during zero-tax cashouts. Cleared on terminal migration (`migrateBalanceOf`).
+    /// @dev Lifecycle: incremented on fee-free intra-terminal payouts. After any outflow (payouts, useAllowanceOf,
+    /// non-zero-tax or feeless cashouts), capped at remaining balance — non-fee-free funds are considered to leave
+    /// first, preserving the fee-free counter. Consumed during zero-tax cashouts. Cleared on terminal migration.
     /// @dev Persists across rulesets — projects switching from zero-tax to non-zero-tax carry forward any
     /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
@@ -371,17 +370,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
             // only up to this accumulated amount, preventing round-trip fee bypass.
             if (terminal == this) {
-                // Compute what the new fee-free surplus would be after adding this payout.
-                uint256 newFeeFreeSurplus = _feeFreeSurplusOf[split.projectId][token] + netPayoutAmount;
-
-                // Get the project's recorded balance in this terminal PLUS the incoming payout (not yet recorded).
-                uint256 balanceAfterPayout = STORE.balanceOf({
-                    terminal: address(this), projectId: split.projectId, token: token
-                }) + netPayoutAmount;
-
-                // Cap at the post-payout balance to prevent unbounded accumulation from repeated payout-to-self cycles.
-                _feeFreeSurplusOf[split.projectId][token] =
-                    newFeeFreeSurplus > balanceAfterPayout ? balanceAfterPayout : newFeeFreeSurplus;
+                _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
             }
 
             // Send the `projectId` in the metadata as a referral.
@@ -1124,6 +1113,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
                     reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
+                    // Cap fee-free surplus at remaining balance (non-fee-free funds leave first).
+                    _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
@@ -1134,6 +1125,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
                     }
                 }
+            } else {
+                // Feeless beneficiary: fee logic skipped, but still cap fee-free surplus at remaining balance.
+                _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
             }
 
             // Subtract the fee from the reclaim amount.
@@ -1679,6 +1673,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
+        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        _reduceFeeFreeSurplus({projectId: projectId, token: token});
+
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
         // payout splits.
@@ -1877,8 +1874,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
-        // Proportionally reduce fee-free surplus when surplus leaves through allowance.
-        _reduceFeeFreeSurplus(projectId, token, amountPaidOut);
+        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        _reduceFeeFreeSurplus({projectId: projectId, token: token});
 
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
@@ -1914,27 +1911,26 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Proportionally reduce fee-free surplus when surplus leaves through allowance or other outflows.
+    /// @notice Cap fee-free surplus at the project's remaining balance after an outflow.
+    /// @dev Non-fee-free funds are considered to leave first. Fee-free surplus only decreases when the remaining
+    /// balance can no longer support it. This prevents attackers from using outflows to drain the fee-free counter
+    /// and then cashing out without incurring fees.
     /// @param projectId The ID of the project.
-    /// @param token The token whose fee-free surplus to reduce.
-    /// @param amountOut The amount leaving the project's balance.
-    function _reduceFeeFreeSurplus(uint256 projectId, address token, uint256 amountOut) internal {
+    /// @param token The token whose fee-free surplus to cap.
+    function _reduceFeeFreeSurplus(uint256 projectId, address token) internal {
         // Get the current fee-free surplus for this project/token pair.
         uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
 
         // Nothing to reduce if there's no fee-free surplus tracked.
         if (feeFreeSurplus == 0) return;
 
-        // Get the project's current recorded balance in this terminal.
-        uint256 currentBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
+        // Get the project's remaining balance (already decremented by the store's record call).
+        uint256 remainingBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
 
-        // Calculate the proportional reduction: feeFreeSurplus * amountOut / (currentBalance + amountOut).
-        // If the balance is zero, the entire fee-free surplus is stale and should be cleared.
-        uint256 reduction =
-            currentBalance != 0 ? mulDiv(feeFreeSurplus, amountOut, currentBalance + amountOut) : feeFreeSurplus;
-
-        // Apply the reduction.
-        _feeFreeSurplusOf[projectId][token] = feeFreeSurplus - reduction;
+        // Cap fee-free surplus at the remaining balance.
+        if (feeFreeSurplus > remainingBalance) {
+            _feeFreeSurplusOf[projectId][token] = remainingBalance;
+        }
     }
 
     //*********************************************************************//
