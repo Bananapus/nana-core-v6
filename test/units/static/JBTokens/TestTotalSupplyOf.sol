@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity ^0.8.26;
 
 import {IJBToken} from "../../../../src/interfaces/IJBToken.sol";
 import {JBTokensSetup} from "./JBTokensSetup.sol";

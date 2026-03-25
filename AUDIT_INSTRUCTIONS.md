@@ -6,7 +6,7 @@ Read [RISKS.md](./RISKS.md) for known risks, trust model, and reentrancy analysi
 
 ## Architecture Overview
 
-16 contracts, ~8,100 lines in main contracts. All contracts use Solidity 0.8.28.
+16 contracts, ~8,100 lines in main contracts. All contracts use Solidity ^0.8.26.
 
 ```
                               JBProjects (ERC-721)
@@ -420,7 +420,7 @@ The 185 test files cover most flows, but these areas have limited or no coverage
 
 ## Compiler and Version Info
 
-- **Solidity**: 0.8.28
+- **Solidity**: ^0.8.26
 - **EVM target**: Cancun (uses transient storage opcodes)
 - **Optimizer**: 200 runs (no via-IR)
 - **Dependencies**: OpenZeppelin 5.x, Solady, forge-std
