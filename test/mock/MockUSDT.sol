@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.28;
 
 /// @notice Mimics Tether (USDT) whose transfer/transferFrom/approve return void instead of bool.
 /// @dev Uses inline assembly to return empty data (no bool), matching USDT's on-chain behavior.

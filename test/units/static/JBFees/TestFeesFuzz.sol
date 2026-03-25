@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.28;
 
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";

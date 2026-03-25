@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.28;
 
 import {IJBSplitHook} from "../../src/interfaces/IJBSplitHook.sol";
 import {JBSplitHookContext} from "../../src/structs/JBSplitHookContext.sol";

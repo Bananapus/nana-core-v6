@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.26;
+pragma solidity 0.8.28;
 
 import {IJBDirectoryAccessControl} from "../../../../src/interfaces/IJBDirectoryAccessControl.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
