@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.28;
 
 import {JBERC20} from "../../../../src/JBERC20.sol";
 import {JBTokens} from "../../../../src/JBTokens.sol";

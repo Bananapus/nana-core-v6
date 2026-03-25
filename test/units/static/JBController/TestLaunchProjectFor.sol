@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.26;
+pragma solidity 0.8.28;
 
 import {JBController} from "../../../../src/JBController.sol";
 import {IJBController} from "../../../../src/interfaces/IJBController.sol";

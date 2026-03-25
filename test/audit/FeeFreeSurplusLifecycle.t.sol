@@ -114,6 +114,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
         splits[0] = JBSplit({
             preferAddToBalance: true,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
             projectId: uint64(_recipientProjectId),
             beneficiary: payable(address(0)),
             lockedUntil: 0,
@@ -126,8 +127,11 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
 
         // Payout limit: allow paying out the full PAY_AMOUNT each cycle.
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
-        payoutLimits[0] =
-            JBCurrencyAmount({amount: uint224(PAY_AMOUNT), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        payoutLimits[0] = JBCurrencyAmount({
+            // forge-lint: disable-next-line(unsafe-typecast)
+            amount: uint224(PAY_AMOUNT),
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
 
         // Fund access limits with the payout limit defined above.
         JBFundAccessLimitGroup[] memory payerLimits = new JBFundAccessLimitGroup[](1);

@@ -100,7 +100,7 @@ Projects can migrate between controllers using the `IJBMigratable` interface. Th
 
 Juicebox V6 separates concerns across specialized contracts that coordinate through a central directory. Projects are represented as ERC-721 NFTs. Each project configures rulesets that dictate how payments, payouts, cash outs, and token minting behave over time.
 
-All contracts use Solidity `^0.8.26`.
+All contracts use Solidity `0.8.28`.
 
 ```mermaid
 graph TD;
