@@ -52,13 +52,13 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 | `processHeldFeesOf` | `delete _heldFeesOf[...][currentIndex]`, `_nextHeldFeeIndexOf` incremented | `_processFee` -> `this.executeProcessFee` -> `terminal.pay` | LOW -- index advanced before external call; re-reads from storage each iteration |
 | `_sendReservedTokensToSplitsOf` | `pendingReservedTokenBalanceOf` zeroed, tokens minted to controller | Split hooks, terminal payments | LOW -- pending balance cleared before minting prevents double-distribution |
 | `_useAllowanceOf` | `STORE.recordUsedAllowanceOf` (allowance consumed, balance decremented) | `_takeFeeFrom` (fee payment/holding), `_transferFrom` (beneficiary) | LOW -- allowance consumed before calls |
-| `migrateBalanceOf` | `STORE.recordTerminalMigration` (balance zeroed) | `to.addToBalanceOf` | LOW -- balance zeroed before transfer |
+| `migrateBalanceOf` | `STORE.recordTerminalMigration` (balance zeroed), `_takeFeeFrom` (if non-feeless destination) | `to.addToBalanceOf` | LOW -- balance zeroed before transfer, fee deducted before transfer |
 
 ### Cross-Function Reentrancy to Explore
 
 - **Pay hook -> `cashOutTokensOf`**: After `_pay` mints tokens, a pay hook could call `cashOutTokensOf`. The cash out sees post-payment balance and post-mint supply. Not profitable after fees in tested scenarios, but verify with data hooks that modify weights.
 - **Cash out hook -> `pay`**: During `_cashOutTokensOf`, after tokens are burned and beneficiary is paid, a cash out hook could call `pay()` adding to the balance. Fees haven't been taken yet at this point. Verify the fee calculation on `amountEligibleForFees` isn't affected.
-- **Split hook -> `pay` on same project**: During `sendPayoutsOf`, a split hook receives funds and calls `pay()` on the same project. Payout limit is consumed, but the payment increases balance and mints tokens. The funds came from the project's own balance, so no value creation -- but verify the accounting.
+- **Split hook -> `pay` on same project**: During `sendPayoutsOf`, a split hook receives funds and calls `pay()` on the same project. Payout limit is consumed, but the payment increases balance and mints tokens. The funds came from the project's own balance, so no value creation -- but verify the accounting. Note: `_pay` now reverts with `MintNotAllowed` when `payer == address(this)` to prevent same-project intra-terminal payout splits from minting tokens against existing balance. The try-catch in the split group lib catches this and restores the balance.
 - **Fee processing -> any re-entry**: `_processFee` uses `this.executeProcessFee` (external call via try-catch). Inside, it calls `terminal.pay()` on project #1. If project #1 has a pay hook that calls back, the fee amount is already deducted.
 
 ### Key Backstop
@@ -77,7 +77,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 ### Migration
 
 - **Controller migration** requires `allowSetController` in the current ruleset. During migration, `JBController.migrate()` reverts if there are pending reserved tokens. An attacker cannot front-run migration to inflate pending reserves (they'd need mint permission), but a project with organic pending reserves must distribute them first.
-- **Terminal migration** requires `allowTerminalMigration` in the current ruleset. Held fees are intentionally NOT migrated -- they belong to project #1. Verify that a project owner cannot use migration to escape held fee obligations.
+- **Terminal migration** requires `allowTerminalMigration` in the current ruleset. Held fees are intentionally NOT migrated -- they belong to project #1. Migration to a non-feeless terminal charges the standard 2.5% protocol fee on the full balance, settling any `_feeFreeSurplusOf` liability.
 - **Directory updates** (`setTerminalsOf`, `setControllerOf`) are gated by `IJBDirectoryAccessControl` checks that read from the current ruleset's metadata flags. If the current ruleset allows these changes, anyone with the appropriate permission can redirect all of a project's fund flows.
 
 ### Ruleset Queuing
