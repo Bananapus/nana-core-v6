@@ -48,6 +48,14 @@ Also in this release:
 - **`via_ir = true`**: Added to `foundry.toml` to enable the Solidity IR optimizer pipeline, reducing deployed bytecode size (EIP-170 compliance).
 - Internal helpers extracted: `_accountingContextOf` and `_tokenAmountOf` on `JBMultiTerminal`, `_splitTokenCount` on `JBController`.
 
+### 0.6 JBMultiTerminal -- Migration Fee
+
+`migrateBalanceOf` now charges the standard 2.5% protocol fee when migrating to a non-feeless terminal, consistent with all other fund egress. This also settles any `_feeFreeSurplusOf` liability that would otherwise be lost on the new terminal. The fee is deducted from the migrated balance before transfer. Feeless terminals are exempt.
+
+### 0.7 JBMultiTerminal -- Self-Pay Revert
+
+`_pay` now reverts with `JBMultiTerminal_MintNotAllowed()` when `payer == address(this)`. This prevents same-project intra-terminal payout splits (where `preferAddToBalance == false`) from minting tokens against existing balance without new funds entering the system. The try-catch in `JBPayoutSplitGroupLib` catches this revert and restores the balance via `recordAddedBalanceFor`. Projects that want to mint should do so explicitly via the controller.
+
 ---
 
 ## 1. Breaking Changes
@@ -181,6 +189,13 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 ---
 
 ## 3. Event Changes
+
+### 3.0 Indexer Notes
+
+For subgraph migrations, this repo is the protocol-level anchor:
+- when an event signature gains parameters, prefer widening the existing entity schema instead of treating it as an unrelated event stream;
+- preview/noop behavior in core-v6 means some routing diagnostics now come from returned hook specs rather than only from emitted callback events;
+- if your v5 graph correlated protocol actions to hook callbacks only, re-check those assumptions against v6 preview/noop patterns.
 
 ### 3.1 New Events
 
