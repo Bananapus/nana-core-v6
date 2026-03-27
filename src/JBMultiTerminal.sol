@@ -377,6 +377,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Send the `projectId` in the metadata as a referral.
             bytes memory metadata = bytes(abi.encodePacked(projectId));
 
+            // Add to balance if preferred.
             if (split.preferAddToBalance) {
                 _efficientAddToBalance({
                     terminal: terminal,
