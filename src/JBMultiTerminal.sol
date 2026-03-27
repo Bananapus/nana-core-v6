@@ -498,6 +498,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Terminal migration intentionally does not transfer held fees. Held fees belong to the
         // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
+        // After migration, `processHeldFeesOf()` on this terminal still works — it reads from `_heldFeesOf` and
+        // sends fees to the fee project terminal. The migrated project's balance on this terminal is zero, but held
+        // fees are backed by the terminal's own token balance (not the project's recorded balance).
         // Record the migration in the store.
         // slither-disable-next-line reentrancy-events
         balance = STORE.recordTerminalMigration({projectId: projectId, token: token});
@@ -601,7 +604,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Reentrancy safety: the loop re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the
     /// index before the external `_processFee` call, so a reentrant call cannot double-process the same fee entry.
     /// @dev Held fees after migration: held fees remain in this terminal after `migrateBalanceOf` because their backing
-    /// tokens are not part of `balanceOf` — they were already deducted from the recorded balance during the payout that
+    /// tokens are not part of `balanceOf` — they were already deducted from the recorded balance during the payout
+    /// that
     /// created them. The actual fee-backing tokens remain in this terminal's token holdings. If `_processFee` reverts
     /// (e.g. the fee terminal rejects the payment), the catch block calls `_recordAddedBalanceFor` to credit the fee
     /// amount back to the project. This credit is backed by the tokens that failed to transfer out. No phantom balance

@@ -43,11 +43,7 @@ contract FeeArithmeticFuzz is Test {
         assertGe(reconstructed, grossAmount, "H1: Fee roundtrip undercharged - protocol loses value");
 
         // Also check the overshoot is bounded (at most 1 wei)
-        assertLe(
-            reconstructed - grossAmount,
-            1,
-            "H1: Fee roundtrip overshoot exceeds 1 wei"
-        );
+        assertLe(reconstructed - grossAmount, 1, "H1: Fee roundtrip overshoot exceeds 1 wei");
     }
 
     /// @notice Backward fee then forward fee must yield at least the desired net amount.
@@ -88,11 +84,7 @@ contract FeeArithmeticFuzz is Test {
         assertLe(accumulatedFee, singleFee, "H1c: Split fees exceed single fee");
 
         // And the loss should be bounded by (numSplits - 1) wei
-        assertLe(
-            singleFee - accumulatedFee,
-            uint256(numSplits) - 1,
-            "H1c: Rounding loss exceeds N-1 wei bound"
-        );
+        assertLe(singleFee - accumulatedFee, uint256(numSplits) - 1, "H1c: Rounding loss exceeds N-1 wei bound");
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -106,7 +98,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 cashOutCount,
         uint256 cashOutTaxRate,
         uint256 splitPoint
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1e6, type(uint128).max);
         totalSupply = bound(totalSupply, 2, type(uint128).max);
         cashOutCount = bound(cashOutCount, 2, totalSupply);
@@ -148,7 +143,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 surplus,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1e18, type(uint96).max);
         totalSupply = bound(totalSupply, 200, type(uint96).max);
         cashOutTaxRate = bound(cashOutTaxRate, 1, MAX_CASH_OUT_TAX_RATE - 1);
@@ -191,7 +189,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 totalSupply,
         uint256 desiredOutput,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1e6, type(uint96).max);
         totalSupply = bound(totalSupply, 10, type(uint96).max);
         cashOutTaxRate = bound(cashOutTaxRate, 0, MAX_CASH_OUT_TAX_RATE - 1);
@@ -213,7 +214,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 totalSupply,
         uint256 desiredOutput,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1e10, type(uint96).max);
         totalSupply = bound(totalSupply, 100, type(uint96).max);
         cashOutTaxRate = bound(cashOutTaxRate, 0, MAX_CASH_OUT_TAX_RATE - 1);
@@ -240,7 +244,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 surplus,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1, type(uint128).max);
         totalSupply = bound(totalSupply, 1, type(uint128).max);
         cashOutTaxRate = bound(cashOutTaxRate, 0, MAX_CASH_OUT_TAX_RATE);
@@ -267,7 +274,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 countA,
         uint256 countB,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1e6, type(uint128).max);
         totalSupply = bound(totalSupply, 2, type(uint128).max);
         countA = bound(countA, 1, totalSupply - 1);
@@ -289,7 +299,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 cashOutCount,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         surplus = bound(surplus, 1, type(uint128).max);
         totalSupply = bound(totalSupply, 1, type(uint128).max);
         cashOutCount = bound(cashOutCount, 0, totalSupply);
@@ -317,7 +330,10 @@ contract FeeArithmeticFuzz is Test {
         uint256 surplus,
         uint256 totalSupply,
         uint256 cashOutTaxRate
-    ) public pure {
+    )
+        public
+        pure
+    {
         // Use very large values near uint128.max
         surplus = bound(surplus, type(uint128).max / 2, type(uint128).max);
         totalSupply = bound(totalSupply, type(uint128).max / 2, type(uint128).max);

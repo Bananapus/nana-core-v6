@@ -289,15 +289,12 @@ contract DeployPeriphery is Script, Sphinx {
             });
     }
 
-    /// @dev This helper predicts addresses using the Arachnid CREATE2 deployer, but actual deployments go through
-    /// Sphinx (which uses a different deployer). As a result, this guard will never detect Sphinx-deployed contracts
-    /// and is only effective for contracts deployed via the Arachnid deployer directly.
+    /// @dev Predicts the CREATE2 address using `address(this)` as the deployer, since `new C{salt}()` in Solidity
+    /// derives the address from the deploying contract. During Sphinx execution, `address(this)` resolves to the
+    /// Sphinx module which is the actual deployer.
     function _isDeployed(bytes32 salt, bytes memory creationCode, bytes memory arguments) internal view returns (bool) {
         address _deployedTo = vm.computeCreate2Address({
-            salt: salt,
-            initCodeHash: keccak256(abi.encodePacked(creationCode, arguments)),
-            // Arachnid/deterministic-deployment-proxy address.
-            deployer: address(0x4e59b44847b379578588920cA78FbF26c0B4956C)
+            salt: salt, initCodeHash: keccak256(abi.encodePacked(creationCode, arguments)), deployer: address(this)
         });
 
         // Return if code is already present at this address.

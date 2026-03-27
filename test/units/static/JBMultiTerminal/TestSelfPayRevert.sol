@@ -39,8 +39,7 @@ contract TestSelfPayRevert_Local is JBMultiTerminalSetup {
         );
 
         // Mock the accounting context for _acceptFundsFor.
-        JBAccountingContext memory ctx =
-            JBAccountingContext({token: _native, decimals: 18, currency: _nativeCurrency});
+        JBAccountingContext memory ctx = JBAccountingContext({token: _native, decimals: 18, currency: _nativeCurrency});
         mockExpect(
             address(store),
             abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), uint256(_projectId), _native)),
