@@ -318,10 +318,13 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
             jbTerminalStore().balanceOf(address(_terminal), _recipientProjectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceAfterOnOldTerminal, 0, "Old terminal balance should be zero after migration");
 
-        // Verify the new terminal received the balance.
+        // Verify the new terminal received the balance minus the 2.5% migration fee.
         uint256 balanceOnNewTerminal =
             jbTerminalStore().balanceOf(address(_terminal2), _recipientProjectId, JBConstants.NATIVE_TOKEN);
-        assertEq(balanceOnNewTerminal, balanceBefore, "New terminal should have the migrated balance");
+        uint256 migrationFee = balanceBefore * 25 / 1000;
+        assertEq(
+            balanceOnNewTerminal, balanceBefore - migrationFee, "New terminal should have balance minus migration fee"
+        );
     }
 
     // --- Helpers ---

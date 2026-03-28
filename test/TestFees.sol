@@ -216,8 +216,9 @@ contract TestFees_Local is TestBaseWorkflow {
         // Send: Migration to terminal2
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminal2);
 
-        // Check: Held Fee is processed and feeAmount remains in terminal
-        assertEq(address(_terminal).balance, _feeAmount);
+        // Check: Held fee remains in terminal, plus migration fee paid to fee project (on same terminal)
+        uint256 _migrationFee = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        assertEq(address(_terminal).balance, _feeAmount + _migrationFee);
 
         vm.stopPrank();
     }
@@ -265,8 +266,9 @@ contract TestFees_Local is TestBaseWorkflow {
         // Send: Migration to terminal2
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminal2);
 
-        // Check: Held fee has been repaid, no balance remains.
-        assertEq(address(_terminal).balance, 0);
+        // Check: Held fee has been repaid. Migration fee paid to fee project remains on this terminal.
+        uint256 _migrationFee = _nativePayAmount * _terminal.FEE() / JBConstants.MAX_FEE;
+        assertEq(address(_terminal).balance, _migrationFee);
 
         vm.stopPrank();
     }

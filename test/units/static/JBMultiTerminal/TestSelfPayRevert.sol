@@ -3,91 +3,53 @@ pragma solidity 0.8.28;
 
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
-import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
-import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
-import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
+import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
-import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
-import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
-import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
-import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {JBSplit} from "../../../../src/structs/JBSplit.sol";
+import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
-/// @notice Tests that `_pay` reverts when the terminal is paying itself (self-referencing payout split).
+/// @notice Tests that a pay-type split back into the same terminal reverts with MintNotAllowed.
 contract TestSelfPayRevert_Local is JBMultiTerminalSetup {
     uint64 _projectId = 1;
     uint256 _defaultAmount = 1e18;
-    address _bene = makeAddr("beneficiary");
+    address _sender = makeAddr("sender");
     address _native = JBConstants.NATIVE_TOKEN;
-    // forge-lint: disable-next-line(unsafe-typecast)
-    uint32 _nativeCurrency = uint32(uint160(_native));
 
     function setUp() public {
         super.multiTerminalSetup();
     }
 
-    /// @notice When the terminal calls _pay on itself (payer == address(this)), it should revert
-    /// with MintNotAllowed. This prevents same-project payout splits from minting tokens against
-    /// existing balance without new funds entering the system.
-    function test_RevertWhen_TerminalPaysItself() external {
-        // Mock TOKENS.totalBalanceOf (called in external pay() before _pay).
-        mockExpect(
-            address(tokens),
-            abi.encodeCall(IJBTokens.totalBalanceOf, (_bene, uint256(_projectId))),
-            abi.encode(uint256(0))
-        );
-
-        // Mock the accounting context for _acceptFundsFor.
-        JBAccountingContext memory ctx = JBAccountingContext({token: _native, decimals: 18, currency: _nativeCurrency});
-        mockExpect(
-            address(store),
-            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), uint256(_projectId), _native)),
-            abi.encode(ctx)
-        );
-
-        // Mock recordPaymentFrom - return a ruleset and token count.
-        JBRuleset memory ruleset = JBRuleset({
-            cycleNumber: 1,
-            id: 1,
-            basedOnId: 0,
-            start: uint48(block.timestamp),
-            duration: 0,
-            weight: 1e18,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
+    /// @notice When a split routes a pay back to the same project on the same terminal,
+    /// executePayout should revert with MintNotAllowed.
+    function test_RevertWhen_SplitPaysBackToSameTerminal() external {
+        // Build a split targeting the SAME project with preferAddToBalance = false (pay path).
+        JBSplit memory split = JBSplit({
+            preferAddToBalance: false,
+            percent: 1_000_000_000,
+            projectId: _projectId,
+            beneficiary: payable(_sender),
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
         });
 
-        JBPayHookSpecification[] memory hooks = new JBPayHookSpecification[](0);
-
+        // Mock primaryTerminalOf to return this terminal (self-referencing).
         mockExpect(
-            address(store),
-            abi.encodeCall(
-                IJBTerminalStore.recordPaymentFrom,
-                (
-                    address(_terminal),
-                    JBTokenAmount({token: _native, value: _defaultAmount, decimals: 18, currency: _nativeCurrency}),
-                    uint256(_projectId),
-                    _bene,
-                    ""
-                )
-            ),
-            abi.encode(ruleset, _defaultAmount, hooks)
+            address(directory),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_projectId, _native)),
+            abi.encode(address(_terminal))
         );
 
-        // Call pay from the terminal itself - should revert with MintNotAllowed.
-        vm.deal(address(_terminal), _defaultAmount);
+        // executePayout requires msg.sender == address(this), so we call it via the terminal.
+        // The terminal's try-catch in the split group lib would normally catch this.
         vm.prank(address(_terminal));
         vm.expectRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
-        _terminal.pay{value: _defaultAmount}({
+        JBMultiTerminal(payable(address(_terminal))).executePayout({
+            split: split,
             projectId: uint256(_projectId),
             token: _native,
             amount: _defaultAmount,
-            beneficiary: _bene,
-            minReturnedTokens: 0,
-            memo: "",
-            metadata: ""
+            originalMessageSender: _sender
         });
     }
 }

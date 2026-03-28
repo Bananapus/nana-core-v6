@@ -387,6 +387,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     metadata: metadata
                 });
             } else {
+                // Revert if this is a self-referencing payout (project paying itself via a split).
+                // Same-project pay splits would mint tokens against existing balance without new funds entering.
+                // Projects that want to mint should do so explicitly via the controller.
+                // Cross-project pay splits on the same terminal are allowed (different project receives the funds).
+                // The try-catch in the split group lib catches this revert and restores the balance.
+                if (terminal == this && split.projectId == projectId) {
+                    revert JBMultiTerminal_MintNotAllowed();
+                }
+
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
 
@@ -512,7 +521,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
             // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
             uint256 feeAmount;
-            if (!_isFeeless(address(to))) {
+            if (!_isFeeless(address(to)) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
                 feeAmount = _takeFeeFrom({
                     projectId: projectId,
                     token: token,
@@ -1494,14 +1503,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Keep a reference to the number of tokens issued for the beneficiary.
         uint256 newlyIssuedTokenCount;
-
-        // Revert if this is a self-referencing payout (terminal paying itself via a split).
-        // Same-project pay splits would mint tokens against existing balance without new funds entering.
-        // Projects that want to mint should do so explicitly via the controller.
-        // The try-catch in the split group lib catches this revert and restores the balance.
-        if (payer == address(this)) {
-            revert JBMultiTerminal_MintNotAllowed();
-        }
 
         // Mint tokens if needed.
         if (tokenCount != 0) {
