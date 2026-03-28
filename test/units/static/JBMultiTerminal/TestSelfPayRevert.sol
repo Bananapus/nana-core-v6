@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
-import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBSplit} from "../../../../src/structs/JBSplit.sol";
 import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
