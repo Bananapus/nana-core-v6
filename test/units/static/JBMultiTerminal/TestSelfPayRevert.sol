@@ -44,12 +44,13 @@ contract TestSelfPayRevert_Local is JBMultiTerminalSetup {
         // The terminal's try-catch in the split group lib would normally catch this.
         vm.prank(address(_terminal));
         vm.expectRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
-        JBMultiTerminal(payable(address(_terminal))).executePayout({
-            split: split,
-            projectId: uint256(_projectId),
-            token: _native,
-            amount: _defaultAmount,
-            originalMessageSender: _sender
-        });
+        JBMultiTerminal(payable(address(_terminal)))
+            .executePayout({
+                split: split,
+                projectId: uint256(_projectId),
+                token: _native,
+                amount: _defaultAmount,
+                originalMessageSender: _sender
+            });
     }
 }

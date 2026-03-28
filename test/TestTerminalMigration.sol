@@ -212,10 +212,8 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         });
 
         JBTerminalConfig[] memory _terminalConfigs2 = new JBTerminalConfig[](2);
-        _terminalConfigs2[0] =
-            JBTerminalConfig({terminal: _terminalA, accountingContextsToAccept: _tokensToAccept});
-        _terminalConfigs2[1] =
-            JBTerminalConfig({terminal: _terminalB, accountingContextsToAccept: _tokensToAccept});
+        _terminalConfigs2[0] = JBTerminalConfig({terminal: _terminalA, accountingContextsToAccept: _tokensToAccept});
+        _terminalConfigs2[1] = JBTerminalConfig({terminal: _terminalB, accountingContextsToAccept: _tokensToAccept});
 
         uint256 project2 = _controller.launchProjectFor({
             owner: _projectOwner,
@@ -236,22 +234,19 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         _terminalA.pay{value: payAmount}(project2, JBConstants.NATIVE_TOKEN, payAmount, _beneficiary, 0, "", "");
 
         // Snapshot fee project balance before migration.
-        uint256 feeBalanceBefore =
-            jbTerminalStore().balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeBalanceBefore = jbTerminalStore().balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN);
 
         // Migrate project 2 from terminal A to terminal B.
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(project2, JBConstants.NATIVE_TOKEN, _terminalB);
 
         // Fee project balance should have increased (fee was charged).
-        uint256 feeBalanceAfter =
-            jbTerminalStore().balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeBalanceAfter = jbTerminalStore().balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN);
         assertGt(feeBalanceAfter, feeBalanceBefore, "fee project should receive migration fee");
 
         // Terminal B should have received payAmount minus the 2.5% fee.
         uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: payAmount, feePercent: 25});
-        uint256 balanceBAfter =
-            jbTerminalStore().balanceOf(address(_terminalB), project2, JBConstants.NATIVE_TOKEN);
+        uint256 balanceBAfter = jbTerminalStore().balanceOf(address(_terminalB), project2, JBConstants.NATIVE_TOKEN);
         assertEq(balanceBAfter, payAmount - expectedFee, "terminal B balance should reflect fee deduction");
     }
 
@@ -273,8 +268,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
         assertEq(migratedBalance, payAmount, "full balance should be migrated without fee");
 
         // Terminal B should have the full amount (no fee deducted).
-        uint256 balanceBAfter =
-            jbTerminalStore().balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN);
+        uint256 balanceBAfter = jbTerminalStore().balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN);
         assertEq(balanceBAfter, payAmount, "fee project should not be charged migration fee");
     }
 }
