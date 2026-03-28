@@ -11,6 +11,7 @@ import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.s
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
@@ -104,6 +105,13 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
     function test_GivenTokenIsERC20() external whenPermissioned {
         // it will safeIncreaseAllowance and addToBalanceOf
 
+        // mock _isFeeless to return true (skip migration fee for this unit test)
+        mockExpect(
+            address(feelessAddresses),
+            abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(_newTerminal))),
+            abi.encode(true)
+        );
+
         // for next mock
         // forge-lint: disable-next-line(unsafe-typecast)
         JBAccountingContext memory _context =
@@ -142,6 +150,13 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
 
     function test_GivenTokenIsNative() external whenPermissioned {
         // it will addToBalanceOf with value in msgvalue
+
+        // mock _isFeeless to return true (skip migration fee for this unit test)
+        mockExpect(
+            address(feelessAddresses),
+            abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(_newTerminal))),
+            abi.encode(true)
+        );
 
         // for next mock
         // forge-lint: disable-next-line(unsafe-typecast)

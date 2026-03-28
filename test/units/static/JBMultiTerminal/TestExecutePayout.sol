@@ -4,18 +4,14 @@ pragma solidity 0.8.28;
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
-import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBSplitHook} from "../../../../src/interfaces/IJBSplitHook.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
-import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
-import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBSplit} from "../../../../src/structs/JBSplit.sol";
 import {JBSplitHookContext} from "../../../../src/structs/JBSplitHookContext.sol";
-import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
@@ -366,9 +362,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     }
 
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQThisAddress() external {
-        // it will call internal _pay
-
-        _setAccountingContext(_projectId, _usdc, 0, _usdcCurrency);
+        // it will revert with MintNotAllowed because same-project same-terminal pay splits are blocked
 
         // mock call to directory primaryTerminalOf
         mockExpect(
@@ -386,41 +380,8 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
             hook: IJBSplitHook(address(0))
         });
 
-        // needed for next mock call returns
-        JBTokenAmount memory tokenAmount =
-            JBTokenAmount({token: _usdc, decimals: 0, currency: _usdcCurrency, value: _defaultAmount});
-        JBPayHookSpecification[] memory hookSpecifications = new JBPayHookSpecification[](0);
-        JBRuleset memory returnedRuleset = JBRuleset({
-            cycleNumber: 1,
-            id: 1,
-            basedOnId: 0,
-            start: 0,
-            duration: 0,
-            weight: 0,
-            weightCutPercent: 0,
-            approvalHook: IJBRulesetApprovalHook(address(0)),
-            metadata: 0
-        });
-
-        // mock call to JBTerminalStore recordPaymentFrom
-        mockExpect(
-            address(store),
-            abi.encodeCall(
-                IJBTerminalStore.recordPaymentFrom,
-                (
-                    address(_terminal),
-                    tokenAmount,
-                    _projectId,
-                    address(this),
-                    bytes(abi.encodePacked(uint256(_projectId)))
-                )
-            ),
-            abi.encode(returnedRuleset, 0, hookSpecifications)
-        );
-
-        // for safe ERC20 check of code length at token address
         vm.prank(address(_terminal));
-
+        vm.expectRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
         JBMultiTerminal(address(_terminal))
             .executePayout({
                 split: _splitMemory,

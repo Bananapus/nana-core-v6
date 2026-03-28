@@ -300,15 +300,18 @@ All user paths through the Juicebox V6 core protocol. For each journey: entry po
 - `to` -- Destination terminal
 
 **State changes**:
-1. `JBTerminalStore.balanceOf[oldTerminal][projectId][token]` set to 0
-2. Funds transferred to destination terminal via `to.addToBalanceOf()`
-3. Destination terminal records the added balance
+1. `_feeFreeSurplusOf[projectId][token]` cleared
+2. `JBTerminalStore.balanceOf[oldTerminal][projectId][token]` set to 0
+3. If destination is non-feeless: 2.5% protocol fee deducted from balance via `_takeFeeFrom`
+4. Remaining funds transferred to destination terminal via `to.addToBalanceOf()`
+5. Destination terminal records the added balance
 
 **Events**: `MigrateTerminal(projectId, token, to, amount, caller)`
 
 **Edge cases**:
 - Requires `allowTerminalMigration` in current ruleset
 - Destination terminal must have accounting context for the token (validated via `accountingContextForTokenOf`)
+- **Standard 2.5% protocol fee** is charged when migrating to a non-feeless terminal, consistent with all other fund egress. This also settles any `_feeFreeSurplusOf` liability.
 - **Held fees are NOT transferred** -- they remain in the old terminal. Held fees belong to the fee beneficiary (project #1), not the migrating project.
 - If balance is 0, no transfer occurs
 - This only migrates one token's balance. Must be called once per token.

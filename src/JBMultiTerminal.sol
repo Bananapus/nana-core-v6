@@ -59,6 +59,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     error JBMultiTerminal_FeeTerminalNotFound(address token);
+    error JBMultiTerminal_MintNotAllowed();
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
@@ -386,6 +387,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     metadata: metadata
                 });
             } else {
+                // Revert if this is a self-referencing payout (project paying itself via a split).
+                // Same-project pay splits would mint tokens against existing balance without new funds entering.
+                // Projects that want to mint should do so explicitly via the controller.
+                // Cross-project pay splits on the same terminal are allowed (different project receives the funds).
+                // The try-catch in the split group lib catches this revert and restores the balance.
+                if (terminal == this && split.projectId == projectId) {
+                    revert JBMultiTerminal_MintNotAllowed();
+                }
+
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
 
@@ -492,12 +502,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
         }
 
-        // Clear fee-free surplus tracking before migration. The new terminal has no fee-free history.
-        // This prevents stale fee-free surplus from persisting if the project later migrates back.
+        // Clear fee-free surplus tracking — the fee-free liability is settled by the migration fee below.
         delete _feeFreeSurplusOf[projectId][token];
 
         // Terminal migration intentionally does not transfer held fees. Held fees belong to the
         // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
+        // After migration, `processHeldFeesOf()` on this terminal still works — it reads from `_heldFeesOf` and
+        // sends fees to the fee project terminal. The migrated project's balance on this terminal is zero, but held
+        // fees are backed by the terminal's own token balance (not the project's recorded balance).
         // Record the migration in the store.
         // slither-disable-next-line reentrancy-events
         balance = STORE.recordTerminalMigration({projectId: projectId, token: token});
@@ -506,17 +518,33 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Transfer the balance if needed.
         if (balance != 0) {
+            // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
+            // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
+            uint256 feeAmount;
+            if (!_isFeeless(address(to)) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
+                feeAmount = _takeFeeFrom({
+                    projectId: projectId,
+                    token: token,
+                    amount: balance,
+                    beneficiary: payable(_ownerOf(projectId)),
+                    shouldHoldFees: false
+                });
+            }
+
+            // Transfer the balance minus the fee to the new terminal.
+            uint256 migrationAmount = balance - feeAmount;
+
             // Trigger any inherited pre-transfer logic.
             // If this terminal's token is the native token, send it in `msg.value`.
             // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(to), token: token, amount: balance});
+            uint256 payValue = _beforeTransferTo({to: address(to), token: token, amount: migrationAmount});
 
-            // Withdraw the balance to transfer to the new terminal;
+            // Withdraw the balance to transfer to the new terminal.
             // slither-disable-next-line reentrancy-events
             to.addToBalanceOf{value: payValue}({
                 projectId: projectId,
                 token: token,
-                amount: balance,
+                amount: migrationAmount,
                 shouldReturnHeldFees: false,
                 memo: "",
                 metadata: bytes("")
@@ -584,13 +612,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Process any fees that are being held for the project.
     /// @dev Reentrancy safety: the loop re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the
     /// index before the external `_processFee` call, so a reentrant call cannot double-process the same fee entry.
-    /// @dev Phantom balance risk: after a terminal migration, held fees remain in this terminal but the backing tokens
-    /// have been transferred to the new terminal via `migrateBalanceOf`. If `_processFee` reverts (e.g. the fee
-    /// terminal rejects the payment), the catch block calls `_recordAddedBalanceFor`, which credits the project's
-    /// recorded balance without any actual tokens arriving — creating a phantom balance. This is an accepted
-    /// trade-off:
-    /// the alternative (losing the fee amount entirely on revert) is worse. Callers should be aware that processing
-    /// held fees post-migration may inflate the project's recorded balance if any fee payments revert.
+    /// @dev Held fees after migration: held fees remain in this terminal after `migrateBalanceOf` because their backing
+    /// tokens are not part of `balanceOf` — they were already deducted from the recorded balance during the payout
+    /// that
+    /// created them. The actual fee-backing tokens remain in this terminal's token holdings. If `_processFee` reverts
+    /// (e.g. the fee terminal rejects the payment), the catch block calls `_recordAddedBalanceFor` to credit the fee
+    /// amount back to the project. This credit is backed by the tokens that failed to transfer out. No phantom balance
+    /// is created because the tokens never left.
     /// @dev The index-increment-before-`_processFee` pattern is intentional: locked (not-yet-unlocked) fees are skipped
     /// via the `unlockTimestamp` check, and advancing the index before the external call prevents reentrancy from
     /// reprocessing the same fee entry.

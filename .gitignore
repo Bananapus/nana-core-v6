@@ -35,3 +35,4 @@ publish.sh
 AUDIT_FINDINGS.md
 NEMESIS_SCOPE.md
 run-nemesis-all.sh
+.security-worktrees/
