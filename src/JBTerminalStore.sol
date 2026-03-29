@@ -1223,10 +1223,10 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Set the payout limit value to the amount still available to pay out during the ruleset.
             {
-                uint256 remaining = payoutLimit.amount
-                    - usedPayoutLimitOf[
-                        terminal
-                    ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
+                uint256 used = usedPayoutLimitOf[
+                    terminal
+                ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];
+                uint256 remaining = payoutLimit.amount > used ? payoutLimit.amount - used : 0;
                 if (remaining > type(uint224).max) revert JBTerminalStore_Uint224Overflow(remaining);
                 // forge-lint: disable-next-line(unsafe-typecast)
                 payoutLimit.amount = uint224(remaining);

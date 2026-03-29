@@ -407,6 +407,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     beneficiary: beneficiary,
                     metadata: metadata
                 });
+
+                // Cap fee-free surplus at remaining balance after pay hooks may have reduced it.
+                _reduceFeeFreeSurplus({projectId: split.projectId, token: token});
             }
         } else {
             // If there's a beneficiary, send the funds directly to the beneficiary.
@@ -1141,8 +1144,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
                     reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
-                    // Cap fee-free surplus at remaining balance (non-fee-free funds leave first).
-                    _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
@@ -1153,9 +1154,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
                     }
                 }
-            } else {
-                // Feeless beneficiary: fee logic skipped, but still cap fee-free surplus at remaining balance.
-                _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
             }
 
             // Subtract the fee from the reclaim amount.
@@ -1181,6 +1179,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 metadata: metadata
             });
         }
+
+        // Cap fee-free surplus at remaining balance after hooks may have further reduced it.
+        _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
         // Take the fee from all outbound reclaimings.
         if (amountEligibleForFees != 0) {
