@@ -1223,6 +1223,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Set the payout limit value to the amount still available to pay out during the ruleset.
             {
+                // Saturating subtraction: if a new ruleset activates with a lower payout limit than
+                // what was already used under the previous limit, `used` can exceed `amount`. Clamping
+                // to zero prevents an underflow revert that would DOS cashouts and surplus views.
                 uint256 used = usedPayoutLimitOf[
                     terminal
                 ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];

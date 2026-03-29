@@ -408,7 +408,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     metadata: metadata
                 });
 
-                // Cap fee-free surplus at remaining balance after pay hooks may have reduced it.
+                // Cap fee-free surplus at remaining balance.
+                // Why: _feeFreeSurplusOf was incremented by the full netPayoutAmount above, but if the
+                // destination project's data hook forwarded part of the payment to pay hooks, the store
+                // only recorded a partial balance increase. Without this cap, _feeFreeSurplusOf can exceed
+                // STORE.balanceOf, causing users to be overcharged fees on zero-tax cashouts.
                 _reduceFeeFreeSurplus({projectId: split.projectId, token: token});
             }
         } else {
@@ -1180,7 +1184,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // Cap fee-free surplus at remaining balance after hooks may have further reduced it.
+        // Cap fee-free surplus at remaining balance.
+        // Why: this single call replaces per-branch calls so that EVERY cashout path (non-zero tax,
+        // zero tax, and feeless beneficiary) gets the cap. Without it, the zero-tax path would use
+        // a stale _feeFreeSurplusOf that may exceed STORE.balanceOf (e.g. if pay hooks reduced the
+        // balance during a prior inbound payout), overcharging fees on round-trip prevention.
+        // Placed after hook fulfillment so any further balance reductions from cashout hooks are
+        // also accounted for.
         _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
         // Take the fee from all outbound reclaimings.
