@@ -413,7 +413,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 // destination project's data hook forwarded part of the payment to pay hooks, the store
                 // only recorded a partial balance increase. Without this cap, _feeFreeSurplusOf can exceed
                 // STORE.balanceOf, causing users to be overcharged fees on zero-tax cashouts.
-                _reduceFeeFreeSurplus({projectId: split.projectId, token: token});
+                _capFeeFreeSurplus({projectId: split.projectId, token: token});
             }
         } else {
             // If there's a beneficiary, send the funds directly to the beneficiary.
@@ -1191,7 +1191,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // balance during a prior inbound payout), overcharging fees on round-trip prevention.
         // Placed after hook fulfillment so any further balance reductions from cashout hooks are
         // also accounted for.
-        _reduceFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
+        _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
         // Take the fee from all outbound reclaimings.
         if (amountEligibleForFees != 0) {
@@ -1713,7 +1713,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
-        _reduceFeeFreeSurplus({projectId: projectId, token: token});
+        _capFeeFreeSurplus({projectId: projectId, token: token});
 
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
@@ -1914,7 +1914,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
-        _reduceFeeFreeSurplus({projectId: projectId, token: token});
+        _capFeeFreeSurplus({projectId: projectId, token: token});
 
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
@@ -1956,11 +1956,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// and then cashing out without incurring fees.
     /// @param projectId The ID of the project.
     /// @param token The token whose fee-free surplus to cap.
-    function _reduceFeeFreeSurplus(uint256 projectId, address token) internal {
+    function _capFeeFreeSurplus(uint256 projectId, address token) internal {
         // Get the current fee-free surplus for this project/token pair.
         uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
 
-        // Nothing to reduce if there's no fee-free surplus tracked.
+        // Nothing to cap if there's no fee-free surplus tracked.
         if (feeFreeSurplus == 0) return;
 
         // Get the project's remaining balance (already decremented by the store's record call).

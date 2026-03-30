@@ -25,8 +25,8 @@ import {mulDiv} from "@prb/math/src/Common.sol";
 
 /// @notice Tests for three audit fixes: F-3, F-4, and F-5.
 /// F-5: Saturating subtraction in _tokenSurplusFrom prevents underflow when usedPayoutLimit > payoutLimit.amount.
-/// F-3: _reduceFeeFreeSurplus after _efficientPay in executePayout caps fee-free surplus at STORE.balanceOf.
-/// F-4: _reduceFeeFreeSurplus after hook fulfillment in _cashOutTokensOf caps fee-free surplus at remaining balance.
+/// F-3: _capFeeFreeSurplus after _efficientPay in executePayout caps fee-free surplus at STORE.balanceOf.
+/// F-4: _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf caps fee-free surplus at remaining balance.
 contract AuditFixesTest is TestBaseWorkflow {
     // --- Core protocol references ---
     IJBController private _controller;
@@ -244,7 +244,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     }
 
     // ==========================================
-    // F-3: _reduceFeeFreeSurplus after _efficientPay in executePayout
+    // F-3: _capFeeFreeSurplus after _efficientPay in executePayout
     // ==========================================
 
     /// @notice When project A pays out to project B via a same-terminal split (not addToBalance), and project B has
@@ -379,7 +379,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         // Send payouts from project A: 10 ETH goes to project B via the split.
         // The data hook diverts 5 ETH to the pay hook, so STORE.balanceOf[B] only increases by 5 ETH.
         // But _feeFreeSurplusOf[B] was incremented by the full 10 ETH before the pay.
-        // After the fix (F-3), _reduceFeeFreeSurplus caps it at 5 ETH.
+        // After the fix (F-3), _capFeeFreeSurplus caps it at 5 ETH.
         _terminal.sendPayoutsOf({
             projectId: projectIdA,
             token: JBConstants.NATIVE_TOKEN,
@@ -443,7 +443,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     }
 
     // ==========================================
-    // F-4: _reduceFeeFreeSurplus after hook fulfillment in _cashOutTokensOf
+    // F-4: _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf
     // ==========================================
 
     /// @notice After a cashout, _feeFreeSurplusOf is capped at the remaining STORE.balanceOf.
