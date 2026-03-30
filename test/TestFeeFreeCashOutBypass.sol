@@ -802,7 +802,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             beneficiary: payable(user),
             metadata: new bytes(0)
         });
-        // Balance dropped significantly. _reduceFeeFreeSurplus should have capped fee-free at remaining balance.
+        // Balance dropped significantly. _capFeeFreeSurplus should have capped fee-free at remaining balance.
 
         // Step 4: Switch back to zero tax. Cash out remaining.
         _reconfigureWithTaxRate(_projectIdB, 0);
@@ -855,7 +855,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         vm.prank(multisig());
         jbFeelessAddresses().setFeelessAddress(_attacker, true);
 
-        // Step 3: Feeless cashout — no fees charged, but _reduceFeeFreeSurplus should still cap.
+        // Step 3: Feeless cashout — no fees charged, but _capFeeFreeSurplus should still cap.
         uint256 attackerTokens = _tokens.totalBalanceOf(_attacker, _projectIdB);
         vm.prank(_attacker);
         uint256 reclaim = _terminal.cashOutTokensOf({
