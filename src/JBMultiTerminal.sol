@@ -413,6 +413,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 // destination project's data hook forwarded part of the payment to pay hooks, the store
                 // only recorded a partial balance increase. Without this cap, _feeFreeSurplusOf can exceed
                 // STORE.balanceOf, causing users to be overcharged fees on zero-tax cashouts.
+                // slither-disable-next-line reentrancy-eth
                 _capFeeFreeSurplus({projectId: split.projectId, token: token});
             }
         } else {
@@ -1191,6 +1192,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // balance during a prior inbound payout), overcharging fees on round-trip prevention.
         // Placed after hook fulfillment so any further balance reductions from cashout hooks are
         // also accounted for.
+        // slither-disable-next-line reentrancy-eth
         _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
         // Take the fee from all outbound reclaimings.
