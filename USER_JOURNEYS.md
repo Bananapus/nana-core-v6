@@ -36,7 +36,18 @@
 
 **Edge conditions that change user experience:** paused payments, custom hook side effects, fee-on-transfer tokens, unsupported price feeds, zero-weight rulesets, and permit-based flows.
 
-## Journey 3: Distribute Treasury Funds Through Governed Paths
+## Journey 3: Turn Credits Into ERC-20 Tokens Once A Project Wants A Transferable Token
+
+**Starting state:** users already have project token credits and the project now wants an ERC-20 representation.
+
+**Success:** the project deploys or installs its ERC-20 token and holders can claim credits into transferable balances.
+
+**Flow**
+1. Deploy or set the project's ERC-20 token through `JBController`.
+2. Holders or operators call `claimTokensFor(...)` to convert credits into ERC-20 balances for a beneficiary.
+3. Future issuance can continue using the same project identity while users now interact with a standard token surface.
+
+## Journey 4: Distribute Treasury Funds Through Governed Paths
 
 **Starting state:** the project has terminal balances and the owner wants payouts or allowance-based withdrawals.
 
@@ -50,7 +61,7 @@
 
 **Failure cases that matter:** stale split expectations, exceeding access limits, downstream hook failures, and assuming allowance withdrawals behave like payouts when fee treatment differs.
 
-## Journey 4: Let Holders Cash Out Against Surplus
+## Journey 5: Let Holders Cash Out Against Surplus
 
 **Starting state:** a holder owns project token exposure and the project has reclaimable surplus in some terminal.
 
@@ -64,7 +75,7 @@
 
 **Edge conditions that matter:** fee-free addresses, custom cash-out hooks, preview-versus-execution drift under volatile routing, and multi-terminal surplus that users may misread as single-pool liquidity.
 
-## Journey 5: Queue New Rulesets Without Migrating The Project
+## Journey 6: Queue New Rulesets Without Migrating The Project
 
 **Starting state:** the project is live and future economics need to change.
 
@@ -78,7 +89,18 @@
 
 **Failure cases that matter:** forgetting approval hooks, queueing incompatible metadata for installed hooks, and assuming a ruleset change can retroactively repair prior accounting.
 
-## Journey 6: Hand Off Authority Without Handing Out Root Access
+## Journey 7: Migrate A Project To New Terminal Or Controller Surfaces Deliberately
+
+**Starting state:** the project needs to move to a new terminal or controller path without pretending historical balances and routing do not exist.
+
+**Success:** migration uses the protocol's explicit surfaces so balances, permissions, and future routing stay coherent.
+
+**Flow**
+1. Confirm the active ruleset permits migration and the destination surface is the intended successor.
+2. Use `JBController.migrate(...)` and the terminal-store migration paths instead of manually repointing addresses.
+3. Recheck directory routing and accepted accounting contexts after migration completes.
+
+## Journey 8: Hand Off Authority Without Handing Out Root Access
 
 **Starting state:** the project owner wants operators, delegates, or automation to manage only specific surfaces.
 
