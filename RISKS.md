@@ -1,10 +1,22 @@
-# nana-core-v6 -- Active Risk Vectors
+# Juicebox Core Risk Register
 
-Known security properties, trust assumptions, active vulnerability surfaces, and operational risks. Intended audience: experienced Solidity auditors looking for where to focus.
+This file focuses on the accounting, permission, and liveness risks inside the core protocol contracts that everything else in the V6 ecosystem composes with.
+
+## How to use this file
+
+- Read `Priority risks` first; these are the core failures that would propagate far beyond this repo.
+- Use the detailed sections below for protocol accounting, reentrancy, access control, preview, and integration reasoning.
+- Treat `Invariants to Verify` as ecosystem-critical properties, not optional test ideas.
+
+## Priority risks
+
+| Priority | Risk | Why it matters | Primary controls |
+|----------|------|----------------|------------------|
+| P0 | Core accounting corruption | Terminal, store, and controller accounting are the source of truth for balances, surplus, fees, and supply. A bug here propagates everywhere. | Heavy invariant testing, previews aligned with settlement paths, and conservative external integrations. |
+| P0 | Permission or migration mistakes | Controllers, terminals, and operators can redirect authority or value if access control or migration sequencing is wrong. | Strict permission review, migration tests, and scrutiny of wildcard or root-like authority. |
+| P1 | Preview or settlement divergence | Many higher-level hooks and routers depend on previews matching reality closely enough to route safely. | Explicit preview analysis, regression tests, and downstream composition review. |
 
 ## 1. Trust Assumptions
-
-What must be true for the system to remain safe:
 
 - **Hooks do not exploit reentrancy.** No `ReentrancyGuard` anywhere in core. All safety relies on checks-effects-interactions ordering and the `JBTerminalStore_InadequateTerminalStoreBalance` backstop. If a hook finds a code path where state is read before a prior write has settled, value extraction may be possible.
 - **Data hooks are honest.** A data hook has absolute control over payment weight, cash out tax rate, `totalSupply`, `cashOutCount`, and fund-forwarding amounts. A malicious data hook can bypass the bonding curve entirely (e.g., set `totalSupply = surplus` to get 1:1 redemptions) or divert 100% of incoming payments to external hooks. The protocol enforces `sum(hook.amount) <= payment.value` and `reclaimAmount + sum(hook.amount) <= project balance`, but within those bounds the hook is omnipotent.
@@ -31,7 +43,7 @@ What must be true for the system to remain safe:
 ### Weight Decay
 
 - **Weight cache starvation as DoS.** Projects with short duration and nonzero `weightCutPercent` that run >20,000 cycles without a cache update will revert on `currentOf()` with `WeightCacheRequired`. This blocks all operations (pay, cash out, payouts). Anyone can call `updateRulesetWeightCache()` to fix it, but an attacker could create projects designed to hit this.
-- **Weight truncation.** Derived weight is cast to `uint112` in `_simulateCycledRulesetBasedOn`. If the derived weight exceeds `type(uint112).max` (unlikely but theoretically possible if cache state is corrupted), silent truncation occurs.
+- **Weight-cache correctness matters more than overflow.** Rulesets reject weights above `type(uint112).max` at queue time, and weight decay only reduces weight over time. The real risk surface is stale or missing cache progress causing `WeightCacheRequired` reverts or incorrect long-horizon simulations if cache updates are applied to the wrong base ruleset.
 
 ### Surplus Manipulation
 
