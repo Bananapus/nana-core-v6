@@ -340,7 +340,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         whenADataHookIsConfigured
         whenCallerHasPermission
     {
-        // it will safeIncreaseAllowance pass the full amount to the hook and emit HookAfterRecordCashOut
+        // it will forceApprove pass the full amount to the hook and emit HookAfterRecordCashOut
 
         // mint mocked erc20 tokens to hodler
         _mockToken2.mint(address(_terminal), _defaultAmount * 10);
@@ -349,9 +349,6 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // approve those tokens to the terminal
         vm.prank(_holder);
         _mockToken2.approve(address(_terminal), _defaultAmount);
-
-        vm.prank(address(_terminal));
-        _mockToken2.approve(address(_mockHook), _defaultAmount);
 
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](1);
@@ -431,8 +428,8 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(address(_mockHook), abi.encodeCall(IJBCashOutHook.afterCashOutRecordedWith, (context)), "");
 
-        // ensure approval is increased
-        vm.expectCall(address(_mockToken2), abi.encodeCall(IERC20.approve, (address(_mockHook), _defaultAmount * 2)));
+        // ensure approval is set via forceApprove
+        vm.expectCall(address(_mockToken2), abi.encodeCall(IERC20.approve, (address(_mockHook), _defaultAmount)));
 
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
@@ -456,7 +453,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         whenADataHookIsConfigured
         whenCallerHasPermission
     {
-        // it will safeIncreaseAllowance pass the amount to the hook and emit HookAfterRecordCashOut
+        // it will forceApprove pass the amount to the hook and emit HookAfterRecordCashOut
 
         // mint mocked erc20 tokens to hodler
         _mockToken2.mint(address(_terminal), _defaultAmount * 10);
@@ -465,9 +462,6 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // approve those tokens to the terminal
         vm.prank(_holder);
         _mockToken2.approve(address(_terminal), _defaultAmount);
-
-        vm.prank(address(_terminal));
-        _mockToken2.approve(address(_mockHook), _defaultAmount);
 
         uint256 reclaimAmount = 1e9;
         JBCashOutHookSpecification[] memory hookSpecifications = new JBCashOutHookSpecification[](1);

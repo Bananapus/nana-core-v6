@@ -21,8 +21,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBPrices` | Price feed registry with project-specific and protocol-wide default feeds. Immutable once set. |
 | `JBERC20` | Cloneable ERC-20 with Votes + Permit. Owned by `JBTokens`. Deployed via `Clones.clone()`. |
 | `JBFeelessAddresses` | Allowlist for fee-exempt addresses. |
-| `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices. |
-| `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. |
+| `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
+| `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
 | `JBDeadline` | Approval hook: rejects rulesets queued within `DURATION` seconds of start. Ships as `JBDeadline3Hours`, `JBDeadline1Day`, `JBDeadline3Days`, `JBDeadline7Days`. |
 | `JBMatchingPriceFeed` | Always returns 1:1. For equivalent currencies (e.g. ETH/NATIVE_TOKEN). |
 
@@ -121,7 +121,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `isTerminalOf(uint256 projectId, IJBTerminal terminal)` | Checks if a terminal belongs to a project. |
 | `setControllerOf(uint256 projectId, IERC165 controller)` | Sets the project's controller. |
 | `setTerminalsOf(uint256 projectId, IJBTerminal[] terminals)` | Sets the project's terminals. |
-| `setPrimaryTerminalOf(uint256 projectId, address token, IJBTerminal terminal)` | Sets the primary terminal for a token. |
+| `setPrimaryTerminalOf(uint256 projectId, address token, IJBTerminal terminal)` | Sets the primary terminal for a token. Requires `ADD_TERMINALS` permission if the terminal is not already in the project's terminal list (implicit addition). |
 | `setIsAllowedToSetFirstController(address addr, bool flag)` | Allows/disallows an address to set a project's first controller. Owner-only. |
 
 ### JBPrices
@@ -288,7 +288,7 @@ Quick-reference for the most common `JBPermissionIds` values (from `@bananapus/p
 | `13` | `TRANSFER_CREDITS` | `JBController.transferCreditsFrom` |
 | `14` | `SET_CONTROLLER` | `JBDirectory.setControllerOf` |
 | `15` | `SET_TERMINALS` | `JBDirectory.setTerminalsOf` (can remove primary terminal) |
-| `16` | `SET_PRIMARY_TERMINAL` | `JBDirectory.setPrimaryTerminalOf` |
+| `16` | `SET_PRIMARY_TERMINAL` | `JBDirectory.setPrimaryTerminalOf` (also requires `ADD_TERMINALS` if the terminal is not already in the project's list) |
 | `17` | `USE_ALLOWANCE` | `JBMultiTerminal.useAllowanceOf` |
 | `18` | `SET_SPLIT_GROUPS` | `JBController.setSplitGroupsOf` |
 | `19` | `ADD_PRICE_FEED` | `JBController.addPriceFeedFor` |
@@ -359,6 +359,7 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `BurnTokens` | `IJBController` | `holder*`, `projectId*`, `tokenCount` |
 | `SendReservedTokensToSplits` | `IJBController` | `rulesetId*`, `rulesetCycleNumber*`, `projectId*`, `owner`, `tokenCount`, `leftoverAmount` |
 | `SendReservedTokensToSplit` | `IJBController` | `projectId*`, `rulesetId*`, `groupId*`, `split`, `tokenCount` |
+| `SplitHookReverted` | `IJBController` | `projectId*`, `hook`, `reason` |
 | `LaunchProject` | `IJBController` | `rulesetId`, `projectId`, `projectUri` |
 | `QueueRulesets` | `IJBController` | `rulesetId`, `projectId` |
 | `DeployERC20` | `IJBController` | `projectId*`, `deployer*`, `salt`, `saltHash`, `caller` |

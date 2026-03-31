@@ -1083,7 +1083,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (token == JBConstants.NATIVE_TOKEN) return amount;
 
         // Otherwise, set the allowance, and the payValue should be 0.
-        IERC20(token).safeIncreaseAllowance({spender: to, value: amount});
+        IERC20(token).forceApprove({spender: to, value: amount});
         return 0;
     }
 

@@ -22,8 +22,8 @@ src/
 ├── JBERC20.sol            — Cloneable ERC20Votes+Permit token
 ├── JBFeelessAddresses.sol — Fee-exempt address registry
 ├── JBDeadline.sol         — Approval hook requiring minimum delay
-├── JBChainlinkV3PriceFeed.sol          — Chainlink v3 price feed with staleness check
-├── JBChainlinkV3SequencerPriceFeed.sol — L2 sequencer-aware price feed
+├── JBChainlinkV3PriceFeed.sol          — Chainlink v3 price feed with staleness + answeredInRound check
+├── JBChainlinkV3SequencerPriceFeed.sol — L2 sequencer-aware price feed (answer != 0 = down)
 ├── abstract/
 │   ├── JBPermissioned.sol — Base for permission-checked contracts
 │   └── JBControlled.sol   — Base for controller-gated contracts
@@ -136,7 +136,7 @@ Owner -> JBMultiTerminal.sendPayoutsOf()
 | Data Hook (cashout) | `IJBRulesetDataHook.beforeCashOutRecordedWith` | JBTerminalStore |
 | Pay Hook | `IJBPayHook.afterPayRecordedWith` | JBMultiTerminal |
 | Cash Out Hook | `IJBCashOutHook.afterCashOutRecordedWith` | JBMultiTerminal |
-| Split Hook | `IJBSplitHook.processSplitWith` | JBMultiTerminal, JBController |
+| Split Hook | `IJBSplitHook.processSplitWith` | JBMultiTerminal, JBController (try-catch; reverts emit `SplitHookReverted`) |
 | Approval Hook | `IJBRulesetApprovalHook.approvalStatusOf` | JBRulesets |
 
 ## Dependencies

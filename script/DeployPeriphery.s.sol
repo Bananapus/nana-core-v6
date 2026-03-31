@@ -147,31 +147,34 @@ contract DeployPeriphery is Script, Sphinx {
         }
         require(address(feed) != address(0), "Invalid price feed");
 
-        core.prices
+        try core.prices
             .addPriceFeedFor({
                 projectId: 0,
                 pricingCurrency: JBCurrencyIds.USD,
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
                 feed: feed
-            });
+            }) {}
+            catch {}
 
         // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
         // chains where Ether is the native asset. We *NEED* to update this when we deploy to a non-ether chain!
-        core.prices
+        try core.prices
             .addPriceFeedFor({
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
-            });
+            }) {}
+            catch {}
 
         // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
         // NOTE: We need to refactor this the moment we add a chain where its native token is *NOT* ether.
         // As otherwise prices for the `NATIVE_TOKEN` will be incorrect!
-        core.prices
+        try core.prices
             .addPriceFeedFor({
                 projectId: 0,
                 pricingCurrency: JBCurrencyIds.ETH,
                 unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
                 feed: matchingPriceFeed
-            });
+            }) {}
+            catch {}
 
         // Deploy the USDC/USD price feed.
         _deployUSDCFeed(L2GracePeriod);
@@ -279,14 +282,12 @@ contract DeployPeriphery is Script, Sphinx {
         require(usdc.code.length > 0, "Invalid USDC address");
         require(address(usdcFeed) != address(0), "Invalid USDC price feed");
 
-        core.prices
+        // forge-lint: disable-next-line(unsafe-typecast)
+        try core.prices
             .addPriceFeedFor({
-                projectId: 0,
-                pricingCurrency: JBCurrencyIds.USD,
-                // forge-lint: disable-next-line(unsafe-typecast)
-                unitCurrency: uint32(uint160(usdc)),
-                feed: usdcFeed
-            });
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: uint32(uint160(usdc)), feed: usdcFeed
+            }) {}
+            catch {}
     }
 
     /// @dev This helper predicts addresses using the Arachnid CREATE2 deployer, but actual deployments go through

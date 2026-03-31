@@ -52,6 +52,26 @@ Also in this release:
 
 `migrateBalanceOf` now charges the standard 2.5% protocol fee when migrating to a non-feeless terminal, consistent with all other fund egress. This also settles any `_feeFreeSurplusOf` liability that would otherwise be lost on the new terminal. The fee is deducted from the migrated balance before transfer. Feeless terminals are exempt.
 
+### 0.8 JBDirectory -- ADD_TERMINALS Permission on Implicit Addition
+
+`setPrimaryTerminalOf` now requires the `ADD_TERMINALS` permission when the specified terminal is not already in the project's terminal list. Previously, `setPrimaryTerminalOf` would implicitly add the terminal to the project's terminal list without any permission check beyond `SET_PRIMARY_TERMINAL`. Now, if `isTerminalOf(projectId, terminal)` returns false, the caller (or the account they're acting on behalf of) must also hold the `ADD_TERMINALS` permission for the project. Terminals already in the list are unaffected.
+
+### 0.9 JBController -- Split Hook Try-Catch
+
+`_sendReservedTokensToSplitsOf` now wraps the `split.hook.processSplitWith(...)` call in a try-catch. If a split hook reverts, the tokens already transferred to the hook remain with the hook (they were transferred via `safeTransfer` before the `processSplitWith` call), and the controller emits a `SplitHookReverted(projectId, hook, reason)` event instead of propagating the revert. This prevents a single reverting split hook from blocking the entire reserved token distribution. A new event `SplitHookReverted` was added to `IJBController`.
+
+### 0.10 JBChainlinkV3SequencerPriceFeed -- Sequencer Down Check
+
+The sequencer status check changed from `answer == 1` to `answer != 0`. The Chainlink sequencer uptime feed returns `0` for "up" and `1` for "down", but may return other non-zero values in future feed versions. The new check treats any non-zero answer as sequencer-down, which is the safer default.
+
+### 0.11 JBMultiTerminal -- forceApprove
+
+`_beforeSendFor` now uses `forceApprove` (from OpenZeppelin's `SafeERC20`) instead of `safeIncreaseAllowance` when setting token allowances for outbound ERC-20 transfers. `safeIncreaseAllowance` could fail if a previous allowance was partially consumed and a non-standard token (e.g., USDT) requires the allowance to be zero before setting a new value. `forceApprove` resets the allowance to zero first if needed, then sets it to the desired amount.
+
+### 0.12 JBChainlinkV3PriceFeed -- answeredInRound Check
+
+`currentUnitPrice` now checks `answeredInRound < roundId` after retrieving `latestRoundData()`. If `answeredInRound` is less than `roundId`, the answer was carried over from a previous round and the current round is incomplete. This reverts with `JBChainlinkV3PriceFeed_IncompleteRound()`, complementing the existing `updatedAt == 0` check to catch additional incomplete round scenarios.
+
 ### 0.7 JBMultiTerminal -- Self-Pay Revert
 
 `_pay` now reverts with `JBMultiTerminal_MintNotAllowed()` when `payer == address(this)`. This prevents same-project intra-terminal payout splits (where `preferAddToBalance == false`) from minting tokens against existing balance without new funds entering the system. The try-catch in `JBPayoutSplitGroupLib` catches this revert and restores the balance via `recordAddedBalanceFor`. Projects that want to mint should do so explicitly via the controller.
@@ -166,6 +186,7 @@ Parameters changed from `memory` to `calldata` for gas efficiency.
 |----------|-------|
 | `IJBTokens` | `SetTokenMetadata(uint256 indexed projectId, string name, string symbol, address caller)` |
 | `IJBPermitTerminal` | `Permit2AllowanceFailed(address indexed token, address indexed owner, bytes reason)` |
+| `IJBController` | `SplitHookReverted(uint256 indexed projectId, address hook, bytes reason)` |
 
 ### 2.3 New Errors
 
@@ -328,6 +349,7 @@ No changes.
 | **Migration lifecycle** | `afterReceiveMigrationFrom` added — called by directory after migration completes (validates caller is directory). |
 | **`launchRulesetsFor` permission** | Changed from `QUEUE_RULESETS` to `LAUNCH_RULESETS`. |
 | **Split token transfer assertion** | `assert(allowance == 0)` replaced with explicit `revert JBController_TerminalTokensNotTransferred()`. |
+| **Split hook try-catch** | `processSplitWith` in `_sendReservedTokensToSplitsOf` is now wrapped in a try-catch. A reverting split hook emits `SplitHookReverted` instead of propagating. Transferred tokens stay with the hook. |
 | **Code organization** | External views moved after external transactions. Internal views moved to end of file. |
 
 ### 8.2 JBMultiTerminal
@@ -341,6 +363,7 @@ No changes.
 | **Split payout documentation** | Failed split payouts documented as consuming payout limit by design. |
 | **Fee-free cashout bypass prevention** | New `_feeFreeSurplusOf` mapping tracks cumulative fee-free intra-terminal payouts per project/token. Capped at remaining balance after outflows including non-zero-tax/feeless cashouts (non-fee-free funds leave first). During zero-tax cashouts, fees are charged up to this tracked amount (then decremented). Cleared on migration. See Section 0.2. |
 | **beneficiaryIsFeeless passthrough** | `cashOutTokensOf` now passes `_isFeeless(beneficiary)` to `recordCashOutFor`, which forwards it to data hooks via `JBBeforeCashOutRecordedContext.beneficiaryIsFeeless`. |
+| **forceApprove** | `_beforeSendFor` now uses `forceApprove` instead of `safeIncreaseAllowance` for outbound ERC-20 token approvals, avoiding reverts on tokens (e.g. USDT) that require zero allowance before re-approval. |
 
 ### 8.3 JBRulesets
 
@@ -356,6 +379,7 @@ No changes.
 | Change | Description |
 |--------|-------------|
 | **Migration ordering** | `setControllerOf` now calls `migrate()` on the old controller BEFORE updating `controllerOf` in storage (so `migrate()` runs while the directory still points to the old controller). After updating storage, it calls `afterReceiveMigrationFrom` on the new controller. |
+| **ADD_TERMINALS permission on implicit addition** | `setPrimaryTerminalOf` now requires the `ADD_TERMINALS` permission when the terminal is not already in the project's terminal list. Previously, implicit addition had no permission check beyond `SET_PRIMARY_TERMINAL`. |
 
 ### 8.5 JBSplits
 
@@ -380,6 +404,7 @@ No changes.
 | Change | Description |
 |--------|-------------|
 | **Incomplete round check order** | The check for `updatedAt == 0` (incomplete round) now runs BEFORE the stale price check, avoiding false stale errors on incomplete rounds. |
+| **answeredInRound check** | `currentUnitPrice` now checks `answeredInRound < roundId` and reverts with `IncompleteRound` if the answer was carried over from a previous round. |
 
 ### 8.9 JBChainlinkV3SequencerPriceFeed
 
@@ -387,6 +412,7 @@ No changes.
 |--------|-------------|
 | **Typo fix** | Error parameter `gradePeriodTime` corrected to `gracePeriodTime` in `JBChainlinkV3SequencerPriceFeed_SequencerDown`. |
 | **Threshold docs** | Constructor parameter `threshold` documentation corrected from "blocks" to "seconds". |
+| **Sequencer down check** | Changed `answer == 1` to `answer != 0` in the sequencer uptime check. Any non-zero answer is now treated as sequencer-down, which is the safer default for future Chainlink feed versions. |
 
 ### 8.10 Solidity Version
 

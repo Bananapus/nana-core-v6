@@ -50,7 +50,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 | `_cashOutTokensOf` | `STORE.recordCashOutFor` (balance decremented), `controller.burnTokensOf` (tokens burned), `_transferFrom` (beneficiary paid) | Cash out hooks via `_fulfillCashOutHookSpecificationsFor`, then `_takeFeeFrom` | MEDIUM -- beneficiary receives funds before hooks execute; hooks run before fees are taken |
 | `executePayout` | `STORE.recordPayoutFor` already consumed payout limit | `split.hook.processSplitWith`, `terminal.pay/addToBalance` | MEDIUM -- split hook receives funds and can re-enter; payout limit already consumed prevents double-payout |
 | `processHeldFeesOf` | `delete _heldFeesOf[...][currentIndex]`, `_nextHeldFeeIndexOf` incremented | `_processFee` -> `this.executeProcessFee` -> `terminal.pay` | LOW -- index advanced before external call; re-reads from storage each iteration |
-| `_sendReservedTokensToSplitsOf` | `pendingReservedTokenBalanceOf` zeroed, tokens minted to controller | Split hooks, terminal payments | LOW -- pending balance cleared before minting prevents double-distribution |
+| `_sendReservedTokensToSplitsOf` | `pendingReservedTokenBalanceOf` zeroed, tokens minted to controller | Split hooks (try-catch), terminal payments | LOW -- pending balance cleared before minting prevents double-distribution. Split hook `processSplitWith` is wrapped in try-catch; a reverting hook emits `SplitHookReverted` but does not block distribution. Tokens already transferred to the hook via `safeTransfer` remain with the hook. |
 | `_useAllowanceOf` | `STORE.recordUsedAllowanceOf` (allowance consumed, balance decremented) | `_takeFeeFrom` (fee payment/holding), `_transferFrom` (beneficiary) | LOW -- allowance consumed before calls |
 | `migrateBalanceOf` | `STORE.recordTerminalMigration` (balance zeroed), `_takeFeeFrom` (if non-feeless destination) | `to.addToBalanceOf` | LOW -- balance zeroed before transfer, fee deducted before transfer |
 
@@ -59,6 +59,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - **Pay hook -> `cashOutTokensOf`**: After `_pay` mints tokens, a pay hook could call `cashOutTokensOf`. The cash out sees post-payment balance and post-mint supply. Not profitable after fees in tested scenarios, but verify with data hooks that modify weights.
 - **Cash out hook -> `pay`**: During `_cashOutTokensOf`, after tokens are burned and beneficiary is paid, a cash out hook could call `pay()` adding to the balance. Fees haven't been taken yet at this point. Verify the fee calculation on `amountEligibleForFees` isn't affected.
 - **Split hook -> `pay` on same project**: During `sendPayoutsOf`, a split hook receives funds and calls `pay()` on the same project. Payout limit is consumed, but the payment increases balance and mints tokens. The funds came from the project's own balance, so no value creation -- but verify the accounting. Note: `_pay` now reverts with `MintNotAllowed` when `payer == address(this)` to prevent same-project intra-terminal payout splits from minting tokens against existing balance. The try-catch in the split group lib catches this and restores the balance.
+- **Reserved token split hook -> re-entry**: During `_sendReservedTokensToSplitsOf`, a split hook's `processSplitWith` is now wrapped in try-catch. A reverting hook emits `SplitHookReverted` and does not block distribution. Tokens transferred to the hook before the call remain with it. A hook that re-enters during `processSplitWith` sees post-mint state (pending reserved balance already zeroed).
 - **Fee processing -> any re-entry**: `_processFee` uses `this.executeProcessFee` (external call via try-catch). Inside, it calls `terminal.pay()` on project #1. If project #1 has a pay hook that calls back, the fee amount is already deducted.
 
 ### Key Backstop
@@ -73,6 +74,10 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - **ROOT + wildcard (`projectId = 0`) is allowed for self-grants only.** An account can grant its own operator ROOT on the wildcard project, giving that operator god-mode across all of the account's projects. This is powerful but legitimate — the account owner is explicitly choosing to delegate full control. However, a third-party caller who holds ROOT for a specific project **cannot** grant ROOT to others or set any permissions on the wildcard project on someone else's behalf. This prevents ROOT operators from escalating their own privileges beyond what the account owner originally granted. Auditors should verify that no indirect path allows a ROOT operator on project X to escalate to ROOT on project Y without the account owner's direct action.
 - **Empty permission arrays pass `hasPermissions`.** By design (vacuous truth). Any caller that expects "the operator has at least one of these permissions" must validate the array is non-empty.
 - **`OMNICHAIN_RULESET_OPERATOR` bypass.** This immutable address can `launchRulesetsFor`, `queueRulesetsOf`, and set terminals for any project without owner permission. The trust assumption is that this operator only queues rulesets that the omnichain deployer's logic permits. If this address is an EOA or an upgradeable contract, it is a single point of failure for all projects.
+
+### Directory Terminal Addition
+
+- **`setPrimaryTerminalOf` implicit terminal addition** now requires the `ADD_TERMINALS` permission when the terminal is not already in the project's terminal list. This closes a gap where `SET_PRIMARY_TERMINAL` alone could silently add a new terminal without the `ADD_TERMINALS` permission check. If the terminal is already in the list, no additional permission is needed.
 
 ### Migration
 
@@ -100,8 +105,8 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 ### Price Feed Reverts
 
-- If a Chainlink feed is stale beyond its threshold, `JBChainlinkV3PriceFeed` reverts. This blocks all multi-currency operations for projects using that feed: `pay`, `cashOutTokensOf`, `sendPayoutsOf`, `useAllowanceOf`.
-- L2 sequencer downtime triggers `JBChainlinkV3SequencerPriceFeed` to revert during downtime + grace period.
+- If a Chainlink feed is stale beyond its threshold, `JBChainlinkV3PriceFeed` reverts. This blocks all multi-currency operations for projects using that feed: `pay`, `cashOutTokensOf`, `sendPayoutsOf`, `useAllowanceOf`. The feed also reverts with `IncompleteRound` when `answeredInRound < roundId` (answer carried from a previous round).
+- L2 sequencer downtime triggers `JBChainlinkV3SequencerPriceFeed` to revert during downtime + grace period. The sequencer check uses `answer != 0` (any non-zero value = down), which is forward-compatible with future Chainlink feed versions that may use values other than `1` for the down state.
 - Single-currency projects (where `amount.currency == ruleset.baseCurrency()`) are unaffected.
 - Price feeds are immutable once set in `JBPrices` -- a broken feed cannot be replaced.
 
