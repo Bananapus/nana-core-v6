@@ -1024,7 +1024,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     });
 
                     // slither-disable-next-line reentrancy-events
-                    split.hook
+                    try split.hook
                         .processSplitWith(
                             JBSplitHookContext({
                                 token: address(token),
@@ -1034,7 +1034,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                                 groupId: groupId,
                                 split: split
                             })
-                        );
+                        ) {}
+                    catch (bytes memory reason) {
+                        // If the hook reverts, the tokens already transferred to it stay with the hook.
+                        emit SplitHookReverted({projectId: projectId, hook: address(split.hook), reason: reason});
+                    }
                     // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
                 } else {
                     // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message

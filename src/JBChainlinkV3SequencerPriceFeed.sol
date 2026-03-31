@@ -64,7 +64,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
         if (startedAt == 0) revert JBChainlinkV3SequencerPriceFeed_InvalidRound();
 
         // Revert if sequencer has too recently restarted or is currently down.
-        if (block.timestamp <= GRACE_PERIOD_TIME + startedAt || answer == 1) {
+        if (block.timestamp <= GRACE_PERIOD_TIME + startedAt || answer != 0) {
             revert JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
                 block.timestamp, GRACE_PERIOD_TIME, startedAt
             );

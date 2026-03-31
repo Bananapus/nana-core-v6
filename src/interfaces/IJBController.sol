@@ -102,6 +102,12 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         uint256 indexed projectId, JBSplit split, uint256 tokenCount, bytes reason, address caller
     );
 
+    /// @notice A split hook's `processSplitWith` call reverted.
+    /// @param projectId The ID of the project.
+    /// @param hook The split hook that reverted.
+    /// @param reason The revert reason.
+    event SplitHookReverted(uint256 indexed projectId, address hook, bytes reason);
+
     /// @notice Reserved tokens were sent to a specific split.
     /// @param projectId The ID of the project.
     /// @param rulesetId The ID of the ruleset during the distribution.

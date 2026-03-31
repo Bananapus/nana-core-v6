@@ -50,11 +50,14 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     function currentUnitPrice(uint256 decimals) public view virtual override returns (uint256) {
         // Get the latest round information from the feed.
         // slither-disable-next-line unused-return
-        (, int256 price,, uint256 updatedAt,) = FEED.latestRoundData();
+        (uint80 roundId, int256 price,, uint256 updatedAt, uint80 answeredInRound) = FEED.latestRoundData();
 
         // Make sure the round is finished (check before stale price to avoid false stale on incomplete rounds).
         // slither-disable-next-line incorrect-equality
         if (updatedAt == 0) revert JBChainlinkV3PriceFeed_IncompleteRound();
+
+        // Make sure the answer was provided in the current round.
+        if (answeredInRound < roundId) revert JBChainlinkV3PriceFeed_IncompleteRound();
 
         // Make sure the price's update threshold is met.
         if (block.timestamp > THRESHOLD + updatedAt) {

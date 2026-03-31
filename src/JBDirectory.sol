@@ -185,6 +185,13 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
             revert JBDirectory_TokenNotAccepted(projectId, token, terminal);
         }
 
+        // If the terminal is not already in the project's terminal list, require ADD_TERMINALS permission.
+        if (!isTerminalOf({projectId: projectId, terminal: terminal})) {
+            _requirePermissionFrom({
+                account: PROJECTS.ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.ADD_TERMINALS
+            });
+        }
+
         // Implicit terminal addition is by design. A primary terminal must be in the terminals list;
         // implicit addition avoids requiring a separate addTerminalsOf call.
         _addTerminalIfNeeded({projectId: projectId, terminal: terminal});

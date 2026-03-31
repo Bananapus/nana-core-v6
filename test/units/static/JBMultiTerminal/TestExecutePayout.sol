@@ -332,12 +332,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         uint256 taxedAmount = JBFees.feeAmountFrom(_defaultAmount, _fee);
         uint256 amountAfterTax = _defaultAmount - taxedAmount;
 
-        // mock call for SafeERC20s allowance check
-        mockExpect(
-            _usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_mockSecondTerminal))), abi.encode(0)
-        );
-
-        // mock call for SafeERC20s safeIncreaseAllowance approval
+        // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (_mockSecondTerminal, amountAfterTax)), "");
 
         // mock call to second terminals addToBalanceOf
@@ -421,12 +416,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         uint256 taxedAmount = JBFees.feeAmountFrom(_defaultAmount, _fee);
         uint256 amountAfterTax = _defaultAmount - taxedAmount;
 
-        // mock call for SafeERC20s allowance check
-        mockExpect(
-            _usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_mockSecondTerminal))), abi.encode(0)
-        );
-
-        // mock call for SafeERC20s safeIncreaseAllowance approval
+        // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (_mockSecondTerminal, amountAfterTax)), "");
 
         // mock call to second terminals pay function

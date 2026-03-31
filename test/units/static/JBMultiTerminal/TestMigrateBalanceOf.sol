@@ -103,7 +103,7 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
     } */
 
     function test_GivenTokenIsERC20() external whenPermissioned {
-        // it will safeIncreaseAllowance and addToBalanceOf
+        // it will forceApprove and addToBalanceOf
 
         // mock _isFeeless to return true (skip migration fee for this unit test)
         mockExpect(
@@ -132,10 +132,7 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
             abi.encode(_defaultAmount)
         );
 
-        // mock call for SafeERC20s allowance check
-        mockExpect(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_newTerminal))), abi.encode(0));
-
-        // mock call for SafeERC20s safeIncreaseAllowance approval
+        // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (address(_newTerminal), _defaultAmount)), "");
 
         // mock call to new terminal addToBalance

@@ -68,12 +68,9 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     }
 
     function test_WhenTokenIsErc20AndFeeTerminalIsExternal() external {
-        // it will safeIncreaseAllowance
+        // it will forceApprove
 
-        // mock token allowance call
-        mockExpect(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_feeTerminal))), abi.encode(0));
-
-        // mock approval call
+        // mock approval call for forceApprove
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (address(_feeTerminal), _defaultAmount)), "");
 
         // mock pay call to fee terminal
