@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity 0.8.28;
 
 library JBFixedPointNumber {
     function adjustDecimals(uint256 value, uint256 decimals, uint256 targetDecimals) internal pure returns (uint256) {
