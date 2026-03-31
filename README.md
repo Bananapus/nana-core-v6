@@ -147,7 +147,7 @@ graph TD;
 | Contract | Description |
 |----------|-------------|
 | `JBERC20` | Cloneable ERC-20 with ERC20Votes and ERC20Permit. Deployed by `JBTokens` via `Clones.clone()`. Owned by `JBTokens`. Name and symbol can be updated by the project owner via `JBController.setTokenMetadataOf`. |
-| `JBChainlinkV3PriceFeed` | `IJBPriceFeed` backed by a Chainlink `AggregatorV3Interface` with staleness threshold. Rejects negative/zero prices and incomplete rounds. |
+| `JBChainlinkV3PriceFeed` | `IJBPriceFeed` backed by a Chainlink `AggregatorV3Interface` with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
 | `JBChainlinkV3SequencerPriceFeed` | Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime validation and grace period for Optimism/Arbitrum. |
 | `JBMatchingPriceFeed` | Returns 1:1 price (e.g., ETH/NATIVE_TOKEN on applicable chains). Lives in `src/periphery/`. |
 
@@ -196,7 +196,7 @@ This section summarizes known risks and design trade-offs. None of these are unm
 
 ### Reentrancy
 
-The protocol does not use an explicit `ReentrancyGuard`. Instead, it relies on **state ordering**: all storage writes (balance updates, token mints/burns, payout limit usage) are completed before any external calls (hooks, split payouts, fee processing). This means re-entering a function sees already-updated state, preventing double-spends and double-payouts. The `try-catch` pattern around external calls ensures that hook failures do not leave the protocol in an inconsistent state -- failed calls return funds to the project balance.
+The protocol does not use an explicit `ReentrancyGuard`. Instead, it relies on **state ordering**: all storage writes (balance updates, token mints/burns, payout limit usage) are completed before any external calls (hooks, split payouts, fee processing). This means re-entering a function sees already-updated state, preventing double-spends and double-payouts. The `try-catch` pattern around external calls ensures that hook failures do not leave the protocol in an inconsistent state -- failed calls return funds to the project balance. This includes reserved token split hooks: `processSplitWith` is wrapped in try-catch, and a reverting hook emits `SplitHookReverted` instead of blocking distribution.
 
 ### Unbounded Arrays
 
