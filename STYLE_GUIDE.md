@@ -109,11 +109,23 @@ contract JBExample is JBPermissioned, IJBExample {
     //*********************************************************************//
 
     //*********************************************************************//
+    // -------------------- private stored properties -------------------- //
+    //*********************************************************************//
+
+    //*********************************************************************//
+    // ------------------- transient stored properties ------------------- //
+    //*********************************************************************//
+
+    //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
     //*********************************************************************//
     // ---------------------------- modifiers ---------------------------- //
+    //*********************************************************************//
+
+    //*********************************************************************//
+    // ------------------------- receive / fallback ---------------------- //
     //*********************************************************************//
 
     //*********************************************************************//
@@ -130,6 +142,10 @@ contract JBExample is JBPermissioned, IJBExample {
 
     //*********************************************************************//
     // ----------------------- public transactions ----------------------- //
+    //*********************************************************************//
+
+    //*********************************************************************//
+    // ---------------------- internal transactions ---------------------- //
     //*********************************************************************//
 
     //*********************************************************************//
@@ -150,18 +166,28 @@ contract JBExample is JBPermissioned, IJBExample {
 1. Custom errors
 2. Public constants
 3. Internal constants
-4. Public immutable stored properties
-5. Internal immutable stored properties
-6. Public stored properties
-7. Internal stored properties
-8. Constructor
-9. External transactions
-10. External views
-11. Public views
-12. Public transactions
-13. Internal helpers
-14. Internal views
-15. Private helpers
+4. Private constants
+5. Public immutable stored properties
+6. Internal immutable stored properties
+7. Public stored properties
+8. Internal stored properties
+9. Private stored properties
+10. Transient stored properties
+11. Constructor
+12. Modifiers
+13. Receive / fallback
+14. External transactions
+15. External views
+16. Public views
+17. Public transactions
+18. Internal transactions
+19. Internal helpers
+20. Internal views
+21. Private helpers
+
+Use these additional section labels where they better match the contents of the block:
+- `internal functions` is accepted as equivalent to `internal helpers`
+- `events` and `structs` are acceptable in specialized contracts that define them explicitly
 
 Functions are alphabetized within each section.
 
@@ -582,8 +608,3 @@ CI checks formatting via `forge fmt --check`.
 ### Contract Size Checks
 
 CI runs `forge build --sizes` to catch contracts approaching the 24KB limit. When the repo's default `optimizer_runs` differs from what you want for size checking, use `FOUNDRY_PROFILE=ci_sizes forge build --sizes` with a `[profile.ci_sizes]` section in `foundry.toml`.
-
-
-## Repo-Specific Deviations
-
-None. This repo follows the standard configuration exactly.
