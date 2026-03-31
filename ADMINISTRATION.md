@@ -2,6 +2,35 @@
 
 Admin privileges and their scope in nana-core-v6.
 
+## At A Glance
+
+| Item | Details |
+|------|---------|
+| Scope | Core Juicebox V6 protocol control plane: projects, permissions, directory, controller, terminals, tokens, prices, splits, and fund access limits. |
+| Operators | Protocol-level contract owners, project owners, delegated operators, controllers, terminals, and ruleset-selected hooks. |
+| Highest-risk actions | Adding immutable price feeds, changing controllers or terminals, deploying or setting a project's ERC-20, and granting broad operator or ROOT permissions. |
+| Recovery posture | Bad immutable choices usually require deploying new infrastructure and migrating project configuration rather than "editing" the existing contracts. |
+
+## Routine Operations
+
+- Whitelist or remove first-controller setters on `JBDirectory` only when rolling out a new controller implementation.
+- Add price feeds only after confirming the exact project scope and pair, because feeds cannot be replaced once written.
+- Manage project operators through `JBPermissions` with the narrowest possible project scope and permission bitmap.
+- Reconfigure controllers, terminals, splits, fund access limits, and rulesets only when the current ruleset flags permit the change.
+- Use protocol-owner functions on `JBFeelessAddresses`, `JBProjects`, and `JBPrices` sparingly because they affect many projects at once.
+
+## One-Way Or High-Risk Actions
+
+- `JBPrices.addPriceFeedFor` is immutable for a given project/currency pair. A bad feed entry cannot be edited in place.
+- `JBController.deployERC20For` and `JBTokens.setTokenFor` are effectively one-time token-binding decisions for a project.
+- The fee beneficiary is hardcoded to project `1` inside `JBMultiTerminal`; changing that requires new terminal deployments.
+- Over-broad ROOT or wildcard permissions can hand an operator more power than intended across a project's full control surface.
+
+## Recovery Notes
+
+- If an immutable contract reference or price feed is wrong, the normal recovery path is redeploying the affected contract layer and migrating projects to the new controller or terminal stack.
+- If a project's controller or terminal setup is wrong but the ruleset still allows migration, recover with `JBDirectory` updates before deploying replacement infrastructure.
+
 ## Roles
 
 ### Project Owner
@@ -90,14 +119,14 @@ Admin privileges and their scope in nana-core-v6.
 |----------|--------------|---------------|-------|-------------|
 | `setControllerOf` | Project owner or operator, OR an `isAllowedToSetFirstController` address (for first controller only) | SET_CONTROLLER (14) | Per project | Sets or migrates a project's controller. Also requires the current ruleset's `allowSetController` flag to be true (unless setting the first controller). Triggers migration lifecycle hooks on both old and new controllers. |
 | `setIsAllowedToSetFirstController` | Contract owner | N/A (onlyOwner) | Protocol-wide | Adds or removes an address from the allowlist of addresses that can set a project's first controller. |
-| `setPrimaryTerminalOf` | Project owner or operator | SET_PRIMARY_TERMINAL (16) | Per project | Sets which terminal is the default for a given token. Adds the terminal to the project if not already present. |
+| `setPrimaryTerminalOf` | Project owner or operator | SET_PRIMARY_TERMINAL (17), plus ADD_TERMINALS (16) if the terminal is not already configured | Per project | Sets which terminal is the default for a given token. Adds the terminal to the project if not already present. |
 | `setTerminalsOf` | Project owner, operator, or the project's controller | SET_TERMINALS (15) | Per project | Replaces the entire list of terminals for a project. If the caller is not the controller, the ruleset must have `allowSetTerminals` enabled. |
 
 ### JBController
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `addPriceFeedFor` | Project owner or operator | ADD_PRICE_FEED (19) | Per project | Adds a price feed for a project. Requires the ruleset's `allowAddPriceFeed` flag. Price feeds are immutable once set. |
+| `addPriceFeedFor` | Project owner or operator | ADD_PRICE_FEED (20) | Per project | Adds a price feed for a project. Requires the ruleset's `allowAddPriceFeed` flag. Price feeds are immutable once set. |
 | `burnTokensOf` | Token holder, operator with BURN_TOKENS, or a project terminal | BURN_TOKENS (11) | Per project | Burns tokens or credits from a holder's balance. Terminals can burn without explicit permission (for cash outs). |
 | `claimTokensFor` | Credit holder or operator | CLAIM_TOKENS (12) | Per project | Redeems internal credits for ERC-20 tokens. |
 | `deployERC20For` | Project owner or operator | DEPLOY_ERC20 (8) | Per project | Deploys a new ERC-20 token contract for the project. Can only be called once per project. |
@@ -106,9 +135,9 @@ Admin privileges and their scope in nana-core-v6.
 | `mintTokensOf` | Project owner, operator, terminal, or data hook (with mint permission) | MINT_TOKENS (10) | Per project | Mints new tokens. If the caller is not a terminal or data hook, the ruleset must have `allowOwnerMinting` enabled. |
 | `queueRulesetsOf` | Project owner, operator, or OMNICHAIN_RULESET_OPERATOR | QUEUE_RULESETS (2) | Per project | Queues new rulesets at the end of the project's ruleset queue. |
 | `sendReservedTokensToSplitsOf` | Anyone | N/A | Per project | Distributes accumulated reserved tokens to the project's reserved token split group. No permission required -- anyone can trigger this. |
-| `setSplitGroupsOf` | Project owner or operator | SET_SPLIT_GROUPS (18) | Per project | Sets split groups for a project. Must preserve any currently locked splits. |
+| `setSplitGroupsOf` | Project owner or operator | SET_SPLIT_GROUPS (19) | Per project | Sets split groups for a project. Must preserve any currently locked splits. |
 | `setTokenFor` | Project owner or operator | SET_TOKEN (9) | Per project | Assigns an external ERC-20 token to the project. Requires the ruleset's `allowSetCustomToken` flag. Can only be called once (before any token is set). |
-| `setTokenMetadataOf` | Project owner or operator | SET_TOKEN_METADATA (21) | Per project | Sets the name and symbol of a project's ERC-20 token. The project must have a token deployed. |
+| `setTokenMetadataOf` | Project owner or operator | SET_TOKEN_METADATA (22) | Per project | Sets the name and symbol of a project's ERC-20 token. The project must have a token deployed. |
 | `setUriOf` | Project owner or operator | SET_PROJECT_URI (7) | Per project | Updates the project's metadata URI. |
 | `transferCreditsFrom` | Credit holder or operator | TRANSFER_CREDITS (13) | Per project | Transfers internal token credits between addresses. Requires the ruleset's `pauseCreditTransfers` flag to be false. |
 | `migrate` | JBDirectory only | N/A (msg.sender == DIRECTORY) | Per project | Called by the directory during controller migration. Reverts if there are pending reserved tokens. |
@@ -121,11 +150,11 @@ Admin privileges and their scope in nana-core-v6.
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `addAccountingContextsFor` | Project owner, operator, or the project's controller | ADD_ACCOUNTING_CONTEXTS (20) | Per project | Adds tokens that the terminal will accept for a project. Requires the ruleset's `allowAddAccountingContext` flag (if a ruleset exists). |
+| `addAccountingContextsFor` | Project owner, operator, or the project's controller | ADD_ACCOUNTING_CONTEXTS (21) | Per project | Adds tokens that the terminal will accept for a project. Requires the ruleset's `allowAddAccountingContext` flag (if a ruleset exists). |
 | `cashOutTokensOf` | Token holder or operator | CASH_OUT_TOKENS (4) | Per project | Cashes out project tokens for a share of the project's surplus. Fees are charged unless the beneficiary is feeless or the cash out tax rate is zero. |
 | `migrateBalanceOf` | Project owner or operator | MIGRATE_TERMINAL (6) | Per project | Migrates a project's balance from this terminal to another. The destination terminal must accept the same token. The ruleset must have `allowTerminalMigration` enabled (checked in JBTerminalStore). The standard 2.5% protocol fee is charged when migrating to a non-feeless terminal. |
 | `sendPayoutsOf` | Anyone (unless `ownerMustSendPayouts` is set) | SEND_PAYOUTS (5) if `ownerMustSendPayouts` | Per project | Sends payouts to the project's payout split group up to the payout limit. Anyone can call unless the ruleset has `ownerMustSendPayouts` enabled, which requires the project owner or an operator with SEND_PAYOUTS permission. |
-| `useAllowanceOf` | Project owner or operator | USE_ALLOWANCE (17) | Per project | Withdraws funds from the project's surplus up to the surplus allowance. Fees are charged unless the owner or beneficiary is feeless. |
+| `useAllowanceOf` | Project owner or operator | USE_ALLOWANCE (18) | Per project | Withdraws funds from the project's surplus up to the surplus allowance. Fees are charged unless the owner or beneficiary is feeless. |
 | `pay` | Anyone | N/A | N/A | Pays a project with tokens. No permission required. |
 | `addToBalanceOf` | Anyone | N/A | N/A | Adds funds to a project's balance without minting tokens. Can optionally return held fees. No permission required. |
 | `processHeldFeesOf` | Anyone | N/A | Per project | Processes held fees that have passed their 28-day unlock period. No permission required. |
@@ -242,12 +271,13 @@ JBPermissions implements a 256-bit packed permission bitmap system:
 | 13 | TRANSFER_CREDITS | `JBController.transferCreditsFrom` |
 | 14 | SET_CONTROLLER | `JBDirectory.setControllerOf` |
 | 15 | SET_TERMINALS | `JBDirectory.setTerminalsOf` |
-| 16 | SET_PRIMARY_TERMINAL | `JBDirectory.setPrimaryTerminalOf` |
-| 17 | USE_ALLOWANCE | `JBMultiTerminal.useAllowanceOf` |
-| 18 | SET_SPLIT_GROUPS | `JBController.setSplitGroupsOf` |
-| 19 | ADD_PRICE_FEED | `JBController.addPriceFeedFor` |
-| 20 | ADD_ACCOUNTING_CONTEXTS | `JBMultiTerminal.addAccountingContextsFor` |
-| 21 | SET_TOKEN_METADATA | `JBController.setTokenMetadataOf` |
+| 16 | ADD_TERMINALS | `JBDirectory.setPrimaryTerminalOf` when it must add a new terminal first |
+| 17 | SET_PRIMARY_TERMINAL | `JBDirectory.setPrimaryTerminalOf` |
+| 18 | USE_ALLOWANCE | `JBMultiTerminal.useAllowanceOf` |
+| 19 | SET_SPLIT_GROUPS | `JBController.setSplitGroupsOf` |
+| 20 | ADD_PRICE_FEED | `JBController.addPriceFeedFor` |
+| 21 | ADD_ACCOUNTING_CONTEXTS | `JBMultiTerminal.addAccountingContextsFor` |
+| 22 | SET_TOKEN_METADATA | `JBController.setTokenMetadataOf` |
 
 ## Immutable Configuration
 

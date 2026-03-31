@@ -1,238 +1,127 @@
-# Juicebox Core
+# Juicebox Core V6
 
-The core protocol contracts for Juicebox V6 on EVM. A flexible toolkit for launching and managing a treasury-backed token on Ethereum and L2s.
+`@bananapus/core-v6` is the core protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting surfaces that the rest of the V6 ecosystem builds on.
 
-For full documentation, see [docs.juicebox.money](https://docs.juicebox.money/). If you have questions, reach out on [Discord](https://discord.com/invite/ErQYmth4dS).
+Docs: <https://docs.juicebox.money>
+Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-## Conceptual Overview
+## Overview
 
-Juicebox projects have two main entry points:
+If a V6 package moves value, mints tokens, checks permissions, or reasons about project configuration, it almost certainly depends on this repo.
 
-- **Terminals** handle inflows and outflows of funds -- payments, cash outs, payouts, and surplus allowance usage. Each project can use multiple terminals, and a single terminal can serve many projects. `JBMultiTerminal` is the standard implementation.
-- **Controllers** manage rulesets and tokens. `JBController` is the standard implementation that coordinates ruleset queuing, token minting/burning, splits, and fund access limits.
+The core package provides:
 
-`JBDirectory` maps each project to its controller and terminals.
+- project ownership and metadata through `JBProjects`
+- ruleset lifecycle management through `JBRulesets`
+- issuance, queueing, token setup, and splits through `JBController`
+- multi-token terminal accounting through `JBMultiTerminal` and `JBTerminalStore`
+- operator permissions through `JBPermissions`
+- on-chain price-feed routing through `JBPrices`
 
-### Rulesets
+Use this repo when you need the canonical protocol invariant. Do not duplicate its logic in downstream packages unless the repo is explicitly intended to wrap or extend the core surface.
 
-A project's behavior is governed by a queue of **rulesets**. Each ruleset defines the rules that apply for a specific duration: payment weight (tokens minted per unit paid), cash out tax rate, reserved percent, payout limits, approval hooks, and more. When a ruleset ends, the next one in the queue takes effect. If the queue is empty, the current ruleset keeps cycling with weight decay applied each cycle. Rulesets give project creators the ability to evolve their project's rules while offering supporters contractual guarantees about the future.
+If you only read one repo before auditing the rest of the ecosystem, read this one.
 
-Key ruleset behaviors:
-- **Weight** determines token issuance per unit paid. A weight of 1 means "inherit decayed weight from the previous ruleset". A weight of 0 means "no issuance".
-- **Weight decay** is controlled by `weightCutPercent`. Each cycle, the weight is reduced by this percent (9-decimal precision out of `1_000_000_000`).
-- **Duration of 0** means the ruleset never expires and must be explicitly replaced by a new queued ruleset (which takes effect immediately).
-- **Approval hooks** can gate whether queued rulesets take effect. For example, `JBDeadline` requires rulesets to be queued a minimum number of seconds before the current ruleset ends.
+## Mental Model
 
-### Fund Distribution
+The core protocol is easiest to reason about in four layers:
 
-Funds can be accessed through **payouts** (distributed to splits within payout limits, resetting each ruleset cycle) or **surplus allowance** (discretionary withdrawal of surplus funds, does not reset each cycle). Funds beyond payout limits are surplus -- available for cash outs if the project's cash out tax rate allows it.
+1. identity and configuration: `JBProjects`, `JBDirectory`, `JBRulesets`
+2. execution: `JBController` and `JBMultiTerminal`
+3. accounting: `JBTerminalStore`
+4. permissions and external context: `JBPermissions`, `JBPrices`, feeless-address and deadline helpers
 
-- **Payout limits** are denominated in configurable currencies and can be set per terminal/token. Multiple limits in different currencies can be active simultaneously.
-- **Surplus allowances** allow project owners to withdraw surplus funds up to a configured amount, also denominated in configurable currencies.
+Most integrations touch only layer 2. Most economically important bugs leak through layer 3.
 
-### Payments, Tokens, and Cash Outs
+The shortest path through the repo is:
 
-Payments mint credits (or ERC-20 tokens if an ERC-20 has been deployed for the project) for the payer based on the current ruleset's weight. The number of tokens minted can be influenced by a data hook.
+1. `JBController` for project launch and ruleset configuration
+2. `JBMultiTerminal` for execution entrypoints
+3. `JBTerminalStore` for economic truth
+4. `JBDirectory` and `JBPermissions` for routing and authority
 
-Credits and tokens can be **cashed out** to reclaim surplus funds along a bonding curve determined by the cash out tax rate:
-- A **0% tax rate** gives proportional (1:1) redemption of surplus.
-- A **100% tax rate** means nothing can be reclaimed (all surplus is locked).
-- Tax rates between 0% and 100% create a bonding curve that incentivizes holding -- later cashers-out get a better rate per token.
+## Read These Files First
 
-### Preview APIs
+1. `src/JBController.sol`
+2. `src/JBMultiTerminal.sol`
+3. `src/JBTerminalStore.sol`
+4. `src/JBDirectory.sol`
+5. `src/JBRulesets.sol`
+6. `src/JBPermissions.sol`
 
-Every core user action -- paying, cashing out, and minting -- has a corresponding **preview** function that simulates the operation on-chain without modifying state. These are essential for building UIs with accurate slippage estimates and for integrators who need to know exact outcomes before committing transactions.
+## Key Contracts
 
-- `JBMultiTerminal.previewPayFor(projectId, token, amount, beneficiary, metadata)` -- Returns the ruleset, beneficiary token count, reserved token count, and hook specifications that a payment would produce. Includes data hook effects.
-- `JBMultiTerminal.previewCashOutFrom(holder, projectId, cashOutCount, tokenToReclaim, beneficiary, metadata)` -- Returns the ruleset, reclaim amount, cash out tax rate, and hook specifications that a cash out would produce. Includes data hook effects.
-- `JBController.previewMintOf(projectId, tokenCount, useReservedPercent)` -- Returns the beneficiary and reserved token counts that a mint would produce under the current ruleset.
+| Contract | Role |
+| --- | --- |
+| `JBController` | Project launch, ruleset queueing, token configuration, and split management. |
+| `JBMultiTerminal` | Main payment, payout, allowance, and cash-out terminal surface. |
+| `JBTerminalStore` | Shared accounting store for balances, surplus, fees, and reclaim calculations. |
+| `JBDirectory` | Project-to-controller and project-to-terminal routing registry. |
+| `JBProjects` | ERC-721 project registry and ownership surface. |
+| `JBPermissions` | Packed operator permissions registry. |
+| `JBPrices` | Price feed routing used by terminals and integrations. |
 
-All preview functions are `view` -- they read current state (including calling data hooks) but never write. They mirror the exact computation paths of their non-preview counterparts, so the returned values match what the real operation would produce at the same block.
+## Integration Traps
 
-### Reserved Tokens
+- `JBMultiTerminal` is not a single-token terminal. Integrations that assume one token, one balance, or one primary path usually misread the accounting model.
+- data hooks and cash-out hooks are not cosmetic. They can change effective issuance, reclaim value, and side effects on the path.
+- permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
+- previews and execution are intentionally close, but integrators should still treat them as distinct surfaces when hooks or dynamic routing are involved.
 
-Each ruleset can define a `reservedPercent` (0-10,000 basis points). When tokens are minted from payments, this percentage is set aside. Reserved tokens accumulate in `pendingReservedTokenBalanceOf` and are distributed to the reserved token split group when `sendReservedTokensToSplitsOf` is called.
+## Where State Lives
 
-### Permissions
+- project identity and ownership live in `JBProjects`
+- controller and terminal routing live in `JBDirectory`
+- ruleset history and activation live in `JBRulesets`
+- balances, surplus, fees, and reclaim accounting live in `JBTerminalStore`
+- operator authority lives in `JBPermissions`
 
-`JBPermissions` lets addresses delegate specific capabilities to operators, scoped by project ID. Each permission ID grants access to specific functions. See [`JBPermissionIds`](https://github.com/Bananapus/nana-permission-ids-v6/blob/main/src/JBPermissionIds.sol) for the full list.
-
-- Permission ID `1` is `ROOT` and grants all permissions for the scoped project.
-- Project ID `0` is a wildcard, granting permissions across all projects (cannot be combined with `ROOT` for safety).
-- ROOT operators can set non-ROOT permissions for other operators, but cannot grant ROOT or set wildcard-project permissions.
-
-### Hooks
-
-Hooks are customizable contracts that plug into protocol flows:
-
-- **Approval hooks** -- Gate whether the next queued ruleset can take effect (e.g., `JBDeadline` enforces a minimum queue time).
-- **Data hooks** -- Override payment/cash-out weight, cash out tax rate, token counts, and specify pay/cash-out hooks to call. Data hooks can also grant `hasMintPermissionFor` to allow addresses to mint tokens on demand.
-- **Pay hooks** -- Custom logic triggered after a payment is recorded (e.g., `JB721TiersHook` mints NFTs). Receive tokens and `JBAfterPayRecordedContext`.
-- **Cash out hooks** -- Custom logic triggered after a cash out is recorded. Receive tokens and `JBAfterCashOutRecordedContext`.
-- **Split hooks** -- Custom logic triggered when a payout or reserved token distribution is routed to a split. Receive tokens and `JBSplitHookContext`.
-
-### Fees
-
-`JBMultiTerminal` charges a 2.5% fee (`FEE = 25` out of `MAX_FEE = 1000`) on:
-- Payouts to external addresses (not to other Juicebox projects on the same terminal).
-- Surplus allowance usage.
-- Cash outs when the cash out tax rate is above 0%. When the cash out tax rate is 0%, fees apply only up to the project's accumulated fee-free intra-terminal payout surplus (`_feeFreeSurplusOf`) — once that surplus is consumed, subsequent cashouts are fee-free.
-
-`_feeFreeSurplusOf` lifecycle: (a) incremented on fee-free intra-terminal payouts, (b) capped at remaining balance after any outflow (payouts, `useAllowanceOf`, non-zero-tax or feeless cashouts) — non-fee-free funds leave first, (c) consumed (decremented by feeable amount) during zero-tax cashouts, and (d) cleared to zero on terminal migration via `migrateBalanceOf`.
-
-Fees are paid to **project #1** (the fee beneficiary project, minted in the `JBProjects` constructor). Addresses on the `JBFeelessAddresses` allowlist are exempt from fees.
-
-When a ruleset has `holdFees` enabled, fees are held for 28 days before being processed. During this period, if funds are returned to the project via `addToBalanceOf`, held fees can be unlocked and returned.
-
-### Meta-Transactions
-
-`JBController`, `JBMultiTerminal`, `JBProjects`, `JBPrices`, and `JBPermissions` support ERC-2771 meta-transactions through a trusted forwarder. This allows gasless interactions where a relayer submits transactions on behalf of users.
-
-### Permit2
-
-`JBMultiTerminal` integrates with Uniswap's [Permit2](https://github.com/Uniswap/permit2) for gas-efficient ERC-20 token approvals. Payers can include a `JBSingleAllowance` in the payment metadata to authorize token transfers without a separate approval transaction.
-
-### Controller Migration
-
-Projects can migrate between controllers using the `IJBMigratable` interface. The migration lifecycle calls `beforeReceiveMigrationFrom` on the new controller, then `migrate` on the old controller (while the directory still points to it), then updates the directory, and finally calls `afterReceiveMigrationFrom`. Terminal migration is also supported via `migrateBalanceOf`.
-
-## Architecture
-
-Juicebox V6 separates concerns across specialized contracts that coordinate through a central directory. Projects are represented as ERC-721 NFTs. Each project configures rulesets that dictate how payments, payouts, cash outs, and token minting behave over time.
-
-All contracts use Solidity `0.8.28`.
-
-```mermaid
-graph TD;
-    User([User / Frontend])
-    User -->|pay / cashOut / sendPayoutsOf| Terminal[JBMultiTerminal]
-    User -->|launchProjectFor / queueRulesetsOf / mintTokensOf| Controller[JBController]
-    Controller -->|reads & writes| Rulesets[JBRulesets]
-    Controller -->|reads & writes| Tokens[JBTokens]
-    Controller -->|reads & writes| Splits[JBSplits]
-    Controller -->|reads & writes| FAL[JBFundAccessLimits]
-    Controller -->|adds feeds to| Prices[JBPrices]
-    Terminal -->|records inflows & outflows| Store[JBTerminalStore]
-    Store -->|reads rulesets from| Rulesets
-    Store -->|reads limits from| FAL
-    Store -->|reads prices from| Prices
-    Terminal -->|distributes payouts via| Splits
-    Directory[JBDirectory] -->|maps projects to| Controller
-    Directory -->|maps projects to| Terminal
-    Controller -->|registers in| Directory
-    Terminal -->|looks up controllers via| Directory
-    Projects[JBProjects] -->|ERC-721 ownership| Directory
-    Permissions[JBPermissions] -->|authorizes calls on| Controller
-    Permissions -->|authorizes calls on| Terminal
-```
-
-### Core Contracts
-
-| Contract | Description |
-|----------|-------------|
-| `JBProjects` | ERC-721 registry of projects. Minting an NFT creates a project. Optionally mints project #1 to a fee beneficiary owner. |
-| `JBPermissions` | Bitmap-based permission system. Accounts grant operators specific permissions scoped to project IDs. Supports ROOT (1) for all-permissions and wildcard project ID (0). |
-| `JBDirectory` | Maps each project to its controller and terminals. Entry point for looking up where to interact with a project. Manages an allowlist of addresses permitted to set a project's first controller. |
-| `JBController` | Coordinates rulesets, tokens, splits, and fund access limits. Entry point for launching projects, queuing rulesets, minting/burning tokens, deploying ERC-20s, updating token metadata, sending reserved tokens, setting project URIs, adding price feeds, transferring credits, and previewing mint outcomes via `previewMintOf`. |
-| `JBMultiTerminal` | Accepts payments (native ETH and ERC-20s), processes cash outs, distributes payouts, manages surplus allowances, and handles fees. Provides `previewPayFor` and `previewCashOutFrom` for simulating operations. Integrates with Permit2 for ERC-20 approvals. |
-| `JBTerminalStore` | Bookkeeping engine for all terminal inflows and outflows. Tracks balances, enforces payout limits and surplus allowances, computes cash out reclaim amounts via a bonding curve, and integrates with data hooks. |
-| `JBRulesets` | Stores and manages project rulesets. Handles queuing, cycling, weight decay, approval hook validation, and weight caching for long-running projects. |
-| `JBTokens` | Manages dual-balance token accounting (credits + ERC-20). Credits are minted by default; once an ERC-20 is deployed or set, credits can be claimed as tokens. Credits are burned before ERC-20 tokens. |
-| `JBSplits` | Stores split configurations per project, ruleset, and group. Splits route percentages of payouts or reserved tokens to beneficiaries, projects, or hooks. Packed storage for gas efficiency. Falls back to ruleset ID 0 if no splits are set for a specific ruleset. |
-| `JBFundAccessLimits` | Stores payout limits and surplus allowances per project, ruleset, terminal, and token. Limits are denominated in configurable currencies and must be set in strictly increasing currency order to prevent duplicates. |
-| `JBPrices` | Price feed registry. Maps currency pairs to `IJBPriceFeed` implementations, with per-project overrides and protocol-wide defaults. Feeds are immutable once set. Inverse prices are auto-calculated. |
-
-### Token and Price Feed Contracts
-
-| Contract | Description |
-|----------|-------------|
-| `JBERC20` | Cloneable ERC-20 with ERC20Votes and ERC20Permit. Deployed by `JBTokens` via `Clones.clone()`. Owned by `JBTokens`. Name and symbol can be updated by the project owner via `JBController.setTokenMetadataOf`. |
-| `JBChainlinkV3PriceFeed` | `IJBPriceFeed` backed by a Chainlink `AggregatorV3Interface` with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
-| `JBChainlinkV3SequencerPriceFeed` | Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime validation and grace period for Optimism/Arbitrum. |
-| `JBMatchingPriceFeed` | Returns 1:1 price (e.g., ETH/NATIVE_TOKEN on applicable chains). Lives in `src/periphery/`. |
-
-### Utility Contracts
-
-| Contract | Description |
-|----------|-------------|
-| `JBFeelessAddresses` | Owner-managed allowlist of addresses exempt from terminal fees. Supports `IERC165`. |
-| `JBDeadline` | Approval hook that rejects rulesets queued too close to the current ruleset's end. Ships as `JBDeadline3Hours`, `JBDeadline1Day`, `JBDeadline3Days`, `JBDeadline7Days`. |
-
-### Abstract Contracts
-
-| Contract | Description |
-|----------|-------------|
-| `JBControlled` | Provides `onlyControllerOf(projectId)` modifier. Used by `JBRulesets`, `JBTokens`, `JBSplits`, `JBFundAccessLimits`, and `JBPrices`. |
-| `JBPermissioned` | Provides `_requirePermissionFrom` and `_requirePermissionAllowingOverrideFrom` helpers. Used by `JBController`, `JBMultiTerminal`, `JBDirectory`, and `JBPrices`. |
-
-### Libraries
-
-| Library | Description |
-|---------|-------------|
-| `JBConstants` | Protocol-wide constants: `NATIVE_TOKEN` address, max percentages, max fee. |
-| `JBCurrencyIds` | Currency identifiers (`ETH = 1`, `USD = 2`). |
-| `JBSplitGroupIds` | Group identifiers (`RESERVED_TOKENS = 1`). |
-| `JBCashOuts` | Bonding curve math for computing cash out reclaim amounts. Includes `minCashOutCountFor` inverse via binary search. |
-| `JBSurplus` | Calculates a project's surplus across all terminals. |
-| `JBFees` | Fee calculation helpers. `feeAmountFrom` (forward) and `feeAmountResultingIn` (backward). |
-| `JBFixedPointNumber` | Decimal adjustment between fixed-point number precisions. |
-| `JBMetadataResolver` | Packs and unpacks variable-length `{id: data}` metadata entries with a lookup table. Used by pay/cash-out hooks. |
-| `JBPayoutSplitGroupLib` | External library for payout split-group distribution, called via `DELEGATECALL` from `JBMultiTerminal` to reduce terminal bytecode. Distributes payouts to splits with try-catch per split. |
-| `JBRulesetMetadataResolver` | Packs and unpacks the `uint256 metadata` field on `JBRuleset` into `JBRulesetMetadata`. Bit layout: version (4 bits), reservedPercent (16), cashOutTaxRate (16), baseCurrency (32), 14 boolean flags (1 bit each), dataHook address (160), metadata (14). |
-
-### Hook Interfaces
-
-| Interface | Description |
-|-----------|-------------|
-| `IJBRulesetApprovalHook` | Determines whether the next queued ruleset is approved or rejected. Must implement `approvalStatusOf` and `DURATION`. |
-| `IJBRulesetDataHook` | Overrides payment/cash-out parameters. Implements `beforePayRecordedWith`, `beforeCashOutRecordedWith`, and `hasMintPermissionFor`. |
-| `IJBPayHook` | Called after a payment is recorded. Implements `afterPayRecordedWith`. |
-| `IJBCashOutHook` | Called after a cash out is recorded. Implements `afterCashOutRecordedWith`. |
-| `IJBSplitHook` | Called when processing a split. Implements `processSplitWith`. |
-
-## Risks
-
-This section summarizes known risks and design trade-offs. None of these are unmitigated vulnerabilities -- they are deliberate design decisions with well-understood boundaries.
-
-### Reentrancy
-
-The protocol does not use an explicit `ReentrancyGuard`. Instead, it relies on **state ordering**: all storage writes (balance updates, token mints/burns, payout limit usage) are completed before any external calls (hooks, split payouts, fee processing). This means re-entering a function sees already-updated state, preventing double-spends and double-payouts. The `try-catch` pattern around external calls ensures that hook failures do not leave the protocol in an inconsistent state -- failed calls return funds to the project balance. This includes reserved token split hooks: `processSplitWith` is wrapped in try-catch, and a reverting hook emits `SplitHookReverted` instead of blocking distribution.
-
-### Unbounded Arrays
-
-Several data structures grow without explicit caps:
-
-- **Held fees**: Bounded in practice by the 28-day holding window and auto-cleanup when processed. `processHeldFeesOf` accepts a `count` parameter to limit gas per call.
-- **Splits**: No explicit cap, but the percentage constraint (`SPLITS_TOTAL_PERCENT = 1_000_000_000`) limits the useful number to roughly 300-500. Gas cost scales linearly (~100k gas per split during payout distribution), so very large split groups may cause out-of-gas reverts.
-- **Accounting contexts**: Duplicate prevention limits growth. Realistic maximum is ~100-200 tokens per terminal.
-- **Payout limits / surplus allowances**: Currency ordering constraint limits each group to ~30-50 entries.
-
-### Price Feed DoS
-
-If a Chainlink price feed reverts (stale data, negative price, sequencer downtime on L2), any operation that requires that currency conversion will also revert. This is a **liveness** risk, not a fund-loss risk: no funds are at risk, but payments, payouts, or cash outs denominated in the affected currency pair will be temporarily blocked until the feed recovers. Projects using multiple currencies should be aware of this dependency.
-
-### Weight Cache Requirement
-
-Ruleset weight decay is calculated iteratively. For long-running projects with many elapsed cycles, the iteration count can exceed the block gas limit. The protocol caps iteration at 20,000 cycles per call and provides `updateRulesetWeightCache()` for progressive caching. Projects with very short durations (e.g., 1-second rulesets) that run for extended periods must periodically call this function to keep weight calculations within gas limits.
-
-### Flash Loan Considerations
-
-**C-5 (known, documented)**: Calling `cashOut` with `cashOutCount = 0` when `totalSupply == 0` returns the project's entire surplus. This is a known edge case -- it requires a project to have surplus but zero outstanding tokens, which is not a normal operating state. Projects that accumulate surplus without token holders should be aware of this behavior. The protocol's test suite includes 12 flash-loan attack vectors, all of which confirm that no profit is extractable under normal conditions (tokens minted during a payment are worth at most what was paid).
+When in doubt, read the state-owning contract before the contract that merely forwards into it.
 
 ## Install
 
 ```bash
-npm install
+npm install @bananapus/core-v6
 ```
 
-## Develop
+## Development
 
-| Command | Description |
-|---------|-------------|
-| `forge build` | Compile contracts |
-| `forge test` | Run local tests |
-| `forge test -vvvv` | Run tests with full traces |
-| `forge fmt` | Format code |
-| `forge fmt --check` | Check formatting (CI lint) |
-| `FOUNDRY_PROFILE=CI forge test` | Run fork tests |
-| `forge coverage --match-path "./src/*.sol"` | Generate coverage report |
+```bash
+npm install
+forge build
+forge test
+```
+
+Useful scripts:
+
+- `npm run test:fork`
+- `npm run deploy:mainnets`
+- `npm run deploy:testnets`
+- `npm run deploy:mainnets:periphery`
+- `npm run deploy:testnets:periphery`
+
+## Deployment Notes
+
+This repo contains both core deployments and periphery deployment helpers. Most other V6 packages assume these contracts exist first and treat them as the stable base layer of the ecosystem.
+
+## Repository Layout
+
+```text
+src/
+  core contracts, periphery helpers, interfaces, libraries, enums, structs, and abstract bases
+test/
+  unit, integration, fork, invariant, audit, formal, and regression coverage
+script/
+  Deploy.s.sol
+  DeployPeriphery.s.sol
+  helpers/
+```
+
+## Risks And Notes
+
+- hooks can meaningfully change payment and cash-out behavior, so core integrations must treat hook composition as part of the protocol surface
+- permissions are flexible enough to be dangerous when scoped broadly or granted with wildcard project IDs
+- multi-terminal and multi-token accounting is powerful but increases the chance of integration mistakes when callers assume a single-terminal model
+- fee, surplus, and reclaim logic are economically sensitive and remain high-priority audit surfaces
+
+The fastest way to misunderstand V6 is to treat the core contracts like a simple crowdfunding terminal. They are closer to a configurable accounting and settlement substrate.

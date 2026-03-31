@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.28;
 
 import {IJBControlled} from "./../interfaces/IJBControlled.sol";
 import {IJBDirectory} from "./../interfaces/IJBDirectory.sol";
@@ -38,6 +38,10 @@ abstract contract JBControlled is IJBControlled {
     constructor(IJBDirectory directory) {
         DIRECTORY = directory;
     }
+
+    //*********************************************************************//
+    // -------------------------- internal views ------------------------- //
+    //*********************************************************************//
 
     /// @notice Only allows the controller of the specified project to proceed.
     function _onlyControllerOf(uint256 projectId) internal view {
