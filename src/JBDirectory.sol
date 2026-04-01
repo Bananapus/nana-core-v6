@@ -91,6 +91,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// - OR an address which `isAllowedToSetFirstController` is setting a project's first controller.
     /// @param projectId The ID of the project whose controller is being set.
     /// @param controller The address of the controller to set.
+    // slither-disable-next-line reentrancy-events
     function setControllerOf(uint256 projectId, IERC165 controller) external override {
         // Keep a reference to the current controller.
         IERC165 currentController = controllerOf[projectId];

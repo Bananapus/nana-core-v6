@@ -1170,6 +1170,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param targetCurrency The currency that the reported surplus is expected to be in terms of.
     /// @return surplus The surplus of funds in terms of `targetCurrency`, as a fixed point number with
     /// `targetDecimals` decimals.
+    // slither-disable-next-line calls-loop
     function _tokenSurplusFrom(
         address terminal,
         uint256 projectId,

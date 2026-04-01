@@ -189,6 +189,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// project's controller can add accounting contexts for the project.
     /// @param projectId The ID of the project having to add accounting contexts for.
     /// @param accountingContexts The accounting contexts to add.
+    // slither-disable-next-line reentrancy-events
     function addAccountingContextsFor(
         uint256 projectId,
         JBAccountingContext[] calldata accountingContexts
@@ -348,6 +349,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // If this terminal's token is the native token, send it in `msg.value`.
             split.hook.processSplitWith{value: payValue}(context);
+            _afterTransferTo({to: address(split.hook), token: token});
 
             // Otherwise, if a project is specified, make a payment to it.
         } else if (split.projectId != 0) {
@@ -978,6 +980,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The number of tokens being accepted.
     /// @param metadata The metadata in which permit2 context is provided.
     /// @return amount The number of tokens which have been accepted.
+    // slither-disable-next-line reentrancy-events
     function _acceptFundsFor(
         uint256 projectId,
         address token,
@@ -1087,6 +1090,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return 0;
     }
 
+    /// @notice Logic to be triggered after transferring tokens from this terminal.
+    /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
+    function _afterTransferTo(address to, address token) internal {
+        if (token == JBConstants.NATIVE_TOKEN) return;
+        IERC20(token).forceApprove({spender: to, value: 0});
+    }
+
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
     /// by
     /// the project's current ruleset's data hook.
@@ -1154,6 +1164,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
                     if (feeFreeSurplus != 0) {
                         uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
+                        // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
                         _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
                         amountEligibleForFees += feeableAmount;
                         reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
@@ -1263,6 +1274,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: metadata
             });
+            _afterTransferTo({to: address(terminal), token: token});
         }
     }
 
@@ -1313,6 +1325,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: metadata
             });
+            _afterTransferTo({to: address(terminal), token: token});
         }
     }
 
@@ -1356,6 +1369,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             cashOutMetadata: metadata
         });
 
+        // slither-disable-next-line calls-loop
         for (uint256 i; i < specifications.length; i++) {
             // Set the specification being iterated on.
             JBCashOutHookSpecification memory specification = specifications[i];
@@ -1393,8 +1407,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
 
             // Fulfill the specification.
-            // slither-disable-next-line reentrancy-events
+            // slither-disable-next-line reentrancy-events,calls-loop
             specification.hook.afterCashOutRecordedWith{value: payValue}(context);
+            _afterTransferTo({to: address(specification.hook), token: beneficiaryReclaimAmount.token});
 
             emit HookAfterRecordCashOut({
                 hook: specification.hook,
@@ -1442,6 +1457,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // Fulfill each specification through their pay hooks.
+        // slither-disable-next-line calls-loop
         for (uint256 i; i < specifications.length; i++) {
             // Set the specification being iterated on.
             JBPayHookSpecification memory specification = specifications[i];
@@ -1468,8 +1484,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
 
             // Fulfill the specification.
-            // slither-disable-next-line reentrancy-events
+            // slither-disable-next-line reentrancy-events,calls-loop
             specification.hook.afterPayRecordedWith{value: payValue}(context);
+            _afterTransferTo({to: address(specification.hook), token: tokenAmount.token});
 
             emit HookAfterRecordPay({
                 hook: specification.hook,
@@ -1715,6 +1732,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
         _capFeeFreeSurplus({projectId: projectId, token: token});
 
         // Get a reference to the project's owner.
@@ -1758,6 +1776,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     leftoverPayoutAmount -= fee;
                 }
             } catch (bytes memory reason) {
+                // slither-disable-next-line reentrancy-events
                 emit PayoutTransferReverted({
                     projectId: projectId,
                     addr: projectOwner,
@@ -1916,6 +1935,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
         _capFeeFreeSurplus({projectId: projectId, token: token});
 
         // Take a fee from the `amountPaidOut`, if needed.
@@ -1970,6 +1990,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Cap fee-free surplus at the remaining balance.
         if (feeFreeSurplus > remainingBalance) {
+            // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
             _feeFreeSurplusOf[projectId][token] = remainingBalance;
         }
     }

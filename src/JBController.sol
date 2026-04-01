@@ -158,6 +158,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         RULESETS = rulesets;
         SPLITS = splits;
         TOKENS = tokens;
+        // slither-disable-next-line missing-zero-check
         OMNICHAIN_RULESET_OPERATOR = omnichainRulesetOperator;
     }
 
@@ -891,6 +892,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Set up a project's terminals.
     /// @param projectId The ID of the project to set up terminals for.
     /// @param terminalConfigurations The terminals to set up.
+    // slither-disable-next-line calls-loop
     function _configureTerminals(uint256 projectId, JBTerminalConfig[] calldata terminalConfigurations) internal {
         // Initialize an array of terminals to populate.
         IJBTerminal[] memory terminals = new IJBTerminal[](terminalConfigurations.length);
@@ -919,6 +921,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param projectId The ID of the project to queue rulesets for.
     /// @param rulesetConfigurations The rulesets being queued.
     /// @return rulesetId The ID of the last ruleset that was successfully queued.
+    // slither-disable-next-line calls-loop
     function _queueRulesets(
         uint256 projectId,
         JBRulesetConfig[] calldata rulesetConfigurations
@@ -980,6 +983,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param tokenCount The number of tokens to send.
     /// @param token The token to send.
     /// @return leftoverTokenCount If the split percents don't add up to 100%, the leftover amount is returned.
+    // slither-disable-next-line calls-loop
     function _sendReservedTokensToSplitGroupOf(
         uint256 projectId,
         uint256 rulesetId,
