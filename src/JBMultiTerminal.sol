@@ -349,6 +349,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // If this terminal's token is the native token, send it in `msg.value`.
             split.hook.processSplitWith{value: payValue}(context);
+
+            // Revoke the temporary pull allowance now that the hook call has finished.
             _afterTransferTo({to: address(split.hook), token: token});
 
             // Otherwise, if a project is specified, make a payment to it.
@@ -559,6 +561,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: bytes("")
             });
+
+            // Revoke the temporary pull allowance now that the destination terminal has pulled funds.
             _afterTransferTo({to: address(to), token: token});
         }
     }
@@ -1094,7 +1098,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Logic to be triggered after transferring tokens from this terminal.
     /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
     function _afterTransferTo(address to, address token) internal {
+        // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
         if (token == JBConstants.NATIVE_TOKEN) return;
+
+        // Reset the recipient's ERC-20 allowance back to zero once the callback has finished.
         IERC20(token).forceApprove({spender: to, value: 0});
     }
 
@@ -1275,6 +1282,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: metadata
             });
+
+            // Revoke the temporary pull allowance now that the recipient terminal call has finished.
             _afterTransferTo({to: address(terminal), token: token});
         }
     }
@@ -1326,6 +1335,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: metadata
             });
+
+            // Revoke the temporary pull allowance now that the recipient terminal call has finished.
             _afterTransferTo({to: address(terminal), token: token});
         }
     }
@@ -1410,6 +1421,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Fulfill the specification.
             // slither-disable-next-line reentrancy-events,calls-loop
             specification.hook.afterCashOutRecordedWith{value: payValue}(context);
+
+            // Revoke the temporary pull allowance now that the hook call has finished.
             _afterTransferTo({to: address(specification.hook), token: beneficiaryReclaimAmount.token});
 
             emit HookAfterRecordCashOut({
@@ -1487,6 +1500,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Fulfill the specification.
             // slither-disable-next-line reentrancy-events,calls-loop
             specification.hook.afterPayRecordedWith{value: payValue}(context);
+
+            // Revoke the temporary pull allowance now that the hook call has finished.
             _afterTransferTo({to: address(specification.hook), token: tokenAmount.token});
 
             emit HookAfterRecordPay({
