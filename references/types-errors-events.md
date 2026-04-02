@@ -160,9 +160,7 @@ Errors an agent is most likely to encounter. All are custom errors (revert with 
 | `JBController_AddingPriceFeedNotAllowed` | `JBController` | `addPriceFeedFor` called but `allowAddPriceFeed` is false in ruleset. |
 | `JBController_InvalidReservedPercent` | `JBController` | `reservedPercent` exceeds `MAX_RESERVED_PERCENT` (10,000). |
 | `JBController_InvalidCashOutTaxRate` | `JBController` | `cashOutTaxRate` exceeds `MAX_CASH_OUT_TAX_RATE` (10,000). |
-| `JBMultiTerminal_UnderMinReturnedTokens` | `JBMultiTerminal` | Payment minted fewer tokens than `minReturnedTokens`. |
-| `JBMultiTerminal_UnderMinTokensReclaimed` | `JBMultiTerminal` | Cash out reclaimed less than `minTokensReclaimed`. |
-| `JBMultiTerminal_UnderMinTokensPaidOut` | `JBMultiTerminal` | Payout distributed less than `minTokensPaidOut`. |
+| `JBMultiTerminal_UnderMin` | `JBMultiTerminal` | Returned value was below the caller-specified minimum for minting, payouts, or cash outs. |
 | `JBMultiTerminal_TokenNotAccepted` | `JBMultiTerminal` | Token has no accounting context for the project in this terminal. |
 | `JBMultiTerminal_NoMsgValueAllowed` | `JBMultiTerminal` | `msg.value > 0` sent with an ERC-20 payment (not `NATIVE_TOKEN`). |
 | `JBMultiTerminal_PermitAllowanceNotEnough` | `JBMultiTerminal` | Permit2 allowance insufficient for the payment amount. |

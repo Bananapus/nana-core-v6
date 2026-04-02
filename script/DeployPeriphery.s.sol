@@ -41,8 +41,8 @@ contract DeployPeriphery is Script, Sphinx {
     /// rulesets on any project via the JBController (bypassing normal JBPermissions checks). A compromised or
     /// incorrect operator address could manipulate any project's rulesets across chains.
     /// @dev This address should correspond to the deterministic CREATE2 deployment of the omnichain deployer contract
-    /// from the nana-omnichain-deployers-v6 repository. Verify it matches the deployed address on all target chains
-    /// before running this script.
+    /// from the nana-omnichain-deployers-v6 repository. This script only enforces that the address is nonzero, so
+    /// operators must verify it matches the intended deployment on every target chain before running this script.
     // forge-lint: disable-next-line(mixed-case-variable)
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
@@ -66,7 +66,8 @@ contract DeployPeriphery is Script, Sphinx {
     }
 
     function deploy() public sphinx {
-        // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above.
+        // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above. This is intentionally a
+        // nonzero-only check; correctness of the configured operator is verified out of band.
         require(OMNICHAIN_RULESET_OPERATOR != address(0), "Omnichain ruleset operator not set");
 
         // Deploy the ETH/USD price feed.

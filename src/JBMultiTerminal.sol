@@ -68,9 +68,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
     error JBMultiTerminal_TokenNotAccepted(address token);
-    error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
-    error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
-    error JBMultiTerminal_UnderMinTokensReclaimed(uint256 amount, uint256 min);
+    error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
 
     //*********************************************************************//
     // ------------------------- public constants ------------------------ //
@@ -292,9 +290,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being reclaimed must be at least as much as was expected.
-        if (reclaimAmount < minTokensReclaimed) {
-            revert JBMultiTerminal_UnderMinTokensReclaimed(reclaimAmount, minTokensReclaimed);
-        }
+        _checkMin({value: reclaimAmount, min: minTokensReclaimed});
     }
 
     /// @notice Executes a payout to a split.
@@ -548,24 +544,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Transfer the balance minus the fee to the new terminal.
             uint256 migrationAmount = balance - feeAmount;
 
-            // Trigger any inherited pre-transfer logic.
-            // If this terminal's token is the native token, send it in `msg.value`.
-            // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(to), token: token, amount: migrationAmount});
-
-            // Withdraw the balance to transfer to the new terminal.
-            // slither-disable-next-line reentrancy-events
-            to.addToBalanceOf{value: payValue}({
-                projectId: projectId,
-                token: token,
-                amount: migrationAmount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: bytes("")
+            _externalAddToBalance({
+                terminal: to, projectId: projectId, token: token, amount: migrationAmount, metadata: bytes("")
             });
-
-            // Revoke the temporary pull allowance now that the destination terminal has pulled funds.
-            _afterTransferTo({to: address(to), token: token});
         }
     }
 
@@ -621,9 +602,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
-        if (beneficiaryTokenCount < minReturnedTokens) {
-            revert JBMultiTerminal_UnderMinReturnedTokens(beneficiaryTokenCount, minReturnedTokens);
-        }
+        _checkMin({value: beneficiaryTokenCount, min: minReturnedTokens});
     }
 
     /// @notice Process any fees that are being held for the project.
@@ -724,9 +703,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
         // The amount being paid out must be at least as much as was expected.
-        if (amountPaidOut < minTokensPaidOut) {
-            revert JBMultiTerminal_UnderMinTokensPaidOut(amountPaidOut, minTokensPaidOut);
-        }
+        _checkMin({value: amountPaidOut, min: minTokensPaidOut});
     }
 
     /// @notice Allows a project to pay out funds from its surplus up to the current surplus allowance.
@@ -779,9 +756,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // The amount being withdrawn must be at least as much as was expected.
-        if (netAmountPaidOut < minTokensPaidOut) {
-            revert JBMultiTerminal_UnderMinTokensPaidOut(netAmountPaidOut, minTokensPaidOut);
-        }
+        _checkMin({value: netAmountPaidOut, min: minTokensPaidOut});
     }
 
     //*********************************************************************//
@@ -1082,23 +1057,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount + returnedFees});
     }
 
-    /// @notice Logic to be triggered after transferring tokens from this terminal.
-    /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
-    /// @param to The address whose temporary pull allowance should be cleared.
-    /// @param token The token whose temporary allowance should be cleared.
-    function _afterTransferTo(address to, address token) internal {
-        // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
-        if (token == JBConstants.NATIVE_TOKEN) return;
-
-        // Revert if the callee returned without consuming the full forwarded ERC-20 amount.
-        // slither-disable-next-line calls-loop
-        uint256 allowance = IERC20(token).allowance({owner: address(this), spender: to});
-        if (allowance != 0) revert JBMultiTerminal_TemporaryAllowanceNotConsumed(token, to, allowance);
-
-        // Reset the recipient's ERC-20 allowance back to zero once the callback has finished.
-        IERC20(token).forceApprove({spender: to, value: 0});
-    }
-
     /// @notice Logic to be triggered before transferring tokens from this terminal.
     /// @param to The address the transfer is going to.
     /// @param token The token being transferred.
@@ -1112,6 +1070,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Otherwise, set the allowance, and the payValue should be 0.
         IERC20(token).forceApprove({spender: to, value: amount});
         return 0;
+    }
+
+    /// @notice Revert if a value is less than the specified minimum.
+    /// @param value The value to compare against the minimum.
+    /// @param min The minimum acceptable value.
+    function _checkMin(uint256 value, uint256 min) internal pure {
+        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
     }
 
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
@@ -1265,7 +1230,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
-        // Call the internal method if this terminal is being used.
+        // Use the local internal path when staying on this terminal. Otherwise use the efficient external equivalent,
+        // which forwards value directly after granting a temporary pull allowance.
         if (terminal == IJBTerminal(address(this))) {
             _addToBalanceOf({
                 projectId: projectId,
@@ -1276,25 +1242,45 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 metadata: metadata
             });
         } else {
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            // slither-disable-next-line reentrancy-events
-            uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
-
-            // Add to balance.
-            // If this terminal's token is the native token, send it in `msg.value`.
-            terminal.addToBalanceOf{value: payValue}({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                shouldReturnHeldFees: false,
-                memo: "",
-                metadata: metadata
+            _externalAddToBalance({
+                terminal: terminal, projectId: projectId, token: token, amount: amount, metadata: metadata
             });
-
-            // Revoke the temporary pull allowance now that the recipient terminal call has finished.
-            _afterTransferTo({to: address(terminal), token: token});
         }
+    }
+
+    /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
+    /// @param terminal The recipient terminal.
+    /// @param projectId The ID of the project being funded.
+    /// @param token The token being used.
+    /// @param amount The amount being funded.
+    /// @param metadata Additional metadata to include with the payment.
+    function _externalAddToBalance(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        bytes memory metadata
+    )
+        internal
+    {
+        // Trigger any inherited pre-transfer logic.
+        // Keep a reference to the amount that'll be paid as a `msg.value`.
+        // slither-disable-next-line reentrancy-events
+        uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
+
+        // Add to balance on the recipient terminal.
+        // If this terminal's token is the native token, send it in `msg.value`.
+        terminal.addToBalanceOf{value: payValue}({
+            projectId: projectId,
+            token: token,
+            amount: amount,
+            shouldReturnHeldFees: false,
+            memo: "",
+            metadata: metadata
+        });
+
+        // Revoke the temporary pull allowance now that the recipient terminal call has finished.
+        _afterTransferTo({to: address(terminal), token: token});
     }
 
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
@@ -2023,6 +2009,20 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
+
+    /// @notice Logic to be triggered after transferring tokens from this terminal.
+    /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
+    /// @param to The address whose temporary pull allowance should be cleared.
+    /// @param token The token whose temporary allowance should be cleared.
+    function _afterTransferTo(address to, address token) internal view {
+        // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
+        if (token == JBConstants.NATIVE_TOKEN) return;
+
+        // Revert if the callee returned without consuming the full forwarded ERC-20 amount.
+        // slither-disable-next-line calls-loop
+        uint256 allowance = IERC20(token).allowance({owner: address(this), spender: to});
+        if (allowance != 0) revert JBMultiTerminal_TemporaryAllowanceNotConsumed(token, to, allowance);
+    }
 
     /// @notice Returns a project's accounting context for a token, reverting if it is not accepted.
     /// @param projectId The ID of the project to get the accounting context for.
