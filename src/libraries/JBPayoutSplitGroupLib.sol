@@ -134,7 +134,7 @@ library JBPayoutSplitGroupLib {
         // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
         // `recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
         // distribution.
-        // slither-disable-next-line reentrancy-events
+        // slither-disable-next-line reentrancy-events,calls-loop
         try IJBPayoutSplitGroupExecutor(address(this))
             .executePayout({
                 split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
@@ -148,6 +148,7 @@ library JBPayoutSplitGroupLib {
             });
 
             // Add balance back to the project.
+            // slither-disable-next-line calls-loop
             store.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
 
             // Since the payout failed the netPayoutAmount is zero.

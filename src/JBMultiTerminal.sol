@@ -66,6 +66,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
+    error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
     error JBMultiTerminal_TokenNotAccepted(address token);
     error JBMultiTerminal_UnderMinReturnedTokens(uint256 count, uint256 min);
     error JBMultiTerminal_UnderMinTokensPaidOut(uint256 amount, uint256 min);
@@ -252,7 +253,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// those tokens.
     /// @param holder The account whose tokens are being cashed out.
     /// @param projectId The ID of the project the project tokens belong to.
-    /// @param cashOutCount The number of project tokens to cash out, as a fixed point number with 18 decimals.
+    /// @param cashOutCount The number of project tokens to cash out and burn, as a fixed point number with 18
+    /// decimals.
     /// @param tokenToReclaim The token being reclaimed.
     /// @param minTokensReclaimed The minimum number of terminal tokens expected in return, as a fixed point number with
     /// the same number of decimals as this terminal. If the amount of tokens minted for the beneficiary would be less
@@ -1087,6 +1089,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     function _afterTransferTo(address to, address token) internal {
         // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
         if (token == JBConstants.NATIVE_TOKEN) return;
+
+        // Revert if the callee returned without consuming the full forwarded ERC-20 amount.
+        // slither-disable-next-line calls-loop
+        uint256 allowance = IERC20(token).allowance({owner: address(this), spender: to});
+        if (allowance != 0) revert JBMultiTerminal_TemporaryAllowanceNotConsumed(token, to, allowance);
 
         // Reset the recipient's ERC-20 allowance back to zero once the callback has finished.
         IERC20(token).forceApprove({spender: to, value: 0});

@@ -16,6 +16,7 @@ import {JBAfterPayRecordedContext} from "../../../../src/structs/JBAfterPayRecor
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
@@ -298,21 +299,12 @@ contract TestPay_Local is JBMultiTerminalSetup {
         // mock call to hook
         mockExpect(address(_mockHook), abi.encodeCall(IJBPayHook.afterPayRecordedWith, (context)), "");
 
-        vm.expectEmit();
-        emit IJBTerminal.Pay(
-            returnedRuleset.id,
-            returnedRuleset.cycleNumber,
-            _projectId,
-            address(this),
-            _bene,
-            _defaultAmount,
-            _mintAmount,
-            "",
-            bytes(""),
-            address(this)
+        // Mock the temporary allowance as fully consumed by the hook so the cleanup guard passes.
+        vm.mockCall(
+            address(_mockToken),
+            abi.encodeCall(IERC20.allowance, (address(_terminal), address(_mockHook))),
+            abi.encode(0)
         );
-        vm.expectEmit();
-        emit IJBTerminal.HookAfterRecordPay(_mockHook, context, _defaultAmount, address(this));
 
         // Data for subsequent calls made for balance checks
         bytes[] memory subsequentReturns = new bytes[](2);

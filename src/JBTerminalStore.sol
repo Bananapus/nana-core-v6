@@ -228,12 +228,12 @@ contract JBTerminalStore is IJBTerminalStore {
 
     /// @notice Records a cash out from a project.
     /// @dev Cashs out the project's tokens according to values provided by the ruleset's data hook. If the ruleset has
-    /// no
-    /// data hook, cashs out tokens along a cash out bonding curve that is a function of the number of tokens being
+    /// no data hook, cashs out tokens along a cash out bonding curve that is a function of the number of tokens being
     /// burned.
     /// @param holder The account that is cashing out tokens.
     /// @param projectId The ID of the project being cashing out from.
-    /// @param cashOutCount The number of project tokens to cash out, as a fixed point number with 18 decimals.
+    /// @param cashOutCount The number of project tokens to cash out, as supplied by the caller and later burned by the
+    /// terminal, as a fixed point number with 18 decimals.
     /// @param tokenToReclaim The token being reclaimed by the cash out.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
     /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
@@ -895,17 +895,22 @@ contract JBTerminalStore is IJBTerminalStore {
         JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
 
         // Get the total number of outstanding project tokens.
-        uint256 totalSupply =
+        uint256 effectiveTotalSupply =
             IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
 
         // Can't cash out more tokens than are in the supply.
-        if (cashOutCount > totalSupply) revert JBTerminalStore_InsufficientTokens(cashOutCount, totalSupply);
+        if (cashOutCount > effectiveTotalSupply) {
+            revert JBTerminalStore_InsufficientTokens(cashOutCount, effectiveTotalSupply);
+        }
 
-        // SECURITY NOTE: The data hook has absolute control over cash-out economics.
-        // It can set totalSupply, cashOutCount, and cashOutTaxRate to arbitrary values,
+        // SECURITY NOTE: The data hook has absolute control over cash-out pricing.
+        // It can set effectiveTotalSupply, effectiveCashOutCount, and cashOutTaxRate to arbitrary values,
         // completely overriding the terminal's bonding curve math. For example, setting
-        // totalSupply = surplus makes reclaimAmount = cashOutCount, bypassing the curve.
+        // effectiveTotalSupply = surplus makes reclaimAmount = effectiveCashOutCount, bypassing the curve.
+        // The terminal still burns the caller-supplied cashOutCount after pricing completes.
         // Project owners MUST audit their data hooks with the same rigor as the terminal.
+
+        uint256 effectiveCashOutCount = cashOutCount;
 
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
@@ -916,7 +921,7 @@ contract JBTerminalStore is IJBTerminalStore {
             context.projectId = projectId;
             context.rulesetId = ruleset.id;
             context.cashOutCount = cashOutCount;
-            context.totalSupply = totalSupply;
+            context.totalSupply = effectiveTotalSupply;
             context.surplus = JBTokenAmount({
                 token: accountingContext.token,
                 value: surplus,
@@ -928,7 +933,7 @@ contract JBTerminalStore is IJBTerminalStore {
             context.beneficiaryIsFeeless = beneficiaryIsFeeless;
             context.metadata = metadata;
 
-            (cashOutTaxRate, cashOutCount, totalSupply, hookSpecifications) =
+            (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, hookSpecifications) =
                 IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
             // Noop specifications are informational only, so they can't also request forwarded funds.
@@ -944,7 +949,10 @@ contract JBTerminalStore is IJBTerminalStore {
         // Apply the bonding curve to calculate how much of the surplus is reclaimable.
         if (surplus != 0) {
             reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: surplus, cashOutCount: cashOutCount, totalSupply: totalSupply, cashOutTaxRate: cashOutTaxRate
+                surplus: surplus,
+                cashOutCount: effectiveCashOutCount,
+                totalSupply: effectiveTotalSupply,
+                cashOutTaxRate: cashOutTaxRate
             });
         }
     }
@@ -1193,13 +1201,13 @@ contract JBTerminalStore is IJBTerminalStore {
             });
 
         // Add up all the balances.
+        // slither-disable-next-line calls-loop
         surplus = (surplus == 0 || accountingContext.currency == targetCurrency)
             ? surplus
             : mulDiv({
                 x: surplus,
                 y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
                 // `_payoutLimitRemaining`'s fidelity as possible when converting.
-                // slither-disable-next-line calls-loop
                 denominator: PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: accountingContext.currency,
@@ -1209,6 +1217,7 @@ contract JBTerminalStore is IJBTerminalStore {
             });
 
         // Get a reference to the payout limit during the ruleset for the token.
+        // slither-disable-next-line calls-loop
         JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
             .FUND_ACCESS_LIMITS()
             .payoutLimitsOf({
@@ -1248,6 +1257,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
             if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
+                // slither-disable-next-line calls-loop
                 uint256 converted = mulDiv({
                     x: payoutLimit.amount,
                     y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
