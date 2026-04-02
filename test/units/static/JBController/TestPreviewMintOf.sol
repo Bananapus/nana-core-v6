@@ -17,9 +17,11 @@ contract TestPreviewMintOf_Local is JBControllerSetup {
         super.controllerSetup();
     }
 
-    function test_RevertsWhenTokenCountIsZero() external {
-        vm.expectRevert(JBController.JBController_ZeroTokensToMint.selector);
-        _controller.previewMintOf(_projectId, 0, true);
+    function test_ReturnsZeroCountsWhenTokenCountIsZero() external view {
+        (uint256 beneficiaryTokenCount, uint256 reservedTokenCount) = _controller.previewMintOf(_projectId, 0, true);
+
+        assertEq(beneficiaryTokenCount, 0);
+        assertEq(reservedTokenCount, 0);
     }
 
     function test_ReturnsSplitCountsWhenUsingReservedPercent() external {
