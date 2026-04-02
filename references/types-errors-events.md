@@ -242,13 +242,13 @@ function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata conte
     external view
     returns (
         uint256 cashOutTaxRate,                               // Overrides the ruleset's cash out tax rate
-        uint256 cashOutCount,                                 // Overrides the number of tokens being cashed out
-        uint256 totalSupply,                                  // Overrides total supply for bonding curve calc
+        uint256 effectiveCashOutCount,                        // Overrides the token count used for pricing only
+        uint256 effectiveTotalSupply,                         // Overrides total supply used for bonding curve calc
         JBCashOutHookSpecification[] memory hookSpecifications // Cash out hooks to call + amounts to forward
     );
 ```
 
-The data hook can override `cashOutTaxRate` (0 = proportional, 10000 = nothing reclaimable), `cashOutCount` and `totalSupply` (to shift the bonding curve), and return `hookSpecifications` to redirect reclaimed funds to cash out hooks.
+The data hook can override `cashOutTaxRate` (0 = proportional, 10000 = nothing reclaimable), `effectiveCashOutCount`, and `effectiveTotalSupply` to shift cash-out pricing, and return `hookSpecifications` to redirect reclaimed funds to cash out hooks. The terminal still burns the caller-supplied `cashOutCount`.
 
 ### `IJBRulesetDataHook.hasMintPermissionFor()`
 

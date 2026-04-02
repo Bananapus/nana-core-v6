@@ -72,7 +72,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
 | `accountingContextsOf(uint256 projectId)` | Returns all accounting contexts for a project. |
 | `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |
-| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address payable beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
+| `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address payable beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Cash-out data hooks may alter pricing inputs, but not the caller-supplied burn count. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
 | `heldFeesOf(uint256 projectId, address token, uint256 count)` | Returns up to `count` held fees for a project/token. |
 
 ### JBTerminalStore
@@ -81,7 +81,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |----------|--------------|
 | `recordPaymentFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Records a payment. Applies data hook if enabled. Returns ruleset, token count, hook specifications. |
 | `recordPayoutFor(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records a payout. Enforces payout limits. Returns ruleset and amount paid out. |
-| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via bonding curve. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via the bonding curve, including any pricing-only adjustments returned by the cash-out data hook. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 | `recordUsedAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records surplus allowance usage. Enforces allowance limits. Returns ruleset and used amount. |
 | `recordAddedBalanceFor(uint256 projectId, address token, uint256 amount)` | Records funds added to a project's balance. |
 | `recordTerminalMigration(uint256 projectId, address token)` | Records a terminal migration, returning the full balance. |
@@ -94,7 +94,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentSurplusOf(uint256 projectId, IJBTerminal[] terminals, address[] tokens, uint256 decimals, uint256 currency)` | Returns the current surplus across specified terminals and tokens. Empty arrays default to all. |
 | `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Convenience view: total surplus across all terminals and all tokens. |
 | `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
-| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured, including any pricing-only adjustments they return. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 
 ### JBRulesets
 
