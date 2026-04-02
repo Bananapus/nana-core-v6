@@ -330,7 +330,7 @@ contract DeployPeriphery is Script, Sphinx {
         require(
             address(
                 core.prices
-                    .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId})
+                .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId})
             ) != address(0),
             "Missing USD/USDC price feed"
         );
