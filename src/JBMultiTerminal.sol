@@ -1080,6 +1080,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount + returnedFees});
     }
 
+    /// @notice Logic to be triggered after transferring tokens from this terminal.
+    /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
+    function _afterTransferTo(address to, address token) internal {
+        // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
+        if (token == JBConstants.NATIVE_TOKEN) return;
+
+        // Reset the recipient's ERC-20 allowance back to zero once the callback has finished.
+        IERC20(token).forceApprove({spender: to, value: 0});
+    }
+
     /// @notice Logic to be triggered before transferring tokens from this terminal.
     /// @param to The address the transfer is going to.
     /// @param token The token being transferred.
@@ -1093,16 +1103,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Otherwise, set the allowance, and the payValue should be 0.
         IERC20(token).forceApprove({spender: to, value: amount});
         return 0;
-    }
-
-    /// @notice Logic to be triggered after transferring tokens from this terminal.
-    /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
-    function _afterTransferTo(address to, address token) internal {
-        // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
-        if (token == JBConstants.NATIVE_TOKEN) return;
-
-        // Reset the recipient's ERC-20 allowance back to zero once the callback has finished.
-        IERC20(token).forceApprove({spender: to, value: 0});
     }
 
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
