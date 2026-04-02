@@ -1082,6 +1082,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Logic to be triggered after transferring tokens from this terminal.
     /// @dev Clears any allowance granted by `_beforeTransferTo` so receivers cannot retain pull access after the call.
+    /// @param to The address whose temporary pull allowance should be cleared.
+    /// @param token The token whose temporary allowance should be cleared.
     function _afterTransferTo(address to, address token) internal {
         // Native-token transfers use `msg.value`, so there is no ERC-20 approval to clear.
         if (token == JBConstants.NATIVE_TOKEN) return;
