@@ -892,7 +892,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Set up a project's terminals.
     /// @param projectId The ID of the project to set up terminals for.
     /// @param terminalConfigurations The terminals to set up.
-    // slither-disable-next-line calls-loop
     function _configureTerminals(uint256 projectId, JBTerminalConfig[] calldata terminalConfigurations) internal {
         // Initialize an array of terminals to populate.
         IJBTerminal[] memory terminals = new IJBTerminal[](terminalConfigurations.length);
@@ -902,6 +901,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
             // Add the accounting contexts for the specified tokens.
+            // slither-disable-next-line calls-loop
             terminalConfig.terminal
                 .addAccountingContextsFor({
                     projectId: projectId, accountingContexts: terminalConfig.accountingContextsToAccept
@@ -921,7 +921,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param projectId The ID of the project to queue rulesets for.
     /// @param rulesetConfigurations The rulesets being queued.
     /// @return rulesetId The ID of the last ruleset that was successfully queued.
-    // slither-disable-next-line calls-loop
     function _queueRulesets(
         uint256 projectId,
         JBRulesetConfig[] calldata rulesetConfigurations
@@ -949,6 +948,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Queue its ruleset.
             JBRuleset memory ruleset = RULESETS.queueFor({
+            // slither-disable-next-line calls-loop
                 projectId: projectId,
                 duration: rulesetConfig.duration,
                 weight: rulesetConfig.weight,
@@ -960,11 +960,13 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Set its split groups.
             SPLITS.setSplitGroupsOf({
+            // slither-disable-next-line calls-loop
                 projectId: projectId, rulesetId: ruleset.id, splitGroups: rulesetConfig.splitGroups
             });
 
             // Set its fund access limits.
             FUND_ACCESS_LIMITS.setFundAccessLimitsFor({
+            // slither-disable-next-line calls-loop
                 projectId: projectId, rulesetId: ruleset.id, fundAccessLimitGroups: rulesetConfig.fundAccessLimitGroups
             });
 
@@ -983,7 +985,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param tokenCount The number of tokens to send.
     /// @param token The token to send.
     /// @return leftoverTokenCount If the split percents don't add up to 100%, the leftover amount is returned.
-    // slither-disable-next-line calls-loop
     function _sendReservedTokensToSplitGroupOf(
         uint256 projectId,
         uint256 rulesetId,
@@ -1027,7 +1028,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         projectId: projectId, tokenCount: splitTokenCount, recipient: address(split.hook), token: token
                     });
 
-                    // slither-disable-next-line reentrancy-events
+                    // slither-disable-next-line calls-loop,reentrancy-events
                     try split.hook
                         .processSplitWith(
                             JBSplitHookContext({
@@ -1055,6 +1056,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             ? IJBTerminal(address(0))
                             : DIRECTORY.primaryTerminalOf({projectId: split.projectId, token: address(token)});
 
+                        // slither-disable-next-line calls-loop
                         // If the project doesn't have a token, or if the receiving project doesn't have a terminal
                         // which accepts the token, send the tokens to the beneficiary.
                         if (address(token) == address(0) || address(terminal) == address(0)) {
@@ -1072,6 +1074,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             try this.executePayReservedTokenToTerminal({
                                 projectId: split.projectId,
                                 terminal: terminal,
+                            // slither-disable-next-line calls-loop
                                 token: token,
                                 splitTokenCount: splitTokenCount,
                                 beneficiary: beneficiary,
@@ -1096,6 +1099,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     } else {
                         // If the split has no project Id, send to beneficiary.
                         _sendTokens({
+                        // slither-disable-next-line calls-loop
                             projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
                         });
                     }

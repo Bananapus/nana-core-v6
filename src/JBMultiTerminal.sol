@@ -189,7 +189,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// project's controller can add accounting contexts for the project.
     /// @param projectId The ID of the project having to add accounting contexts for.
     /// @param accountingContexts The accounting contexts to add.
-    // slither-disable-next-line reentrancy-events
     function addAccountingContextsFor(
         uint256 projectId,
         JBAccountingContext[] calldata accountingContexts
@@ -210,6 +209,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Emit an event for each accounting context.
         for (uint256 i; i < accountingContexts.length; i++) {
+            // slither-disable-next-line reentrancy-events
             emit SetAccountingContext({projectId: projectId, context: accountingContexts[i], caller: _msgSender()});
         }
     }
@@ -559,6 +559,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 metadata: bytes("")
             });
+            _afterTransferTo({to: address(to), token: token});
         }
     }
 
@@ -980,7 +981,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The number of tokens being accepted.
     /// @param metadata The metadata in which permit2 context is provided.
     /// @return amount The number of tokens which have been accepted.
-    // slither-disable-next-line reentrancy-events
     function _acceptFundsFor(
         uint256 projectId,
         address token,
@@ -1025,6 +1025,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the allowance to `spend` tokens for the user.
             try PERMIT2.permit({owner: _msgSender(), permitSingle: permitSingle, signature: allowance.signature}) {}
             catch (bytes memory reason) {
+                // slither-disable-next-line reentrancy-events
                 emit Permit2AllowanceFailed(token, _msgSender(), reason);
             }
         }

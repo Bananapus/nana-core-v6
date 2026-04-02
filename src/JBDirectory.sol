@@ -91,7 +91,6 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// - OR an address which `isAllowedToSetFirstController` is setting a project's first controller.
     /// @param projectId The ID of the project whose controller is being set.
     /// @param controller The address of the controller to set.
-    // slither-disable-next-line reentrancy-events
     function setControllerOf(uint256 projectId, IERC165 controller) external override {
         // Keep a reference to the current controller.
         IERC165 currentController = controllerOf[projectId];
@@ -140,6 +139,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
         // slither-disable-next-line reentrancy-no-eth
         controllerOf[projectId] = controller;
 
+        // slither-disable-next-line reentrancy-events
         emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
 
         // Notify the new controller that migration is complete and it is now the active controller.

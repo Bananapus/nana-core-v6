@@ -155,6 +155,8 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: feed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
         require(
             address(
                 core.prices
@@ -174,6 +176,8 @@ contract DeployPeriphery is Script, Sphinx {
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
         require(
             address(
                 core.prices
@@ -193,6 +197,8 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: matchingPriceFeed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
         require(
             address(
                 core.prices
@@ -319,6 +325,8 @@ contract DeployPeriphery is Script, Sphinx {
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId, feed: usdcFeed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
         require(
             address(
                 core.prices

@@ -77,6 +77,7 @@ library JBPayoutSplitGroupLib {
             uint256 payoutAmount = mulDiv(leftoverAmount, split.percent, leftoverPercentage);
 
             // The final payout amount after taking out any fees.
+            // slither-disable-next-line calls-loop
             uint256 netPayoutAmount = _sendPayoutToSplit({
                 store: store, split: split, projectId: projectId, token: token, amount: payoutAmount, caller: caller
             });
@@ -118,7 +119,6 @@ library JBPayoutSplitGroupLib {
     /// @param amount The total amount that the split is being paid.
     /// @param caller The original caller of the terminal payout flow.
     /// @return netPayoutAmount The amount sent to the split after subtracting fees.
-    // slither-disable-next-line calls-loop,reentrancy-events
     function _sendPayoutToSplit(
         IJBTerminalStore store,
         JBSplit memory split,
