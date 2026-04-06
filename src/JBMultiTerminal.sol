@@ -642,10 +642,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // if the current fee isn't yet unlocked.
             if (heldFee.unlockTimestamp > block.timestamp) break;
 
-            // Delete the entry to reclaim gas before the external call.
+            // Delete the entry and advance the index *before* the external call. This is intentional:
+            // 1. It prevents reentrancy from reprocessing the same fee.
+            // 2. If `_processFee` fails (try-catch), the fee amount is returned to the project's balance via
+            //    `_recordAddedBalanceFor` — the fee is forgiven rather than retried. This is a deliberate design choice:
+            //    projects should not have funds permanently stuck because the fee route is misconfigured or reverting.
+            //    A `FeeReverted` event is emitted so the forgiveness is observable off-chain.
             delete _heldFeesOf[projectId][token][currentIndex];
-
-            // Update the index before the external call to prevent reentrancy from reprocessing the same fee.
             _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
 
             // Process the fee.
@@ -1072,11 +1075,27 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         return 0;
     }
 
-    /// @notice Revert if a value is less than the specified minimum.
-    /// @param value The value to compare against the minimum.
-    /// @param min The minimum acceptable value.
-    function _checkMin(uint256 value, uint256 min) internal pure {
-        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
+    /// @notice Cap fee-free surplus at the project's remaining balance after an outflow.
+    /// @dev Non-fee-free funds are considered to leave first. Fee-free surplus only decreases when the remaining
+    /// balance can no longer support it. This prevents attackers from using outflows to drain the fee-free counter
+    /// and then cashing out without incurring fees.
+    /// @param projectId The ID of the project.
+    /// @param token The token whose fee-free surplus to cap.
+    function _capFeeFreeSurplus(uint256 projectId, address token) internal {
+        // Get the current fee-free surplus for this project/token pair.
+        uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
+
+        // Nothing to cap if there's no fee-free surplus tracked.
+        if (feeFreeSurplus == 0) return;
+
+        // Get the project's remaining balance (already decremented by the store's record call).
+        uint256 remainingBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
+
+        // Cap fee-free surplus at the remaining balance.
+        if (feeFreeSurplus > remainingBalance) {
+            // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
+            _feeFreeSurplusOf[projectId][token] = remainingBalance;
+        }
     }
 
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
@@ -1213,6 +1232,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Revert if a value is less than the specified minimum.
+    /// @param value The value to compare against the minimum.
+    /// @param min The minimum acceptable value.
+    function _checkMin(uint256 value, uint256 min) internal pure {
+        if (value < min) revert JBMultiTerminal_UnderMin(value, min);
+    }
+
     /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
     /// recipient terminal's `addToBalance` function.
     /// @param terminal The terminal on which the project is expecting to receive funds.
@@ -1246,41 +1272,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 terminal: terminal, projectId: projectId, token: token, amount: amount, metadata: metadata
             });
         }
-    }
-
-    /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
-    /// @param terminal The recipient terminal.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded.
-    /// @param metadata Additional metadata to include with the payment.
-    function _externalAddToBalance(
-        IJBTerminal terminal,
-        uint256 projectId,
-        address token,
-        uint256 amount,
-        bytes memory metadata
-    )
-        internal
-    {
-        // Trigger any inherited pre-transfer logic.
-        // Keep a reference to the amount that'll be paid as a `msg.value`.
-        // slither-disable-next-line reentrancy-events
-        uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
-
-        // Add to balance on the recipient terminal.
-        // If this terminal's token is the native token, send it in `msg.value`.
-        terminal.addToBalanceOf{value: payValue}({
-            projectId: projectId,
-            token: token,
-            amount: amount,
-            shouldReturnHeldFees: false,
-            memo: "",
-            metadata: metadata
-        });
-
-        // Revoke the temporary pull allowance now that the recipient terminal call has finished.
-        _afterTransferTo({to: address(terminal), token: token});
     }
 
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
@@ -1334,6 +1325,41 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Revoke the temporary pull allowance now that the recipient terminal call has finished.
             _afterTransferTo({to: address(terminal), token: token});
         }
+    }
+
+    /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
+    /// @param terminal The recipient terminal.
+    /// @param projectId The ID of the project being funded.
+    /// @param token The token being used.
+    /// @param amount The amount being funded.
+    /// @param metadata Additional metadata to include with the payment.
+    function _externalAddToBalance(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        bytes memory metadata
+    )
+        internal
+    {
+        // Trigger any inherited pre-transfer logic.
+        // Keep a reference to the amount that'll be paid as a `msg.value`.
+        // slither-disable-next-line reentrancy-events
+        uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
+
+        // Add to balance on the recipient terminal.
+        // If this terminal's token is the native token, send it in `msg.value`.
+        terminal.addToBalanceOf{value: payValue}({
+            projectId: projectId,
+            token: token,
+            amount: amount,
+            shouldReturnHeldFees: false,
+            memo: "",
+            metadata: metadata
+        });
+
+        // Revoke the temporary pull allowance now that the recipient terminal call has finished.
+        _afterTransferTo({to: address(terminal), token: token});
     }
 
     /// @notice Fulfills a list of cash out hook specifications.
@@ -1618,6 +1644,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 caller: _msgSender()
             });
         } catch (bytes memory reason) {
+            // Fee processing failed — intentionally forgive the fee and return the amount to the project.
+            // The held-fee entry (if any) was already deleted by `processHeldFeesOf` before this call, so there is no
+            // retry path. This is by design: a broken or misconfigured fee route should not permanently lock project
+            // funds. The `FeeReverted` event makes this observable off-chain.
             emit FeeReverted({
                 projectId: projectId,
                 token: token,
@@ -1980,29 +2010,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Transfer any remaining balance to the beneficiary.
         if (netAmountPaidOut != 0) {
             _transferFrom({from: address(this), to: beneficiary, token: token, amount: netAmountPaidOut});
-        }
-    }
-
-    /// @notice Cap fee-free surplus at the project's remaining balance after an outflow.
-    /// @dev Non-fee-free funds are considered to leave first. Fee-free surplus only decreases when the remaining
-    /// balance can no longer support it. This prevents attackers from using outflows to drain the fee-free counter
-    /// and then cashing out without incurring fees.
-    /// @param projectId The ID of the project.
-    /// @param token The token whose fee-free surplus to cap.
-    function _capFeeFreeSurplus(uint256 projectId, address token) internal {
-        // Get the current fee-free surplus for this project/token pair.
-        uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
-
-        // Nothing to cap if there's no fee-free surplus tracked.
-        if (feeFreeSurplus == 0) return;
-
-        // Get the project's remaining balance (already decremented by the store's record call).
-        uint256 remainingBalance = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
-
-        // Cap fee-free surplus at the remaining balance.
-        if (feeFreeSurplus > remainingBalance) {
-            // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
-            _feeFreeSurplusOf[projectId][token] = remainingBalance;
         }
     }
 
