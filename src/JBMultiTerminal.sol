@@ -645,8 +645,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Delete the entry and advance the index *before* the external call. This is intentional:
             // 1. It prevents reentrancy from reprocessing the same fee.
             // 2. If `_processFee` fails (try-catch), the fee amount is returned to the project's balance via
-            //    `_recordAddedBalanceFor` — the fee is forgiven rather than retried. This is a deliberate design choice:
-            //    projects should not have funds permanently stuck because the fee route is misconfigured or reverting.
+            //    `_recordAddedBalanceFor` — the fee is forgiven rather than retried. This is a deliberate design
+            // choice: projects should not have funds permanently stuck because the fee route is misconfigured or
+            // reverting.
             //    A `FeeReverted` event is emitted so the forgiveness is observable off-chain.
             delete _heldFeesOf[projectId][token][currentIndex];
             _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
