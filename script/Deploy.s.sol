@@ -34,6 +34,9 @@ contract Deploy is Script, Sphinx {
     address private MANAGER;
 
     /// @notice The address that will own the fee-project.
+    /// @dev Core deployment transfers project `#1` to this owner, but does not fully activate fee collection on its
+    /// own. Production fee collection only starts once the fee project's controller, terminals, and accounting
+    /// contexts are configured by follow-up deployment steps.
     // forge-lint: disable-next-line(mixed-case-variable)
     address private FEE_PROJECT_OWNER;
 
@@ -52,7 +55,8 @@ contract Deploy is Script, Sphinx {
     function run() public sphinx {
         // Set the manager, this can be changed and won't affect deployment addresses.
         MANAGER = safeAddress();
-        // Set the owner of the fee project to be the project multisig.
+        // Set the owner of the fee project to be the project multisig. This does not by itself make fee collection
+        // live; project `#1` still needs its follow-up controller/terminal/accounting-context configuration.
         FEE_PROJECT_OWNER = safeAddress();
 
         // Deploy the protocol.
@@ -110,7 +114,8 @@ contract Deploy is Script, Sphinx {
             projects.transferOwnership(MANAGER);
         }
 
-        // Transfer ownership to the fee project owner.
+        // Transfer ownership to the fee project owner. Follow-up deployment steps must still finish configuring
+        // project `#1` before protocol fees are collected instead of being forgiven back to payer projects.
         if (FEE_PROJECT_OWNER != safeAddress() && FEE_PROJECT_OWNER != address(0)) {
             projects.safeTransferFrom({from: safeAddress(), to: FEE_PROJECT_OWNER, tokenId: 1});
         }

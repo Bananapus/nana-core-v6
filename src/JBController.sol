@@ -158,6 +158,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         RULESETS = rulesets;
         SPLITS = splits;
         TOKENS = tokens;
+        // slither-disable-next-line missing-zero-check
         OMNICHAIN_RULESET_OPERATOR = omnichainRulesetOperator;
     }
 
@@ -820,8 +821,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         override
         returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
     {
-        // Revert if there are no tokens to split.
-        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
+        // A zero preview amount means there are no tokens to split.
+        if (tokenCount == 0) return (0, 0);
 
         // Keep a reference to the current ruleset.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
@@ -900,6 +901,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
             // Add the accounting contexts for the specified tokens.
+            // slither-disable-next-line calls-loop
             terminalConfig.terminal
                 .addAccountingContextsFor({
                     projectId: projectId, accountingContexts: terminalConfig.accountingContextsToAccept
@@ -945,6 +947,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             }
 
             // Queue its ruleset.
+            // slither-disable-next-line calls-loop
             JBRuleset memory ruleset = RULESETS.queueFor({
                 projectId: projectId,
                 duration: rulesetConfig.duration,
@@ -956,11 +959,13 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             });
 
             // Set its split groups.
+            // slither-disable-next-line calls-loop
             SPLITS.setSplitGroupsOf({
                 projectId: projectId, rulesetId: ruleset.id, splitGroups: rulesetConfig.splitGroups
             });
 
             // Set its fund access limits.
+            // slither-disable-next-line calls-loop
             FUND_ACCESS_LIMITS.setFundAccessLimitsFor({
                 projectId: projectId, rulesetId: ruleset.id, fundAccessLimitGroups: rulesetConfig.fundAccessLimitGroups
             });
@@ -1023,7 +1028,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         projectId: projectId, tokenCount: splitTokenCount, recipient: address(split.hook), token: token
                     });
 
-                    // slither-disable-next-line reentrancy-events
+                    // slither-disable-next-line calls-loop,reentrancy-events
                     try split.hook
                         .processSplitWith(
                             JBSplitHookContext({
@@ -1047,6 +1052,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
                     if (split.projectId != 0) {
                         // Get a reference to the receiving project's primary payment terminal for the token.
+                        // slither-disable-next-line calls-loop
                         IJBTerminal terminal = token == IJBToken(address(0))
                             ? IJBTerminal(address(0))
                             : DIRECTORY.primaryTerminalOf({projectId: split.projectId, token: address(token)});
@@ -1065,6 +1071,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             bytes memory metadata = bytes(abi.encodePacked(projectId));
 
                             // Try to fulfill the payment.
+                            // slither-disable-next-line calls-loop
                             try this.executePayReservedTokenToTerminal({
                                 projectId: split.projectId,
                                 terminal: terminal,
@@ -1088,6 +1095,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         }
                     } else if (beneficiary == address(0xdead)) {
                         // If the split has no project ID, and the beneficiary is 0xdead, burn.
+                        // slither-disable-next-line calls-loop
                         TOKENS.burnFrom({holder: address(this), projectId: projectId, count: splitTokenCount});
                     } else {
                         // If the split has no project Id, send to beneficiary.

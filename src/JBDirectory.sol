@@ -139,6 +139,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
         // slither-disable-next-line reentrancy-no-eth
         controllerOf[projectId] = controller;
 
+        // slither-disable-next-line reentrancy-events
         emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
 
         // Notify the new controller that migration is complete and it is now the active controller.

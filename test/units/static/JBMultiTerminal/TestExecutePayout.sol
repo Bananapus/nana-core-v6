@@ -335,6 +335,9 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (_mockSecondTerminal, amountAfterTax)), "");
 
+        // Mock the forwarded allowance as fully consumed by the recipient terminal.
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), _mockSecondTerminal)), abi.encode(0));
+
         // mock call to second terminals addToBalanceOf
         mockExpect(
             _mockSecondTerminal,
@@ -418,6 +421,9 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (_mockSecondTerminal, amountAfterTax)), "");
+
+        // Mock the forwarded allowance as fully consumed by the recipient terminal.
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), _mockSecondTerminal)), abi.encode(0));
 
         // mock call to second terminals pay function
         mockExpect(

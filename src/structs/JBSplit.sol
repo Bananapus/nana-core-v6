@@ -24,7 +24,10 @@ import {IJBSplitHook} from "./../interfaces/IJBSplitHook.sol";
 /// @custom:member preferAddToBalance If this split were to `pay` a project through its terminal, this flag indicates
 /// whether it should prefer using the terminal's `addToBalance` function instead.
 /// @custom:member lockedUntil The split cannot be changed until this timestamp. The `lockedUntil` timestamp can be
-/// increased while a split is locked. If `lockedUntil` is zero, this split can be changed at any time.
+/// increased while a split is locked. If `lockedUntil` is zero, this split can be changed at any time. This lock is
+/// enforced only when rewriting the same split table. Queueing a successor ruleset with a different `rulesetId` can
+/// still replace future payout behavior before `lockedUntil`, so applications that need cross-ruleset continuity must
+/// preserve those splits at the governance/configuration layer.
 /// @custom:member hook A contract which will receive this split's tokens and properties, and can define custom
 /// behavior.
 // forge-lint: disable-next-line(pascal-case-struct)

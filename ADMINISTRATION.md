@@ -368,7 +368,7 @@ What admins CANNOT do:
 - **No admin can change the fee beneficiary.** Project ID 1 is hardcoded as the fee recipient. This cannot be changed.
 - **Price feeds cannot be replaced.** Once a price feed is set for a currency pair (in either direction), it is permanent for that project ID. Recovery requires deploying a new JBPrices contract.
 - **Token assignments are one-way.** Once a project's ERC-20 token is set (via `deployERC20For` or `setTokenFor`), it cannot be changed to a different token.
-- **Locked splits cannot be removed.** Splits with a `lockedUntil` timestamp in the future must be preserved (with the same or extended lock) when updating split groups.
+- **Locked splits cannot be removed from the same split table.** Splits with a `lockedUntil` timestamp in the future must be preserved (with the same or extended lock) when updating that split group. This does not automatically freeze successor rulesets; operators that queue new rulesets must consciously carry forward any still-locked economic promises they intend to preserve.
 - **Operators cannot escalate to ROOT via ROOT.** A ROOT operator can set permissions for other operators on the same project but cannot grant ROOT to them or set permissions on the wildcard project ID.
 - **The directory owner cannot set controllers directly.** The directory owner can only manage the `isAllowedToSetFirstController` allowlist. They cannot set or change a project's controller.
 - **Ruleset approval hooks can block changes.** If a ruleset specifies an approval hook, queued rulesets must be approved by that hook before they take effect. A rejected ruleset falls back to the previous approved ruleset's cycling behavior.

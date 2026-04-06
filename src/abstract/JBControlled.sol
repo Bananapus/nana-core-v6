@@ -45,7 +45,9 @@ abstract contract JBControlled is IJBControlled {
 
     /// @notice Only allows the controller of the specified project to proceed.
     function _onlyControllerOf(uint256 projectId) internal view {
+        // slither-disable-next-line calls-loop
         if (address(DIRECTORY.controllerOf(projectId)) != msg.sender) {
+            // slither-disable-next-line calls-loop
             revert JBControlled_ControllerUnauthorized(address(DIRECTORY.controllerOf(projectId)));
         }
     }

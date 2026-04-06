@@ -73,6 +73,9 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         // mock approval call for forceApprove
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (address(_feeTerminal), _defaultAmount)), "");
 
+        // Mock the forwarded allowance as fully consumed by the fee terminal.
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_feeTerminal))), abi.encode(0));
+
         // mock pay call to fee terminal
         mockExpect(
             address(_feeTerminal),

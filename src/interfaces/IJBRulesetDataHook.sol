@@ -17,8 +17,9 @@ interface IJBRulesetDataHook is IERC165 {
     /// @notice Calculates data before a cash out is recorded in the terminal store.
     /// @param context The context passed to this data hook by the `cashOutTokensOf(...)` function.
     /// @return cashOutTaxRate The rate determining the reclaimable amount for a given surplus and token supply.
-    /// @return cashOutCount The number of tokens to consider cashed out.
-    /// @return totalSupply The total number of tokens to consider existing.
+    /// @return effectiveCashOutCount The effective token count to use for pricing the cash out. The terminal still
+    /// burns the caller-supplied token count.
+    /// @return effectiveTotalSupply The effective total supply to use for pricing the cash out.
     /// @return hookSpecifications The amount and data to send to cash out hooks instead of returning to the
     /// beneficiary.
     function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata context)
@@ -26,8 +27,8 @@ interface IJBRulesetDataHook is IERC165 {
         view
         returns (
             uint256 cashOutTaxRate,
-            uint256 cashOutCount,
-            uint256 totalSupply,
+            uint256 effectiveCashOutCount,
+            uint256 effectiveTotalSupply,
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 

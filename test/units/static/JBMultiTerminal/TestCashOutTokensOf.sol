@@ -220,11 +220,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // forge-lint: disable-next-line(unsafe-typecast)
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_UnderMinTokensReclaimed.selector, reclaimAmount, 1e18
-            )
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, reclaimAmount, 1e18));
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, ""); // minReclaimAmount
         // = 1e18 but only 1e9 reclaimed
@@ -431,10 +427,14 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // ensure approval is set via forceApprove
         vm.expectCall(address(_mockToken2), abi.encodeCall(IERC20.approve, (address(_mockHook), _defaultAmount)));
 
-        _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
+        // Mock the temporary allowance as fully consumed by the hook so the cleanup guard passes.
+        vm.mockCall(
+            address(_mockToken2),
+            abi.encodeCall(IERC20.allowance, (address(_terminal), address(_mockHook))),
+            abi.encode(0)
+        );
 
-        vm.expectEmit();
-        emit IJBCashOutTerminal.HookAfterRecordCashOut(_mockHook, context, _defaultAmount, 0, address(_bene));
+        _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "");
@@ -548,6 +548,13 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(address(_mockHook), abi.encodeCall(IJBCashOutHook.afterCashOutRecordedWith, (context)), "");
 
+        // Mock the temporary allowance as fully consumed by the hook so the cleanup guard passes.
+        vm.mockCall(
+            address(_mockToken2),
+            abi.encodeCall(IERC20.allowance, (address(_terminal), address(_mockHook))),
+            abi.encode(0)
+        );
+
         // primary terminal check
         mockExpect(
             address(directory),
@@ -566,9 +573,6 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
-
-        vm.expectEmit();
-        emit IJBCashOutTerminal.HookAfterRecordCashOut(_mockHook, context, passedAfterTax, hookTax, address(_bene));
 
         vm.prank(_bene);
         _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "");

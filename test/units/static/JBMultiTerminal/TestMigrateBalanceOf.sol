@@ -135,6 +135,9 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // mock call for SafeERC20s forceApprove approval
         mockExpect(_usdc, abi.encodeCall(IERC20.approve, (address(_newTerminal), _defaultAmount)), "");
 
+        // Mock the forwarded allowance as fully consumed by the destination terminal.
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_newTerminal))), abi.encode(0));
+
         // mock call to new terminal addToBalance
         mockExpect(
             address(_newTerminal),

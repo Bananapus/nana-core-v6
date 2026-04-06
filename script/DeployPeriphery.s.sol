@@ -41,8 +41,8 @@ contract DeployPeriphery is Script, Sphinx {
     /// rulesets on any project via the JBController (bypassing normal JBPermissions checks). A compromised or
     /// incorrect operator address could manipulate any project's rulesets across chains.
     /// @dev This address should correspond to the deterministic CREATE2 deployment of the omnichain deployer contract
-    /// from the nana-omnichain-deployers-v6 repository. Verify it matches the deployed address on all target chains
-    /// before running this script.
+    /// from the nana-omnichain-deployers-v6 repository. This script only enforces that the address is nonzero, so
+    /// operators must verify it matches the intended deployment on every target chain before running this script.
     // forge-lint: disable-next-line(mixed-case-variable)
     address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
@@ -66,7 +66,8 @@ contract DeployPeriphery is Script, Sphinx {
     }
 
     function deploy() public sphinx {
-        // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above.
+        // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above. This is intentionally a
+        // nonzero-only check; correctness of the configured operator is verified out of band.
         require(OMNICHAIN_RULESET_OPERATOR != address(0), "Omnichain ruleset operator not set");
 
         // Deploy the ETH/USD price feed.
@@ -155,6 +156,19 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: feed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
+        require(
+            address(
+                core.prices
+                    .priceFeedFor({
+                        projectId: 0,
+                        pricingCurrency: JBCurrencyIds.USD,
+                        unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                    })
+            ) != address(0),
+            "Missing USD/native price feed"
+        );
 
         // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
         // chains where Ether is the native asset. We *NEED* to update this when we deploy to a non-ether chain!
@@ -163,6 +177,15 @@ contract DeployPeriphery is Script, Sphinx {
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
+        require(
+            address(
+                core.prices
+                .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH})
+            ) != address(0),
+            "Missing USD/ETH price feed"
+        );
 
         // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
         // NOTE: We need to refactor this the moment we add a chain where its native token is *NOT* ether.
@@ -175,6 +198,19 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: matchingPriceFeed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
+        require(
+            address(
+                core.prices
+                    .priceFeedFor({
+                        projectId: 0,
+                        pricingCurrency: JBCurrencyIds.ETH,
+                        unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+                    })
+            ) != address(0),
+            "Missing ETH/native price feed"
+        );
 
         // Deploy the USDC/USD price feed.
         _deployUSDCFeed(L2GracePeriod);
@@ -283,11 +319,22 @@ contract DeployPeriphery is Script, Sphinx {
         require(address(usdcFeed) != address(0), "Invalid USDC price feed");
 
         // forge-lint: disable-next-line(unsafe-typecast)
+        uint32 usdcCurrencyId = uint32(uint160(usdc));
+
         try core.prices
             .addPriceFeedFor({
-                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: uint32(uint160(usdc)), feed: usdcFeed
+                projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId, feed: usdcFeed
             }) {}
             catch {}
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
+        // different failure mode can't silently skip this required deployment step.
+        require(
+            address(
+                core.prices
+                .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId})
+            ) != address(0),
+            "Missing USD/USDC price feed"
+        );
     }
 
     /// @dev This helper predicts addresses using the Arachnid CREATE2 deployer, but actual deployments go through
