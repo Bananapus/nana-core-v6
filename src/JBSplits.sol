@@ -97,15 +97,13 @@ contract JBSplits is JBControlled, IJBSplits {
         // Cache whether the controller check has already passed to avoid repeated external calls.
         bool controllerChecked;
 
-        // Set each grouped splits.
-        for (uint256 i; i < splitGroups.length; i++) {
-            // Get a reference to the grouped split being iterated on.
-            JBSplitGroup memory splitGroup = splitGroups[i];
-
+        // Set each grouped splits. Access calldata directly to avoid copying each split group to memory.
+        for (uint256 i; i < splitGroups.length;) {
             // Self-auth: lower 160 bits must match msg.sender AND upper 96 bits must be non-zero.
             // GroupIds with zero upper bits are reserved for protocol use (e.g. terminal payout groups)
             // and always require controller authorization to prevent token contracts from hijacking payouts.
-            bool isSelfManaged = splitGroup.groupId >> 160 != 0 && address(uint160(splitGroup.groupId)) == msg.sender;
+            bool isSelfManaged =
+                splitGroups[i].groupId >> 160 != 0 && address(uint160(splitGroups[i].groupId)) == msg.sender;
 
             if (!isSelfManaged && !controllerChecked) {
                 _onlyControllerOf(projectId);
@@ -114,8 +112,14 @@ contract JBSplits is JBControlled, IJBSplits {
 
             // Set the splits for the group.
             _setSplitsOf({
-                projectId: projectId, rulesetId: rulesetId, groupId: splitGroup.groupId, splits: splitGroup.splits
+                projectId: projectId,
+                rulesetId: rulesetId,
+                groupId: splitGroups[i].groupId,
+                splits: splitGroups[i].splits
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -168,13 +172,16 @@ contract JBSplits is JBControlled, IJBSplits {
         uint256 numberOfCurrentSplits = currentSplits.length;
 
         // Check to see if all locked splits are included in the array of splits which is being set.
-        for (uint256 i; i < numberOfCurrentSplits; i++) {
+        for (uint256 i; i < numberOfCurrentSplits;) {
             // If not locked, continue.
             if (
                 block.timestamp < currentSplits[i].lockedUntil
                     && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
             ) {
                 revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -184,7 +191,7 @@ contract JBSplits is JBControlled, IJBSplits {
         // Keep a reference to the number of splits to set.
         uint256 numberOfSplits = splits.length;
 
-        for (uint256 i; i < numberOfSplits; i++) {
+        for (uint256 i; i < numberOfSplits;) {
             // Set the split being iterated on.
             JBSplit memory split = splits[i];
 
@@ -228,6 +235,9 @@ contract JBSplits is JBControlled, IJBSplits {
             emit SetSplit({
                 projectId: projectId, rulesetId: rulesetId, groupId: groupId, split: split, caller: msg.sender
             });
+            unchecked {
+                ++i;
+            }
         }
 
         // Store the number of splits for the project, ruleset, and group.
@@ -235,9 +245,12 @@ contract JBSplits is JBControlled, IJBSplits {
 
         // Clean up stale storage slots if the new split count is less than the previous count.
         // This zeroes out leftover packed data to reclaim gas via storage refunds.
-        for (uint256 i = numberOfSplits; i < numberOfCurrentSplits; i++) {
+        for (uint256 i = numberOfSplits; i < numberOfCurrentSplits;) {
             delete _packedSplitParts1Of[projectId][rulesetId][groupId][i];
             delete _packedSplitParts2Of[projectId][rulesetId][groupId][i];
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -267,7 +280,7 @@ contract JBSplits is JBControlled, IJBSplits {
         JBSplit[] memory splits = new JBSplit[](splitCount);
 
         // Loop through each split and unpack the values into structs.
-        for (uint256 i; i < splitCount; i++) {
+        for (uint256 i; i < splitCount;) {
             // Get a reference to the first part of the split's packed data.
             uint256 packedSplitPart1 = _packedSplitParts1Of[projectId][rulesetId][groupId][i];
 
@@ -301,6 +314,9 @@ contract JBSplits is JBControlled, IJBSplits {
 
             // Add the split to the value being returned.
             splits[i] = split;
+            unchecked {
+                ++i;
+            }
         }
 
         return splits;
@@ -314,7 +330,7 @@ contract JBSplits is JBControlled, IJBSplits {
         // Keep a reference to the number of splits.
         uint256 numberOfSplits = splits.length;
 
-        for (uint256 i; i < numberOfSplits; i++) {
+        for (uint256 i; i < numberOfSplits;) {
             // Set the split being iterated on.
             JBSplit memory split = splits[i];
 
@@ -326,6 +342,9 @@ contract JBSplits is JBControlled, IJBSplits {
                     && split.preferAddToBalance == lockedSplit.preferAddToBalance
                     && split.lockedUntil >= lockedSplit.lockedUntil
             ) return true;
+            unchecked {
+                ++i;
+            }
         }
 
         return false;

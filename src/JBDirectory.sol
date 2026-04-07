@@ -210,23 +210,23 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// @param projectId The ID of the project whose terminals are being set.
     /// @param terminals An array of terminal addresses to set for the project.
     function setTerminalsOf(uint256 projectId, IJBTerminal[] calldata terminals) external override {
+        // Cache the controller to avoid redundant storage reads.
+        IERC165 controller = controllerOf[projectId];
+
         // Enforce permissions.
         _requirePermissionAllowingOverrideFrom({
             account: PROJECTS.ownerOf(projectId),
             projectId: projectId,
             permissionId: JBPermissionIds.SET_TERMINALS,
-            alsoGrantAccessIf: msg.sender == address(controllerOf[projectId])
+            alsoGrantAccessIf: msg.sender == address(controller)
         });
-
-        // Keep a reference to the project's controller.
-        IERC165 controller = controllerOf[projectId];
 
         // Get a reference to the flag indicating whether the project is allowed to set its terminals.
         bool allowSetTerminals = !controller.supportsInterface(type(IJBDirectoryAccessControl).interfaceId)
             || IJBDirectoryAccessControl(address(controller)).setTerminalsAllowed(projectId);
 
         // If the caller is not the project's controller, the project's ruleset must allow setting terminals.
-        if (msg.sender != address(controllerOf[projectId]) && !allowSetTerminals) {
+        if (msg.sender != address(controller) && !allowSetTerminals) {
             revert JBDirectory_SetTerminalsNotAllowed(projectId);
         }
 
@@ -235,9 +235,15 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // If there are any duplicates, revert.
         if (terminals.length > 1) {
-            for (uint256 i; i < terminals.length; i++) {
-                for (uint256 j = i + 1; j < terminals.length; j++) {
+            for (uint256 i; i < terminals.length;) {
+                for (uint256 j = i + 1; j < terminals.length;) {
                     if (terminals[i] == terminals[j]) revert JBDirectory_DuplicateTerminals(terminals[i]);
+                    unchecked {
+                        ++j;
+                    }
+                }
+                unchecked {
+                    ++i;
                 }
             }
         }
@@ -267,14 +273,14 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
             return primaryTerminal;
         }
 
-        // Keep a reference to the project's terminals.
-        IJBTerminal[] memory terminals = _terminalsOf[projectId];
+        // Keep a storage reference to the project's terminals to avoid copying the array to memory.
+        IJBTerminal[] storage terminals = _terminalsOf[projectId];
 
         // Keep a reference to the number of terminals the project has.
         uint256 numberOfTerminals = terminals.length;
 
         // Return the first terminal which accepts the specified token.
-        for (uint256 i; i < numberOfTerminals; i++) {
+        for (uint256 i; i < numberOfTerminals;) {
             // Keep a reference to the terminal being iterated on.
             IJBTerminal terminal = terminals[i];
 
@@ -282,6 +288,9 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
             // slither-disable-next-line calls-loop
             if (terminal.accountingContextForTokenOf({projectId: projectId, token: token}).token != address(0)) {
                 return terminal;
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -305,15 +314,18 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// @param terminal The terminal to check for.
     /// @return A flag indicating whether the project uses the terminal.
     function isTerminalOf(uint256 projectId, IJBTerminal terminal) public view override returns (bool) {
-        // Keep a reference to the project's terminals.
-        IJBTerminal[] memory terminals = _terminalsOf[projectId];
+        // Keep a storage reference to the project's terminals to avoid copying the array to memory.
+        IJBTerminal[] storage terminals = _terminalsOf[projectId];
 
         // Keep a reference to the number of terminals the project has.
         uint256 numberOfTerminals = terminals.length;
 
         // Loop through and return true if the terminal is found.
-        for (uint256 i; i < numberOfTerminals; i++) {
+        for (uint256 i; i < numberOfTerminals;) {
             if (terminals[i] == terminal) return true;
+            unchecked {
+                ++i;
+            }
         }
 
         // Otherwise, return false.

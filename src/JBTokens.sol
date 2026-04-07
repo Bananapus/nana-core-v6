@@ -253,9 +253,12 @@ contract JBTokens is JBControlled, IJBTokens {
         // Save a reference to whether there a token exists.
         bool tokensWereClaimed = token != IJBToken(address(0));
 
+        // Cache the total supply to avoid a redundant external call on revert.
+        uint256 supply = totalSupplyOf(projectId);
+
         // The total supply after minting can't exceed the maximum value storable in a uint208.
-        if (totalSupplyOf(projectId) + count > type(uint208).max) {
-            revert JBTokens_OverflowAlert(totalSupplyOf(projectId) + count, type(uint208).max);
+        if (supply + count > type(uint208).max) {
+            revert JBTokens_OverflowAlert(supply + count, type(uint208).max);
         }
 
         if (tokensWereClaimed) {

@@ -207,9 +207,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         STORE.recordAccountingContextOf({projectId: projectId, contexts: accountingContexts});
 
         // Emit an event for each accounting context.
-        for (uint256 i; i < accountingContexts.length; i++) {
+        for (uint256 i; i < accountingContexts.length;) {
             // slither-disable-next-line reentrancy-events
             emit SetAccountingContext({projectId: projectId, context: accountingContexts[i], caller: _msgSender()});
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -582,11 +585,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Get a reference to the beneficiary's balance before the payment.
         uint256 beneficiaryBalanceBefore = TOKENS.totalBalanceOf({holder: beneficiary, projectId: projectId});
 
+        // Accept the funds.
+        uint256 acceptedAmount =
+            _acceptFundsFor({projectId: projectId, token: token, amount: amount, metadata: metadata});
+
         // Pay the project.
         _pay({
             projectId: projectId,
             token: token,
-            amount: _acceptFundsFor(projectId, token, amount, metadata),
+            amount: acceptedAmount,
             payer: _msgSender(),
             beneficiary: beneficiary,
             memo: memo,
@@ -627,7 +634,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Process each fee. Re-read the index and array length from storage each iteration to account for reentrant
         // calls that may have already advanced the index or cleaned up the array.
-        for (uint256 i; i < count; i++) {
+        for (uint256 i; i < count;) {
             // Read the current index from storage (not a cached value) to prevent reentrancy from
             // causing double-processing.
             uint256 currentIndex = _nextHeldFeeIndexOf[projectId][token];
@@ -662,6 +669,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 feeTerminal: feeTerminal,
                 wasHeld: true
             });
+            unchecked {
+                ++i;
+            }
         }
 
         // If all held fees have been processed, reset the array and index entirely to bound storage growth.
@@ -850,8 +860,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         heldFees = new JBFee[](count);
 
         // Copy the fees into the array.
-        for (uint256 i; i < count; i++) {
+        for (uint256 i; i < count;) {
             heldFees[i] = _heldFeesOf[projectId][token][startIndex + i];
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1134,13 +1147,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the cash out tax rate being used.
         uint256 cashOutTaxRate;
 
+        // Cache whether the beneficiary is feeless.
+        bool beneficiaryIsFeeless = _isFeeless(beneficiary);
+
         // Record the cash out.
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
             tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: _isFeeless(beneficiary),
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
             metadata: metadata
         });
 
@@ -1156,7 +1172,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send the reclaimed funds to the beneficiary.
         if (reclaimAmount != 0) {
             // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless.
-            if (!_isFeeless(beneficiary)) {
+            if (!beneficiaryIsFeeless) {
                 if (cashOutTaxRate != 0) {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
@@ -1404,12 +1420,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // slither-disable-next-line calls-loop
-        for (uint256 i; i < specifications.length; i++) {
+        for (uint256 i; i < specifications.length;) {
             // Set the specification being iterated on.
             JBCashOutHookSpecification memory specification = specifications[i];
 
             // A noop specification is informational only and doesn't trigger the hook.
-            if (specification.noop) continue;
+            if (specification.noop) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
 
             // Get the fee for the specified amount.
             uint256 specificationAmountFee = _isFeeless(address(specification.hook))
@@ -1454,6 +1475,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 fee: specificationAmountFee,
                 caller: _msgSender()
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1494,12 +1518,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Fulfill each specification through their pay hooks.
         // slither-disable-next-line calls-loop
-        for (uint256 i; i < specifications.length; i++) {
+        for (uint256 i; i < specifications.length;) {
             // Set the specification being iterated on.
             JBPayHookSpecification memory specification = specifications[i];
 
             // A noop specification is informational only and doesn't trigger the hook.
-            if (specification.noop) continue;
+            if (specification.noop) {
+                unchecked {
+                    ++i;
+                }
+                continue;
+            }
 
             // Pass the correct token `forwardedAmount` to the hook.
             context.forwardedAmount = JBTokenAmount({
@@ -1532,6 +1561,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 specificationAmount: specification.amount,
                 caller: _msgSender()
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1700,7 +1732,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 newStartIndex = startIndex;
 
         // Process each fee.
-        for (uint256 i; i < count; i++) {
+        for (uint256 i; i < count;) {
             // Save the fee being iterated on.
             JBFee memory heldFee = _heldFeesOf[projectId][token][startIndex + i];
 
@@ -1734,6 +1766,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     leftoverAmount = 0;
                 }
             }
+            unchecked {
+                ++i;
+            }
         }
 
         // Update the next held fee index.
@@ -1766,6 +1801,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256 amountPaidOut)
     {
+        // Cache the message sender.
+        address sender = _msgSender();
+
         // Keep a reference to the ruleset.
         JBRuleset memory ruleset;
 
@@ -1799,7 +1837,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             token: token,
             rulesetId: ruleset.id,
             amount: amountPaidOut,
-            caller: _msgSender()
+            caller: sender
         });
 
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
@@ -1826,7 +1864,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     amount: leftoverPayoutAmount - fee,
                     fee: fee,
                     reason: reason,
-                    caller: _msgSender()
+                    caller: sender
                 });
 
                 // Add balance back to the project.
@@ -1852,7 +1890,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             amountPaidOut: amountPaidOut,
             fee: feeTaken,
             netLeftoverPayoutAmount: leftoverPayoutAmount,
-            caller: _msgSender()
+            caller: sender
         });
     }
 

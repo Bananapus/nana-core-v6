@@ -672,17 +672,19 @@ contract JBRulesets is JBControlled, IJBRulesets {
             revert JBRulesets_WeightCacheRequired(projectId);
         }
 
-        for (uint256 i; i < weightCutMultiple; i++) {
-            // The number of times to apply the weight cut percent.
+        // Cache the cut factor and max percent to avoid recomputing each iteration.
+        uint256 cutFactor = JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent;
+        uint256 maxPercent = JBConstants.MAX_WEIGHT_CUT_PERCENT;
+
+        for (uint256 i; i < weightCutMultiple;) {
             // Base the new weight on the specified ruleset's weight.
-            weight = mulDiv(
-                weight,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT
-            );
+            weight = mulDiv(weight, cutFactor, maxPercent);
 
             // The calculation doesn't need to continue if the weight is 0.
             if (weight == 0) break;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -896,11 +898,14 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // slither-disable-next-line incorrect-equality
         if (ruleset.basedOnId == 0) return JBApprovalStatus.Empty;
 
-        // Get the struct of the ruleset with the approval hook.
-        JBRuleset memory approvalHookRuleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
+        // Read only the packed user properties to extract the approval hook address,
+        // avoiding the cost of loading the full parent ruleset struct.
+        uint256 packedUserProperties = _packedUserPropertiesOf[projectId][ruleset.basedOnId];
+        // forge-lint: disable-next-line(unsafe-typecast)
+        IJBRulesetApprovalHook approvalHook = IJBRulesetApprovalHook(address(uint160(packedUserProperties)));
 
         // If there is no approval hook, it's considered empty.
-        if (approvalHookRuleset.approvalHook == IJBRulesetApprovalHook(address(0))) {
+        if (approvalHook == IJBRulesetApprovalHook(address(0))) {
             return JBApprovalStatus.Empty;
         }
 
@@ -909,9 +914,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Note: A malicious hook that consumes all gas (e.g. infinite loop) could still DoS via gas exhaustion.
         // This is accepted risk since the project owner chose their own approval hook.
         // slither-disable-next-line calls-loop
-        try approvalHookRuleset.approvalHook.approvalStatusOf({projectId: projectId, ruleset: ruleset}) returns (
-            JBApprovalStatus status
-        ) {
+        try approvalHook.approvalStatusOf({projectId: projectId, ruleset: ruleset}) returns (JBApprovalStatus status) {
             return status;
         } catch {
             return JBApprovalStatus.Failed;

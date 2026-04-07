@@ -30,10 +30,13 @@ library JBSurplus {
         uint256 numberOfTerminals = terminals.length;
 
         // Add the current surplus for each terminal.
-        for (uint256 i; i < numberOfTerminals; i++) {
+        for (uint256 i; i < numberOfTerminals;) {
             surplus += terminals[i].currentSurplusOf({
                 projectId: projectId, tokens: tokens, decimals: decimals, currency: currency
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 }
