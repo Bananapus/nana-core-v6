@@ -71,8 +71,7 @@ contract CrossTerminalSurplusSpoof_Local is TestBaseWorkflow {
         });
 
         JBAccountingContext[] memory contexts = new JBAccountingContext[](1);
-        contexts[0] =
-            JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
+        contexts[0] = JBAccountingContext({token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: _nativeCurrency});
 
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](1);
         terminalConfigs[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: contexts});

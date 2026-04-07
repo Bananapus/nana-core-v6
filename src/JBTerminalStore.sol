@@ -787,9 +787,17 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
+        // Fetch the current ruleset once — used for both surplus calculation and cash out tax rate.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
         // Aggregate surplus across the terminals, optionally filtered by the specified tokens.
         uint256 currentSurplus = _currentSurplusOf({
-            projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
+            projectId: projectId,
+            terminals: terminals,
+            tokens: tokens,
+            decimals: decimals,
+            currency: currency,
+            ruleset: ruleset
         });
 
         // If there's no surplus, nothing can be reclaimed.
@@ -802,15 +810,12 @@ contract JBTerminalStore is IJBTerminalStore {
         // Can't cash out more tokens than are in the total supply.
         if (cashOutCount > totalSupply) return 0;
 
-        // Get the cash out tax rate from the current ruleset.
-        uint256 cashOutTaxRate = RULESETS.currentOf(projectId).cashOutTaxRate();
-
         // Return the amount of surplus terminal tokens that would be reclaimed.
         return JBCashOuts.cashOutFrom({
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
-            cashOutTaxRate: cashOutTaxRate
+            cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
 
@@ -1106,11 +1111,42 @@ contract JBTerminalStore is IJBTerminalStore {
         view
         returns (uint256 surplus)
     {
+        // Fetch the ruleset once and delegate to the overload that accepts it.
+        return _currentSurplusOf({
+            projectId: projectId,
+            terminals: terminals,
+            tokens: tokens,
+            decimals: decimals,
+            currency: currency,
+            ruleset: RULESETS.currentOf(projectId)
+        });
+    }
+
+    /// @notice Gets the current surplus amount for a project across specified terminals and tokens, using a
+    /// pre-fetched ruleset.
+    /// @dev Use this overload when the caller already has the current ruleset to avoid a redundant
+    /// `RULESETS.currentOf()` call.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param terminals The terminals to include. If empty, all project terminals are used.
+    /// @param tokens The tokens to include. If empty, all tokens per terminal are used.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @param ruleset The project's current ruleset.
+    /// @return surplus The current surplus amount.
+    function _currentSurplusOf(
+        uint256 projectId,
+        IJBTerminal[] memory terminals,
+        address[] memory tokens,
+        uint256 decimals,
+        uint256 currency,
+        JBRuleset memory ruleset
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
         // If specific terminals were provided, use them. Otherwise, get all terminals from the directory.
         IJBTerminal[] memory resolvedTerminals = terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId);
-
-        // The ruleset determines payout limits, which affect surplus. Fetch it once for all terminals.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
 
         // Sum surplus across each terminal.
         for (uint256 i; i < resolvedTerminals.length;) {
