@@ -1706,6 +1706,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Returns held fees to the project who paid them based on the specified amount.
+    /// @dev Fee rounding during partial replenishment can zero out dust-level fee entries (< 40 wei at 2.5% fee).
+    /// This is accepted behavior — dust fees are economically insignificant.
     /// @param projectId The project held fees are being returned to.
     /// @param token The token that the held fees are in.
     /// @param amount The amount to base the calculation on, as a fixed point number with the same number of decimals

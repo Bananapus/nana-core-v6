@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {JBController} from "../../../../src/JBController.sol";
 import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";

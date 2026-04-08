@@ -110,6 +110,9 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @dev Increases as projects use their allowance.
     /// @dev The used surplus allowance is represented as a fixed point number with the same amount of decimals as the
     /// terminal it applies to.
+    /// @dev Surplus allowance usage is keyed by `ruleset.id`, not cycle number. Implicit cycle progression
+    /// (duration-based auto-cycling) does not reset allowance — this is by design. Projects must queue a new ruleset
+    /// to get a fresh allowance.
     /// @custom:param terminal The terminal the surplus allowance applies to.
     /// @custom:param projectId The ID of the project to get the used surplus allowance of.
     /// @custom:param token The token the surplus allowance applies to in the terminal.
@@ -824,6 +827,9 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
 
     /// @notice Computes the surplus relevant for a cash out (total or local, depending on ruleset flag).
+    /// @dev When `useTotalSurplusForCashOuts` is enabled, surplus is aggregated from ALL registered terminals without
+    /// validation. Projects MUST only register trusted terminals — an untrusted terminal can over-report surplus and
+    /// cause the executing terminal to overpay cash-outs.
     /// @param terminal The terminal the cash out is being recorded from.
     /// @param projectId The ID of the project being cashed out from.
     /// @param tokenToReclaim The token being reclaimed.

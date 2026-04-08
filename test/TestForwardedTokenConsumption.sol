@@ -386,6 +386,7 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
         returns (JBFundAccessLimitGroup[] memory)
     {
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
+        // forge-lint: disable-next-line(unsafe-typecast)
         payoutLimits[0] =
             JBCurrencyAmount({amount: uint224(payoutAmount), currency: uint32(uint160(address(usdcToken())))});
 
