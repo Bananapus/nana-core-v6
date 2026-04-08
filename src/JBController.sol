@@ -522,23 +522,28 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Get a reference to the project's ruleset.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
+        // Cache common values used in both permission checks.
+        address sender = _msgSender();
+        bool senderIsTerminal = _isTerminalOf(projectId, sender);
+
         // Minting is restricted to: the project's owner, addresses with permission to `MINT_TOKENS`, the project's
         // terminals, and the project's data hook.
         _requirePermissionAllowingOverrideFrom({
             account: PROJECTS.ownerOf(projectId),
             projectId: projectId,
             permissionId: JBPermissionIds.MINT_TOKENS,
-            alsoGrantAccessIf: _isTerminalOf(projectId, _msgSender()) || _msgSender() == ruleset.dataHook()
-                || _hasDataHookMintPermissionFor(projectId, ruleset, _msgSender())
+            alsoGrantAccessIf: senderIsTerminal || sender == ruleset.dataHook()
+                || _hasDataHookMintPermissionFor(projectId, ruleset, sender)
         });
 
         // If the message sender is not the project's terminal or data hook, the ruleset must have `allowOwnerMinting`
         // set to `true`.
         if (
-            ruleset.id != 0 && !ruleset.allowOwnerMinting() && !_isTerminalOf(projectId, _msgSender())
-                && _msgSender() != address(ruleset.dataHook())
-                && !_hasDataHookMintPermissionFor(projectId, ruleset, _msgSender())
-        ) revert JBController_MintNotAllowedAndNotTerminalOrHook(_msgSender());
+            ruleset.id != 0 && !ruleset.allowOwnerMinting() && !senderIsTerminal && sender != ruleset.dataHook()
+                && !_hasDataHookMintPermissionFor(projectId, ruleset, sender)
+        ) {
+            revert JBController_MintNotAllowedAndNotTerminalOrHook(sender);
+        }
 
         // Determine the reserved percent to use.
         reservedPercent = useReservedPercent ? ruleset.reservedPercent() : 0;
@@ -559,7 +564,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             beneficiaryTokenCount: beneficiaryTokenCount,
             memo: memo,
             reservedPercent: reservedPercent,
-            caller: _msgSender()
+            caller: sender
         });
 
         // Add any reserved tokens to the pending reserved token balance.
@@ -748,12 +753,15 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         rulesets = new JBRulesetWithMetadata[](numberOfRulesets);
 
         // Populate the array with rulesets AND their metadata.
-        for (uint256 i; i < numberOfRulesets; i++) {
+        for (uint256 i; i < numberOfRulesets;) {
             // Set the ruleset being iterated on.
             JBRuleset memory baseRuleset = baseRulesets[i];
 
             // Set the returned value.
             rulesets[i] = JBRulesetWithMetadata({ruleset: baseRuleset, metadata: baseRuleset.expandMetadata()});
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -896,7 +904,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Initialize an array of terminals to populate.
         IJBTerminal[] memory terminals = new IJBTerminal[](terminalConfigurations.length);
 
-        for (uint256 i; i < terminalConfigurations.length; i++) {
+        for (uint256 i; i < terminalConfigurations.length;) {
             // Set the terminal configuration being iterated on.
             JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
@@ -909,6 +917,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Add the terminal.
             terminals[i] = terminalConfig.terminal;
+            unchecked {
+                ++i;
+            }
         }
 
         // Set the terminals in the directory.
@@ -928,7 +939,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         internal
         returns (uint256 rulesetId)
     {
-        for (uint256 i; i < rulesetConfigurations.length; i++) {
+        for (uint256 i; i < rulesetConfigurations.length;) {
             // Get a reference to the ruleset config being iterated on.
             JBRulesetConfig memory rulesetConfig = rulesetConfigurations[i];
 
@@ -974,6 +985,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             if (i == rulesetConfigurations.length - 1) {
                 rulesetId = ruleset.id;
             }
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1004,8 +1018,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Keep a reference to the number of splits being iterated on.
         uint256 numberOfSplits = splits.length;
 
+        // Cache _msgSender() before the loop.
+        address messageSender = _msgSender();
+
         // Send the tokens to the splits.
-        for (uint256 i; i < numberOfSplits; i++) {
+        for (uint256 i; i < numberOfSplits;) {
             // Get a reference to the split being iterated on.
             JBSplit memory split = splits[i];
 
@@ -1048,7 +1065,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 } else {
                     // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message
                     // sender.
-                    address beneficiary = split.beneficiary != address(0) ? split.beneficiary : _msgSender();
+                    address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
                     if (split.projectId != 0) {
                         // Get a reference to the receiving project's primary payment terminal for the token.
@@ -1086,7 +1103,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                                     split: split,
                                     tokenCount: splitTokenCount,
                                     reason: reason,
-                                    caller: _msgSender()
+                                    caller: messageSender
                                 });
 
                                 // If it fails, transfer the tokens from this contract to the beneficiary.
@@ -1115,8 +1132,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 groupId: groupId,
                 split: split,
                 tokenCount: splitTokenCount,
-                caller: _msgSender()
+                caller: messageSender
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 

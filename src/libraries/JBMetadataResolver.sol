@@ -214,7 +214,7 @@ library JBMetadataResolver {
         uint256 numberOfDatas = datas.length;
 
         // Add each metadata to the array, each padded to 32 bytes
-        for (uint256 i; i < numberOfDatas; i++) {
+        for (uint256 i; i < numberOfDatas;) {
             metadata = abi.encodePacked(metadata, datas[i]);
             paddedLength = metadata.length % JBMetadataResolver.WORD_SIZE == 0
                 ? metadata.length
@@ -222,6 +222,9 @@ library JBMetadataResolver {
 
             assembly ("memory-safe") {
                 mstore(metadata, paddedLength)
+            }
+            unchecked {
+                ++i;
             }
         }
     }

@@ -5,7 +5,6 @@ import {MockERC20} from "../../../mock/MockERC20.sol";
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
 import {IJBCashOutHook} from "../../../../src/interfaces/IJBCashOutHook.sol";
-import {IJBCashOutTerminal} from "../../../../src/interfaces/IJBCashOutTerminal.sol";
 import {IJBController} from "../../../../src/interfaces/IJBController.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";

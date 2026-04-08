@@ -110,6 +110,9 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @dev Increases as projects use their allowance.
     /// @dev The used surplus allowance is represented as a fixed point number with the same amount of decimals as the
     /// terminal it applies to.
+    /// @dev Surplus allowance usage is keyed by `ruleset.id`, not cycle number. Implicit cycle progression
+    /// (duration-based auto-cycling) does not reset allowance — this is by design. Projects must queue a new ruleset
+    /// to get a fresh allowance.
     /// @custom:param terminal The terminal the surplus allowance applies to.
     /// @custom:param projectId The ID of the project to get the used surplus allowance of.
     /// @custom:param token The token the surplus allowance applies to in the terminal.
@@ -172,7 +175,7 @@ contract JBTerminalStore is IJBTerminalStore {
         }
 
         // Record each accounting context.
-        for (uint256 i; i < contexts.length; i++) {
+        for (uint256 i; i < contexts.length;) {
             JBAccountingContext calldata context = contexts[i];
 
             // Make sure the token accounting context isn't already set.
@@ -213,6 +216,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Add the context to the list.
             _accountingContextsOf[msg.sender][projectId].push(context);
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -277,26 +283,29 @@ contract JBTerminalStore is IJBTerminalStore {
 
         if (hookSpecifications.length != 0) {
             uint256 numberOfSpecifications = hookSpecifications.length;
-            for (uint256 i; i < numberOfSpecifications; i++) {
+            for (uint256 i; i < numberOfSpecifications;) {
                 uint256 specificationAmount = hookSpecifications[i].amount;
                 if (specificationAmount != 0) {
                     balanceDiff += specificationAmount;
                 }
+                unchecked {
+                    ++i;
+                }
             }
         }
 
+        // Cache the balance slot to avoid redundant storage reads.
+        uint256 currentBalance = balanceOf[msg.sender][projectId][tokenToReclaim];
+
         // The amount being reclaimed must be within the project's balance.
-        if (balanceDiff > balanceOf[msg.sender][projectId][tokenToReclaim]) {
-            revert JBTerminalStore_InadequateTerminalStoreBalance(
-                balanceDiff, balanceOf[msg.sender][projectId][tokenToReclaim]
-            );
+        if (balanceDiff > currentBalance) {
+            revert JBTerminalStore_InadequateTerminalStoreBalance(balanceDiff, currentBalance);
         }
 
         // Remove the reclaimed funds from the project's balance.
         if (balanceDiff != 0) {
             unchecked {
-                balanceOf[msg.sender][projectId][tokenToReclaim] =
-                    balanceOf[msg.sender][projectId][tokenToReclaim] - balanceDiff;
+                balanceOf[msg.sender][projectId][tokenToReclaim] = currentBalance - balanceDiff;
             }
         }
     }
@@ -338,8 +347,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Add the correct balance difference to the token balance of the project.
         if (balanceDiff != 0) {
-            balanceOf[msg.sender][projectId][amount.token] =
-                balanceOf[msg.sender][projectId][amount.token] + balanceDiff;
+            // Cache the balance slot to avoid redundant storage reads.
+            uint256 currentBalance = balanceOf[msg.sender][projectId][amount.token];
+            balanceOf[msg.sender][projectId][amount.token] = currentBalance + balanceDiff;
         }
     }
 
@@ -385,26 +395,20 @@ contract JBTerminalStore is IJBTerminalStore {
                 })
             });
 
-        // The amount being paid out must be available.
-        if (amountPaidOut > balanceOf[msg.sender][projectId][token]) {
-            revert JBTerminalStore_InadequateTerminalStoreBalance(
-                amountPaidOut, balanceOf[msg.sender][projectId][token]
-            );
-        }
+        // Cache the balance slot to avoid redundant storage reads.
+        uint256 currentBalance = balanceOf[msg.sender][projectId][token];
 
-        // Removed the paid out funds from the project's token balance.
-        unchecked {
-            balanceOf[msg.sender][projectId][token] = balanceOf[msg.sender][projectId][token] - amountPaidOut;
+        // The amount being paid out must be available.
+        if (amountPaidOut > currentBalance) {
+            revert JBTerminalStore_InadequateTerminalStoreBalance(amountPaidOut, currentBalance);
         }
 
         // The new total amount which has been paid out during this ruleset.
         uint256 newUsedPayoutLimitOf =
             usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] + amount;
 
-        // Store the new amount.
-        usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = newUsedPayoutLimitOf;
-
         // Amount must be within what is still available to pay out.
+        // Validate BEFORE writing to storage to avoid wasting gas on SSTORE when the tx will revert.
         uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .payoutLimitOf({
                 projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
@@ -414,6 +418,14 @@ contract JBTerminalStore is IJBTerminalStore {
         if (newUsedPayoutLimitOf > payoutLimit || payoutLimit == 0) {
             revert JBTerminalStore_InadequateControllerPayoutLimit(newUsedPayoutLimitOf, payoutLimit);
         }
+
+        // Removed the paid out funds from the project's token balance.
+        unchecked {
+            balanceOf[msg.sender][projectId][token] = currentBalance - amountPaidOut;
+        }
+
+        // Store the new used payout limit.
+        usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = newUsedPayoutLimitOf;
     }
 
     /// @notice Records the migration of funds from this store.
@@ -493,17 +505,12 @@ contract JBTerminalStore is IJBTerminalStore {
         // The amount being used must be available in the surplus.
         if (usedAmount > surplus) revert JBTerminalStore_InadequateTerminalStoreBalance(usedAmount, surplus);
 
-        // Update the project's balance.
-        balanceOf[msg.sender][projectId][token] = balanceOf[msg.sender][projectId][token] - usedAmount;
-
         // Get a reference to the new used surplus allowance for this ruleset ID.
         uint256 newUsedSurplusAllowanceOf =
             usedSurplusAllowanceOf[msg.sender][projectId][token][ruleset.id][currency] + amount;
 
-        // Store the incremented value.
-        usedSurplusAllowanceOf[msg.sender][projectId][token][ruleset.id][currency] = newUsedSurplusAllowanceOf;
-
         // There must be sufficient surplus allowance available.
+        // Validate BEFORE writing to storage to avoid wasting gas on SSTORE when the tx will revert.
         uint256 surplusAllowance = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .surplusAllowanceOf({
                 projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
@@ -513,6 +520,15 @@ contract JBTerminalStore is IJBTerminalStore {
         if (newUsedSurplusAllowanceOf > surplusAllowance || surplusAllowance == 0) {
             revert JBTerminalStore_InadequateControllerAllowance(newUsedSurplusAllowanceOf, surplusAllowance);
         }
+
+        // Cache the balance slot to avoid redundant storage reads.
+        uint256 currentBalance = balanceOf[msg.sender][projectId][token];
+
+        // Update the project's balance.
+        balanceOf[msg.sender][projectId][token] = currentBalance - usedAmount;
+
+        // Store the incremented value.
+        usedSurplusAllowanceOf[msg.sender][projectId][token][ruleset.id][currency] = newUsedSurplusAllowanceOf;
     }
 
     //*********************************************************************//
@@ -774,9 +790,17 @@ contract JBTerminalStore is IJBTerminalStore {
         override
         returns (uint256)
     {
+        // Fetch the current ruleset once — used for both surplus calculation and cash out tax rate.
+        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
+
         // Aggregate surplus across the terminals, optionally filtered by the specified tokens.
         uint256 currentSurplus = _currentSurplusOf({
-            projectId: projectId, terminals: terminals, tokens: tokens, decimals: decimals, currency: currency
+            projectId: projectId,
+            terminals: terminals,
+            tokens: tokens,
+            decimals: decimals,
+            currency: currency,
+            ruleset: ruleset
         });
 
         // If there's no surplus, nothing can be reclaimed.
@@ -789,15 +813,12 @@ contract JBTerminalStore is IJBTerminalStore {
         // Can't cash out more tokens than are in the total supply.
         if (cashOutCount > totalSupply) return 0;
 
-        // Get the cash out tax rate from the current ruleset.
-        uint256 cashOutTaxRate = RULESETS.currentOf(projectId).cashOutTaxRate();
-
         // Return the amount of surplus terminal tokens that would be reclaimed.
         return JBCashOuts.cashOutFrom({
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
-            cashOutTaxRate: cashOutTaxRate
+            cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
 
@@ -806,6 +827,9 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
 
     /// @notice Computes the surplus relevant for a cash out (total or local, depending on ruleset flag).
+    /// @dev When `useTotalSurplusForCashOuts` is enabled, surplus is aggregated from ALL registered terminals without
+    /// validation. Projects MUST only register trusted terminals — an untrusted terminal can over-report surplus and
+    /// cause the executing terminal to overpay cash-outs.
     /// @param terminal The terminal the cash out is being recorded from.
     /// @param projectId The ID of the project being cashed out from.
     /// @param tokenToReclaim The token being reclaimed.
@@ -937,9 +961,12 @@ contract JBTerminalStore is IJBTerminalStore {
                 IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
             // Noop specifications are informational only, so they can't also request forwarded funds.
-            for (uint256 i; i < hookSpecifications.length; i++) {
+            for (uint256 i; i < hookSpecifications.length;) {
                 if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
                     revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                }
+                unchecked {
+                    ++i;
                 }
             }
         } else {
@@ -1028,7 +1055,7 @@ contract JBTerminalStore is IJBTerminalStore {
         balanceDiff = amount.value;
 
         // Ensure that the specifications have valid amounts.
-        for (uint256 i; i < hookSpecifications.length; i++) {
+        for (uint256 i; i < hookSpecifications.length;) {
             if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
                 revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
             }
@@ -1043,6 +1070,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
                 // Decrement the total amount being added to the local balance.
                 balanceDiff -= specifiedAmount;
+            }
+            unchecked {
+                ++i;
             }
         }
 
@@ -1087,14 +1117,45 @@ contract JBTerminalStore is IJBTerminalStore {
         view
         returns (uint256 surplus)
     {
+        // Fetch the ruleset once and delegate to the overload that accepts it.
+        return _currentSurplusOf({
+            projectId: projectId,
+            terminals: terminals,
+            tokens: tokens,
+            decimals: decimals,
+            currency: currency,
+            ruleset: RULESETS.currentOf(projectId)
+        });
+    }
+
+    /// @notice Gets the current surplus amount for a project across specified terminals and tokens, using a
+    /// pre-fetched ruleset.
+    /// @dev Use this overload when the caller already has the current ruleset to avoid a redundant
+    /// `RULESETS.currentOf()` call.
+    /// @param projectId The ID of the project to get surplus for.
+    /// @param terminals The terminals to include. If empty, all project terminals are used.
+    /// @param tokens The tokens to include. If empty, all tokens per terminal are used.
+    /// @param decimals The number of decimals to expect in the resulting fixed point number.
+    /// @param currency The currency the resulting amount should be in terms of.
+    /// @param ruleset The project's current ruleset.
+    /// @return surplus The current surplus amount.
+    function _currentSurplusOf(
+        uint256 projectId,
+        IJBTerminal[] memory terminals,
+        address[] memory tokens,
+        uint256 decimals,
+        uint256 currency,
+        JBRuleset memory ruleset
+    )
+        internal
+        view
+        returns (uint256 surplus)
+    {
         // If specific terminals were provided, use them. Otherwise, get all terminals from the directory.
         IJBTerminal[] memory resolvedTerminals = terminals.length != 0 ? terminals : DIRECTORY.terminalsOf(projectId);
 
-        // The ruleset determines payout limits, which affect surplus. Fetch it once for all terminals.
-        JBRuleset memory ruleset = RULESETS.currentOf(projectId);
-
         // Sum surplus across each terminal.
-        for (uint256 i; i < resolvedTerminals.length; i++) {
+        for (uint256 i; i < resolvedTerminals.length;) {
             address terminal = address(resolvedTerminals[i]);
 
             // Build the list of accounting contexts to include in this terminal's surplus calculation.
@@ -1102,8 +1163,11 @@ contract JBTerminalStore is IJBTerminalStore {
             if (tokens.length != 0) {
                 // Specific tokens requested: look up each token's accounting context at this terminal.
                 accountingContexts = new JBAccountingContext[](tokens.length);
-                for (uint256 j; j < tokens.length; j++) {
+                for (uint256 j; j < tokens.length;) {
                     accountingContexts[j] = _accountingContextForTokenOf[terminal][projectId][tokens[j]];
+                    unchecked {
+                        ++j;
+                    }
                 }
             } else {
                 // No token filter: use all accounting contexts registered at this terminal.
@@ -1119,6 +1183,9 @@ contract JBTerminalStore is IJBTerminalStore {
                 targetDecimals: decimals,
                 targetCurrency: currency
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1151,7 +1218,7 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 numberOfTokenAccountingContexts = accountingContexts.length;
 
         // Add payout limits from each token.
-        for (uint256 i; i < numberOfTokenAccountingContexts; i++) {
+        for (uint256 i; i < numberOfTokenAccountingContexts;) {
             uint256 tokenSurplus = _tokenSurplusFrom({
                 terminal: terminal,
                 projectId: projectId,
@@ -1162,6 +1229,9 @@ contract JBTerminalStore is IJBTerminalStore {
             });
             // Increment the surplus with any remaining balance.
             if (tokenSurplus > 0) surplus += tokenSurplus;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -1228,7 +1298,7 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 numberOfPayoutLimits = payoutLimits.length;
 
         // Loop through each payout limit to determine the cumulative normalized payout limit remaining.
-        for (uint256 i; i < numberOfPayoutLimits; i++) {
+        for (uint256 i; i < numberOfPayoutLimits;) {
             JBCurrencyAmount memory payoutLimit = payoutLimits[i];
 
             // Set the payout limit value to the amount still available to pay out during the ruleset.
@@ -1279,6 +1349,9 @@ contract JBTerminalStore is IJBTerminalStore {
                 surplus -= payoutLimit.amount;
             } else {
                 return 0;
+            }
+            unchecked {
+                ++i;
             }
         }
     }

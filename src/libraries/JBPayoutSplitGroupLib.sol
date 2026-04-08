@@ -69,7 +69,7 @@ library JBPayoutSplitGroupLib {
         leftoverAmount = amount;
 
         // Transfer between all splits.
-        for (uint256 i; i < payoutSplits.length; i++) {
+        for (uint256 i; i < payoutSplits.length;) {
             // Get a reference to the split being iterated on.
             JBSplit memory split = payoutSplits[i];
 
@@ -108,6 +108,9 @@ library JBPayoutSplitGroupLib {
                 netAmount: netPayoutAmount,
                 caller: caller
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 

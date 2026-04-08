@@ -672,17 +672,19 @@ contract JBRulesets is JBControlled, IJBRulesets {
             revert JBRulesets_WeightCacheRequired(projectId);
         }
 
-        for (uint256 i; i < weightCutMultiple; i++) {
-            // The number of times to apply the weight cut percent.
+        // Cache the cut factor and max percent to avoid recomputing each iteration.
+        uint256 cutFactor = JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent;
+        uint256 maxPercent = JBConstants.MAX_WEIGHT_CUT_PERCENT;
+
+        for (uint256 i; i < weightCutMultiple;) {
             // Base the new weight on the specified ruleset's weight.
-            weight = mulDiv(
-                weight,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT
-            );
+            weight = mulDiv(weight, cutFactor, maxPercent);
 
             // The calculation doesn't need to continue if the weight is 0.
             if (weight == 0) break;
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -721,6 +723,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // Get a reference to the latest ruleset's struct.
+        // Note: full metadata is loaded because `_approvalStatusOf` forwards the struct to external approval hooks.
         JBRuleset memory baseRuleset = _getStructFor({projectId: projectId, rulesetId: latestId});
 
         // Get a reference to the approval status.
@@ -743,7 +746,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
                     && approvalStatus != JBApprovalStatus.ApprovalExpected
                     && approvalStatus != JBApprovalStatus.Empty)
         ) {
-            baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
+            // Metadata not needed — the fallback ruleset is only used for intrinsic fields (start, basedOnId, etc.)
+            // and not forwarded to any external approval hook.
+            baseRuleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
         }
 
         // Make sure the ruleset starts after the base ruleset.
@@ -896,11 +901,14 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // slither-disable-next-line incorrect-equality
         if (ruleset.basedOnId == 0) return JBApprovalStatus.Empty;
 
-        // Get the struct of the ruleset with the approval hook.
-        JBRuleset memory approvalHookRuleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
+        // Read only the packed user properties to extract the approval hook address,
+        // avoiding the cost of loading the full parent ruleset struct.
+        uint256 packedUserProperties = _packedUserPropertiesOf[projectId][ruleset.basedOnId];
+        // forge-lint: disable-next-line(unsafe-typecast)
+        IJBRulesetApprovalHook approvalHook = IJBRulesetApprovalHook(address(uint160(packedUserProperties)));
 
         // If there is no approval hook, it's considered empty.
-        if (approvalHookRuleset.approvalHook == IJBRulesetApprovalHook(address(0))) {
+        if (approvalHook == IJBRulesetApprovalHook(address(0))) {
             return JBApprovalStatus.Empty;
         }
 
@@ -909,9 +917,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Note: A malicious hook that consumes all gas (e.g. infinite loop) could still DoS via gas exhaustion.
         // This is accepted risk since the project owner chose their own approval hook.
         // slither-disable-next-line calls-loop
-        try approvalHookRuleset.approvalHook.approvalStatusOf({projectId: projectId, ruleset: ruleset}) returns (
-            JBApprovalStatus status
-        ) {
+        try approvalHook.approvalStatusOf({projectId: projectId, ruleset: ruleset}) returns (JBApprovalStatus status) {
             return status;
         } catch {
             return JBApprovalStatus.Failed;
@@ -928,8 +934,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Get a reference to the project's latest ruleset.
         uint256 rulesetId = latestRulesetIdOf[projectId];
 
-        // Get the struct for the latest ruleset.
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        // Get the struct for the latest ruleset (metadata not needed — only traversal fields are checked).
+        JBRuleset memory ruleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: rulesetId});
 
         // Loop through all most recently queued rulesets until an approvable one is found, or we've proven one can't
         // exist.
@@ -945,10 +951,62 @@ contract JBRulesets is JBControlled, IJBRulesets {
                 return ruleset.id;
             }
 
-            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
+            ruleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: ruleset.basedOnId});
         } while (ruleset.cycleNumber != 0);
 
         return 0;
+    }
+
+    /// @notice Unpack a ruleset's intrinsic and user properties without loading metadata.
+    /// @dev Saves one cold SLOAD (~2,100 gas) compared to `_getStructFor`. Use this for linked-list traversal where
+    /// only `id`, `start`, `duration`, `basedOnId`, `cycleNumber`, `weight`, `weightCutPercent`, and `approvalHook`
+    /// are needed.
+    /// @param projectId The ID of the project the ruleset belongs to.
+    /// @param rulesetId The ID of the ruleset to get the struct for.
+    /// @return ruleset A ruleset struct with `metadata` set to 0.
+    function _getStructWithoutMetadataFor(
+        uint256 projectId,
+        uint256 rulesetId
+    )
+        internal
+        view
+        returns (JBRuleset memory ruleset)
+    {
+        // Return an empty ruleset if the specified `rulesetId` is 0.
+        // slither-disable-next-line incorrect-equality
+        if (rulesetId == 0) return ruleset;
+
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.id = uint48(rulesetId);
+
+        uint256 packedIntrinsicProperties = _packedIntrinsicPropertiesOf[projectId][rulesetId];
+
+        // `weight` in bits 0-111 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.weight = uint112(packedIntrinsicProperties);
+        // `basedOnId` in bits 112-159 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.basedOnId = uint48(packedIntrinsicProperties >> 112);
+        // `start` in bits 160-207 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.start = uint48(packedIntrinsicProperties >> 160);
+        // `cycleNumber` in bits 208-255 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.cycleNumber = uint48(packedIntrinsicProperties >> 208);
+
+        uint256 packedUserProperties = _packedUserPropertiesOf[projectId][rulesetId];
+
+        // approval hook in bits 0-159 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.approvalHook = IJBRulesetApprovalHook(address(uint160(packedUserProperties)));
+        // `duration` in bits 160-191 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.duration = uint32(packedUserProperties >> 160);
+        // weight cut percent in bits 192-223 bits.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        ruleset.weightCutPercent = uint32(packedUserProperties >> 192);
+
+        // metadata intentionally not loaded — saves one cold SLOAD (~2,100 gas).
     }
 
     /// @notice Unpack a ruleset's packed stored values into an easy-to-work-with ruleset struct.
@@ -1067,8 +1125,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Get a reference to the ID of the project's latest ruleset.
         rulesetId = latestRulesetIdOf[projectId];
 
-        // Get the struct for the latest ruleset.
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        // Get the struct for the latest ruleset (metadata not needed — only traversal fields are checked).
+        JBRuleset memory ruleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: rulesetId});
 
         // There is no upcoming ruleset if the latest ruleset has already started.
         // slither-disable-next-line incorrect-equality
@@ -1086,7 +1144,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Find the base ruleset that is not still queued.
         while (true) {
-            baseRuleset = _getStructFor({projectId: projectId, rulesetId: basedOnId});
+            baseRuleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: basedOnId});
 
             // If the base ruleset starts in the future,
             if (block.timestamp < baseRuleset.start) {
@@ -1100,8 +1158,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
             }
         }
 
-        // Get the ruleset struct for the ID found.
-        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        // Get the ruleset struct for the ID found (metadata not needed — only `start` and `duration` are checked).
+        ruleset = _getStructWithoutMetadataFor({projectId: projectId, rulesetId: rulesetId});
 
         // If the latest ruleset doesn't start until after another base ruleset return 0.
         if (baseRuleset.duration != 0 && block.timestamp < ruleset.start - baseRuleset.duration) {

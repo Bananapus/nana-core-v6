@@ -82,7 +82,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         uint256 numberOfFundAccessLimitGroups = fundAccessLimitGroups.length;
 
         // Set payout limits if there are any.
-        for (uint256 i; i < numberOfFundAccessLimitGroups; i++) {
+        for (uint256 i; i < numberOfFundAccessLimitGroups;) {
             // Set the limits being iterated on.
             JBFundAccessLimitGroup calldata fundAccessLimitGroup = fundAccessLimitGroups[i];
 
@@ -90,7 +90,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             uint256 numberOfPayoutLimits = fundAccessLimitGroup.payoutLimits.length;
 
             // Iterate through each payout limit to validate and store them.
-            for (uint256 j; j < numberOfPayoutLimits; j++) {
+            for (uint256 j; j < numberOfPayoutLimits;) {
                 // Set the payout limit being iterated on.
                 JBCurrencyAmount calldata payoutLimit = fundAccessLimitGroup.payoutLimits[j];
 
@@ -106,13 +106,16 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                         uint256(payoutLimit.amount) | (uint256(payoutLimit.currency) << 224)
                     );
                 }
+                unchecked {
+                    ++j;
+                }
             }
 
             // Keep a reference to the number of surplus allowances.
             uint256 numberOfSurplusAllowances = fundAccessLimitGroup.surplusAllowances.length;
 
             // Iterate through each surplus allowance to validate and store them.
-            for (uint256 j; j < numberOfSurplusAllowances; j++) {
+            for (uint256 j; j < numberOfSurplusAllowances;) {
                 // Set the surplus allowance being iterated on.
                 JBCurrencyAmount calldata surplusAllowance = fundAccessLimitGroup.surplusAllowances[j];
 
@@ -128,6 +131,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                         uint256(surplusAllowance.amount) | (uint256(surplusAllowance.currency) << 224)
                     );
                 }
+                unchecked {
+                    ++j;
+                }
             }
 
             emit SetFundAccessLimits({
@@ -136,6 +142,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                 fundAccessLimitGroup: fundAccessLimitGroup,
                 caller: msg.sender
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -171,7 +180,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         uint256 numberOfData = data.length;
 
         // Iterate through the stored packed values and return the value of the matching currency.
-        for (uint256 i; i < numberOfData; i++) {
+        for (uint256 i; i < numberOfData;) {
             // Set the data being iterated on.
             uint256 packedPayoutLimitData = data[i];
 
@@ -179,6 +188,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             if (currency == packedPayoutLimitData >> 224) {
                 // forge-lint: disable-next-line(unsafe-typecast)
                 return uint256(uint224(packedPayoutLimitData));
+            }
+            unchecked {
+                ++i;
             }
         }
     }
@@ -213,7 +225,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         payoutLimits = new JBCurrencyAmount[](numberOfData);
 
         // Iterate through the packed values and format the returned value.
-        for (uint256 i; i < numberOfData; i++) {
+        for (uint256 i; i < numberOfData;) {
             // Set the data being iterated on.
             uint256 packedPayoutLimitData = packedPayoutLimitsData[i];
 
@@ -225,6 +237,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                 // forge-lint: disable-next-line(unsafe-typecast)
                 amount: uint224(packedPayoutLimitData)
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 
@@ -257,7 +272,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         uint256 numberOfData = packedSurplusAllowancesData.length;
 
         // Iterate through the stored packed values and format the returned value.
-        for (uint256 i; i < numberOfData; i++) {
+        for (uint256 i; i < numberOfData;) {
             // Set the data being iterated on.
             uint256 packedSurplusAllowanceData = packedSurplusAllowancesData[i];
 
@@ -265,6 +280,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
             if (currency == packedSurplusAllowanceData >> 224) {
                 // forge-lint: disable-next-line(unsafe-typecast)
                 return uint256(uint224(packedSurplusAllowanceData));
+            }
+            unchecked {
+                ++i;
             }
         }
     }
@@ -301,7 +319,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         surplusAllowances = new JBCurrencyAmount[](numberOfData);
 
         // Iterate through the stored packed values and format the returned value.
-        for (uint256 i; i < numberOfData; i++) {
+        for (uint256 i; i < numberOfData;) {
             // Set the data being iterated on.
             uint256 packedSurplusAllowanceData = packedSurplusAllowancesData[i];
 
@@ -313,6 +331,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                 // forge-lint: disable-next-line(unsafe-typecast)
                 amount: uint224(packedSurplusAllowanceData)
             });
+            unchecked {
+                ++i;
+            }
         }
     }
 }

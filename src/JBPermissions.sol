@@ -160,7 +160,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
 
         // Returns true for empty permission arrays by design (vacuous truth). An empty set of
         // required permissions is trivially satisfied. Callers should validate non-empty permission arrays if needed.
-        for (uint256 i; i < permissionIds.length; i++) {
+        for (uint256 i; i < permissionIds.length;) {
             // Set the permission being iterated on.
             uint256 permissionId = permissionIds[i];
 
@@ -175,6 +175,9 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
                     })
             ) {
                 return false;
+            }
+            unchecked {
+                ++i;
             }
         }
         return true;
@@ -210,29 +213,23 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         // Indexes above 255 don't exist
         if (permissionId > 255) revert JBPermissions_PermissionIdOutOfBounds(permissionId);
 
+        // Cache both permission slots upfront to avoid redundant storage reads.
+        uint256 projectPermissions = permissionsOf[operator][account][projectId];
+        uint256 wildcardPermissions =
+            includeWildcardProjectId ? permissionsOf[operator][account][WILDCARD_PROJECT_ID] : 0;
+
         // If the ROOT permission is set and should be included, return true.
         if (
             includeRoot
-                && (_includesPermission({
-                        permissions: permissionsOf[operator][account][projectId], permissionId: JBPermissionIds.ROOT
-                    })
-                    || (includeWildcardProjectId
-                        && _includesPermission({
-                            permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID],
-                            permissionId: JBPermissionIds.ROOT
-                        })))
+                && (_includesPermission({permissions: projectPermissions, permissionId: JBPermissionIds.ROOT})
+                    || _includesPermission({permissions: wildcardPermissions, permissionId: JBPermissionIds.ROOT}))
         ) {
             return true;
         }
 
         // Otherwise return the t/f flag of the specified id.
-        return _includesPermission({
-                permissions: permissionsOf[operator][account][projectId], permissionId: permissionId
-            })
-            || (includeWildcardProjectId
-                && _includesPermission({
-                    permissions: permissionsOf[operator][account][WILDCARD_PROJECT_ID], permissionId: permissionId
-                }));
+        return _includesPermission({permissions: projectPermissions, permissionId: permissionId})
+            || _includesPermission({permissions: wildcardPermissions, permissionId: permissionId});
     }
 
     //*********************************************************************//
@@ -251,13 +248,16 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     /// @param permissionIds The IDs of the permissions to pack.
     /// @return packed The packed value.
     function _packedPermissions(uint8[] calldata permissionIds) internal pure returns (uint256 packed) {
-        for (uint256 i; i < permissionIds.length; i++) {
+        for (uint256 i; i < permissionIds.length;) {
             // Set the permission being iterated on.
             uint256 permissionId = permissionIds[i];
 
             // Turn on the bit at the ID.
             // forge-lint: disable-next-line(incorrect-shift)
             packed |= 1 << permissionId;
+            unchecked {
+                ++i;
+            }
         }
     }
 }
