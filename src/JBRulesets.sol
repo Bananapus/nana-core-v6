@@ -209,9 +209,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         });
 
         // Return the struct for the new ruleset's ID, with metadata.
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-        ruleset.metadata = _metadataOf[projectId][rulesetId];
-        return ruleset;
+        return _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
     }
 
     /// @notice Cache the value of the ruleset weight for a specific ruleset.
@@ -223,7 +221,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @param rulesetId The ID of the ruleset to update the cache for.
     function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
         // Get the target ruleset.
-        JBRuleset memory targetRuleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        JBRuleset memory targetRuleset =
+            _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
         // slither-disable-next-line incorrect-equality
@@ -298,8 +297,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Keep a reference to the number of rulesets being returned.
         uint256 count = 0;
 
-        // Keep a reference to the starting ruleset.
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: startingId});
+        // Keep a reference to the starting ruleset (metadata not needed — only counting).
+        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: startingId, withMetadata: false});
 
         // First, count the number of rulesets to include in the result by iterating backwards from the starting
         // ruleset.
@@ -308,7 +307,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             count++;
 
             // Iterate to the ruleset it was based on.
-            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
+            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: false});
         }
 
         // Keep a reference to the array of rulesets that'll be populated.
@@ -320,8 +319,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // Reset the ruleset being iterated on to the starting ruleset, now with metadata for the return array.
-        ruleset = _getStructFor({projectId: projectId, rulesetId: startingId});
-        ruleset.metadata = _metadataOf[projectId][startingId];
+        ruleset = _getStructFor({projectId: projectId, rulesetId: startingId, withMetadata: true});
 
         // Set the counter.
         uint256 i;
@@ -333,8 +331,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
             // Get the ruleset it was based on if needed, with metadata for the return array.
             if (i != count) {
-                ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
-                ruleset.metadata = _metadataOf[projectId][ruleset.id];
+                ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
             }
         }
     }
@@ -352,8 +349,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 rulesetId = latestRulesetIdOf[projectId];
 
         // Resolve the struct for the latest ruleset, with metadata (forwarded to the external approval hook).
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-        ruleset.metadata = _metadataOf[projectId][rulesetId];
+        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
         return _approvalStatusOf({projectId: projectId, ruleset: ruleset});
     }
@@ -369,7 +365,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
     function currentOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
         // If the project does not have a ruleset, return an empty struct.
         // slither-disable-next-line incorrect-equality
-        if (latestRulesetIdOf[projectId] == 0) return _getStructFor({projectId: 0, rulesetId: 0});
+        if (latestRulesetIdOf[projectId] == 0) {
+            return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
+        }
 
         // Get a reference to the currently approvable ruleset's ID.
         uint256 rulesetId = _currentlyApprovableRulesetIdOf(projectId);
@@ -378,8 +376,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         if (rulesetId != 0) {
             // Resolve the struct for the currently approvable ruleset, with metadata (forwarded to external hooks
             // and potentially returned).
-            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-            ruleset.metadata = _metadataOf[projectId][rulesetId];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
             // Get a reference to the approval status.
             JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
@@ -398,16 +395,14 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
             // Keep a reference to its ruleset, with metadata (used by `_simulateCycledRulesetBasedOn` and may be
             // returned).
-            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-            ruleset.metadata = _metadataOf[projectId][rulesetId];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
         } else {
             // No upcoming ruleset found that is currently approvable,
             // so use the latest ruleset ID.
             rulesetId = latestRulesetIdOf[projectId];
 
             // Get the struct for the latest ID, with metadata (forwarded to external hooks and may be returned).
-            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-            ruleset.metadata = _metadataOf[projectId][rulesetId];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
             // Get a reference to the approval status.
             JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
@@ -419,8 +414,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
                     || block.timestamp < ruleset.start
             ) {
                 rulesetId = ruleset.basedOnId;
-                ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-                ruleset.metadata = _metadataOf[projectId][rulesetId];
+                ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
                 approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
             }
         }
@@ -446,9 +440,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         override
         returns (JBRuleset memory ruleset)
     {
-        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-        // Attach metadata inline — callers that need the packed metadata flags can derive them from this field.
-        ruleset.metadata = _metadataOf[projectId][rulesetId];
+        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
     }
 
     /// @notice The latest ruleset queued for a project. Returns the ruleset's struct and its current approval status.
@@ -468,8 +460,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Resolve the struct for the latest ruleset, with metadata (forwarded to the external approval hook and
         // returned).
-        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
-        ruleset.metadata = _metadataOf[projectId][rulesetId];
+        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
         // Resolve the approval status.
         approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
@@ -482,7 +473,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
     function upcomingOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
         // If the project does not have a latest ruleset, return an empty struct.
         // slither-disable-next-line incorrect-equality
-        if (latestRulesetIdOf[projectId] == 0) return _getStructFor({projectId: 0, rulesetId: 0});
+        if (latestRulesetIdOf[projectId] == 0) {
+            return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
+        }
 
         // Get a reference to the upcoming approvable ruleset's ID.
         uint256 upcomingApprovableRulesetId = _upcomingApprovableRulesetIdOf(projectId);
@@ -493,8 +486,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // If an upcoming approvable ruleset has been queued, and it's approval status is Approved or ApprovalExpected,
         // return its ruleset struct
         if (upcomingApprovableRulesetId != 0) {
-            ruleset = _getStructFor({projectId: projectId, rulesetId: upcomingApprovableRulesetId});
-            ruleset.metadata = _metadataOf[projectId][upcomingApprovableRulesetId];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: upcomingApprovableRulesetId, withMetadata: true});
 
             // Get a reference to the approval status.
             approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
@@ -508,26 +500,23 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
             // Resolve the ruleset for the ruleset the upcoming approvable ruleset was based on, with metadata
             // (used by `_simulateCycledRulesetBasedOn`).
-            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
-            ruleset.metadata = _metadataOf[projectId][ruleset.id];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
         } else {
             // Resolve the ruleset for the latest queued ruleset, with metadata (forwarded to external hooks and used
             // by `_simulateCycledRulesetBasedOn`).
-            ruleset = _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId]});
-            ruleset.metadata = _metadataOf[projectId][ruleset.id];
+            ruleset = _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId], withMetadata: true});
 
             // If the latest ruleset starts in the future, it must start in the distant future
             // Since its not the upcoming approvable ruleset. In this case, base the upcoming ruleset on the base
             // ruleset.
             while (ruleset.start > block.timestamp) {
-                ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
-                ruleset.metadata = _metadataOf[projectId][ruleset.id];
+                ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
             }
         }
 
         // There's no queued if the current has a duration of 0.
         // slither-disable-next-line incorrect-equality
-        if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0});
+        if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
 
         // Get a reference to the approval status.
         approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
@@ -541,12 +530,11 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Get the ruleset of its base ruleset, which carries the last approved configuration. Metadata is needed by
         // `_simulateCycledRulesetBasedOn`.
-        ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
-        ruleset.metadata = _metadataOf[projectId][ruleset.id];
+        ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
 
         // There's no queued if the base, which must still be the current, has a duration of 0.
         // slither-disable-next-line incorrect-equality
-        if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0});
+        if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
 
         // Return a simulated cycled ruleset.
         return _simulateCycledRulesetBasedOn({projectId: projectId, baseRuleset: ruleset, allowMidRuleset: false});
@@ -740,17 +728,16 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // Use an empty ruleset as the base.
             return _initializeRulesetFor({
                 projectId: projectId,
-                baseRuleset: _getStructFor({projectId: 0, rulesetId: 0}),
+                baseRuleset: _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false}),
                 rulesetId: rulesetId,
                 mustStartAtOrAfter: mustStartAtOrAfter,
                 weight: weight
             });
         }
 
-        // Get a reference to the latest ruleset's struct.
-        JBRuleset memory baseRuleset = _getStructFor({projectId: projectId, rulesetId: latestId});
-        // Metadata is needed because `_approvalStatusOf` forwards the struct to external approval hooks.
-        baseRuleset.metadata = _metadataOf[projectId][latestId];
+        // Get a reference to the latest ruleset's struct, with metadata because `_approvalStatusOf` forwards the
+        // struct to external approval hooks.
+        JBRuleset memory baseRuleset = _getStructFor({projectId: projectId, rulesetId: latestId, withMetadata: true});
 
         // Get a reference to the approval status.
         JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: baseRuleset});
@@ -774,7 +761,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         ) {
             // Metadata not needed — the fallback ruleset is only used for intrinsic fields (start, basedOnId, etc.)
             // and not forwarded to any external approval hook.
-            baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId});
+            baseRuleset = _getStructFor({projectId: projectId, rulesetId: baseRuleset.basedOnId, withMetadata: false});
         }
 
         // Make sure the ruleset starts after the base ruleset.
@@ -961,7 +948,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 rulesetId = latestRulesetIdOf[projectId];
 
         // Get the struct for the latest ruleset (metadata not needed — only traversal fields are checked).
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // Loop through all most recently queued rulesets until an approvable one is found, or we've proven one can't
         // exist.
@@ -977,20 +964,28 @@ contract JBRulesets is JBControlled, IJBRulesets {
                 return ruleset.id;
             }
 
-            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId});
+            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: false});
         } while (ruleset.cycleNumber != 0);
 
         return 0;
     }
 
-    /// @notice Unpack a ruleset's intrinsic and user properties into a struct.
-    /// @dev Does not load `metadata` — callers that need it should attach it inline via
-    /// `ruleset.metadata = _metadataOf[projectId][ruleset.id]`. This avoids one cold SLOAD (~2,100 gas) for the
-    /// many internal call sites that only need traversal fields (id, start, duration, basedOnId, etc.).
+    /// @notice Unpack a ruleset's packed stored values into a struct.
+    /// @dev When `withMetadata` is false, one cold SLOAD (~2,100 gas) is skipped — use this for linked-list traversal
+    /// where only id, start, duration, basedOnId, etc. are needed.
     /// @param projectId The ID of the project the ruleset belongs to.
     /// @param rulesetId The ID of the ruleset to get the struct for.
-    /// @return ruleset A ruleset struct with `metadata` set to 0.
-    function _getStructFor(uint256 projectId, uint256 rulesetId) internal view returns (JBRuleset memory ruleset) {
+    /// @param withMetadata Whether to load the packed metadata from storage.
+    /// @return ruleset The ruleset struct (`metadata` is 0 when `withMetadata` is false).
+    function _getStructFor(
+        uint256 projectId,
+        uint256 rulesetId,
+        bool withMetadata
+    )
+        internal
+        view
+        returns (JBRuleset memory ruleset)
+    {
         // Return an empty ruleset if the specified `rulesetId` is 0.
         // slither-disable-next-line incorrect-equality
         if (rulesetId == 0) return ruleset;
@@ -1025,7 +1020,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // forge-lint: disable-next-line(unsafe-typecast)
         ruleset.weightCutPercent = uint32(packedUserProperties >> 192);
 
-        // metadata intentionally not loaded — callers attach it inline when needed.
+        // Load metadata only when needed — saves one cold SLOAD (~2,100 gas) for traversal-only paths.
+        if (withMetadata) ruleset.metadata = _metadataOf[projectId][rulesetId];
     }
 
     /// @notice A simulated view of the ruleset that would be created if the provided one cycled over (if the project
@@ -1103,7 +1099,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         rulesetId = latestRulesetIdOf[projectId];
 
         // Get the struct for the latest ruleset (metadata not needed — only traversal fields are checked).
-        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // There is no upcoming ruleset if the latest ruleset has already started.
         // slither-disable-next-line incorrect-equality
@@ -1121,7 +1117,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Find the base ruleset that is not still queued.
         while (true) {
-            baseRuleset = _getStructFor({projectId: projectId, rulesetId: basedOnId});
+            baseRuleset = _getStructFor({projectId: projectId, rulesetId: basedOnId, withMetadata: false});
 
             // If the base ruleset starts in the future,
             if (block.timestamp < baseRuleset.start) {
@@ -1136,7 +1132,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // Get the ruleset struct for the ID found (metadata not needed — only `start` and `duration` are checked).
-        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId});
+        ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // If the latest ruleset doesn't start until after another base ruleset return 0.
         if (baseRuleset.duration != 0 && block.timestamp < ruleset.start - baseRuleset.duration) {
