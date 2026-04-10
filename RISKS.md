@@ -174,7 +174,44 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 
 - `JBTerminalStore.recordAddedBalanceFor` has **no access control**. Any address can call it. The balance is keyed by `msg.sender` (the terminal address), so only a terminal can inflate its own recorded balance. This is safe as long as all terminals correctly track their actual holdings. A buggy or malicious terminal implementation could call `recordAddedBalanceFor` without actually receiving tokens, inflating the recorded balance above actual holdings.
 
-## 8. Invariants to Verify
+## 8. Accepted Behaviors
+
+### 8.1 Cross-terminal surplus is an explicit trust boundary
+
+When a project enables `useTotalSurplusForCashOuts`, core intentionally stops treating a single terminal's local
+balance as the full economic truth and instead trusts every registered terminal's reported surplus. This means a
+project can get richer cash-out pricing from value held elsewhere, but it also means a bad or economically
+incompatible terminal can distort the aggregate. This is accepted because cross-terminal projects explicitly opt into
+shared treasury semantics; the alternative is forcing every terminal to behave as an isolated silo. Projects should
+only enable this mode when all participating terminals are mutually trusted and economically compatible.
+
+### 8.2 Held-fee forgiveness on failed fee routing is fail-open by design
+
+Core intentionally prefers liveness over strict protocol fee collection. If project `#1` cannot accept a fee payment,
+`_processFee` returns the fee amount to the originating project's balance instead of locking funds. For held fees,
+`processHeldFeesOf` advances the queue before retrying the payment, so a failed held-fee processing attempt
+permanently forgives that fee. This is accepted because a broken fee route should not brick project treasury flows.
+The tradeoff is explicit revenue leakage for the fee beneficiary when the fee route is unavailable or incompletely
+wired.
+
+### 8.3 Surplus allowance is ruleset-scoped, not implicit-cycle-scoped
+
+`usedSurplusAllowanceOf` is keyed by terminal, project, token, ruleset, and currency rather than by an independently
+incrementing "cycle" counter. For projects whose rulesets roll forward implicitly without a new ruleset ID, allowance
+usage carries forward until a new ruleset actually takes effect. This is accepted because surplus allowance is meant
+to be tied to the active ruleset's economics, not to a synthetic cycle abstraction layered on top of an unchanged
+ruleset. Integrators that expect per-cycle resets should queue distinct rulesets instead of relying on implicit
+rollover.
+
+### 8.4 Core deployment alone leaves fee routing fail-open until periphery wiring completes
+
+Core contracts are intentionally deployable before project `#1` is fully operational. Until the fee project's
+controller, terminals, and accounting contexts are wired, fee-bearing flows remain fail-open: fees are forgiven back
+to the originating project rather than trapped. This is accepted because deployment sequencing across repos is staged,
+and the protocol prioritizes keeping project flows live during rollout over enforcing fee collection before the fee
+beneficiary is ready.
+
+## 9. Invariants to Verify
 
 These should hold at all times and are the most productive targets for formal verification or invariant testing:
 
