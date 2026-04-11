@@ -21,7 +21,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBSplits` | Split configurations per project/ruleset/group. Packed storage for gas efficiency. |
 | `JBFundAccessLimits` | Payout limits and surplus allowances per project/ruleset/terminal/token. |
 | `JBPrices` | Price feed registry with project-specific and protocol-wide default feeds. Immutable once set. |
-| `JBERC20` | Cloneable ERC-20 with Votes + Permit. Owned by `JBTokens`. Deployed via `Clones.clone()`. |
+| `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271. Controlled by `JBTokens` via `onlyTokens`. Deployed via `Clones.clone()`. |
 | `JBFeelessAddresses` | Allowlist for fee-exempt addresses. |
 | `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
 | `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
