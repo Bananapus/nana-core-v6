@@ -27,7 +27,23 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     error JBERC20_Unauthorized();
 
     //*********************************************************************//
-    // --------------------- internal stored properties ------------------ //
+    // --------------------- public stored properties -------------------- //
+    //*********************************************************************//
+
+    /// @notice The JBTokens contract that owns this token.
+    // forge-lint: disable-next-line(mixed-case-variable)
+    IJBTokens public TOKENS;
+
+    /// @notice The permissions contract used to check operator permissions.
+    // forge-lint: disable-next-line(mixed-case-variable)
+    IJBPermissions public PERMISSIONS;
+
+    /// @notice The projects contract used to resolve project ownership.
+    // forge-lint: disable-next-line(mixed-case-variable)
+    IJBProjects public PROJECTS;
+
+    //*********************************************************************//
+    // -------------------- private stored properties -------------------- //
     //*********************************************************************//
 
     /// @notice The token's name.
@@ -37,22 +53,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     /// @notice The token's symbol.
     // slither-disable-next-line shadowing-state
     string private _symbol;
-
-    //*********************************************************************//
-    // ---------------------- public stored properties ------------------- //
-    //*********************************************************************//
-
-    /// @notice The JBTokens contract that owns this token.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    IJBTokens public TOKENS;
-
-    /// @notice The projects contract used to resolve project ownership.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    IJBProjects public PROJECTS;
-
-    /// @notice The permissions contract used to check operator permissions.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    IJBPermissions public PERMISSIONS;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -105,37 +105,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     }
 
     //*********************************************************************//
-    // ----------------------- public transactions ----------------------- //
-    //*********************************************************************//
-
-    /// @notice Initializes the token.
-    /// @param name_ The token's name.
-    /// @param symbol_ The token's symbol.
-    /// @param tokens The JBTokens contract that manages this token.
-    /// @param projects The projects contract for resolving project ownership.
-    /// @param permissions The permissions contract for checking operator permissions.
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address tokens,
-        address projects,
-        address permissions
-    )
-        public
-        override
-    {
-        // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
-        if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
-
-        _name = name_;
-        _symbol = symbol_;
-        TOKENS = IJBTokens(tokens);
-        PROJECTS = IJBProjects(projects);
-        PERMISSIONS = IJBPermissions(permissions);
-    }
-
-    //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // ----------------------- external views ---------------------------- //
     //*********************************************************************//
 
     /// @notice This token can only be added to a project when its created by the `JBTokens` contract.
@@ -160,19 +130,18 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
         // Get the project owner (the NFT holder).
         address projectOwner = PROJECTS.ownerOf(projectId);
 
-        // The project owner can always sign.
-        if (signer == projectOwner) return IERC1271.isValidSignature.selector;
-
-        // Check if the signer has the SIGN_FOR_ERC20 permission from the project owner.
+        // Valid if the signer is the project owner or has the SIGN_FOR_ERC20 permission.
+        // Mirrors JBPermissioned._requirePermissionFrom — owner check, then permission check.
         if (
-            PERMISSIONS.hasPermission({
-                operator: signer,
-                account: projectOwner,
-                projectId: projectId,
-                permissionId: JBPermissionIds.SIGN_FOR_ERC20,
-                includeRoot: true,
-                includeWildcardProjectId: true
-            })
+            signer == projectOwner
+                || PERMISSIONS.hasPermission({
+                    operator: signer,
+                    account: projectOwner,
+                    projectId: projectId,
+                    permissionId: JBPermissionIds.SIGN_FOR_ERC20,
+                    includeRoot: true,
+                    includeWildcardProjectId: true
+                })
         ) return IERC1271.isValidSignature.selector;
 
         return 0xffffffff;
@@ -214,6 +183,36 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     /// @return The total supply of this ERC20, as a fixed point number.
     function totalSupply() public view override(ERC20, IJBToken) returns (uint256) {
         return super.totalSupply();
+    }
+
+    //*********************************************************************//
+    // ----------------------- public transactions ----------------------- //
+    //*********************************************************************//
+
+    /// @notice Initializes the token.
+    /// @param name_ The token's name.
+    /// @param symbol_ The token's symbol.
+    /// @param tokens The JBTokens contract that manages this token.
+    /// @param projects The projects contract for resolving project ownership.
+    /// @param permissions The permissions contract for checking operator permissions.
+    function initialize(
+        string memory name_,
+        string memory symbol_,
+        address tokens,
+        address projects,
+        address permissions
+    )
+        public
+        override
+    {
+        // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
+        if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
+
+        _name = name_;
+        _symbol = symbol_;
+        TOKENS = IJBTokens(tokens);
+        PROJECTS = IJBProjects(projects);
+        PERMISSIONS = IJBPermissions(permissions);
     }
 
     //*********************************************************************//
