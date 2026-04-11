@@ -78,10 +78,10 @@ Admin privileges and their scope in nana-core-v6.
 - **How assigned:** Set at JBFeelessAddresses deployment via the Ownable constructor. Transferable via `Ownable.transferOwnership()`.
 - **Scope:** Protocol-wide. Controls which addresses are exempt from protocol fees.
 
-### JBERC20 Owner
+### JBERC20 Access Control
 
-- **How assigned:** Set to the `JBTokens` contract address when a project's ERC-20 is deployed or initialized.
-- **Scope:** Single token contract. Only the owner (JBTokens) can mint and burn tokens.
+- **How assigned:** The `TOKENS` reference is set to the `JBTokens` contract address during `initialize()`. `PERMISSIONS` and `PROJECTS` are constructor immutables inherited from `JBPermissioned` and the implementation contract respectively.
+- **Scope:** Single token contract. Only the `JBTokens` contract (via the `onlyTokens` modifier) can mint, burn, and update token metadata. Project owners or operators with the `SIGN_FOR_ERC20` permission can authorize ERC-1271 signatures.
 
 ### Omnichain Ruleset Operator
 
@@ -211,10 +211,11 @@ Admin privileges and their scope in nana-core-v6.
 
 | Function | Required Role | Permission ID | Scope | What It Does |
 |----------|--------------|---------------|-------|-------------|
-| `mint` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Mints new tokens to an address. |
-| `burn` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Burns tokens from an address. |
-| `initialize` | Anyone (once) | N/A | Per token | Initializes the token name, symbol, and owner. Can only be called once. |
-| `setMetadata` | Contract owner (JBTokens) | N/A (onlyOwner) | Per token | Updates the token's name and symbol. |
+| `mint` | JBTokens contract | N/A (onlyTokens) | Per token | Mints new tokens to an address. |
+| `burn` | JBTokens contract | N/A (onlyTokens) | Per token | Burns tokens from an address. |
+| `initialize` | Anyone (once) | N/A | Per token | Initializes the token name, symbol, and JBTokens contract reference. Can only be called once. |
+| `setMetadata` | JBTokens contract | N/A (onlyTokens) | Per token | Updates the token's name and symbol. |
+| `isValidSignature` | Anyone (view) | `SIGN_FOR_ERC20` | Per token | Validates ERC-1271 signatures for project owner or permitted operators. |
 
 ### JBTerminalStore
 

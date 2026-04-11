@@ -17,10 +17,7 @@ import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 import {ERC20Votes} from "../src/JBERC20.sol";
 
-contract JBERC20Inheritance_Local is
-    JBERC20(IJBPermissions(address(1)), IJBProjects(address(2))),
-    TestBaseWorkflow
-{
+contract JBERC20Inheritance_Local is JBERC20(IJBPermissions(address(1)), IJBProjects(address(2))), TestBaseWorkflow {
     /// This test is to verify that the inheritance order of JBERC20 is correct and that it calls the
     /// `ERC20Votes._update()`
     /// forge-config: default.allow_internal_expect_revert = true
