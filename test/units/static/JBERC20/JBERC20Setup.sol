@@ -11,7 +11,10 @@ Contract that deploys a target contract with other mock contracts to satisfy the
 Tests relative to this contract will be dependent on mock calls/emits and stdStorage.
 */
 contract JBERC20Setup is JBTest {
-    address _owner = makeAddr("owner");
+    // Mocks
+    address _tokens = makeAddr("tokens");
+    address _projects = makeAddr("projects");
+    address _permissions = makeAddr("permissions");
 
     // Implementation (constructor sets _name = "invalid", cannot be initialized)
     IJBToken public _implementation;

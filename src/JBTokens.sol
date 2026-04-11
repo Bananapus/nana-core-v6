@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {JBControlled} from "./abstract/JBControlled.sol";
-import {JBPermissioned} from "./abstract/JBPermissioned.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
@@ -17,7 +16,7 @@ import {IJBTokens} from "./interfaces/IJBTokens.sol";
 /// @dev The total supply of a project's tokens and the balance of each account are calculated in this contract.
 /// @dev An ERC-20 contract must be set by a project's owner for ERC-20 claiming to become available. Projects can bring
 /// their own IJBToken if they prefer.
-contract JBTokens is JBControlled, JBPermissioned, IJBTokens {
+contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -38,8 +37,11 @@ contract JBTokens is JBControlled, JBPermissioned, IJBTokens {
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
-    /// @notice Mints ERC-721s that represent project ownership and transfers.
-    IJBProjects public immutable override PROJECTS;
+    /// @notice The projects contract.
+    IJBProjects public immutable PROJECTS;
+
+    /// @notice The permissions contract.
+    IJBPermissions public immutable PERMISSIONS;
 
     /// @notice A reference to the token implementation that'll be cloned as projects deploy their own tokens.
     IJBToken public immutable TOKEN;
@@ -71,8 +73,8 @@ contract JBTokens is JBControlled, JBPermissioned, IJBTokens {
     //*********************************************************************//
 
     /// @param directory A contract storing directories of terminals and controllers for each project.
-    /// @param permissions A contract storing permissions.
-    /// @param projects A contract which mints ERC-721s that represent project ownership and transfers.
+    /// @param permissions The permissions contract.
+    /// @param projects The projects contract.
     /// @param token The implementation of the token contract that project can deploy.
     constructor(
         IJBDirectory directory,
@@ -81,8 +83,8 @@ contract JBTokens is JBControlled, JBPermissioned, IJBTokens {
         IJBToken token
     )
         JBControlled(directory)
-        JBPermissioned(permissions)
     {
+        PERMISSIONS = permissions;
         PROJECTS = projects;
         TOKEN = token;
     }
@@ -245,7 +247,13 @@ contract JBTokens is JBControlled, JBPermissioned, IJBTokens {
         });
 
         // Initialize the token.
-        token.initialize({name: name, symbol: symbol, owner: address(this)});
+        token.initialize({
+            name: name,
+            symbol: symbol,
+            tokens: address(this),
+            projects: address(PROJECTS),
+            permissions: address(PERMISSIONS)
+        });
     }
 
     /// @notice Mint (create) new tokens or credits.
