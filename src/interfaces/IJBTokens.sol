@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import {IJBProjects} from "./IJBProjects.sol";
 import {IJBToken} from "./IJBToken.sol";
 
 /// @notice Manages minting, burning, and balances of projects' tokens and token credits.
@@ -80,6 +81,9 @@ interface IJBTokens {
     event TransferCredits(
         address indexed holder, uint256 indexed projectId, address indexed recipient, uint256 count, address caller
     );
+
+    /// @notice Mints ERC-721s that represent project ownership and transfers.
+    function PROJECTS() external view returns (IJBProjects);
 
     /// @notice Returns the credit balance for a holder and project.
     /// @param holder The address to get the credit balance of.

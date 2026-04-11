@@ -5,15 +5,20 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit, Nonces} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {IJBPermissioned} from "./interfaces/IJBPermissioned.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
+import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
 /// @notice An ERC-20 token that can be used by a project in `JBTokens` and `JBController`.
 /// @dev By default, a project uses "credits" to track balances. Once a project sets their `IJBToken` using
 /// `JBController.deployERC20For(...)` or `JBController.setTokenFor(...)`, credits can be redeemed to claim tokens.
 /// @dev `JBController.deployERC20For(...)` deploys a `JBERC20` contract and sets it as the project's token.
-contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
+contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IERC1271, IJBToken {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -97,6 +102,44 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     /// @notice This token can only be added to a project when its created by the `JBTokens` contract.
     function canBeAddedTo(uint256) external pure override returns (bool) {
         return false;
+    }
+
+    /// @notice Validates a signature on behalf of this token contract (ERC-1271).
+    /// @dev Allows the project owner or an operator with `SIGN_FOR_ERC20` permission to sign messages on behalf of
+    /// this token. Useful for Etherscan contract verification and other off-chain signature flows.
+    /// @param hash The hash of the data being signed.
+    /// @param signature The signature to validate.
+    /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
+    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
+        // Recover the signer from the signature. Return invalid if recovery fails.
+        (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(hash, signature);
+        if (error != ECDSA.RecoverError.NoError) return 0xffffffff;
+
+        // owner() returns the JBTokens contract address.
+        IJBTokens tokens = IJBTokens(owner());
+
+        // Get the project ID this token belongs to.
+        uint256 projectId = tokens.projectIdOf(IJBToken(address(this)));
+
+        // Get the project owner (the NFT holder).
+        address projectOwner = tokens.PROJECTS().ownerOf(projectId);
+
+        // The project owner can always sign.
+        if (signer == projectOwner) return IERC1271.isValidSignature.selector;
+
+        // Check if the signer has the SIGN_FOR_ERC20 permission from the project owner.
+        if (
+            IJBPermissioned(owner()).PERMISSIONS().hasPermission({
+                operator: signer,
+                account: projectOwner,
+                projectId: projectId,
+                permissionId: JBPermissionIds.SIGN_FOR_ERC20,
+                includeRoot: true,
+                includeWildcardProjectId: true
+            })
+        ) return IERC1271.isValidSignature.selector;
+
+        return 0xffffffff;
     }
 
     //*********************************************************************//

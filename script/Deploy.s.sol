@@ -85,7 +85,10 @@ contract Deploy is Script, Sphinx {
             trustedForwarder: TRUSTED_FORWARDER
         });
         JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-            directory: directory, token: new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
+            directory: directory,
+            permissions: permissions,
+            projects: projects,
+            token: new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}()
         });
 
         new JBFundAccessLimits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
