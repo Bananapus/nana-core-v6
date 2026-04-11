@@ -143,15 +143,12 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
 
         // Valid if the signer is the project owner or has the SIGN_FOR_ERC20 permission.
         if (
-            signer == projectOwner
-                || PERMISSIONS.hasPermission({
-                    operator: signer,
-                    account: projectOwner,
-                    projectId: projectId,
-                    permissionId: JBPermissionIds.SIGN_FOR_ERC20,
-                    includeRoot: true,
-                    includeWildcardProjectId: true
-                })
+            _hasPermissionFrom({
+                operator: signer,
+                account: projectOwner,
+                projectId: projectId,
+                permissionId: JBPermissionIds.SIGN_FOR_ERC20
+            })
         ) return IERC1271.isValidSignature.selector;
 
         return 0xffffffff;

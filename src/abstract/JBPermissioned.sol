@@ -34,6 +34,34 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
+    /// @notice Check whether an operator is the account or has the relevant permission.
+    /// @param operator The address to check.
+    /// @param account The account to allow.
+    /// @param projectId The project ID to check the permission under.
+    /// @param permissionId The required permission ID. The operator must have this permission within the specified
+    /// project ID.
+    /// @return Whether the operator is the account or has the permission.
+    function _hasPermissionFrom(
+        address operator,
+        address account,
+        uint256 projectId,
+        uint256 permissionId
+    )
+        internal
+        view
+        returns (bool)
+    {
+        return operator == account
+            || PERMISSIONS.hasPermission({
+                operator: operator,
+                account: account,
+                projectId: projectId,
+                permissionId: permissionId,
+                includeRoot: true,
+                includeWildcardProjectId: true
+            });
+    }
+
     /// @notice Require the message sender to be the account or have the relevant permission.
     /// @param account The account to allow.
     /// @param projectId The project ID to check the permission under.
@@ -41,17 +69,9 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
     /// project ID.
     function _requirePermissionFrom(address account, uint256 projectId, uint256 permissionId) internal view {
         address sender = _msgSender();
-        if (
-            sender != account
-                && !PERMISSIONS.hasPermission({
-                    operator: sender,
-                    account: account,
-                    projectId: projectId,
-                    permissionId: permissionId,
-                    includeRoot: true,
-                    includeWildcardProjectId: true
-                })
-        ) revert JBPermissioned_Unauthorized(account, sender, projectId, permissionId);
+        if (!_hasPermissionFrom(sender, account, projectId, permissionId)) {
+            revert JBPermissioned_Unauthorized(account, sender, projectId, permissionId);
+        }
     }
 
     /// @notice If the 'alsoGrantAccessIf' condition is truthy, proceed. Otherwise, require the message sender to be the
