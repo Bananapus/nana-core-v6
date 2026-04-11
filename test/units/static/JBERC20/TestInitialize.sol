@@ -16,13 +16,13 @@ contract TestInitialize_Local is JBERC20Setup {
     function test_ImplementationCannotBeInitialized() external {
         // The implementation has _name = "invalid" set in constructor, so initialize() must revert.
         vm.expectRevert(JBERC20.JBERC20_AlreadyInitialized.selector);
-        _implementation.initialize(_name, _symbol, _tokens, _projects, _permissions);
+        _implementation.initialize(_name, _symbol, _tokens);
     }
 
     function test_WhenANameIsAlreadySet() external {
         // it will revert
 
-        _erc20.initialize(_name, _symbol, _tokens, _projects, _permissions);
+        _erc20.initialize(_name, _symbol, _tokens);
 
         // ensure TOKENS is set
         address setTokens = address(JBERC20(address(_erc20)).TOKENS());
@@ -30,7 +30,7 @@ contract TestInitialize_Local is JBERC20Setup {
 
         // will fail as internal name is no longer zero length
         vm.expectRevert();
-        _erc20.initialize(_name, _symbol, _tokens, _projects, _permissions);
+        _erc20.initialize(_name, _symbol, _tokens);
     }
 
     function test_WhenName_EQNothing() external {
@@ -38,13 +38,13 @@ contract TestInitialize_Local is JBERC20Setup {
 
         // will fail as internal name is no longer than zero length
         vm.expectRevert();
-        _erc20.initialize("", _symbol, _tokens, _projects, _permissions);
+        _erc20.initialize("", _symbol, _tokens);
     }
 
     function test_WhenNameIsValidAndNotAlreadySet() external {
         // it will set the name, symbol, and store references
 
-        _erc20.initialize(_name, _symbol, _tokens, _projects, _permissions);
+        _erc20.initialize(_name, _symbol, _tokens);
 
         // ensure TOKENS is set
         address setTokens = address(JBERC20(address(_erc20)).TOKENS());

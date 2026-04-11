@@ -9,6 +9,7 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {JBPermissioned} from "./abstract/JBPermissioned.sol";
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
@@ -18,7 +19,7 @@ import {IJBTokens} from "./interfaces/IJBTokens.sol";
 /// @dev By default, a project uses "credits" to track balances. Once a project sets their `IJBToken` using
 /// `JBController.deployERC20For(...)` or `JBController.setTokenFor(...)`, credits can be redeemed to claim tokens.
 /// @dev `JBController.deployERC20For(...)` deploys a `JBERC20` contract and sets it as the project's token.
-contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
+contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -27,20 +28,20 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     error JBERC20_Unauthorized();
 
     //*********************************************************************//
+    // --------------- public immutable stored properties ---------------- //
+    //*********************************************************************//
+
+    /// @notice The projects contract used to resolve project ownership.
+    IJBProjects public immutable PROJECTS;
+
+    //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
     /// @notice The JBTokens contract that owns this token.
+    /// @dev Set via `initialize` because JBERC20 is deployed before JBTokens (circular dependency).
     // forge-lint: disable-next-line(mixed-case-variable)
     IJBTokens public TOKENS;
-
-    /// @notice The permissions contract used to check operator permissions.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    IJBPermissions public PERMISSIONS;
-
-    /// @notice The projects contract used to resolve project ownership.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    IJBProjects public PROJECTS;
 
     //*********************************************************************//
     // -------------------- private stored properties -------------------- //
@@ -60,8 +61,18 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
 
     /// @dev Set `_name` on the implementation contract to prevent it from being initialized directly.
     /// Clones start with empty `_name`, so `initialize(...)` works only on clones.
-    constructor() ERC20("invalid", "invalid") ERC20Permit("JBToken") {
+    /// @param permissions The permissions contract.
+    /// @param projects The projects contract.
+    constructor(
+        IJBPermissions permissions,
+        IJBProjects projects
+    )
+        ERC20("invalid", "invalid")
+        ERC20Permit("JBToken")
+        JBPermissioned(permissions)
+    {
         _name = "invalid";
+        PROJECTS = projects;
     }
 
     //*********************************************************************//
@@ -131,7 +142,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
         address projectOwner = PROJECTS.ownerOf(projectId);
 
         // Valid if the signer is the project owner or has the SIGN_FOR_ERC20 permission.
-        // Mirrors JBPermissioned._requirePermissionFrom — owner check, then permission check.
         if (
             signer == projectOwner
                 || PERMISSIONS.hasPermission({
@@ -193,26 +203,13 @@ contract JBERC20 is ERC20Votes, ERC20Permit, IERC1271, IJBToken {
     /// @param name_ The token's name.
     /// @param symbol_ The token's symbol.
     /// @param tokens The JBTokens contract that manages this token.
-    /// @param projects The projects contract for resolving project ownership.
-    /// @param permissions The permissions contract for checking operator permissions.
-    function initialize(
-        string memory name_,
-        string memory symbol_,
-        address tokens,
-        address projects,
-        address permissions
-    )
-        public
-        override
-    {
+    function initialize(string memory name_, string memory symbol_, address tokens) public override {
         // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
         if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
 
         _name = name_;
         _symbol = symbol_;
         TOKENS = IJBTokens(tokens);
-        PROJECTS = IJBProjects(projects);
-        PERMISSIONS = IJBPermissions(permissions);
     }
 
     //*********************************************************************//

@@ -5,8 +5,6 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {JBControlled} from "./abstract/JBControlled.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
-import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
-import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
@@ -36,12 +34,6 @@ contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
-
-    /// @notice The projects contract.
-    IJBProjects public immutable PROJECTS;
-
-    /// @notice The permissions contract.
-    IJBPermissions public immutable PERMISSIONS;
 
     /// @notice A reference to the token implementation that'll be cloned as projects deploy their own tokens.
     IJBToken public immutable TOKEN;
@@ -73,19 +65,8 @@ contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
 
     /// @param directory A contract storing directories of terminals and controllers for each project.
-    /// @param permissions The permissions contract.
-    /// @param projects The projects contract.
     /// @param token The implementation of the token contract that project can deploy.
-    constructor(
-        IJBDirectory directory,
-        IJBPermissions permissions,
-        IJBProjects projects,
-        IJBToken token
-    )
-        JBControlled(directory)
-    {
-        PERMISSIONS = permissions;
-        PROJECTS = projects;
+    constructor(IJBDirectory directory, IJBToken token) JBControlled(directory) {
         TOKEN = token;
     }
 
@@ -247,13 +228,7 @@ contract JBTokens is JBControlled, IJBTokens {
         });
 
         // Initialize the token.
-        token.initialize({
-            name: name,
-            symbol: symbol,
-            tokens: address(this),
-            projects: address(PROJECTS),
-            permissions: address(PERMISSIONS)
-        });
+        token.initialize({name: name, symbol: symbol, tokens: address(this)});
     }
 
     /// @notice Mint (create) new tokens or credits.

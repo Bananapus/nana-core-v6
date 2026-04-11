@@ -26,7 +26,7 @@ contract JBTokensSetup is JBTest {
 
     function tokensSetup() public virtual {
         // Instantiate the contract being tested
-        jbToken = new JBERC20();
-        _tokens = new JBTokens(directory, permissions, projects, jbToken);
+        jbToken = new JBERC20(permissions, projects);
+        _tokens = new JBTokens(directory, jbToken);
     }
 }
