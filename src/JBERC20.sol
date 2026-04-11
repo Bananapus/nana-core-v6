@@ -132,6 +132,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
         // Recover the signer from the signature. Return invalid if recovery fails.
+        // slither-disable-next-line unused-return
         (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(hash, signature);
         if (error != ECDSA.RecoverError.NoError) return 0xffffffff;
 
