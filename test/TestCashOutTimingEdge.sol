@@ -138,12 +138,12 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         // Compute cash-out value with inflated supply (what the system does).
         uint256 surplus = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         uint256 reclaimWithInflation = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, taxTotalSupply: totalWithReserves, cashOutTaxRate: 5000
         });
 
         // Compute what the cash-out WOULD be without pending reserves (hypothetical).
         uint256 reclaimWithoutInflation = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, taxTotalSupply: circulatingSupply, cashOutTaxRate: 5000
         });
 
         // Cash-out with pending reserves is LESS than without.
@@ -173,7 +173,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         uint256 surplus = _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
         uint256 totalBefore = _controller.totalTokenSupplyWithReservedTokensOf(_projectId);
         uint256 reclaimBefore = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalBefore, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalBefore, taxTotalSupply: totalBefore, cashOutTaxRate: 5000
         });
 
         // Distribute reserves. This mints pending tokens and zeroes pending balance.
@@ -191,7 +191,7 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         // Cash-out value should be the same since total didn't change.
         // One approach: don't include pending reserves in totalSupply.
         uint256 reclaimAfter = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalAfter, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalAfter, taxTotalSupply: totalAfter, cashOutTaxRate: 5000
         });
 
         assertEq(reclaimAfter, reclaimBefore, "Reclaim unchanged after distributing (same totalSupply)");
@@ -216,11 +216,11 @@ contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
         uint256 circulatingOnly = _tokens.totalSupplyOf(_projectId);
 
         uint256 reclaimActual = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, taxTotalSupply: totalWithReserves, cashOutTaxRate: 5000
         });
 
         uint256 reclaimFair = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingOnly, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingOnly, taxTotalSupply: circulatingOnly, cashOutTaxRate: 5000
         });
 
         // With 50% reserved:

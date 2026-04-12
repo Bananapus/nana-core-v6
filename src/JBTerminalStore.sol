@@ -599,10 +599,13 @@ contract JBTerminalStore is IJBTerminalStore {
         JBRuleset memory ruleset = RULESETS.currentOf(projectId);
 
         // Return the amount of surplus terminal tokens that would be reclaimed.
+        // NOTE: This view does not run the data hook, so it cannot reflect a taxTotalSupply override.
+        // For accurate omnichain estimates, use the data hook or simulate recordCashOutFor.
         return JBCashOuts.cashOutFrom({
             surplus: surplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
+            taxTotalSupply: totalSupply,
             cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
@@ -814,10 +817,13 @@ contract JBTerminalStore is IJBTerminalStore {
         if (cashOutCount > totalSupply) return 0;
 
         // Return the amount of surplus terminal tokens that would be reclaimed.
+        // NOTE: This view does not run the data hook, so it cannot reflect a taxTotalSupply override.
+        // For accurate omnichain estimates, use the data hook or simulate recordCashOutFor.
         return JBCashOuts.cashOutFrom({
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
+            taxTotalSupply: totalSupply,
             cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
@@ -936,6 +942,10 @@ contract JBTerminalStore is IJBTerminalStore {
 
         uint256 effectiveCashOutCount = cashOutCount;
 
+        // The tax total supply defaults to the effective total supply (same behavior as before for single-chain
+        // projects). Data hooks can override this to include tokens on other chains for omnichain projects.
+        uint256 effectiveTaxTotalSupply = effectiveTotalSupply;
+
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
             // Build the cash out context field-by-field — the struct has 11 fields, too many for a literal.
@@ -957,8 +967,11 @@ contract JBTerminalStore is IJBTerminalStore {
             context.beneficiaryIsFeeless = beneficiaryIsFeeless;
             context.metadata = metadata;
 
-            (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, hookSpecifications) =
+            (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveTaxTotalSupply, hookSpecifications) =
                 IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+            // If the hook returned 0 for taxTotalSupply, default to the effective total supply.
+            if (effectiveTaxTotalSupply == 0) effectiveTaxTotalSupply = effectiveTotalSupply;
 
             // Noop specifications are informational only, so they can't also request forwarded funds.
             for (uint256 i; i < hookSpecifications.length;) {
@@ -979,6 +992,7 @@ contract JBTerminalStore is IJBTerminalStore {
                 surplus: surplus,
                 cashOutCount: effectiveCashOutCount,
                 totalSupply: effectiveTotalSupply,
+                taxTotalSupply: effectiveTaxTotalSupply,
                 cashOutTaxRate: cashOutTaxRate
             });
         }

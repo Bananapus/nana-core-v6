@@ -157,7 +157,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // The above call should be calculating the reclaimable amount as we are here, so they will be congruent.
         uint256 assumed =
-            JBCashOuts.cashOutFrom(_surplus, _cashoutAmount, _supply, JBConstants.MAX_CASH_OUT_TAX_RATE / 2);
+            JBCashOuts.cashOutFrom(_surplus, _cashoutAmount, _supply, _supply, JBConstants.MAX_CASH_OUT_TAX_RATE / 2);
 
         assertEq(assumed, reclaimable);
     }
@@ -432,7 +432,7 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
 
         // Should match the 6-param overload result.
         uint256 assumed =
-            JBCashOuts.cashOutFrom(_surplus, _cashoutAmount, _supply, JBConstants.MAX_CASH_OUT_TAX_RATE / 2);
+            JBCashOuts.cashOutFrom(_surplus, _cashoutAmount, _supply, _supply, JBConstants.MAX_CASH_OUT_TAX_RATE / 2);
 
         assertEq(assumed, reclaimable);
     }

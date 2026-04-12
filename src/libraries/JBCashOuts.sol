@@ -12,15 +12,22 @@ library JBCashOuts {
 
     /// @notice Returns the amount of surplus terminal tokens which can be reclaimed based on the total surplus, the
     /// number of tokens being cashed out, the total token supply, and the ruleset's cash out tax rate.
+    /// @dev The proportional claim uses `totalSupply` (your share of the local treasury), while the tax adjustment
+    /// uses `taxTotalSupply` (which may include tokens on other chains). For single-chain projects these are equal.
     /// @param surplus The total amount of surplus terminal tokens.
     /// @param cashOutCount The number of tokens being cashed out, as a fixed point number with 18 decimals.
-    /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
+    /// @param totalSupply The total token supply used for the proportional reclaim, as a fixed point number with 18
+    /// decimals.
+    /// @param taxTotalSupply The total token supply used for the cash out tax calculation. Must be >= totalSupply.
+    /// For single-chain projects, set equal to `totalSupply`. For omnichain projects, this includes tokens on other
+    /// chains so the tax cannot be bypassed by cashing out on a chain where the holder dominates supply.
     /// @param cashOutTaxRate The current ruleset's cash out tax rate.
     /// @return reclaimableSurplus The amount of surplus tokens that can be reclaimed.
     function cashOutFrom(
         uint256 surplus,
         uint256 cashOutCount,
         uint256 totalSupply,
+        uint256 taxTotalSupply,
         uint256 cashOutTaxRate
     )
         internal
@@ -33,11 +40,12 @@ library JBCashOuts {
         // If the cash out tax rate is the max, no surplus can be reclaimed.
         if (cashOutTaxRate == JBConstants.MAX_CASH_OUT_TAX_RATE) return 0;
 
-        // If the total supply is being cashed out, return the entire surplus.
-        if (cashOutCount >= totalSupply) return surplus;
+        // If the entire tax-relevant supply is being cashed out, return the entire surplus.
+        if (cashOutCount >= taxTotalSupply) return surplus;
 
-        // Get a reference to the linear proportion.
-        uint256 base = mulDiv(surplus, cashOutCount, totalSupply);
+        // Get a reference to the linear proportion based on the local supply.
+        // If the local supply is being fully cashed out, the proportional claim is the entire surplus.
+        uint256 base = (cashOutCount >= totalSupply) ? surplus : mulDiv(surplus, cashOutCount, totalSupply);
 
         // These conditions are all part of the same curve.
         // Edge conditions are separated to minimize the operations performed in those cases.
@@ -45,9 +53,12 @@ library JBCashOuts {
             return base;
         }
 
+        // Apply the tax using `taxTotalSupply`. This prevents the tax from vanishing when a holder dominates
+        // the local supply but represents a small fraction of the global supply.
         return mulDiv(
             base,
-            (JBConstants.MAX_CASH_OUT_TAX_RATE - cashOutTaxRate) + mulDiv(cashOutTaxRate, cashOutCount, totalSupply),
+            (JBConstants.MAX_CASH_OUT_TAX_RATE - cashOutTaxRate)
+                + mulDiv(cashOutTaxRate, cashOutCount, taxTotalSupply),
             JBConstants.MAX_CASH_OUT_TAX_RATE
         );
     }
@@ -55,16 +66,19 @@ library JBCashOuts {
     /// @notice Returns the minimum number of tokens that must be cashed out to receive at least `desiredOutput` of
     /// surplus terminal tokens. This is the inverse of `cashOutFrom`.
     /// @dev Due to integer rounding in `cashOutFrom`, the returned count may yield slightly more than `desiredOutput`.
-    /// When `desiredOutput >= surplus`, returns `totalSupply` (cashing out everything yields the full surplus).
+    /// When `desiredOutput >= surplus`, returns `taxTotalSupply` (cashing out everything yields the full surplus).
     /// @param surplus The total amount of surplus terminal tokens.
     /// @param desiredOutput The minimum amount of surplus tokens the caller wants to receive.
-    /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
+    /// @param totalSupply The total token supply used for the proportional reclaim, as a fixed point number with 18
+    /// decimals.
+    /// @param taxTotalSupply The total token supply used for the cash out tax calculation.
     /// @param cashOutTaxRate The current ruleset's cash out tax rate.
     /// @return count The minimum number of tokens to cash out.
     function minCashOutCountFor(
         uint256 surplus,
         uint256 desiredOutput,
         uint256 totalSupply,
+        uint256 taxTotalSupply,
         uint256 cashOutTaxRate
     )
         internal
@@ -79,8 +93,8 @@ library JBCashOuts {
             revert JBCashOuts_DesiredOutputNotAchievable();
         }
 
-        // If the desired output meets or exceeds the surplus, the entire supply must be cashed out.
-        if (desiredOutput >= surplus) return totalSupply;
+        // If the desired output meets or exceeds the surplus, the entire tax-relevant supply must be cashed out.
+        if (desiredOutput >= surplus) return taxTotalSupply;
 
         // Linear case (no tax): out = surplus * c / totalSupply, so c = ceil(out * totalSupply / surplus).
         if (cashOutTaxRate == 0) {
@@ -91,23 +105,26 @@ library JBCashOuts {
         }
 
         // General case: binary search for the minimum c such that
-        // cashOutFrom(surplus, c, totalSupply, cashOutTaxRate) >= desiredOutput.
+        // cashOutFrom(surplus, c, totalSupply, taxTotalSupply, cashOutTaxRate) >= desiredOutput.
         //
-        // The forward formula out = (S*c/T) * [(m-r) + r*c/T] / m is monotonically non-decreasing in c,
-        // so binary search is valid. We know:
-        //   - cashOutFrom(surplus, 0, totalSupply, r) = 0 < desiredOutput
-        //   - cashOutFrom(surplus, totalSupply, totalSupply, r) = surplus > desiredOutput
-        // so a valid answer always exists in [1, totalSupply].
+        // The forward formula is monotonically non-decreasing in c, so binary search is valid. We know:
+        //   - cashOutFrom(surplus, 0, ...) = 0 < desiredOutput
+        //   - cashOutFrom(surplus, taxTotalSupply, ...) = surplus > desiredOutput
+        // so a valid answer always exists in [1, taxTotalSupply].
 
         uint256 lo = 1;
-        uint256 hi = totalSupply;
+        uint256 hi = taxTotalSupply;
 
         while (lo < hi) {
             uint256 mid = lo + (hi - lo) / 2;
             if (
                 cashOutFrom({
-                        surplus: surplus, cashOutCount: mid, totalSupply: totalSupply, cashOutTaxRate: cashOutTaxRate
-                    }) >= desiredOutput
+                    surplus: surplus,
+                    cashOutCount: mid,
+                    totalSupply: totalSupply,
+                    taxTotalSupply: taxTotalSupply,
+                    cashOutTaxRate: cashOutTaxRate
+                }) >= desiredOutput
             ) {
                 hi = mid;
             } else {
