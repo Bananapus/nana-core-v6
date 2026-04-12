@@ -1,27 +1,50 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit, Nonces} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
 
+import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
+import {JBPermissioned} from "./abstract/JBPermissioned.sol";
+import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
+import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
+import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
 /// @notice An ERC-20 token that can be used by a project in `JBTokens` and `JBController`.
 /// @dev By default, a project uses "credits" to track balances. Once a project sets their `IJBToken` using
 /// `JBController.deployERC20For(...)` or `JBController.setTokenFor(...)`, credits can be redeemed to claim tokens.
 /// @dev `JBController.deployERC20For(...)` deploys a `JBERC20` contract and sets it as the project's token.
-contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
+contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
     error JBERC20_AlreadyInitialized();
+    error JBERC20_Unauthorized();
 
     //*********************************************************************//
-    // --------------------- internal stored properties ------------------ //
+    // --------------- public immutable stored properties ---------------- //
+    //*********************************************************************//
+
+    /// @notice The projects contract used to resolve project ownership.
+    IJBProjects public immutable PROJECTS;
+
+    //*********************************************************************//
+    // --------------------- public stored properties -------------------- //
+    //*********************************************************************//
+
+    /// @notice The JBTokens contract that owns this token.
+    /// @dev Set via `initialize` because JBERC20 is deployed before JBTokens (circular dependency).
+    // forge-lint: disable-next-line(mixed-case-variable)
+    IJBTokens public TOKENS;
+
+    //*********************************************************************//
+    // -------------------- private stored properties -------------------- //
     //*********************************************************************//
 
     /// @notice The token's name.
@@ -38,8 +61,29 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
 
     /// @dev Set `_name` on the implementation contract to prevent it from being initialized directly.
     /// Clones start with empty `_name`, so `initialize(...)` works only on clones.
-    constructor() Ownable(address(this)) ERC20("invalid", "invalid") ERC20Permit("JBToken") {
+    /// @param permissions The permissions contract.
+    /// @param projects The projects contract.
+    constructor(
+        IJBPermissions permissions,
+        IJBProjects projects
+    )
+        ERC20("invalid", "invalid")
+        ERC20Permit("JBToken")
+        JBPermissioned(permissions)
+    {
         _name = "invalid";
+        PROJECTS = projects;
+    }
+
+    //*********************************************************************//
+    // --------------------------- modifiers ---------------------------- //
+    //*********************************************************************//
+
+    /// @notice Only the JBTokens contract can call this function.
+    // forge-lint: disable-next-line(unwrapped-modifier-logic)
+    modifier onlyTokens() {
+        if (msg.sender != address(TOKENS)) revert JBERC20_Unauthorized();
+        _;
     }
 
     //*********************************************************************//
@@ -47,56 +91,66 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     //*********************************************************************//
 
     /// @notice Burn some outstanding tokens.
-    /// @dev Can only be called by this contract's owner.
+    /// @dev Can only be called by the JBTokens contract.
     /// @param account The address to burn tokens from.
     /// @param amount The amount of tokens to burn, as a fixed point number with 18 decimals.
-    function burn(address account, uint256 amount) external override onlyOwner {
+    function burn(address account, uint256 amount) external override onlyTokens {
         return _burn({account: account, value: amount});
     }
 
     /// @notice Mints more of this token.
-    /// @dev Can only be called by this contract's owner.
+    /// @dev Can only be called by the JBTokens contract.
     /// @param account The address to mint the new tokens to.
     /// @param amount The amount of tokens to mint, as a fixed point number with 18 decimals.
-    function mint(address account, uint256 amount) external override onlyOwner {
+    function mint(address account, uint256 amount) external override onlyTokens {
         return _mint({account: account, value: amount});
     }
 
     /// @notice Sets the token's name and symbol.
-    /// @dev Can only be called by this contract's owner.
+    /// @dev Can only be called by the JBTokens contract.
     /// @param name_ The new name.
     /// @param symbol_ The new symbol.
-    function setMetadata(string memory name_, string memory symbol_) external override onlyOwner {
+    function setMetadata(string memory name_, string memory symbol_) external override onlyTokens {
         _name = name_;
         _symbol = symbol_;
     }
 
     //*********************************************************************//
-    // ----------------------- public transactions ----------------------- //
-    //*********************************************************************//
-
-    /// @notice Initializes the token.
-    /// @param name_ The token's name.
-    /// @param symbol_ The token's symbol.
-    /// @param owner The token contract's owner.
-    function initialize(string memory name_, string memory symbol_, address owner) public override {
-        // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
-        if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
-
-        _name = name_;
-        _symbol = symbol_;
-
-        // Transfer ownership to the owner.
-        _transferOwnership(owner);
-    }
-
-    //*********************************************************************//
-    // ------------------------- external views -------------------------- //
+    // ----------------------- external views ---------------------------- //
     //*********************************************************************//
 
     /// @notice This token can only be added to a project when its created by the `JBTokens` contract.
     function canBeAddedTo(uint256) external pure override returns (bool) {
         return false;
+    }
+
+    /// @notice Validates a signature on behalf of this token contract (ERC-1271).
+    /// @dev Allows the project owner or an operator with `SIGN_FOR_ERC20` permission to sign messages on behalf of
+    /// this token. Useful for Etherscan contract verification and other off-chain signature flows.
+    /// @param hash The hash of the data being signed.
+    /// @param signature The signature to validate.
+    /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
+    function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
+        // Recover the signer from the signature. Return invalid if recovery fails.
+        // slither-disable-next-line unused-return
+        (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(hash, signature);
+        if (error != ECDSA.RecoverError.NoError) return 0xffffffff;
+
+        // Get the project ID this token belongs to.
+        uint256 projectId = TOKENS.projectIdOf(IJBToken(address(this)));
+
+        // Get the project owner (the NFT holder).
+        address projectOwner = PROJECTS.ownerOf(projectId);
+
+        // Valid if the signer is the project owner or has the SIGN_FOR_ERC20 permission.
+        if (_hasPermissionFrom({
+                operator: signer,
+                account: projectOwner,
+                projectId: projectId,
+                permissionId: JBPermissionIds.SIGN_FOR_ERC20
+            })) return IERC1271.isValidSignature.selector;
+
+        return 0xffffffff;
     }
 
     //*********************************************************************//
@@ -135,6 +189,23 @@ contract JBERC20 is ERC20Votes, ERC20Permit, Ownable, IJBToken {
     /// @return The total supply of this ERC20, as a fixed point number.
     function totalSupply() public view override(ERC20, IJBToken) returns (uint256) {
         return super.totalSupply();
+    }
+
+    //*********************************************************************//
+    // ----------------------- public transactions ----------------------- //
+    //*********************************************************************//
+
+    /// @notice Initializes the token.
+    /// @param name_ The token's name.
+    /// @param symbol_ The token's symbol.
+    /// @param tokens The JBTokens contract that manages this token.
+    function initialize(string memory name_, string memory symbol_, address tokens) public override {
+        // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
+        if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
+
+        _name = name_;
+        _symbol = symbol_;
+        TOKENS = IJBTokens(tokens);
     }
 
     //*********************************************************************//

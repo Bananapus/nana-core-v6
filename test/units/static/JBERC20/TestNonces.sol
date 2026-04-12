@@ -6,6 +6,7 @@ import {JBERC20Setup} from "./JBERC20Setup.sol";
 import {SigUtils} from "./SigUtils.sol";
 
 contract TestNonces_Local is JBERC20Setup {
+    address _user = makeAddr("user");
     IERC20Permit _token;
     SigUtils sigUtils;
 
@@ -30,7 +31,7 @@ contract TestNonces_Local is JBERC20Setup {
     function test_WhenAUserHasNotCalledPermit() external view {
         // it will return zero
 
-        uint256 _nonce = _token.nonces(_owner);
+        uint256 _nonce = _token.nonces(_user);
 
         assertEq(_nonce, 0);
     }

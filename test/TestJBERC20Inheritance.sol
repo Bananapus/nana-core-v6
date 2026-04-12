@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {JBERC20} from "../src/JBERC20.sol";
+import {IJBPermissions} from "../src/interfaces/IJBPermissions.sol";
+import {IJBProjects} from "../src/interfaces/IJBProjects.sol";
 import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBToken} from "../src/interfaces/IJBToken.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
@@ -15,7 +17,7 @@ import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 import {ERC20Votes} from "../src/JBERC20.sol";
 
-contract JBERC20Inheritance_Local is JBERC20, TestBaseWorkflow {
+contract JBERC20Inheritance_Local is JBERC20(IJBPermissions(address(1)), IJBProjects(address(2))), TestBaseWorkflow {
     /// This test is to verify that the inheritance order of JBERC20 is correct and that it calls the
     /// `ERC20Votes._update()`
     /// forge-config: default.allow_internal_expect_revert = true

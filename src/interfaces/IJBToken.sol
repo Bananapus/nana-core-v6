@@ -26,11 +26,11 @@ interface IJBToken {
     /// @param amount The amount of tokens to burn.
     function burn(address account, uint256 amount) external;
 
-    /// @notice Initializes the token with a name, symbol, and owner.
+    /// @notice Initializes the token with a name, symbol, and the JBTokens contract.
     /// @param name The token's name.
     /// @param symbol The token's symbol.
-    /// @param owner The token contract's owner.
-    function initialize(string memory name, string memory symbol, address owner) external;
+    /// @param tokens The JBTokens contract that manages this token.
+    function initialize(string memory name, string memory symbol, address tokens) external;
 
     /// @notice Mints tokens to an account.
     /// @param account The address to mint tokens to.
