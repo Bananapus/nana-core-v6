@@ -69,9 +69,17 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
     /// project ID.
     function _requirePermissionFrom(address account, uint256 projectId, uint256 permissionId) internal view {
         address sender = _msgSender();
-        if (!_hasPermissionFrom(sender, account, projectId, permissionId)) {
-            revert JBPermissioned_Unauthorized(account, sender, projectId, permissionId);
-        }
+        if (
+            sender != account
+                && !PERMISSIONS.hasPermission({
+                    operator: sender,
+                    account: account,
+                    projectId: projectId,
+                    permissionId: permissionId,
+                    includeRoot: true,
+                    includeWildcardProjectId: true
+                })
+        ) revert JBPermissioned_Unauthorized(account, sender, projectId, permissionId);
     }
 
     /// @notice If the 'alsoGrantAccessIf' condition is truthy, proceed. Otherwise, require the message sender to be the
