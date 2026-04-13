@@ -951,12 +951,10 @@ contract JBTerminalStore is IJBTerminalStore {
             context.rulesetId = ruleset.id;
             context.cashOutCount = cashOutCount;
             context.totalSupply = effectiveTotalSupply;
-            context.surplus = JBTokenAmount({
-                token: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].token,
-                value: surplus,
-                decimals: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].decimals,
-                currency: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].currency
-            });
+            {
+                JBAccountingContext memory ac = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
+                context.surplus = JBTokenAmount({token: ac.token, value: surplus, decimals: ac.decimals, currency: ac.currency});
+            }
             context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
             context.cashOutTaxRate = ruleset.cashOutTaxRate();
             context.beneficiaryIsFeeless = beneficiaryIsFeeless;
