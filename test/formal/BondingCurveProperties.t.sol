@@ -37,7 +37,7 @@ contract BondingCurveProperties is Test {
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
         vm.assume(cashOutTaxRate <= MAX_TAX);
 
-        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, 0, cashOutTaxRate);
         assert(result <= surplus);
     }
 
@@ -55,7 +55,7 @@ contract BondingCurveProperties is Test {
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
         vm.assume(cashOutTaxRate <= MAX_TAX);
 
-        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, 0, cashOutTaxRate);
         assertLe(result, surplus, "Boundedness: cashOutFrom should never exceed surplus");
     }
 
@@ -81,8 +81,8 @@ contract BondingCurveProperties is Test {
         vm.assume(c2 <= totalSupply);
         vm.assume(cashOutTaxRate <= MAX_TAX);
 
-        uint256 result1 = JBCashOuts.cashOutFrom(surplus, c1, totalSupply, totalSupply, cashOutTaxRate);
-        uint256 result2 = JBCashOuts.cashOutFrom(surplus, c2, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result1 = JBCashOuts.cashOutFrom(surplus, c1, totalSupply, 0, cashOutTaxRate);
+        uint256 result2 = JBCashOuts.cashOutFrom(surplus, c2, totalSupply, 0, cashOutTaxRate);
 
         assert(result1 <= result2);
     }
@@ -104,8 +104,8 @@ contract BondingCurveProperties is Test {
         vm.assume(c2 <= totalSupply);
         vm.assume(cashOutTaxRate <= MAX_TAX);
 
-        uint256 result1 = JBCashOuts.cashOutFrom(surplus, c1, totalSupply, totalSupply, cashOutTaxRate);
-        uint256 result2 = JBCashOuts.cashOutFrom(surplus, c2, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result1 = JBCashOuts.cashOutFrom(surplus, c1, totalSupply, 0, cashOutTaxRate);
+        uint256 result2 = JBCashOuts.cashOutFrom(surplus, c2, totalSupply, 0, cashOutTaxRate);
 
         assertLe(result1, result2, "Monotonicity: more tokens should yield >= reclaim");
     }
@@ -122,7 +122,7 @@ contract BondingCurveProperties is Test {
         vm.assume(cashOutTaxRate < MAX_TAX); // Exclude max tax (which returns 0)
 
         // When cashing out the entire supply
-        uint256 result = JBCashOuts.cashOutFrom(surplus, totalSupply, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, totalSupply, totalSupply, 0, cashOutTaxRate);
         assert(result == surplus);
     }
 
@@ -131,7 +131,7 @@ contract BondingCurveProperties is Test {
         vm.assume(totalSupply > 0);
         vm.assume(cashOutTaxRate < MAX_TAX); // Exclude max tax
 
-        uint256 result = JBCashOuts.cashOutFrom(surplus, totalSupply, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, totalSupply, totalSupply, 0, cashOutTaxRate);
         assertEq(result, surplus, "Full redemption should return entire surplus");
     }
 
@@ -145,7 +145,7 @@ contract BondingCurveProperties is Test {
         vm.assume(totalSupply > 0 && totalSupply <= type(uint128).max);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
 
-        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, totalSupply, MAX_TAX);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, 0, MAX_TAX);
         assert(result == 0);
     }
 
@@ -154,7 +154,7 @@ contract BondingCurveProperties is Test {
         vm.assume(totalSupply > 0);
         vm.assume(cashOutCount > 0 && cashOutCount <= totalSupply);
 
-        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, totalSupply, MAX_TAX);
+        uint256 result = JBCashOuts.cashOutFrom(surplus, cashOutCount, totalSupply, 0, MAX_TAX);
         assertEq(result, 0, "Max tax rate should return 0");
     }
 
@@ -162,8 +162,8 @@ contract BondingCurveProperties is Test {
     // Property 5: No-arbitrage (subadditivity)
     // =========================================================================
     /// @notice Splitting a cash out into two parts should never yield more than a single cash out.
-    ///         cashOutFrom(S, a, T, T, r) + cashOutFrom(S', b, T', T', r) <= cashOutFrom(S, a+b, T, T, r)
-    ///         where S' = S - cashOutFrom(S, a, T, T, r) and T' = T - a
+    ///         cashOutFrom(S, a, T, r) + cashOutFrom(S', b, T', r) <= cashOutFrom(S, a+b, T, r)
+    ///         where S' = S - cashOutFrom(S, a, T, r) and T' = T - a
     // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_noArbitrage(
         uint256 surplus,
@@ -183,17 +183,17 @@ contract BondingCurveProperties is Test {
         vm.assume(cashOutTaxRate < MAX_TAX); // Exclude 100% tax (trivially 0)
 
         // Single cash out of a+b
-        uint256 singleResult = JBCashOuts.cashOutFrom(surplus, a + b, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 singleResult = JBCashOuts.cashOutFrom(surplus, a + b, totalSupply, 0, cashOutTaxRate);
 
         // First part: cash out a
-        uint256 firstResult = JBCashOuts.cashOutFrom(surplus, a, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 firstResult = JBCashOuts.cashOutFrom(surplus, a, totalSupply, 0, cashOutTaxRate);
 
         // After first cash out: reduced surplus and supply
         uint256 remainingSurplus = surplus - firstResult;
         uint256 remainingSupply = totalSupply - a;
 
         // Second part: cash out b from remaining state
-        uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, remainingSupply, cashOutTaxRate);
+        uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, 0, cashOutTaxRate);
 
         // NOTE: Strict subadditivity (firstResult + secondResult <= singleResult) was proven to be
         // violated due to mulDiv rounding accumulation.
@@ -224,13 +224,13 @@ contract BondingCurveProperties is Test {
         vm.assume(cashOutTaxRate <= MAX_TAX);
         vm.assume(cashOutTaxRate < MAX_TAX);
 
-        uint256 singleResult = JBCashOuts.cashOutFrom(surplus, uint256(a) + b, totalSupply, totalSupply, cashOutTaxRate);
-        uint256 firstResult = JBCashOuts.cashOutFrom(surplus, a, totalSupply, totalSupply, cashOutTaxRate);
+        uint256 singleResult = JBCashOuts.cashOutFrom(surplus, uint256(a) + b, totalSupply, 0, cashOutTaxRate);
+        uint256 firstResult = JBCashOuts.cashOutFrom(surplus, a, totalSupply, 0, cashOutTaxRate);
 
         uint256 remainingSurplus = surplus - firstResult;
         uint256 remainingSupply = totalSupply - a;
 
-        uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, remainingSupply, cashOutTaxRate);
+        uint256 secondResult = JBCashOuts.cashOutFrom(remainingSurplus, b, remainingSupply, 0, cashOutTaxRate);
 
         // NOTE: Strict subadditivity violated due to mulDiv rounding.
         // Verify the weaker property: excess bounded by rounding tolerance (<=2 wei or < 0.01%).

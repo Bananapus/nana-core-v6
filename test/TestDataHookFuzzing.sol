@@ -266,7 +266,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), cashOutCount, _hookTotalSupply, _hookTotalSupply, _emptyCashOutSpecs)
+            abi.encode(uint256(0), cashOutCount, _hookTotalSupply, uint256(0), _emptyCashOutSpecs)
         );
 
         uint256 balanceBefore = address(this).balance;
@@ -336,7 +336,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), cashOutCount, tokenBalance, tokenBalance, _specs)
+            abi.encode(uint256(0), cashOutCount, tokenBalance, uint256(0), _specs)
         );
 
         // Mock the cash out hook call.
@@ -500,7 +500,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), tokenBalance, tokenBalance, tokenBalance, _specs)
+            abi.encode(uint256(0), tokenBalance, tokenBalance, uint256(0), _specs)
         );
 
         vm.expectRevert(

@@ -226,7 +226,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             uint256 totalSupply = _controller.totalTokenSupplyWithReservedTokensOf(_projectId);
 
             uint256 grossReclaim = JBCashOuts.cashOutFrom({
-                surplus: surplus, cashOutCount: cashOutCount, totalSupply: totalSupply, taxTotalSupply: totalSupply, cashOutTaxRate: 5000
+                surplus: surplus, cashOutCount: cashOutCount, totalSupply: totalSupply, taxSurplus: 0, cashOutTaxRate: 5000
             });
             assertGt(grossReclaim, 0, "Gross reclaim should be positive");
 
@@ -379,12 +379,12 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
 
         // Compute expected cashout with the inflated supply (what the system does).
         uint256 reclaimWithReserves = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, taxTotalSupply: totalWithReserves, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: totalWithReserves, taxSurplus: 0, cashOutTaxRate: 5000
         });
 
         // Compute hypothetical cashout without pending reserves.
         uint256 reclaimWithoutReserves = JBCashOuts.cashOutFrom({
-            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, taxTotalSupply: circulatingSupply, cashOutTaxRate: 5000
+            surplus: surplus, cashOutCount: payerTokens, totalSupply: circulatingSupply, taxSurplus: 0, cashOutTaxRate: 5000
         });
 
         // With pending reserves, the cashout value is lower (known behavior).
