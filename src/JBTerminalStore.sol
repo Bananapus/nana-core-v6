@@ -605,7 +605,6 @@ contract JBTerminalStore is IJBTerminalStore {
             surplus: surplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
-            taxSurplus: 0,
             cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
@@ -823,7 +822,6 @@ contract JBTerminalStore is IJBTerminalStore {
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
             totalSupply: totalSupply,
-            taxSurplus: 0,
             cashOutTaxRate: ruleset.cashOutTaxRate()
         });
     }
@@ -921,9 +919,6 @@ contract JBTerminalStore is IJBTerminalStore {
             terminal: terminal, projectId: projectId, tokenToReclaim: tokenToReclaim, ruleset: ruleset
         });
 
-        // Get the accounting context for the token being reclaimed.
-        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
-
         // Get the total number of outstanding project tokens.
         uint256 effectiveTotalSupply =
             IJBController(address(DIRECTORY.controllerOf(projectId))).totalTokenSupplyWithReservedTokensOf(projectId);
@@ -942,9 +937,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
         uint256 effectiveCashOutCount = cashOutCount;
 
-        // The tax surplus defaults to 0 (use local surplus for proportional base). Data hooks can override
-        // this to include surplus on other chains for cross-chain proportional reclaim.
-        uint256 effectiveTaxSurplus;
+        // The effective surplus defaults to 0 (use local surplus). Data hooks can override this to include
+        // surplus on other chains — the terminal caps the result at locally available funds.
+        uint256 effectiveSurplus;
 
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
@@ -957,10 +952,10 @@ contract JBTerminalStore is IJBTerminalStore {
             context.cashOutCount = cashOutCount;
             context.totalSupply = effectiveTotalSupply;
             context.surplus = JBTokenAmount({
-                token: accountingContext.token,
+                token: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].token,
                 value: surplus,
-                decimals: accountingContext.decimals,
-                currency: accountingContext.currency
+                decimals: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].decimals,
+                currency: _accountingContextForTokenOf[terminal][projectId][tokenToReclaim].currency
             });
             context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
             context.cashOutTaxRate = ruleset.cashOutTaxRate();
@@ -971,7 +966,7 @@ contract JBTerminalStore is IJBTerminalStore {
                 cashOutTaxRate,
                 effectiveCashOutCount,
                 effectiveTotalSupply,
-                effectiveTaxSurplus,
+                effectiveSurplus,
                 hookSpecifications
             ) = IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
@@ -991,12 +986,14 @@ contract JBTerminalStore is IJBTerminalStore {
         // Apply the bonding curve to calculate how much of the surplus is reclaimable.
         if (surplus != 0) {
             reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: surplus,
+                surplus: effectiveSurplus > 0 ? effectiveSurplus : surplus,
                 cashOutCount: effectiveCashOutCount,
                 totalSupply: effectiveTotalSupply,
-                taxSurplus: effectiveTaxSurplus,
                 cashOutTaxRate: cashOutTaxRate
             });
+
+            // Cap at local surplus — can't reclaim more than what's locally available.
+            if (reclaimAmount > surplus) reclaimAmount = surplus;
         }
     }
 

@@ -260,7 +260,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
                 ruleset.cashOutTaxRate(), // Use the ruleset's 50% cash out tax rate.
                 cashOutCount, // Number of tokens being cashed out.
                 totalSupply, // Total supply for the bonding curve.
-                uint256(0), // taxSurplus
+                uint256(0), // effectiveSurplus
                 specifications // Our malicious hook specification.
             )
         );
@@ -484,7 +484,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
                 ruleset.cashOutTaxRate(), // Pass through the ruleset's tax rate.
                 cashOutCount, // Number of tokens being cashed out.
                 totalSupply, // Current total supply.
-                uint256(0), // taxSurplus
+                uint256(0), // effectiveSurplus
                 new JBCashOutHookSpecification[](0) // No hooks for this cashout.
             )
         );
