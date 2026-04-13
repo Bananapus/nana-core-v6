@@ -881,6 +881,54 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
+    /// @notice Calls the data hook, validates noop specifications, and computes the bonding curve reclaim amount.
+    /// @dev Extracted from `_computeCashOutFrom` to keep it under the EVM stack depth limit (16 slots).
+    /// @param ruleset The current ruleset (used to resolve the data hook address).
+    /// @param context The fully-populated cash out context to forward to the data hook.
+    /// @param surplus The locally available surplus (used as a cap — can't reclaim more than what's on-chain here).
+    /// @return reclaimAmount The amount of surplus tokens reclaimable after the bonding curve and cap.
+    /// @return cashOutTaxRate The cash out tax rate returned by the data hook.
+    /// @return hookSpecifications The hook specifications returned by the data hook.
+    function _cashOutWithDataHook(
+        JBRuleset memory ruleset,
+        JBBeforeCashOutRecordedContext memory context,
+        uint256 surplus
+    )
+        internal
+        view
+        returns (uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications)
+    {
+        // Ask the data hook for the effective bonding curve parameters and any hook specifications.
+        uint256 effectiveCashOutCount;
+        uint256 effectiveTotalSupply;
+        uint256 effectiveSurplus;
+        (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveSurplus, hookSpecifications) =
+            IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+        // Noop specifications are informational only, so they can't also request forwarded funds.
+        for (uint256 i; i < hookSpecifications.length;) {
+            if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Apply the bonding curve to calculate how much of the surplus is reclaimable.
+        if (surplus != 0) {
+            reclaimAmount = JBCashOuts.cashOutFrom({
+                surplus: effectiveSurplus,
+                cashOutCount: effectiveCashOutCount,
+                totalSupply: effectiveTotalSupply,
+                cashOutTaxRate: cashOutTaxRate
+            });
+
+            // Cap at local surplus — can't reclaim more than what's locally available.
+            if (reclaimAmount > surplus) reclaimAmount = surplus;
+        }
+    }
+
     /// @notice Computes cash out results without writing state.
     /// @param terminal The terminal recording the cash out.
     /// @param holder The account that is cashing out tokens.
@@ -974,53 +1022,6 @@ contract JBTerminalStore is IJBTerminalStore {
                     cashOutTaxRate: cashOutTaxRate
                 });
             }
-        }
-    }
-
-    /// @notice Calls the data hook, validates noop specs, and computes the bonding curve reclaim amount.
-    /// @dev Extracted to a helper to keep `_computeCashOutFrom` under the EVM stack depth limit.
-    /// @param ruleset The current ruleset.
-    /// @param context The cash out context to pass to the data hook.
-    /// @param surplus The locally available surplus (used as a cap on the reclaim amount).
-    /// @return reclaimAmount The amount of surplus tokens reclaimable.
-    /// @return cashOutTaxRate The cash out tax rate returned by the data hook.
-    /// @return hookSpecifications The hook specifications returned by the data hook.
-    function _cashOutWithDataHook(
-        JBRuleset memory ruleset,
-        JBBeforeCashOutRecordedContext memory context,
-        uint256 surplus
-    )
-        internal
-        view
-        returns (uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications)
-    {
-        uint256 effectiveCashOutCount;
-        uint256 effectiveTotalSupply;
-        uint256 effectiveSurplus;
-        (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveSurplus, hookSpecifications) =
-            IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
-
-        // Noop specifications are informational only, so they can't also request forwarded funds.
-        for (uint256 i; i < hookSpecifications.length;) {
-            if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Apply the bonding curve to calculate how much of the surplus is reclaimable.
-        if (surplus != 0) {
-            reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: effectiveSurplus,
-                cashOutCount: effectiveCashOutCount,
-                totalSupply: effectiveTotalSupply,
-                cashOutTaxRate: cashOutTaxRate
-            });
-
-            // Cap at local surplus — can't reclaim more than what's locally available.
-            if (reclaimAmount > surplus) reclaimAmount = surplus;
         }
     }
 
