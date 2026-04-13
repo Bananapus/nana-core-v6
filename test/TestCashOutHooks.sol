@@ -207,7 +207,11 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
             abi.encode(
-                _ruleset.cashOutTaxRate(), _beneficiaryTokenBalance / 2, _beneficiaryTokenBalance, uint256(0), _specifications
+                _ruleset.cashOutTaxRate(),
+                _beneficiaryTokenBalance / 2,
+                _beneficiaryTokenBalance,
+                uint256(0),
+                _specifications
             )
         );
 

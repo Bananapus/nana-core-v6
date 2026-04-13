@@ -145,7 +145,13 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(0, cashOutCount, _controller.totalTokenSupplyWithReservedTokensOf(_projectId), uint256(0), specifications)
+            abi.encode(
+                0,
+                cashOutCount,
+                _controller.totalTokenSupplyWithReservedTokensOf(_projectId),
+                uint256(0),
+                specifications
+            )
         );
 
         vm.prank(multisig());
