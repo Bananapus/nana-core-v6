@@ -901,8 +901,8 @@ contract JBTerminalStore is IJBTerminalStore {
         // Ask the data hook for the effective bonding curve parameters and any hook specifications.
         uint256 effectiveCashOutCount;
         uint256 effectiveTotalSupply;
-        uint256 effectiveSurplus;
-        (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveSurplus, hookSpecifications) =
+        uint256 effectiveSurplusValue;
+        (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveSurplusValue, hookSpecifications) =
             IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
 
         // Noop specifications are informational only, so they can't also request forwarded funds.
@@ -918,7 +918,7 @@ contract JBTerminalStore is IJBTerminalStore {
         // Apply the bonding curve to calculate how much of the surplus is reclaimable.
         if (surplus != 0) {
             reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: effectiveSurplus,
+                surplus: effectiveSurplusValue,
                 cashOutCount: effectiveCashOutCount,
                 totalSupply: effectiveTotalSupply,
                 cashOutTaxRate: cashOutTaxRate

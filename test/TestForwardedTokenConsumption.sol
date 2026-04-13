@@ -149,7 +149,7 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
                 0,
                 cashOutCount,
                 _controller.totalTokenSupplyWithReservedTokensOf(_projectId),
-                uint256(0),
+                _PAY_AMOUNT,
                 specifications
             )
         );

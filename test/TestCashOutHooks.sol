@@ -210,7 +210,7 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
                 _ruleset.cashOutTaxRate(),
                 _beneficiaryTokenBalance / 2,
                 _beneficiaryTokenBalance,
-                uint256(0),
+                _nativePayAmount,
                 _specifications
             )
         );
@@ -326,7 +326,13 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(_customCashOutTaxRate, _customCashOutCount, _customTotalSupply, uint256(0), _specifications)
+            abi.encode(
+                _customCashOutTaxRate,
+                _customCashOutCount,
+                _customTotalSupply,
+                _nativeTerminalBalance, // Same as _nativePayAmount (no payouts); avoids stack depth limit.
+                _specifications
+            )
         );
 
         _terminal.cashOutTokensOf({

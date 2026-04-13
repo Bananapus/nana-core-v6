@@ -260,7 +260,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
                 ruleset.cashOutTaxRate(), // Use the ruleset's 50% cash out tax rate.
                 cashOutCount, // Number of tokens being cashed out.
                 totalSupply, // Total supply for the bonding curve.
-                uint256(0), // effectiveSurplus
+                PAY_AMOUNT, // effectiveSurplusValue — full initial funding, no payouts yet.
                 specifications // Our malicious hook specification.
             )
         );
@@ -476,6 +476,9 @@ contract CashOutReenterPay is TestBaseWorkflow {
         // Read the current total supply for the bonding curve calculation.
         uint256 totalSupply = _tokens.totalSupplyOf(_projectId);
 
+        // Read the current surplus for the bonding curve.
+        uint256 surplus = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
+
         // Mock the data hook to return no hook specifications (simple cashout).
         vm.mockCall(
             DATA_HOOK,
@@ -484,7 +487,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
                 ruleset.cashOutTaxRate(), // Pass through the ruleset's tax rate.
                 cashOutCount, // Number of tokens being cashed out.
                 totalSupply, // Current total supply.
-                uint256(0), // effectiveSurplus
+                surplus, // effectiveSurplusValue — current terminal balance.
                 new JBCashOutHookSpecification[](0) // No hooks for this cashout.
             )
         );

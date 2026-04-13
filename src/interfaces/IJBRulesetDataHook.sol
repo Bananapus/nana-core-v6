@@ -21,9 +21,9 @@ interface IJBRulesetDataHook is IERC165 {
     /// burns the caller-supplied token count.
     /// @return effectiveTotalSupply The effective total supply to use for both the proportional reclaim and tax
     /// calculations. For omnichain projects, this should include tokens on other chains so the tax cannot be bypassed.
-    /// @return effectiveSurplus The surplus to use for the bonding curve calculation. When > 0, overrides the
-    /// local surplus for proportional reclaim (the terminal caps the result at locally available funds).
-    /// Set to 0 to use local surplus (default single-chain behavior).
+    /// @return effectiveSurplusValue The surplus value to use for the bonding curve calculation, denominated in the
+    /// same token, decimals, and currency as `context.surplus`. The terminal caps the reclaim at locally available
+    /// funds.
     /// @return hookSpecifications The amount and data to send to cash out hooks instead of returning to the
     /// beneficiary.
     function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata context)
@@ -33,7 +33,7 @@ interface IJBRulesetDataHook is IERC165 {
             uint256 cashOutTaxRate,
             uint256 effectiveCashOutCount,
             uint256 effectiveTotalSupply,
-            uint256 effectiveSurplus,
+            uint256 effectiveSurplusValue,
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 

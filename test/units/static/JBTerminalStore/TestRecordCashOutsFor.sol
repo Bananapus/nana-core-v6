@@ -417,7 +417,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_dataHook),
             abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
-            abi.encode(0, 1e18, _totalSupply, uint256(0), _spec)
+            abi.encode(0, 1e18, _totalSupply, 3e18, _spec)
         );
 
         uint256 balanceBefore = _store.balanceOf(address(this), _projectId, _accountingContexts.token);
@@ -521,7 +521,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_dataHook),
             abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
-            abi.encode(0, 1e18, _totalSupply, uint256(0), _spec)
+            abi.encode(0, 1e18, _totalSupply, 3e18, _spec)
         );
 
         (, uint256 reclaimed,,) = _store.recordCashOutFor({
@@ -576,7 +576,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_dataHook),
             abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
-            abi.encode(0, 1e18, _totalSupply, uint256(0), _spec)
+            abi.encode(0, 1e18, _totalSupply, 3e18, _spec)
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_NoopHookSpecHasAmount.selector, 1));
@@ -631,7 +631,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_dataHook),
             abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
-            abi.encode(0, 1e18, _totalSupply, uint256(0), _spec)
+            abi.encode(0, 1e18, _totalSupply, 3e18, _spec)
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_NoopHookSpecHasAmount.selector, 1));
