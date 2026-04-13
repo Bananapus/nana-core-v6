@@ -599,6 +599,8 @@ contract JBTerminalStore is IJBTerminalStore {
         JBRuleset memory ruleset = RULESETS.currentOf(projectId);
 
         // Return the amount of surplus terminal tokens that would be reclaimed.
+        // NOTE: This view does not run the data hook, so it cannot reflect a cross-chain totalSupply override.
+        // For accurate omnichain estimates, use the data hook or simulate recordCashOutFor.
         return JBCashOuts.cashOutFrom({
             surplus: surplus,
             cashOutCount: cashOutCount,
@@ -814,6 +816,8 @@ contract JBTerminalStore is IJBTerminalStore {
         if (cashOutCount > totalSupply) return 0;
 
         // Return the amount of surplus terminal tokens that would be reclaimed.
+        // NOTE: This view does not run the data hook, so it cannot reflect a cross-chain totalSupply override.
+        // For accurate omnichain estimates, use the data hook or simulate recordCashOutFor.
         return JBCashOuts.cashOutFrom({
             surplus: currentSurplus,
             cashOutCount: cashOutCount,
@@ -877,6 +881,54 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
+    /// @notice Calls the data hook, validates noop specifications, and computes the bonding curve reclaim amount.
+    /// @dev Extracted from `_computeCashOutFrom` to keep it under the EVM stack depth limit (16 slots).
+    /// @param ruleset The current ruleset (used to resolve the data hook address).
+    /// @param context The fully-populated cash out context to forward to the data hook.
+    /// @param surplus The locally available surplus (used as a cap — can't reclaim more than what's on-chain here).
+    /// @return reclaimAmount The amount of surplus tokens reclaimable after the bonding curve and cap.
+    /// @return cashOutTaxRate The cash out tax rate returned by the data hook.
+    /// @return hookSpecifications The hook specifications returned by the data hook.
+    function _cashOutWithDataHook(
+        JBRuleset memory ruleset,
+        JBBeforeCashOutRecordedContext memory context,
+        uint256 surplus
+    )
+        internal
+        view
+        returns (uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications)
+    {
+        // Ask the data hook for the effective bonding curve parameters and any hook specifications.
+        uint256 effectiveCashOutCount;
+        uint256 effectiveTotalSupply;
+        uint256 effectiveSurplusValue;
+        (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, effectiveSurplusValue, hookSpecifications) =
+            IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
+
+        // Noop specifications are informational only, so they can't also request forwarded funds.
+        for (uint256 i; i < hookSpecifications.length;) {
+            if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
+                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Apply the bonding curve to calculate how much of the surplus is reclaimable.
+        if (surplus != 0) {
+            reclaimAmount = JBCashOuts.cashOutFrom({
+                surplus: effectiveSurplusValue,
+                cashOutCount: effectiveCashOutCount,
+                totalSupply: effectiveTotalSupply,
+                cashOutTaxRate: cashOutTaxRate
+            });
+
+            // Cap at local surplus — can't reclaim more than what's locally available.
+            if (reclaimAmount > surplus) reclaimAmount = surplus;
+        }
+    }
+
     /// @notice Computes cash out results without writing state.
     /// @param terminal The terminal recording the cash out.
     /// @param holder The account that is cashing out tokens.
@@ -934,8 +986,6 @@ contract JBTerminalStore is IJBTerminalStore {
         // The terminal still burns the caller-supplied cashOutCount after pricing completes.
         // Project owners MUST audit their data hooks with the same rigor as the terminal.
 
-        uint256 effectiveCashOutCount = cashOutCount;
-
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
             // Build the cash out context field-by-field — the struct has 11 fields, too many for a literal.
@@ -957,30 +1007,21 @@ contract JBTerminalStore is IJBTerminalStore {
             context.beneficiaryIsFeeless = beneficiaryIsFeeless;
             context.metadata = metadata;
 
-            (cashOutTaxRate, effectiveCashOutCount, effectiveTotalSupply, hookSpecifications) =
-                IJBRulesetDataHook(ruleset.dataHook()).beforeCashOutRecordedWith(context);
-
-            // Noop specifications are informational only, so they can't also request forwarded funds.
-            for (uint256 i; i < hookSpecifications.length;) {
-                if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                    revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
-                }
-                unchecked {
-                    ++i;
-                }
-            }
+            // Hook call + bonding curve in a helper to stay under the stack depth limit.
+            (reclaimAmount, cashOutTaxRate, hookSpecifications) =
+                _cashOutWithDataHook({ruleset: ruleset, context: context, surplus: surplus});
         } else {
             cashOutTaxRate = ruleset.cashOutTaxRate();
-        }
 
-        // Apply the bonding curve to calculate how much of the surplus is reclaimable.
-        if (surplus != 0) {
-            reclaimAmount = JBCashOuts.cashOutFrom({
-                surplus: surplus,
-                cashOutCount: effectiveCashOutCount,
-                totalSupply: effectiveTotalSupply,
-                cashOutTaxRate: cashOutTaxRate
-            });
+            // Apply the bonding curve to calculate how much of the surplus is reclaimable.
+            if (surplus != 0) {
+                reclaimAmount = JBCashOuts.cashOutFrom({
+                    surplus: surplus,
+                    cashOutCount: cashOutCount,
+                    totalSupply: effectiveTotalSupply,
+                    cashOutTaxRate: cashOutTaxRate
+                });
+            }
         }
     }
 

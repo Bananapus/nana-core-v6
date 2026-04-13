@@ -453,7 +453,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
         mockExpect(
             address(_dataHook),
             abi.encodeCall(IJBRulesetDataHook.beforeCashOutRecordedWith, (_context)),
-            abi.encode(0, 10e18, _totalSupply, _spec)
+            abi.encode(0, 10e18, _totalSupply, 3e18, _spec)
         );
 
         (, uint256 reclaimAmount, uint256 cashOutTaxRate, JBCashOutHookSpecification[] memory hookSpecifications) = _store.previewCashOutFrom({

@@ -261,12 +261,12 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         uint256 cashOutCount = tokenBalance / 2;
         _hookTotalSupply = bound(_hookTotalSupply, cashOutCount, tokenBalance * 10);
 
-        // Data hook returns: cashOutTaxRate=0, cashOutCount=half, custom totalSupply, no hook specs.
+        // Data hook returns: cashOutTaxRate=0, cashOutCount=half, custom totalSupply, local surplus, no hook specs.
         JBCashOutHookSpecification[] memory _emptyCashOutSpecs = new JBCashOutHookSpecification[](0);
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), cashOutCount, _hookTotalSupply, _emptyCashOutSpecs)
+            abi.encode(uint256(0), cashOutCount, _hookTotalSupply, _payAmount, _emptyCashOutSpecs)
         );
 
         uint256 balanceBefore = address(this).balance;
@@ -336,7 +336,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), cashOutCount, tokenBalance, _specs)
+            abi.encode(uint256(0), cashOutCount, tokenBalance, _payAmount, _specs)
         );
 
         // Mock the cash out hook call.
@@ -500,7 +500,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
         vm.mockCall(
             _DATA_HOOK,
             abi.encodeWithSelector(IJBRulesetDataHook.beforeCashOutRecordedWith.selector),
-            abi.encode(uint256(0), tokenBalance, tokenBalance, _specs)
+            abi.encode(uint256(0), tokenBalance, tokenBalance, _payAmount, _specs)
         );
 
         vm.expectRevert(
