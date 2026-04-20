@@ -20,7 +20,6 @@ import {JBCurrencyAmount} from "./JBCurrencyAmount.sol";
 /// @custom:member surplusAllowances An array of surplus allowances. The surplus allowances cumulatively dictates the
 /// maximum value of `token`s a project can pay out from its surplus (balance less payouts) in a terminal during a
 /// ruleset. Each surplus allowance can have a unique currency and amount.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBFundAccessLimitGroup {
     address terminal;
     address token;

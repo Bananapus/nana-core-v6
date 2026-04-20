@@ -15,7 +15,6 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member weight The weight of the ruleset during which the payment is being made.
 /// @custom:member reservedPercent The reserved percent of the ruleset the payment is being made during.
 /// @custom:member metadata Extra data specified by the payer.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBBeforePayRecordedContext {
     address terminal;
     address payer;

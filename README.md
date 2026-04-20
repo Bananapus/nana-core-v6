@@ -3,7 +3,12 @@
 `@bananapus/core-v6` is the core protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting surfaces that the rest of the V6 ecosystem builds on.
 
 Docs: <https://docs.juicebox.money>
-Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)
+Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
+User journeys: [USER_JOURNEYS.md](./USER_JOURNEYS.md)  
+Skills: [SKILLS.md](./SKILLS.md)  
+Risks: [RISKS.md](./RISKS.md)  
+Administration: [ADMINISTRATION.md](./ADMINISTRATION.md)  
+Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
 
 ## Overview
 
@@ -18,7 +23,7 @@ The core package provides:
 - operator permissions through `JBPermissions`
 - on-chain price-feed routing through `JBPrices`
 
-Use this repo when you need the canonical protocol invariant. Do not duplicate its logic in downstream packages unless the repo is explicitly intended to wrap or extend the core surface.
+Use this repo when you need the canonical protocol accounting and execution surfaces. Do not duplicate its logic in downstream packages unless the repo is explicitly intended to wrap or extend the core surface.
 
 If you only read one repo before auditing the rest of the ecosystem, read this one.
 
@@ -31,7 +36,7 @@ The core protocol is easiest to reason about in four layers:
 3. accounting: `JBTerminalStore`
 4. permissions and external context: `JBPermissions`, `JBPrices`, feeless-address and deadline helpers
 
-Most integrations touch only layer 2. Most economically important bugs leak through layer 3.
+Many integrations touch only layer 2, while many economically important bugs are easiest to understand from layer 3.
 
 The shortest path through the repo is:
 
@@ -77,6 +82,14 @@ The shortest path through the repo is:
 - operator authority lives in `JBPermissions`
 
 When in doubt, read the state-owning contract before the contract that merely forwards into it.
+
+## High-Signal Tests
+
+1. `test/TestPayBurnRedeemFlow.sol`
+2. `test/TestTerminalPreviewParity.sol`
+3. `test/invariants/TerminalStoreInvariant.t.sol`
+4. `test/invariants/RulesetsInvariant.t.sol`
+5. `test/audit/CrossTerminalSurplusSpoof.t.sol`
 
 ## Install
 
@@ -125,3 +138,9 @@ script/
 - fee, surplus, and reclaim logic are economically sensitive and remain high-priority audit surfaces
 
 The fastest way to misunderstand V6 is to treat the core contracts like a simple crowdfunding terminal. They are closer to a configurable accounting and settlement substrate.
+
+## For AI Agents
+
+- Start with `JBController`, `JBMultiTerminal`, and `JBTerminalStore`; do not summarize core behavior from helper libraries alone.
+- Distinguish controller configuration from terminal execution and from store accounting.
+- If a behavior involves hooks, inspect the hook repo too before treating the preview or execution path as canonical.
