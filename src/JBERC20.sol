@@ -40,7 +40,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
 
     /// @notice The JBTokens contract that owns this token.
     /// @dev Set via `initialize` because JBERC20 is deployed before JBTokens (circular dependency).
-    // forge-lint: disable-next-line(mixed-case-variable)
     IJBTokens public TOKENS;
 
     //*********************************************************************//

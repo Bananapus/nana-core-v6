@@ -2,7 +2,7 @@
 
 This is the core Juicebox V6 protocol. Most ecosystem invariants reduce to this repo eventually.
 
-## Objective
+## Audit Objective
 
 Find issues that:
 - break terminal solvency or internal accounting
@@ -45,7 +45,7 @@ That order mirrors how most high-severity issues emerge:
 - tokens are minted or burned
 - permissions and price context decide whether the move was legitimate
 
-## System Model
+## Security Model
 
 Core roles:
 - `JBMultiTerminal`: holds funds and executes pay, payout, cash-out, allowance, and fee-processing flows
@@ -66,6 +66,23 @@ Core ordering to keep in mind:
 - store records accounting before terminal fulfillment finishes
 - controller mint and burn operations happen around terminal flows, not as a separate settlement layer
 - hooks can turn what looks like a simple pay or cash-out into a multi-contract composition
+
+## Roles And Privileges
+
+| Role | Powers | How constrained |
+|------|--------|-----------------|
+| Project owner and operators | Configure rulesets, limits, routing, and permissions | Must stay inside the explicit permission model |
+| Terminal | Hold funds and execute settlement | Must remain solvent relative to internal accounting |
+| Controller | Mint, burn, and manage project lifecycle | Must not bypass project-scoped authorization |
+| Hooks and splits | Extend pay and cash-out behavior | Must not make previews and accounting irreconcilable |
+
+## Integration Assumptions
+
+| Dependency | Assumption | What breaks if wrong |
+|------------|------------|----------------------|
+| Price feeds | Currency conversions are fresh and coherent | Cross-currency flows misprice |
+| Hook ecosystem | External hooks obey documented interfaces | Settlement becomes unsafe after control transfer |
+| Directory and migration surfaces | Canonical routing changes are authentic | Funds or permissions shift to the wrong place |
 
 ## Critical Invariants
 
@@ -93,22 +110,7 @@ When fee payment is deferred, later replenishment or migration behavior must not
 8. Preview coherence
 `previewPayFor` and `previewCashOutFrom` should not become meaningfully inconsistent with execution in ways downstream repos can exploit.
 
-## Threat Model
-
-Prioritize:
-- hook-driven reentrancy or state-ordering issues
-- price-feed failure and cross-currency conversions
-- fee-processing failure paths
-- migration and feeless-address edge cases
-- ruleset-boundary timing attacks
-- wildcard or root permission escalation
-
-The highest-yield attacker mindsets here are:
-- a malicious hook that receives control after balances move but before the full user flow is conceptually finished
-- a project owner exploiting migration, limits, or feeless settings rather than breaking access control directly
-- a cross-currency user extracting value from rounding or stale price conversions
-
-## Hotspots
+## Attack Surfaces
 
 - `pay`, `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf`
 - `preview*` paths when downstream repos treat them as execution truth
@@ -117,34 +119,19 @@ The highest-yield attacker mindsets here are:
 - controller migration and terminal migration
 - `setPermissionsFor` and any wildcard semantics
 
-## Sequences Worth Replaying
+Replay these sequences:
+1. `pay` with a data hook that alters weight or hook specs and then reenters through a pay hook
+2. `cashOutTokensOf` when cross-terminal surplus and `useTotalSurplusForCashOuts` matter
+3. `sendPayoutsOf` into splits that route to another project, hook, or failing beneficiary
+4. held-fee accumulation followed by migration or balance depletion
+5. permission grants involving operators, wildcard project IDs, or later controller changes
 
-1. `pay` with a data hook that returns altered weight and hook specs, then re-enter through a pay hook.
-2. `cashOutTokensOf` when `useTotalSurplusForCashOuts` or cross-terminal surplus logic matters.
-3. `sendPayoutsOf` into splits that route to another project, hook, or failing beneficiary.
-4. held-fee accumulation -> migration or balance depletion -> `processHeldFeesOf`.
-5. permission grants involving operators, wildcard project IDs, or later controller changes.
+## Accepted Risks Or Behaviors
 
-## Finding Bar
+- Hooks are intentionally powerful extension points; safety depends on clear sequencing and bounded trust, not on avoiding composition.
 
-The best findings in this repo usually prove one of these:
-- the store records more value than the terminal can safely honor
-- a limit is consumed too late, after externally controlled code can already profit
-- a migration or held-fee edge path changes who ultimately bears an obligation
-- permissions that look project-scoped become ecosystem-relevant through wildcard or routing semantics
+## Verification
 
-## Build And Verification
-
-Standard workflow:
 - `npm install`
 - `forge build`
 - `forge test`
-
-The current test suite already targets:
-- flash-loan and economic exploits
-- permissions invariants
-- ruleset transitions
-- fee and migration edge cases
-- multi-token and cross-currency surplus behavior
-
-The highest-value findings in this repo are the ones that make downstream hooks or deployers unsafe even when those repos are otherwise correct.

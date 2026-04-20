@@ -29,7 +29,6 @@ import {IJBRulesetApprovalHook} from "./../interfaces/IJBRulesetApprovalHook.sol
 /// ruleset is rejected, it won't go into effect. An approval hook can be used to create rules which dictate how a
 /// project owner can change their ruleset over time.
 /// @custom:member metadata Extra data associated with a ruleset which can be used by other contracts.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBRuleset {
     uint48 cycleNumber;
     uint48 id;

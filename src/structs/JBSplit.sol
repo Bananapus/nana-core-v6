@@ -30,7 +30,6 @@ import {IJBSplitHook} from "./../interfaces/IJBSplitHook.sol";
 /// preserve those splits at the governance/configuration layer.
 /// @custom:member hook A contract which will receive this split's tokens and properties, and can define custom
 /// behavior.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBSplit {
     uint32 percent;
     uint64 projectId;

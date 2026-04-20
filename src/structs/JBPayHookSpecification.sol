@@ -9,7 +9,6 @@ import {IJBPayHook} from "../interfaces/IJBPayHook.sol";
 /// @custom:member noop A flag indicating if the hook callback should be skipped.
 /// @custom:member amount The amount to send to the hook.
 /// @custom:member metadata Metadata to pass the hook.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBPayHookSpecification {
     IJBPayHook hook;
     bool noop;

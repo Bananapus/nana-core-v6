@@ -144,6 +144,7 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 - **No state modification risk.** Preview functions cannot change balances, mint/burn tokens, or consume limits. They are safe to call from any context.
 - **Preview-execution divergence.** Preview functions and their corresponding real operations share computation logic but execute in different contexts. `previewPayFor` calls `STORE.previewPayFrom` which invokes the data hook's `beforePayRecordedWith` via `staticcall`. The real `pay` path invokes the same hook but state changes between preview and execution (other payments, cash outs, ruleset transitions) can change the data hook's response. Callers should treat preview results as estimates, not guarantees — especially for projects with stateful data hooks.
 - **Gas griefing via data hooks in previews.** Since `previewPayFor` and `previewCashOutFrom` invoke data hooks, a gas-expensive data hook can make preview calls prohibitively expensive. This affects frontends and indexers that rely on preview functions for quote display. Unlike the real operations (which have economic incentive to complete), preview calls have no built-in gas limit on the data hook invocation.
+- **Not all read-only cash-out estimates are hook-aware.** `JBTerminalStore.currentReclaimableSurplusOf` and `currentTotalReclaimableSurplusOf` intentionally do not run the data hook. They use the current ruleset's plain `cashOutTaxRate` and the controller-reported total supply, so they cannot reflect hook-provided overrides such as omnichain or custom `effectiveTotalSupply` logic. Integrators should use `previewCashOutFrom` or simulate `recordCashOutFor` when they need an estimate that matches hook-adjusted execution more closely.
 
 ## 7. Integration Risks
 
@@ -173,6 +174,12 @@ No `ReentrancyGuard` is used. The system relies on state ordering and the `Inade
 ### `recordAddedBalanceFor` Access Control
 
 - `JBTerminalStore.recordAddedBalanceFor` has **no access control**. Any address can call it. The balance is keyed by `msg.sender` (the terminal address), so only a terminal can inflate its own recorded balance. This is safe as long as all terminals correctly track their actual holdings. A buggy or malicious terminal implementation could call `recordAddedBalanceFor` without actually receiving tokens, inflating the recorded balance above actual holdings.
+
+### Split and Owner-Payout Failure Semantics
+
+- **Failed split payouts still consume payout limit.** Core decrements balance and increments used payout limit before downstream split transfers are attempted. If a split payout later fails, the amount is returned to project balance, but the payout limit consumption is not rewound. This is intentional fail-open accounting: one bad split should not revert the whole payout fanout, but operators should not assume "returned to balance" also means "payout limit restored".
+- **Failed owner transfers also consume payout limit.** The leftover owner payout path uses the same pattern as split payouts: if the owner transfer fails, funds return to project balance, but the payout limit remains consumed for that cycle.
+- **Split hook reverts after token transfer strand tokens at the hook.** In reserved-token distributions, the controller transfers tokens to the split hook before calling `processSplitWith`. If that hook call then reverts, core emits `SplitHookReverted` but does not claw the tokens back. Integrators should treat split hooks as token-custody recipients, not pure callbacks.
 
 ## 8. Accepted Behaviors
 

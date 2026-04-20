@@ -20,7 +20,6 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// that charge their own fees — they can skip fees when value stays in the protocol (e.g. project-to-project
 /// routing).
 /// @custom:member metadata Extra data provided by the casher.
-// forge-lint: disable-next-line(pascal-case-struct)
 struct JBBeforeCashOutRecordedContext {
     address terminal;
     address holder;
