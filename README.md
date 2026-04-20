@@ -1,6 +1,6 @@
 # Juicebox Core V6
 
-`@bananapus/core-v6` is the core protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting surfaces that the rest of the V6 ecosystem builds on.
+`@bananapus/core-v6` is the base protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting that the rest of the V6 ecosystem builds on.
 
 Docs: <https://docs.juicebox.money>
 Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
@@ -12,37 +12,37 @@ Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
 
 ## Overview
 
-If a V6 package moves value, mints tokens, checks permissions, or reasons about project configuration, it almost certainly depends on this repo.
+If a V6 package moves value, mints tokens, checks permissions, or reads project configuration, it probably depends on this repo.
 
-The core package provides:
+This package provides:
 
 - project ownership and metadata through `JBProjects`
 - ruleset lifecycle management through `JBRulesets`
-- issuance, queueing, token setup, and splits through `JBController`
+- token issuance, ruleset queueing, token setup, and splits through `JBController`
 - multi-token terminal accounting through `JBMultiTerminal` and `JBTerminalStore`
 - operator permissions through `JBPermissions`
 - on-chain price-feed routing through `JBPrices`
 
-Use this repo when you need the canonical protocol accounting and execution surfaces. Do not duplicate its logic in downstream packages unless the repo is explicitly intended to wrap or extend the core surface.
+Use this repo when you need the protocol's canonical accounting and execution logic. Do not copy that logic into downstream repos unless the repo is explicitly meant to wrap or extend core.
 
-If you only read one repo before auditing the rest of the ecosystem, read this one.
+If you only read one V6 repo before reading the rest, read this one.
 
 ## Mental Model
 
-The core protocol is easiest to reason about in four layers:
+It helps to think about core in four layers:
 
 1. identity and configuration: `JBProjects`, `JBDirectory`, `JBRulesets`
 2. execution: `JBController` and `JBMultiTerminal`
 3. accounting: `JBTerminalStore`
-4. permissions and external context: `JBPermissions`, `JBPrices`, feeless-address and deadline helpers
+4. permissions and shared context: `JBPermissions`, `JBPrices`, feeless-address and deadline helpers
 
-Many integrations touch only layer 2, while many economically important bugs are easiest to understand from layer 3.
+Many integrations mostly touch layer 2. Many high-impact bugs are easier to understand in layer 3.
 
-The shortest path through the repo is:
+The shortest reading path is:
 
 1. `JBController` for project launch and ruleset configuration
-2. `JBMultiTerminal` for execution entrypoints
-3. `JBTerminalStore` for economic truth
+2. `JBMultiTerminal` for user-facing execution entrypoints
+3. `JBTerminalStore` for the accounting model
 4. `JBDirectory` and `JBPermissions` for routing and authority
 
 ## Read These Files First
@@ -58,30 +58,30 @@ The shortest path through the repo is:
 
 | Contract | Role |
 | --- | --- |
-| `JBController` | Project launch, ruleset queueing, token configuration, and split management. |
-| `JBMultiTerminal` | Main payment, payout, allowance, and cash-out terminal surface. |
-| `JBTerminalStore` | Shared accounting store for balances, surplus, fees, and reclaim calculations. |
-| `JBDirectory` | Project-to-controller and project-to-terminal routing registry. |
+| `JBController` | Launches projects, queues rulesets, configures tokens, and manages split groups. |
+| `JBMultiTerminal` | Main payment, payout, allowance, and cash-out surface. |
+| `JBTerminalStore` | Shared accounting for balances, surplus, fees, and reclaim math. |
+| `JBDirectory` | Registry for controller and terminal routing. |
 | `JBProjects` | ERC-721 project registry and ownership surface. |
-| `JBPermissions` | Packed operator permissions registry. |
-| `JBPrices` | Price feed routing used by terminals and integrations. |
+| `JBPermissions` | Packed operator-permission registry. |
+| `JBPrices` | Price-feed routing used by terminals and integrations. |
 
 ## Integration Traps
 
-- `JBMultiTerminal` is not a single-token terminal. Integrations that assume one token, one balance, or one primary path usually misread the accounting model.
-- data hooks and cash-out hooks are not cosmetic. They can change effective issuance, reclaim value, and side effects on the path.
-- permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
-- previews and execution are intentionally close, but integrators should still treat them as distinct surfaces when hooks or dynamic routing are involved.
+- `JBMultiTerminal` is multi-token and multi-terminal. Do not assume one token or one balance.
+- Data hooks and cash-out hooks can change economics and side effects. They are part of the protocol surface.
+- Permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
+- Preview and execution are intentionally close, but callers should still treat them as separate surfaces when hooks or routing can change behavior.
 
 ## Where State Lives
 
-- project identity and ownership live in `JBProjects`
-- controller and terminal routing live in `JBDirectory`
-- ruleset history and activation live in `JBRulesets`
-- balances, surplus, fees, and reclaim accounting live in `JBTerminalStore`
-- operator authority lives in `JBPermissions`
+- project identity and ownership: `JBProjects`
+- controller and terminal routing: `JBDirectory`
+- ruleset history and activation: `JBRulesets`
+- balances, surplus, fees, and reclaim accounting: `JBTerminalStore`
+- operator authority: `JBPermissions`
 
-When in doubt, read the state-owning contract before the contract that merely forwards into it.
+When a flow is unclear, read the contract that owns the state before the contract that forwards into it.
 
 ## High-Signal Tests
 
@@ -115,7 +115,7 @@ Useful scripts:
 
 ## Deployment Notes
 
-This repo contains both core deployments and periphery deployment helpers. Most other V6 packages assume these contracts exist first and treat them as the stable base layer of the ecosystem.
+This repo contains the main core deployments and periphery deployment helpers. Most other V6 packages assume these contracts exist first and treat them as the stable base layer.
 
 ## Repository Layout
 
@@ -132,15 +132,15 @@ script/
 
 ## Risks And Notes
 
-- hooks can meaningfully change payment and cash-out behavior, so core integrations must treat hook composition as part of the protocol surface
-- permissions are flexible enough to be dangerous when scoped broadly or granted with wildcard project IDs
-- multi-terminal and multi-token accounting is powerful but increases the chance of integration mistakes when callers assume a single-terminal model
-- fee, surplus, and reclaim logic are economically sensitive and remain high-priority audit surfaces
+- Hooks can materially change payment and cash-out behavior.
+- Permissions are flexible, which makes broad or wildcard grants risky.
+- Multi-terminal and multi-token accounting is powerful, but it is easy to misuse if an integration assumes a single-terminal model.
+- Fee, surplus, and reclaim logic stay high-priority audit areas.
 
-The fastest way to misunderstand V6 is to treat the core contracts like a simple crowdfunding terminal. They are closer to a configurable accounting and settlement substrate.
+The easiest way to misread V6 is to treat core like a simple crowdfunding terminal. It is closer to a configurable accounting and settlement layer.
 
 ## For AI Agents
 
-- Start with `JBController`, `JBMultiTerminal`, and `JBTerminalStore`; do not summarize core behavior from helper libraries alone.
-- Distinguish controller configuration from terminal execution and from store accounting.
-- If a behavior involves hooks, inspect the hook repo too before treating the preview or execution path as canonical.
+- Start with `JBController`, `JBMultiTerminal`, and `JBTerminalStore`.
+- Keep controller configuration, terminal execution, and store accounting separate in your mental model.
+- If hooks are involved, inspect the hook repo before treating preview or execution behavior as final.
