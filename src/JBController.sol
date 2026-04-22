@@ -525,6 +525,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Cache common values used in both permission checks.
         address sender = _msgSender();
         bool senderIsTerminal = _isTerminalOf(projectId, sender);
+        bool senderIsTerminalOrDataHook = senderIsTerminal || sender == ruleset.dataHook();
+        // Only query the data hook if the sender isn't already a terminal or the data hook itself.
+        bool senderHasDataHookMintPermission =
+            !senderIsTerminalOrDataHook && _hasDataHookMintPermissionFor(projectId, ruleset, sender);
 
         // Minting is restricted to: the project's owner, addresses with permission to `MINT_TOKENS`, the project's
         // terminals, and the project's data hook.
@@ -532,15 +536,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             account: PROJECTS.ownerOf(projectId),
             projectId: projectId,
             permissionId: JBPermissionIds.MINT_TOKENS,
-            alsoGrantAccessIf: senderIsTerminal || sender == ruleset.dataHook()
-                || _hasDataHookMintPermissionFor(projectId, ruleset, sender)
+            alsoGrantAccessIf: senderIsTerminalOrDataHook || senderHasDataHookMintPermission
         });
 
         // If the message sender is not the project's terminal or data hook, the ruleset must have `allowOwnerMinting`
         // set to `true`.
         if (
-            ruleset.id != 0 && !ruleset.allowOwnerMinting() && !senderIsTerminal && sender != ruleset.dataHook()
-                && !_hasDataHookMintPermissionFor(projectId, ruleset, sender)
+            ruleset.id != 0 && !ruleset.allowOwnerMinting() && !senderIsTerminalOrDataHook
+                && !senderHasDataHookMintPermission
         ) {
             revert JBController_MintNotAllowedAndNotTerminalOrHook(sender);
         }

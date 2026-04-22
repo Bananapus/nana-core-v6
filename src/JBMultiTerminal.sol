@@ -237,11 +237,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         payable
         override
     {
+        // Accept the funds.
+        (uint256 acceptedAmount,) =
+            _acceptFundsFor({projectId: projectId, token: token, amount: amount, metadata: metadata});
+
         // Add to balance.
         _addToBalanceOf({
             projectId: projectId,
             token: token,
-            amount: _acceptFundsFor(projectId, token, amount, metadata),
+            amount: acceptedAmount,
             shouldReturnHeldFees: shouldReturnHeldFees,
             memo: memo,
             metadata: metadata
@@ -585,20 +589,25 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Get a reference to the beneficiary's balance before the payment.
         uint256 beneficiaryBalanceBefore = TOKENS.totalBalanceOf({holder: beneficiary, projectId: projectId});
 
-        // Accept the funds.
-        uint256 acceptedAmount =
-            _acceptFundsFor({projectId: projectId, token: token, amount: amount, metadata: metadata});
+        // Accept the funds, build the token amount from the returned accounting context, and pay the project.
+        {
+            (uint256 acceptedAmount, JBAccountingContext memory accountingContext) =
+                _acceptFundsFor({projectId: projectId, token: token, amount: amount, metadata: metadata});
 
-        // Pay the project.
-        _pay({
-            projectId: projectId,
-            token: token,
-            amount: acceptedAmount,
-            payer: _msgSender(),
-            beneficiary: beneficiary,
-            memo: memo,
-            metadata: metadata
-        });
+            _pay({
+                projectId: projectId,
+                tokenAmount: JBTokenAmount({
+                    token: token,
+                    decimals: accountingContext.decimals,
+                    currency: accountingContext.currency,
+                    value: acceptedAmount
+                }),
+                payer: _msgSender(),
+                beneficiary: beneficiary,
+                memo: memo,
+                metadata: metadata
+            });
+        }
 
         // Get a reference to the beneficiary's balance after the payment.
         uint256 beneficiaryBalanceAfter = TOKENS.totalBalanceOf({holder: beneficiary, projectId: projectId});
@@ -979,6 +988,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The number of tokens being accepted.
     /// @param metadata The metadata in which permit2 context is provided.
     /// @return amount The number of tokens which have been accepted.
+    /// @return context The accounting context for the token.
     function _acceptFundsFor(
         uint256 projectId,
         address token,
@@ -986,13 +996,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         bytes calldata metadata
     )
         internal
-        returns (uint256)
+        returns (uint256, JBAccountingContext memory context)
     {
         // Make sure the project has an accounting context for the token being paid.
-        _accountingContextOf({projectId: projectId, token: token});
+        context = _accountingContextOf({projectId: projectId, token: token});
 
         // If the terminal's token is the native token, override `amount` with `msg.value`.
-        if (token == JBConstants.NATIVE_TOKEN) return msg.value;
+        if (token == JBConstants.NATIVE_TOKEN) return (msg.value, context);
 
         // If the terminal's token is not native, revert if there is a non-zero `msg.value`.
         if (msg.value != 0) revert JBMultiTerminal_NoMsgValueAllowed(msg.value);
@@ -1035,7 +1045,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _transferFrom({from: _msgSender(), to: payable(address(this)), token: token, amount: amount});
 
         // The amount should reflect the change in balance.
-        return _balanceOf(token) - balanceBefore;
+        return (_balanceOf(token) - balanceBefore, context);
     }
 
     /// @notice Adds funds to a project's balance without minting tokens.
@@ -1150,20 +1160,24 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Cache whether the beneficiary is feeless.
         bool beneficiaryIsFeeless = _isFeeless(beneficiary);
 
-        // Record the cash out.
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: beneficiaryIsFeeless,
-            metadata: metadata
-        });
+        {
+            // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
+            IJBController controller = _controllerOf(projectId);
 
-        // Burn the project tokens.
-        if (cashOutCount != 0) {
-            _controllerOf(projectId)
-                .burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
+            // Record the cash out.
+            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
+                holder: holder,
+                projectId: projectId,
+                cashOutCount: cashOutCount,
+                tokenToReclaim: tokenToReclaim,
+                beneficiaryIsFeeless: beneficiaryIsFeeless,
+                metadata: metadata
+            });
+
+            // Burn the project tokens.
+            if (cashOutCount != 0) {
+                controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
+            }
         }
 
         // Keep a reference to the amount being reclaimed that is subject to fees.
@@ -1313,8 +1327,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (terminal == IJBTerminal(address(this))) {
             _pay({
                 projectId: projectId,
-                token: token,
-                amount: amount,
+                tokenAmount: _tokenAmountOf({projectId: projectId, token: token, value: amount}),
                 payer: address(this),
                 beneficiary: beneficiary,
                 memo: "",
@@ -1569,10 +1582,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Pay a project with tokens.
     /// @param projectId The ID of the project being paid.
-    /// @param token The address of the token which the project is being paid with.
-    /// @param amount The amount of terminal tokens being received, as a fixed point number with the same number of
-    /// decimals as this terminal. If this terminal's token is the native token, `amount` is ignored and `msg.value` is
-    /// used in its place.
+    /// @param tokenAmount The token amount details (token, decimals, currency, value).
     /// @param payer The address making the payment.
     /// @param beneficiary The address to mint tokens to, and pass along to the ruleset's data hook and pay hook if
     /// applicable.
@@ -1580,8 +1590,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param metadata Bytes to send along to the emitted event, as well as the data hook and pay hook if applicable.
     function _pay(
         uint256 projectId,
-        address token,
-        uint256 amount,
+        JBTokenAmount memory tokenAmount,
         address payer,
         address beneficiary,
         string memory memo,
@@ -1589,9 +1598,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
-        // Keep a reference to the token amount to forward to the store.
-        JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
-
         // Record the payment.
         // Keep a reference to the ruleset the payment is being made during.
         // Keep a reference to the pay hook specifications.
@@ -1625,7 +1631,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             projectId: projectId,
             payer: payer,
             beneficiary: beneficiary,
-            amount: amount,
+            amount: tokenAmount.value,
             newlyIssuedTokenCount: newlyIssuedTokenCount,
             memo: memo,
             metadata: metadata,
