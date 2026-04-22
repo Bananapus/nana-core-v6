@@ -1150,20 +1150,24 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Cache whether the beneficiary is feeless.
         bool beneficiaryIsFeeless = _isFeeless(beneficiary);
 
-        // Record the cash out.
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: beneficiaryIsFeeless,
-            metadata: metadata
-        });
+        {
+            // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
+            IJBController controller = _controllerOf(projectId);
 
-        // Burn the project tokens.
-        if (cashOutCount != 0) {
-            _controllerOf(projectId)
-                .burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
+            // Record the cash out.
+            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
+                holder: holder,
+                projectId: projectId,
+                cashOutCount: cashOutCount,
+                tokenToReclaim: tokenToReclaim,
+                beneficiaryIsFeeless: beneficiaryIsFeeless,
+                metadata: metadata
+            });
+
+            // Burn the project tokens.
+            if (cashOutCount != 0) {
+                controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
+            }
         }
 
         // Keep a reference to the amount being reclaimed that is subject to fees.
