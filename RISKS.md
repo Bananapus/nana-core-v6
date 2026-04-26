@@ -130,6 +130,10 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - A gas-burning approval hook can still DoS `currentOf()` by exhausting gas.
 - Repeated approval-hook rejection at a ruleset boundary can create complex fallback behavior that needs testing.
 
+### Duplicate Locked Splits Collapse
+
+- When `setSplitGroupsOf` is called, locked splits from the previous configuration are carried forward. If the new configuration includes a split with the same `(beneficiary, projectId, hook)` tuple as an existing locked split, the locked split is replaced — the new entry takes precedence. This is by design (locked splits protect beneficiaries from removal, not from updates by the project owner within the same tuple). However, it means a project owner can effectively reduce a locked split's percentage by submitting a duplicate with a lower percent before the lock expires.
+
 ### Other DoS Surfaces
 
 - Failed split payouts consume payout limit even when value is returned to project balance.
@@ -150,10 +154,11 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 ### Non-Standard ERC-20s
 
 - **Fee-on-transfer tokens.** Inbound handling is safer than outbound handling. Outbound transfer fees can leave store accounting higher than real holdings.
+- **ERC-777 reentrancy in `_acceptFundsFor`.** Tokens with transfer hooks (ERC-777, ERC-1363) can reenter during `_acceptFundsFor`. The balance-delta pattern correctly captures the received amount, but a reentrant call during the transfer could interact with mid-update state. Projects accepting ERC-777 tokens should be aware of this surface.
 - **Reentrant transfer hooks.** Core treats them as an accepted integration risk, not a hardened invariant.
 - **Rebasing tokens.** Positive or negative rebases can desync terminal balances from store balances.
 - **Blocklist tokens.** Beneficiary-specific transfer failures can revert user cash outs or return payout value to the project.
-- **Low-decimal tokens.** Fixed-point conversions can lose meaningful precision.
+- **Low-decimal tokens.** Fixed-point conversions can lose meaningful precision. For tokens with very few decimals (e.g., 2), fee calculations via `feeAmountFrom` can round to zero, allowing fee-free transactions below the rounding threshold.
 
 ### Permit2 Interactions
 

@@ -1817,10 +1817,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
-        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
-        // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
-        _capFeeFreeSurplus({projectId: projectId, token: token});
-
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
         // payout splits.
@@ -1877,6 +1873,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 _recordAddedBalanceFor({projectId: projectId, token: token, amount: leftoverPayoutAmount});
             }
         }
+
+        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
+        // Placed after all payouts settle so the cap reflects post-payout state.
+        // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
+        _capFeeFreeSurplus({projectId: projectId, token: token});
 
         // Take the fee.
         uint256 feeTaken = _takeFeeFrom({
