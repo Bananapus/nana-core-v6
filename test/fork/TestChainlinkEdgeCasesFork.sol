@@ -50,7 +50,9 @@ contract TestChainlinkEdgeCasesFork is Test {
             )
         );
 
-        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_NegativePrice.selector, -100));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_NegativePrice.selector, -100)
+        );
         feed.currentUnitPrice(18);
 
         // Verify the real feed still works after clearing the mock.
@@ -65,7 +67,7 @@ contract TestChainlinkEdgeCasesFork is Test {
 
     /// @notice A feed returning zero price should revert (NegativePrice covers <= 0).
     function test_zeroPrice_reverts() public {
-        (,, , uint256 realUpdatedAt,) = AggregatorV3Interface(ETH_USD_FEED).latestRoundData();
+        (,,, uint256 realUpdatedAt,) = AggregatorV3Interface(ETH_USD_FEED).latestRoundData();
 
         vm.mockCall(
             ETH_USD_FEED,
@@ -343,7 +345,9 @@ contract TestSequencerEdgeCasesFork is Test {
             abi.encode(uint80(1), int256(-500e8), block.timestamp, block.timestamp, uint80(1))
         );
         // Also mock decimals since the parent calls it.
-        vm.mockCall(ARB_ETH_USD_FEED, abi.encodeWithSelector(AggregatorV3Interface.decimals.selector), abi.encode(uint8(8)));
+        vm.mockCall(
+            ARB_ETH_USD_FEED, abi.encodeWithSelector(AggregatorV3Interface.decimals.selector), abi.encode(uint8(8))
+        );
 
         vm.expectRevert(
             abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_NegativePrice.selector, -500e8)
