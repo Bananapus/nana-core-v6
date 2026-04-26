@@ -44,7 +44,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 ### Weight Decay
 
-- **Stale weight cache can block a project.** Short-duration rulesets with nonzero `weightCutPercent` can hit `WeightCacheRequired` after enough cycles.
+- **Stale weight cache can block a project.** Short-duration rulesets with nonzero `weightCutPercent` can hit `WeightCacheRequired` after 20,000 elapsed cycles (`_WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD`). Projects approaching this limit must call `updateRulesetWeightCache()` to pre-cache decayed weights.
 - **Weight-cache correctness matters more than overflow.** Overflow is already bounded at queue time. The real risk is stale or wrongly-updated cache state.
 
 ### Surplus Manipulation
