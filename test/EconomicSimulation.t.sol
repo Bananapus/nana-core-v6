@@ -78,12 +78,12 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
 
             uint256 feeProjectId = jbController()
                 .launchProjectFor({
-                    owner: projectOwner,
-                    projectUri: "FeeProject",
-                    rulesetConfigurations: emptyRuleset,
-                    terminalConfigurations: feeTerminalConfigs,
-                    memo: ""
-                });
+                owner: projectOwner,
+                projectUri: "FeeProject",
+                rulesetConfigurations: emptyRuleset,
+                terminalConfigurations: feeTerminalConfigs,
+                memo: ""
+            });
             require(feeProjectId == 1, "Fee project must be #1");
         }
 
@@ -130,12 +130,12 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
 
         projectA = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "ProjectA",
-                rulesetConfigurations: rulesetConfigA,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "ProjectA",
+            rulesetConfigurations: rulesetConfigA,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // =====================================================================
         // Project B: 0% reserved, 0% cash out tax
@@ -172,12 +172,12 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
 
         projectB = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "ProjectB",
-                rulesetConfigurations: rulesetConfigB,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "ProjectB",
+            rulesetConfigurations: rulesetConfigB,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // =====================================================================
         // Project C: 50% reserved, 80% cash out tax
@@ -214,12 +214,12 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
 
         projectC = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "ProjectC",
-                rulesetConfigurations: rulesetConfigC,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "ProjectC",
+            rulesetConfigurations: rulesetConfigC,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // =====================================================================
         // Create handler and register

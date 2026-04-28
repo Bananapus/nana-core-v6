@@ -411,8 +411,8 @@ contract JBTerminalStore is IJBTerminalStore {
         // Validate BEFORE writing to storage to avoid wasting gas on SSTORE when the tx will revert.
         uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .payoutLimitOf({
-                projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
-            });
+            projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
+        });
 
         // Make sure the new used amount is within the payout limit.
         if (newUsedPayoutLimitOf > payoutLimit || payoutLimit == 0) {
@@ -513,8 +513,8 @@ contract JBTerminalStore is IJBTerminalStore {
         // Validate BEFORE writing to storage to avoid wasting gas on SSTORE when the tx will revert.
         uint256 surplusAllowance = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
             .surplusAllowanceOf({
-                projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
-            });
+            projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
+        });
 
         // Make sure the new used amount is within the allowance.
         if (newUsedSurplusAllowanceOf > surplusAllowance || surplusAllowance == 0) {
@@ -1332,8 +1332,8 @@ contract JBTerminalStore is IJBTerminalStore {
         JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
             .FUND_ACCESS_LIMITS()
             .payoutLimitsOf({
-                projectId: projectId, rulesetId: ruleset.id, terminal: address(terminal), token: accountingContext.token
-            });
+            projectId: projectId, rulesetId: ruleset.id, terminal: address(terminal), token: accountingContext.token
+        });
 
         // Keep a reference to the number of payout limits being iterated on.
         uint256 numberOfPayoutLimits = payoutLimits.length;

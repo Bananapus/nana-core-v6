@@ -140,8 +140,8 @@ library JBPayoutSplitGroupLib {
         // slither-disable-next-line reentrancy-events,calls-loop
         try IJBPayoutSplitGroupExecutor(address(this))
             .executePayout({
-                split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
-            }) returns (
+            split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
+        }) returns (
             uint256 payoutAmount
         ) {
             return payoutAmount;

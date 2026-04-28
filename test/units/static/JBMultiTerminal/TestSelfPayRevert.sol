@@ -45,11 +45,11 @@ contract TestSelfPayRevert_Local is JBMultiTerminalSetup {
         vm.expectRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
         JBMultiTerminal(payable(address(_terminal)))
             .executePayout({
-                split: split,
-                projectId: uint256(_projectId),
-                token: _native,
-                amount: _defaultAmount,
-                originalMessageSender: _sender
-            });
+            split: split,
+            projectId: uint256(_projectId),
+            token: _native,
+            amount: _defaultAmount,
+            originalMessageSender: _sender
+        });
     }
 }

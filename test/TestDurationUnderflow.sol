@@ -192,12 +192,12 @@ contract TestDurationUnderflow is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: multisig(),
-                projectUri: "test",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigs,
-                memo: ""
-            });
+            owner: multisig(),
+            projectUri: "test",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigs,
+            memo: ""
+        });
     }
 
     /// @notice currentOf with a large duration (cycle 1, no cycling needed).

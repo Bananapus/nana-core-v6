@@ -120,12 +120,12 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         // Launch project #1 as the fee collector.
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: termConfigs,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: termConfigs,
+            memo: ""
+        });
     }
 
     // =========================================================================
@@ -157,14 +157,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(usdt),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Verify the payer received project tokens in exchange for the payment.
         assertTrue(tokensReceived > 0, "Payer should receive project tokens from USDT payment");
@@ -204,14 +204,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(usdt),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Record the split beneficiary's USDT balance before the payout.
         uint256 beneficiaryBefore = usdt.balanceOf(splitBeneficiary);
@@ -220,12 +220,12 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: address(usdt),
-                amount: 500e6,
-                currency: uint32(uint160(address(usdt))),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: 500e6,
+            currency: uint32(uint160(address(usdt))),
+            minTokensPaidOut: 0
+        });
 
         // Calculate how much USDT the beneficiary actually received.
         uint256 beneficiaryAfter = usdt.balanceOf(splitBeneficiary);
@@ -263,14 +263,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(usdt),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Record the payer's USDT balance before cashing out.
         uint256 payerBefore = usdt.balanceOf(payer);
@@ -279,14 +279,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: payer,
-                projectId: pid,
-                cashOutCount: tokensReceived,
-                tokenToReclaim: address(usdt),
-                minTokensReclaimed: 0,
-                beneficiary: payable(payer),
-                metadata: new bytes(0)
-            });
+            holder: payer,
+            projectId: pid,
+            cashOutCount: tokensReceived,
+            tokenToReclaim: address(usdt),
+            minTokensReclaimed: 0,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
 
         // Calculate how much USDT the payer actually received back.
         uint256 payerAfter = usdt.balanceOf(payer);
@@ -326,14 +326,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(usdt),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
         // Verify payment succeeded by checking tokens were minted.
         assertTrue(tokensReceived > 0, "Step 1: Payer should receive project tokens");
 
@@ -341,12 +341,12 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: address(usdt),
-                amount: 500e6,
-                currency: uint32(uint160(address(usdt))),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: address(usdt),
+            amount: 500e6,
+            currency: uint32(uint160(address(usdt))),
+            minTokensPaidOut: 0
+        });
         // Verify the split beneficiary received USDT.
         assertTrue(usdt.balanceOf(splitBeneficiary) > 0, "Step 2: Split beneficiary should have USDT");
 
@@ -354,14 +354,14 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         vm.prank(payer);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: payer,
-                projectId: pid,
-                cashOutCount: tokensReceived,
-                tokenToReclaim: address(usdt),
-                minTokensReclaimed: 0,
-                beneficiary: payable(payer),
-                metadata: new bytes(0)
-            });
+            holder: payer,
+            projectId: pid,
+            cashOutCount: tokensReceived,
+            tokenToReclaim: address(usdt),
+            minTokensReclaimed: 0,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
         // Verify the payer got USDT back from cashing out.
         assertTrue(reclaimAmount > 0, "Step 3: CashOut should return USDT to payer");
     }
@@ -424,12 +424,12 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         // Launch the project and return its ID.
         return jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "usdtProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: termConfigs,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "usdtProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: termConfigs,
+            memo: ""
+        });
     }
 
     /// @notice Launches a project that accepts MockUSDT with a 100% split to splitBeneficiary.
@@ -512,12 +512,12 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
         // Launch the project with splits and payout limits, return its ID.
         return jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "usdtSplitProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: termConfigs,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "usdtSplitProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: termConfigs,
+            memo: ""
+        });
     }
 
     // Allow the test contract to receive native ETH (required for some test helpers).
