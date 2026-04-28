@@ -188,6 +188,10 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - Failed owner payouts also still consume payout limit.
 - Reserved-token split hook reverts can strand tokens at the hook after transfer.
 
+### Terminal Migration Resets Used Payout Limits
+
+`usedPayoutLimitOf` and `usedSurplusAllowanceOf` are keyed by terminal address. When a project migrates to a new terminal via `migrateBalanceOf`, the used counters on the new terminal start at zero. If a project owner pre-configured payout limits for both the old and new terminal addresses in the same ruleset's `fundAccessLimitGroups`, they could exceed per-cycle payout limits by migrating mid-cycle. This requires the project owner to be the attacker (or collude), since only the owner can configure both fund access limit groups and trigger migration. The 2.5% migration fee on non-feeless terminals provides friction.
+
 ## 8. Accepted Behaviors
 
 ### 8.1 Cross-terminal surplus is opt-in shared trust
