@@ -77,12 +77,12 @@ contract JBERC20Inheritance_Local is JBERC20(IJBPermissions(address(1)), IJBProj
 
         uint256 projectId = jbController()
             .launchProjectFor({
-                owner: _projectOwner,
-                projectUri: "myIPFSHash",
-                rulesetConfigurations: _rulesetConfig,
-                terminalConfigurations: _terminalConfigurations,
-                memo: ""
-            });
+            owner: _projectOwner,
+            projectUri: "myIPFSHash",
+            rulesetConfigurations: _rulesetConfig,
+            terminalConfigurations: _terminalConfigurations,
+            memo: ""
+        });
 
         // Configure a token.
         vm.prank(_projectOwner);

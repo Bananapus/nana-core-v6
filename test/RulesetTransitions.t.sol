@@ -69,12 +69,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
     }
 
     function _defaultTerminalConfig() internal view returns (JBTerminalConfig[] memory) {
@@ -144,12 +144,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "boundaryTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "boundaryTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Pay at last second of cycle 1
         vm.warp(block.timestamp + 7 days - 1);
@@ -184,12 +184,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "cashOutCycleTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "cashOutCycleTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Pay in cycle 1
         address alice = address(0xA11CE);
@@ -221,14 +221,14 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
         vm.prank(alice);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: alice,
-                projectId: pid,
-                cashOutCount: aliceTokens,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(alice),
-                metadata: new bytes(0)
-            });
+            holder: alice,
+            projectId: pid,
+            cashOutCount: aliceTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(alice),
+            metadata: new bytes(0)
+        });
 
         // With 90% tax on partial cashout (50% of supply), reclaim is significantly reduced
         // The bonding curve formula penalizes partial cashouts with high tax
@@ -255,12 +255,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "decayTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "decayTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Record tokens minted per cycle
         uint256[] memory tokensPerCycle = new uint256[](10);
@@ -302,12 +302,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "killWeightTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "killWeightTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Cycle 1: normal minting
         uint256 cycle1Tokens = _payProject(pid, address(0xA11CE), 1 ether);
@@ -338,12 +338,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "queueOverrideTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "queueOverrideTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Queue a new ruleset with different weight (2000e18 instead of auto-decayed 500e18)
         JBRulesetConfig[] memory newConfig = new JBRulesetConfig[](1);
@@ -388,12 +388,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "approvalTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "approvalTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Queue a new ruleset
         JBRulesetConfig[] memory newConfig = new JBRulesetConfig[](1);
@@ -444,12 +444,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "rejectTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "rejectTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Queue a new ruleset with different weight
         JBRulesetConfig[] memory newConfig = new JBRulesetConfig[](1);
@@ -502,12 +502,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "payoutLimitResetTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "payoutLimitResetTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Fund generously
         _payProject(pid, address(0xBA1E), 100 ether);
@@ -516,24 +516,24 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Try to send more — should fail (limit exhausted)
         vm.prank(projectOwner);
         vm.expectRevert();
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Advance to cycle 2
         vm.warp(block.timestamp + 7 days + 1);
@@ -542,12 +542,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // If we got here, limit was successfully reset
         assertTrue(true, "Payout limit reset at cycle boundary");
@@ -572,12 +572,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "taxRateChangeTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "taxRateChangeTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Pay in cycle 1
         address alice = address(0xA11CE);
@@ -609,14 +609,14 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
         vm.prank(alice);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: alice,
-                projectId: pid,
-                cashOutCount: aliceTokens,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(alice),
-                metadata: new bytes(0)
-            });
+            holder: alice,
+            projectId: pid,
+            cashOutCount: aliceTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(alice),
+            metadata: new bytes(0)
+        });
 
         // With 90% tax on partial cashout, reclaim is reduced below payment
         assertLt(reclaimAmount, 10 ether, "Tokens minted in cycle 1 should get reduced reclaim under cycle 2's 90% tax");
@@ -640,12 +640,12 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "noCycleTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "noCycleTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Pay now
         uint256 tokensNow = _payProject(pid, address(0xA11CE), 1 ether);

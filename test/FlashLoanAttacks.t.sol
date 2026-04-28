@@ -64,12 +64,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         projectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "flashLoanTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "flashLoanTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         vm.prank(projectOwner);
         jbController().deployERC20For(projectId, "FlashToken", "FT", bytes32(0));
@@ -114,12 +114,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
     }
 
     function _defaultTerminalConfig() internal view returns (JBTerminalConfig[] memory) {
@@ -151,14 +151,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
         vm.prank(holder);
         reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: holder,
-                projectId: projectId,
-                cashOutCount: count,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(holder),
-                metadata: new bytes(0)
-            });
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: count,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(holder),
+            metadata: new bytes(0)
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -297,14 +297,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
         vm.prank(attacker);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: attacker,
-                projectId: projectId,
-                cashOutCount: 0,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(attacker),
-                metadata: new bytes(0)
-            });
+            holder: attacker,
+            projectId: projectId,
+            cashOutCount: 0,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(attacker),
+            metadata: new bytes(0)
+        });
 
         assertEq(reclaimAmount, 0, "Regression: cashOut(0) must return 0");
     }
@@ -396,12 +396,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         uint256 reservedProjectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "reservedTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "reservedTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         vm.prank(projectOwner);
         jbController().deployERC20For(reservedProjectId, "ResToken", "RT", bytes32(0));
@@ -473,14 +473,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             vm.prank(attacker);
             currentBalance = jbMultiTerminal()
                 .cashOutTokensOf({
-                    holder: attacker,
-                    projectId: projectId,
-                    cashOutCount: tokens,
-                    tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                    minTokensReclaimed: 0,
-                    beneficiary: payable(attacker),
-                    metadata: new bytes(0)
-                });
+                holder: attacker,
+                projectId: projectId,
+                cashOutCount: tokens,
+                tokenToReclaim: JBConstants.NATIVE_TOKEN,
+                minTokensReclaimed: 0,
+                beneficiary: payable(attacker),
+                metadata: new bytes(0)
+            });
         }
 
         assertLe(currentBalance, startBalance, "100 rounds of pay+cashOut must not accumulate profit from rounding");
@@ -535,12 +535,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         uint256 sandwichProjectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "sandwichTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "sandwichTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Seed
         address seeder = address(0x5EED);
@@ -576,25 +576,25 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: sandwichProjectId,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: sandwichProjectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Attacker back-runs: cashes out
         vm.prank(attacker);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: attacker,
-                projectId: sandwichProjectId,
-                cashOutCount: attackerTokens,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(attacker),
-                metadata: new bytes(0)
-            });
+            holder: attacker,
+            projectId: sandwichProjectId,
+            cashOutCount: attackerTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(attacker),
+            metadata: new bytes(0)
+        });
 
         // Attacker should NOT profit
         assertLe(reclaimAmount, attackerInitialETH, "Sandwich attacker must not profit from payout timing");
@@ -649,12 +649,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         uint256 twoTermProjectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "twoTermTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "twoTermTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Seed terminal 1
         address seeder = address(0x5EED);
@@ -688,14 +688,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
         vm.prank(attacker);
         uint256 reclaimAmount = jbMultiTerminal2()
             .cashOutTokensOf({
-                holder: attacker,
-                projectId: twoTermProjectId,
-                cashOutCount: attackerTokens,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(attacker),
-                metadata: new bytes(0)
-            });
+            holder: attacker,
+            projectId: twoTermProjectId,
+            cashOutCount: attackerTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(attacker),
+            metadata: new bytes(0)
+        });
 
         assertLe(reclaimAmount, 5 ether, "Cross-terminal cashOut must not profit");
     }
@@ -741,12 +741,12 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
 
         uint256 fuzzProjectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "fuzzTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "fuzzTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
 
         // Seed project
         address seeder = address(0x5EED);
@@ -781,14 +781,14 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
         vm.prank(attacker);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: attacker,
-                projectId: fuzzProjectId,
-                cashOutCount: tokens,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(attacker),
-                metadata: new bytes(0)
-            });
+            holder: attacker,
+            projectId: fuzzProjectId,
+            cashOutCount: tokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(attacker),
+            metadata: new bytes(0)
+        });
 
         assertLe(reclaimAmount, payAmount, "FUZZ: Atomic pay+cashOut must never return more than paid");
     }

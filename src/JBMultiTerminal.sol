@@ -337,8 +337,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBSplitHookContext memory context = JBSplitHookContext({
                 token: token,
                 amount: netPayoutAmount,
-                decimals: STORE.accountingContextOf({terminal: address(this), projectId: projectId, token: token})
-                .decimals,
+                decimals: STORE.accountingContextOf({
+                    terminal: address(this), projectId: projectId, token: token
+                }).decimals,
                 projectId: projectId,
                 groupId: uint256(uint160(token)),
                 split: split
@@ -1615,12 +1616,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // slither-disable-next-line reentrancy-events
             newlyIssuedTokenCount = _controllerOf(projectId)
                 .mintTokensOf({
-                    projectId: projectId,
-                    tokenCount: tokenCount,
-                    beneficiary: beneficiary,
-                    memo: "",
-                    useReservedPercent: true
-                });
+                projectId: projectId,
+                tokenCount: tokenCount,
+                beneficiary: beneficiary,
+                memo: "",
+                useReservedPercent: true
+            });
         }
 
         emit Pay({

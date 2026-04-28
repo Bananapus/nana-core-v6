@@ -71,12 +71,12 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Launch the test project with credits (no ERC20 initially, then deploy)
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -111,12 +111,12 @@ contract TokensInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         projectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "testProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "testProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Deploy ERC20 so claiming works
         vm.prank(projectOwner);

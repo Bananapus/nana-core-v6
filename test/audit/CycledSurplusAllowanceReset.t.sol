@@ -28,12 +28,12 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
 
         uint256 projectId = jbController()
             .launchProjectFor({
-                owner: multisig(),
-                projectUri: "cycle-allowance",
-                rulesetConfigurations: rulesetConfigurations,
-                terminalConfigurations: _makeTerminalConfig(),
-                memo: ""
-            });
+            owner: multisig(),
+            projectUri: "cycle-allowance",
+            rulesetConfigurations: rulesetConfigurations,
+            terminalConfigurations: _makeTerminalConfig(),
+            memo: ""
+        });
 
         address payer = makeAddr("payer");
         vm.deal(payer, 5 ether);
@@ -51,15 +51,15 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
         vm.prank(multisig());
         jbMultiTerminal()
             .useAllowanceOf({
-                projectId: projectId,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0,
-                beneficiary: payable(makeAddr("cycle1-beneficiary")),
-                feeBeneficiary: payable(multisig()),
-                memo: ""
-            });
+            projectId: projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0,
+            beneficiary: payable(makeAddr("cycle1-beneficiary")),
+            feeBeneficiary: payable(multisig()),
+            memo: ""
+        });
 
         JBRuleset memory cycleOneRuleset = jbRulesets().currentOf(projectId);
         assertEq(cycleOneRuleset.cycleNumber, 1, "expected first cycle before warp");
@@ -74,15 +74,15 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
         vm.prank(multisig());
         jbMultiTerminal()
             .useAllowanceOf({
-                projectId: projectId,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0,
-                beneficiary: payable(makeAddr("cycle2-beneficiary")),
-                feeBeneficiary: payable(multisig()),
-                memo: ""
-            });
+            projectId: projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0,
+            beneficiary: payable(makeAddr("cycle2-beneficiary")),
+            feeBeneficiary: payable(multisig()),
+            memo: ""
+        });
     }
 
     function _launchFeeProject() private returns (uint256) {
@@ -96,12 +96,12 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: multisig(),
-                projectUri: "fee-project",
-                rulesetConfigurations: rulesetConfigurations,
-                terminalConfigurations: _makeTerminalConfig(),
-                memo: ""
-            });
+            owner: multisig(),
+            projectUri: "fee-project",
+            rulesetConfigurations: rulesetConfigurations,
+            terminalConfigurations: _makeTerminalConfig(),
+            memo: ""
+        });
     }
 
     function _defaultMetadata() private pure returns (JBRulesetMetadata memory) {

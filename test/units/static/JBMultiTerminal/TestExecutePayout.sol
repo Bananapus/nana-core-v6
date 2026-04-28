@@ -107,12 +107,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _split,
-                projectId: _noProject,
-                token: _native,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _split,
+            projectId: _noProject,
+            token: _native,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenTheSplitHookDNEQFeeless() external whenASplitHookIsConfigured {
@@ -161,12 +161,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _split,
-                projectId: _noProject,
-                token: _native,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _split,
+            projectId: _noProject,
+            token: _native,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenTheSplitHookDNSupportSplitHookInterface() external whenASplitHookIsConfigured {
@@ -182,12 +182,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_SplitHookInvalid.selector, _hook));
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _split,
-                projectId: _noProject,
-                token: _native,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _split,
+            projectId: _noProject,
+            token: _native,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenThePayoutTokenIsErc20() external whenASplitHookIsConfigured {
@@ -221,12 +221,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _noProject,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _noProject,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenTheProjectsTerminalEQZeroAddress() external {
@@ -256,12 +256,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.prank(address(_terminal));
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _native,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _native,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenPreferAddToBalanceEQTrueAndTerminalEQThisAddress() external {
@@ -295,12 +295,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenPreferAddToBalanceEQTrueAndTerminalEQAnotherAddress() external {
@@ -351,12 +351,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.prank(address(_terminal));
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQThisAddress() external {
@@ -382,12 +382,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.expectRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQAnotherAddress() external {
@@ -438,12 +438,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.prank(address(_terminal));
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenBeneficiaryEQFeeless() external {
@@ -471,12 +471,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_GivenBeneficiaryDNEQFeeless() external {
@@ -509,12 +509,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_WhenThereIsNoBeneficiarySplitHookOrProjectToPay() external {
@@ -545,12 +545,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 
     function test_WhenTheCallerIsNotItself() external {
@@ -568,11 +568,11 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         vm.expectRevert();
         JBMultiTerminal(address(_terminal))
             .executePayout({
-                split: _splitMemory,
-                projectId: _projectId,
-                token: _usdc,
-                amount: _defaultAmount,
-                originalMessageSender: address(this)
-            });
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
     }
 }

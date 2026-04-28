@@ -19,12 +19,12 @@ contract MaliciousPayoutBeneficiary is IERC721Receiver, Test {
 
         IJBMultiTerminal(_terminal)
             .sendPayoutsOf({
-                projectId: 2,
-                amount: 5 * 10 ** 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                token: JBConstants.NATIVE_TOKEN,
-                minTokensPaidOut: 0
-            });
+            projectId: 2,
+            amount: 5 * 10 ** 18,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
     }
 
     receive() external payable {
@@ -46,15 +46,15 @@ contract MaliciousAllowanceBeneficiary is IERC721Receiver, Test {
 
         IJBMultiTerminal(_terminal)
             .useAllowanceOf({
-                projectId: 2,
-                amount: 5 * 10 ** 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                token: JBConstants.NATIVE_TOKEN,
-                minTokensPaidOut: 0,
-                beneficiary: payable(address(this)),
-                feeBeneficiary: payable(0x000000000000000000000000000000000000007B),
-                memo: "MEMO"
-            });
+            projectId: 2,
+            amount: 5 * 10 ** 18,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0,
+            beneficiary: payable(address(this)),
+            feeBeneficiary: payable(0x000000000000000000000000000000000000007B),
+            memo: "MEMO"
+        });
     }
 
     receive() external payable {

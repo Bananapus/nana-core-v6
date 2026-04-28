@@ -86,12 +86,12 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
     }
 
     function _launchProjectWithToken(address token, uint8 decimals, bool holdFees) internal returns (uint256) {
@@ -135,12 +135,12 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "weirdTokenProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "weirdTokenProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -160,14 +160,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(fotToken),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Terminal records the delta (after fee), not the nominal amount
         uint256 recordedBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(fotToken));
@@ -202,14 +202,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(fotToken),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Cash out all tokens
         uint256 payerBalanceBefore = fotToken.balanceOf(payer);
@@ -217,14 +217,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: payer,
-                projectId: pid,
-                cashOutCount: tokensReceived,
-                tokenToReclaim: address(fotToken),
-                minTokensReclaimed: 0,
-                beneficiary: payable(payer),
-                metadata: new bytes(0)
-            });
+            holder: payer,
+            projectId: pid,
+            cashOutCount: tokensReceived,
+            tokenToReclaim: address(fotToken),
+            minTokensReclaimed: 0,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
 
         uint256 payerBalanceAfter = fotToken.balanceOf(payer);
         uint256 actualReceived = payerBalanceAfter - payerBalanceBefore;
@@ -311,12 +311,12 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
 
         uint256 pid = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "fotSplitTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "fotSplitTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Pay in
         address payer = address(0xBA1E);
@@ -326,26 +326,26 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(fotToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Send payouts
         uint256 beneficiaryBalanceBefore = fotToken.balanceOf(splitBeneficiary);
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: address(fotToken),
-                amount: 500e18,
-                currency: uint32(uint160(address(fotToken))),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: 500e18,
+            currency: uint32(uint160(address(fotToken))),
+            minTokensPaidOut: 0
+        });
 
         uint256 beneficiaryBalanceAfter = fotToken.balanceOf(splitBeneficiary);
         uint256 actualReceived = beneficiaryBalanceAfter - beneficiaryBalanceBefore;
@@ -383,14 +383,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(rebasingToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(rebasingToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Positive rebase: +10% on the terminal's holdings
         rebasingToken.rebaseHolder(address(jbMultiTerminal()), 10);
@@ -406,14 +406,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 reclaimAmount = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: payer,
-                projectId: pid,
-                cashOutCount: tokensReceived,
-                tokenToReclaim: address(rebasingToken),
-                minTokensReclaimed: 0,
-                beneficiary: payable(payer),
-                metadata: new bytes(0)
-            });
+            holder: payer,
+            projectId: pid,
+            cashOutCount: tokensReceived,
+            tokenToReclaim: address(rebasingToken),
+            minTokensReclaimed: 0,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
 
         // Payer only gets back what was recorded, not the rebased surplus
         assertEq(reclaimAmount, 1000e18, "CashOut should return recorded amount, not rebased amount");
@@ -435,14 +435,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(rebasingToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(rebasingToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Negative rebase: -10% on the terminal's holdings
         rebasingToken.rebaseHolder(address(jbMultiTerminal()), -10);
@@ -456,14 +456,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .cashOutTokensOf({
-                holder: payer,
-                projectId: pid,
-                cashOutCount: tokensReceived,
-                tokenToReclaim: address(rebasingToken),
-                minTokensReclaimed: 0,
-                beneficiary: payable(payer),
-                metadata: new bytes(0)
-            });
+            holder: payer,
+            projectId: pid,
+            cashOutCount: tokensReceived,
+            tokenToReclaim: address(rebasingToken),
+            minTokensReclaimed: 0,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -484,14 +484,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(lowToken),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(lowToken),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Weight calculation should not round to zero
         assertTrue(tokensReceived > 0, "Low decimal tokens should still mint project tokens");
@@ -515,14 +515,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         uint256 tokensReceived = jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(highToken),
-                amount: payAmount,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(highToken),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         assertTrue(tokensReceived > 0, "High decimal tokens should mint project tokens without overflow");
     }
@@ -546,14 +546,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(returnFalseToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(returnFalseToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -573,14 +573,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(fotToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         uint256 recordedBefore = jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(fotToken));
 
@@ -591,13 +591,13 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .addToBalanceOf({
-                projectId: pid,
-                token: address(fotToken),
-                amount: 1000e18,
-                shouldReturnHeldFees: true,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: 1000e18,
+            shouldReturnHeldFees: true,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         uint256 recordedAfter = jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(fotToken));
 
@@ -634,14 +634,14 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         vm.prank(payer);
         jbMultiTerminal()
             .pay({
-                projectId: pid,
-                token: address(fotToken),
-                amount: 1000e18,
-                beneficiary: payer,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: new bytes(0)
-            });
+            projectId: pid,
+            token: address(fotToken),
+            amount: 1000e18,
+            beneficiary: payer,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
 
         // Advance time past fee holding period (28 days)
         vm.warp(block.timestamp + 29 days);

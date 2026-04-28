@@ -56,12 +56,12 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
 
             uint256 feeProjectId = jbController()
                 .launchProjectFor({
-                    owner: owner,
-                    projectUri: "FeeProject",
-                    rulesetConfigurations: feeRuleset,
-                    terminalConfigurations: feeTermCfg,
-                    memo: ""
-                });
+                owner: owner,
+                projectUri: "FeeProject",
+                rulesetConfigurations: feeRuleset,
+                terminalConfigurations: feeTermCfg,
+                memo: ""
+            });
             require(feeProjectId == 1, "Fee project must be #1");
         }
 
@@ -121,12 +121,12 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
 
             project2 = jbController()
                 .launchProjectFor({
-                    owner: owner,
-                    projectUri: "Project2",
-                    rulesetConfigurations: ruleset2,
-                    terminalConfigurations: termCfg,
-                    memo: ""
-                });
+                owner: owner,
+                projectUri: "Project2",
+                rulesetConfigurations: ruleset2,
+                terminalConfigurations: termCfg,
+                memo: ""
+            });
         }
 
         // =====================================================================
@@ -153,12 +153,12 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
 
             project3 = jbController()
                 .launchProjectFor({
-                    owner: owner,
-                    projectUri: "Project3",
-                    rulesetConfigurations: ruleset3,
-                    terminalConfigurations: termCfg3,
-                    memo: ""
-                });
+                owner: owner,
+                projectUri: "Project3",
+                rulesetConfigurations: ruleset3,
+                terminalConfigurations: termCfg3,
+                memo: ""
+            });
             require(project3 == 3, "Project 3 must be #3");
         }
 
@@ -182,12 +182,12 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
 
             project4 = jbController()
                 .launchProjectFor({
-                    owner: owner,
-                    projectUri: "Project4",
-                    rulesetConfigurations: ruleset4,
-                    terminalConfigurations: termCfg4,
-                    memo: ""
-                });
+                owner: owner,
+                projectUri: "Project4",
+                rulesetConfigurations: ruleset4,
+                terminalConfigurations: termCfg4,
+                memo: ""
+            });
 
             // Register project 4's owner as feeless
             vm.prank(multisig());

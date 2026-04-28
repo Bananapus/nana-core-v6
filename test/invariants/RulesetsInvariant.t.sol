@@ -69,12 +69,12 @@ contract RulesetsInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         projectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "rulesetsTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "rulesetsTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Deploy handler
         handler = new RulesetsHandler(jbRulesets(), jbController(), projectId, projectOwner);

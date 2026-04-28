@@ -71,12 +71,12 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Launch the test project (#2) with 50% cash out tax, no payout limit, no reserved rate
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -111,12 +111,12 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         projectId = jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "testProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "testProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Deploy ERC20 so tokens can be tracked
         vm.prank(projectOwner);
@@ -158,12 +158,12 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         _terminals[0] = IJBTerminal(jbMultiTerminal());
         uint256 surplus = jbTerminalStore()
             .currentSurplusOf({
-                projectId: projectId,
-                terminals: _terminals,
-                tokens: new address[](0),
-                decimals: 18,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-            });
+            projectId: projectId,
+            terminals: _terminals,
+            tokens: new address[](0),
+            decimals: 18,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
 
         // Check reclaimable for half the supply
         uint256 halfSupply = totalSupply / 2;
@@ -171,8 +171,8 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
 
         uint256 reclaimable = jbTerminalStore()
             .currentReclaimableSurplusOf({
-                projectId: projectId, cashOutCount: halfSupply, totalSupply: totalSupply, surplus: surplus
-            });
+            projectId: projectId, cashOutCount: halfSupply, totalSupply: totalSupply, surplus: surplus
+        });
 
         assertLe(reclaimable, surplus, "INV-TS-2: Reclaimable surplus must not exceed current surplus");
     }

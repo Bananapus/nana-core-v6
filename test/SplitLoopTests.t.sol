@@ -75,12 +75,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
 
         jbController()
             .launchProjectFor({
-                owner: address(420),
-                projectUri: "feeCollector",
-                rulesetConfigurations: feeRulesetConfig,
-                terminalConfigurations: terminalConfigurations,
-                memo: ""
-            });
+            owner: address(420),
+            projectUri: "feeCollector",
+            rulesetConfigurations: feeRulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
     }
 
     function _defaultTerminalConfig() internal view returns (JBTerminalConfig[] memory) {
@@ -148,12 +148,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "splitTestProject",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "splitTestProject",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
     }
 
     function _payProject(uint256 pid, address payer, uint256 amount) internal {
@@ -222,12 +222,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectA,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectA,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // B should have received funds
         uint256 balanceB = jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectB, JBConstants.NATIVE_TOKEN);
@@ -269,12 +269,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectA,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectA,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Should complete without infinite recursion
         assertTrue(true, "Pay-based split should not cause infinite recursion");
@@ -308,12 +308,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // If we got here, the system handled reentrancy safely
         assertTrue(true, "System handled split hook reentrancy via pay");
@@ -360,12 +360,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // If we got here, the system handled cashOut reentrancy safely
         assertTrue(true, "System handled split hook reentrancy via cashOut");
@@ -405,12 +405,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         assertTrue(true, "Self-split via addToBalance completes without infinite loop");
     }
@@ -448,12 +448,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
         uint256 gasUsed = gasStart - gasleft();
 
         // Should complete within block gas limit (~30M)
@@ -488,12 +488,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 3 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 3 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Check no rounding loss greater than 3 wei (one per split)
         uint256 totalPaidToSplits = 0;
@@ -568,12 +568,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbController()
             .launchProjectFor({
-                owner: projectOwner,
-                projectUri: "overflowSplitTest",
-                rulesetConfigurations: rulesetConfig,
-                terminalConfigurations: _defaultTerminalConfig(),
-                memo: ""
-            });
+            owner: projectOwner,
+            projectUri: "overflowSplitTest",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: _defaultTerminalConfig(),
+            memo: ""
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -601,12 +601,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // If we get here, the try/catch fallback worked
         assertTrue(true, "Gas guzzling split hook handled via try/catch");
@@ -637,12 +637,12 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
         vm.prank(projectOwner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: pid,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: pid,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Funds should be retained in the project or sent to owner fallback
         assertTrue(true, "Non-payable recipient handled via try/catch fallback");
@@ -748,5 +748,4 @@ contract GasGuzzlingSplitHook is ERC165, IJBSplitHook {
 /// @notice Contract that cannot receive ETH.
 contract NonPayableContract {
     // No receive() or fallback() — ETH transfers revert
-
-    }
+}

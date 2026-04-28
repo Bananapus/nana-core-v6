@@ -140,14 +140,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 reclaimed = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: owner,
-                projectId: projectStandard,
-                cashOutCount: 0,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(owner),
-                metadata: ""
-            });
+            holder: owner,
+            projectId: projectStandard,
+            cashOutCount: 0,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(owner),
+            metadata: ""
+        });
         assertEq(reclaimed, 0, "Zero count cash out should return 0");
     }
 
@@ -160,14 +160,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 reclaimed = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: owner,
-                projectId: projectStandard,
-                cashOutCount: balance,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(owner),
-                metadata: ""
-            });
+            holder: owner,
+            projectId: projectStandard,
+            cashOutCount: balance,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(owner),
+            metadata: ""
+        });
 
         assertGt(reclaimed, 0, "Should reclaim something for entire supply cash out");
         assertGt(owner.balance, balanceBefore, "Owner balance should increase");
@@ -181,14 +181,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .cashOutTokensOf({
-                holder: owner,
-                projectId: projectStandard,
-                cashOutCount: balance + 1,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(owner),
-                metadata: ""
-            });
+            holder: owner,
+            projectId: projectStandard,
+            cashOutCount: balance + 1,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(owner),
+            metadata: ""
+        });
     }
 
     /// @notice cashOut with max tax rate should return 0 reclaim.
@@ -199,14 +199,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 reclaimed = jbMultiTerminal()
             .cashOutTokensOf({
-                holder: owner,
-                projectId: projectMaxTax,
-                cashOutCount: balance,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: 0,
-                beneficiary: payable(owner),
-                metadata: ""
-            });
+            holder: owner,
+            projectId: projectMaxTax,
+            cashOutCount: balance,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(owner),
+            metadata: ""
+        });
 
         assertEq(reclaimed, 0, "Max tax rate should return 0 reclaim");
     }
@@ -220,14 +220,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .cashOutTokensOf({
-                holder: owner,
-                projectId: projectStandard,
-                cashOutCount: 1,
-                tokenToReclaim: JBConstants.NATIVE_TOKEN,
-                minTokensReclaimed: type(uint256).max,
-                beneficiary: payable(owner),
-                metadata: ""
-            });
+            holder: owner,
+            projectId: projectStandard,
+            cashOutCount: 1,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: type(uint256).max,
+            beneficiary: payable(owner),
+            metadata: ""
+        });
     }
 
     // =========================================================================
@@ -239,12 +239,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 amountPaidOut = jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether, // Exact payout limit
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether, // Exact payout limit
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         assertGt(amountPaidOut, 0, "Should pay out with exact limit");
     }
@@ -255,12 +255,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether + 1, // 1 wei over limit
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether + 1, // 1 wei over limit
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
     }
 
     /// @notice sendPayouts with zero amount should be a no-op or revert.
@@ -268,12 +268,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 amountPaidOut = jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 0,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 0,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         assertEq(amountPaidOut, 0, "Zero amount should result in zero payout");
     }
@@ -284,12 +284,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: type(uint256).max
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: type(uint256).max
+        });
     }
 
     // =========================================================================
@@ -301,15 +301,15 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         uint256 netAmount = jbMultiTerminal()
             .useAllowanceOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 3 ether, // Exact surplus allowance
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0,
-                beneficiary: payable(owner),
-                feeBeneficiary: payable(owner),
-                memo: ""
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 3 ether, // Exact surplus allowance
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0,
+            beneficiary: payable(owner),
+            feeBeneficiary: payable(owner),
+            memo: ""
+        });
 
         assertGt(netAmount, 0, "Should use exact allowance successfully");
     }
@@ -321,15 +321,15 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.expectRevert();
         jbMultiTerminal()
             .useAllowanceOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0,
-                beneficiary: payable(unauthorized),
-                feeBeneficiary: payable(unauthorized),
-                memo: ""
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0,
+            beneficiary: payable(unauthorized),
+            feeBeneficiary: payable(unauthorized),
+            memo: ""
+        });
     }
 
     /// @notice useAllowance after payouts drained balance should revert or return 0.
@@ -338,26 +338,26 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 5 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 5 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Now try to use allowance — should fail or return small amount
         vm.prank(owner);
         try jbMultiTerminal()
             .useAllowanceOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 3 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0,
-                beneficiary: payable(owner),
-                feeBeneficiary: payable(owner),
-                memo: ""
-            }) returns (
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 3 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0,
+            beneficiary: payable(owner),
+            feeBeneficiary: payable(owner),
+            memo: ""
+        }) returns (
             uint256 netAmount
         ) {
             // If it succeeds, the amount should be reasonable
@@ -386,12 +386,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Advance time past unlock period
         vm.warp(block.timestamp + 30 days);
@@ -407,12 +407,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Don't advance time — fees should still be locked
         // This should be a no-op since fees are locked
@@ -444,12 +444,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 2 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 2 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Check held fees exist
         JBFee[] memory feesBefore = jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
@@ -475,12 +475,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         JBFee[] memory feesBefore = jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
         uint256 heldBefore;
@@ -509,12 +509,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         vm.prank(owner);
         jbMultiTerminal()
             .sendPayoutsOf({
-                projectId: projectStandard,
-                token: JBConstants.NATIVE_TOKEN,
-                amount: 1 ether,
-                currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-                minTokensPaidOut: 0
-            });
+            projectId: projectStandard,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1 ether,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 0
+        });
 
         // Get total held fees
         JBFee[] memory fees = jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
@@ -566,12 +566,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: owner,
-                projectUri: "FeeProject",
-                rulesetConfigurations: ruleset,
-                terminalConfigurations: termCfg,
-                memo: ""
-            });
+            owner: owner,
+            projectUri: "FeeProject",
+            rulesetConfigurations: ruleset,
+            terminalConfigurations: termCfg,
+            memo: ""
+        });
     }
 
     function _launchProject(
@@ -641,12 +641,12 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
 
         return jbController()
             .launchProjectFor({
-                owner: owner,
-                projectUri: "Project",
-                rulesetConfigurations: ruleset,
-                terminalConfigurations: termCfg,
-                memo: ""
-            });
+            owner: owner,
+            projectUri: "Project",
+            rulesetConfigurations: ruleset,
+            terminalConfigurations: termCfg,
+            memo: ""
+        });
     }
 
     function _meta(
