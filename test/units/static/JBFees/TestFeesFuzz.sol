@@ -59,6 +59,12 @@ contract TestFeesFuzz_Local is JBTest {
         uint256 fee = JBFees.feeAmountFrom(amount, feePercent);
         uint256 afterFee = amount - fee;
 
+        // A dust payment can be entirely consumed by the minimum 1-unit fee.
+        if (afterFee == 0) {
+            assertEq(fee, amount, "dust fee should be capped by amount");
+            return;
+        }
+
         // Reverse: from afterFee, what fee would produce afterFee as the result?
         uint256 reverseFee = JBFees.feeAmountResultingIn(afterFee, feePercent);
 
