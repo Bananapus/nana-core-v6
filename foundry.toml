@@ -2,6 +2,7 @@
 solc = '0.8.28'
 evm_version = 'cancun'
 optimizer_runs = 200
+bytecode_hash = "none"
 libs = ["node_modules", "lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
 
@@ -17,7 +18,7 @@ fail_on_revert = false
 ethereum = "${RPC_ETHEREUM_MAINNET}"
 
 [lint]
-exclude_lints = ["pascal-case-struct", "mixed-case-variable"]
+exclude_lints = ["pascal-case-struct", "mixed-case-variable", "block-timestamp"]
 [fmt]
 number_underscore = "thousands"
 multiline_func_header = "all"

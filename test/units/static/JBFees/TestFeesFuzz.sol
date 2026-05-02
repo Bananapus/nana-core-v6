@@ -9,11 +9,11 @@ import {JBFees} from "../../../../src/libraries/JBFees.sol";
 contract TestFeesFuzz_Local is JBTest {
     function setUp() external {}
 
-    /// @notice feeAmountFrom with feePercent=0 returns 0.
+    /// @notice feeAmountFrom with feePercent=0 returns 0 only for zero amount, otherwise the minimum fee.
     function testFuzz_feeAmountFrom_zeroPercent(uint256 amount) external pure {
         amount = bound(amount, 0, type(uint128).max);
         uint256 fee = JBFees.feeAmountFrom(amount, 0);
-        assertEq(fee, 0, "fee with 0% should be 0");
+        assertEq(fee, amount == 0 ? 0 : 1, "fee with 0% should be 0 only for zero amount");
     }
 
     /// @notice feeAmountFrom with amount=0 returns 0.

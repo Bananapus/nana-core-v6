@@ -1,11 +1,11 @@
 # name: Sphinx Dry Run
 # env:
 #     SPHINX_API_KEY: ${{ secrets.SPHINX_API_KEY }}
-#     RPC_ETHEREUM_MAINNET: "https://rpc.ankr.com/eth"
+#     RPC_ETHEREUM_MAINNET: "https://api-ethereum-mainnet.n.dwellir.com/4b741c6f-83b3-4a0d-8065-26954a7f5db1"
 #     RPC_ETHEREUM_SEPOLIA: "https://eth-sepolia.g.alchemy.com/v2/${{ secrets.ALCHEMY_API_KEY }}"
-#     RPC_OPTIMISM_MAINNET: "https://rpc.ankr.com/optimism"
+#     RPC_OPTIMISM_MAINNET: "https://api-optimism-mainnet-archive.n.dwellir.com/4b741c6f-83b3-4a0d-8065-26954a7f5db1"
 #     RPC_OPTIMISM_SEPOLIA: "https://opt-sepolia.g.alchemy.com/v2/${{ secrets.ALCHEMY_API_KEY }}"
-#     RPC_POLYGON_MAINNET: "https://rpc.ankr.com/polygon"
+#     RPC_POLYGON_MAINNET: "https://api-polygon-mainnet-full.n.dwellir.com/4b741c6f-83b3-4a0d-8065-26954a7f5db1"
 #     RPC_POLYGON_MUMBAI: "https://polygon-mumbai.g.alchemy.com/v2/${{ secrets.ALCHEMY_API_KEY }}"
 
 # # Trigger the dry run when a pull request is opened or updated.

@@ -115,6 +115,56 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
         return (_terminalConfigs, _rulesetConfigs);
     }
 
+    function _mockSuccessfulLaunch(
+        uint256 _projectId,
+        uint48 _rulesetId,
+        JBRulesetConfig[] memory _rulesetConfigs
+    )
+        internal
+    {
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.latestRulesetIdOf, (_projectId)), abi.encode(0));
+        mockExpect(
+            address(directory),
+            abi.encodeCall(IJBDirectory.setControllerOf, (_projectId, IERC165(address(_controller)))),
+            ""
+        );
+
+        JBRuleset memory data = JBRuleset({
+            cycleNumber: 1,
+            id: _rulesetId,
+            basedOnId: 0,
+            start: _rulesetId,
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: 0
+        });
+
+        mockExpect(
+            address(rulesets),
+            abi.encodeCall(
+                IJBRulesets.queueFor,
+                (_projectId, 0, 0, 0, _rulesetConfigs[0].approvalHook, 642_241_845_873_572_506_056_833, 0)
+            ),
+            abi.encode(data)
+        );
+
+        mockExpect(
+            address(splits),
+            abi.encodeCall(IJBSplits.setSplitGroupsOf, (_projectId, _rulesetId, _rulesetConfigs[0].splitGroups)),
+            ""
+        );
+        mockExpect(
+            address(fundAccessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.setFundAccessLimitsFor,
+                (_projectId, _rulesetId, _rulesetConfigs[0].fundAccessLimitGroups)
+            ),
+            ""
+        );
+    }
+
     function test_RevertWhen_RulesetLengthIsZero() external {
         // it should revert
         JBTerminalConfig[] memory _terminalConfigs = new JBTerminalConfig[](0);
@@ -122,7 +172,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         vm.expectRevert(JBController.JBController_RulesetsArrayEmpty.selector);
 
-        _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
     }
 
     function test_RevertWhen_CallerDoesNotHavePermission() external whenCallerWithoutPermission {
@@ -140,7 +190,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
             )
         );
 
-        _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
     }
 
     function test_Revert_GivenTheProjectAlreadyHasRulesets() external whenCallerHasPermission {
@@ -155,7 +205,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         vm.expectRevert(abi.encodeWithSelector(JBController.JBController_RulesetsAlreadyLaunched.selector, 1));
 
-        _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
     }
 
     function test_GivenTheProjectDoesNotYetHaveRulesets() external whenCallerHasPermission {
@@ -219,9 +269,9 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         // event as expected
         /* vm.expectEmit();
-        emit IJBController.LaunchRulesets(_ts, 1, "", address(this)); */
+        emit IJBController.LaunchRulesets(_ts, 1, "", "", address(this)); */
 
-        _controller.launchRulesetsFor(_projectId, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(_projectId, "", _rulesetConfigs, _terminalConfigs, "");
     }
 
     function test_GivenCallerOnlyHasLaunchPermission() external {
@@ -259,7 +309,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
             )
         );
 
-        _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
     }
 
     function test_GivenNonOwnerHasBothPermissions() external {
@@ -335,8 +385,73 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
 
         // event as expected
         vm.expectEmit();
-        emit IJBController.LaunchRulesets(_ts, 1, "", address(this));
+        emit IJBController.LaunchRulesets(_ts, 1, "", "", address(this));
 
-        _controller.launchRulesetsFor(1, _rulesetConfigs, _terminalConfigs, "");
+        _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
+    }
+
+    function test_RevertWhen_NonOwnerLacksUriPermissionForProjectUri() external {
+        // it should revert
+
+        // mock ownerOf call
+        bytes memory _ownerOfCall = abi.encodeCall(IERC721.ownerOf, (1));
+        address _ownerData = address(1);
+
+        mockExpect(address(projects), _ownerOfCall, abi.encode(_ownerData));
+
+        // mock permission call - caller has LAUNCH_RULESETS
+        bytes memory _launchPermissionCall = abi.encodeCall(
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.LAUNCH_RULESETS, true, true)
+        );
+        mockExpect(address(permissions), _launchPermissionCall, abi.encode(true));
+
+        // SET_TERMINALS
+        bytes memory _setTerminalsPermissionCall = abi.encodeCall(
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.SET_TERMINALS, true, true)
+        );
+        mockExpect(address(permissions), _setTerminalsPermissionCall, abi.encode(true));
+
+        // SET_PROJECT_URI - caller does NOT have this
+        bytes memory _setUriPermissionCall = abi.encodeCall(
+            IJBPermissions.hasPermission, (address(this), address(1), 1, JBPermissionIds.SET_PROJECT_URI, true, true)
+        );
+        mockExpect(address(permissions), _setUriPermissionCall, abi.encode(false));
+
+        JBTerminalConfig[] memory _terminalConfigs = new JBTerminalConfig[](0);
+        JBRulesetConfig[] memory _rulesetConfigs = new JBRulesetConfig[](1);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBPermissioned.JBPermissioned_Unauthorized.selector,
+                _ownerData,
+                address(this),
+                1,
+                JBPermissionIds.SET_PROJECT_URI
+            )
+        );
+
+        _controller.launchRulesetsFor(1, "ipfs://project", _rulesetConfigs, _terminalConfigs, "");
+    }
+
+    function test_GivenOwnerProvidesProjectUri() external whenCallerHasPermission {
+        // it will set the project URI while launching rulesets
+
+        // setup: needed for the call chain
+        JBTerminalConfig[] memory _terminalConfigs;
+        JBRulesetConfig[] memory _rulesetConfigs;
+        uint48 _ts = uint48(block.timestamp);
+        uint256 _projectId = 1;
+        string memory _projectUri = "ipfs://project";
+        (_terminalConfigs, _rulesetConfigs) = genRuleset();
+
+        _mockSuccessfulLaunch(_projectId, _ts, _rulesetConfigs);
+
+        // event as expected
+        vm.expectEmit();
+        emit IJBController.LaunchRulesets(_ts, 1, _projectUri, "", address(this));
+
+        _controller.launchRulesetsFor(1, _projectUri, _rulesetConfigs, _terminalConfigs, "");
+
+        assertEq(_controller.uriOf(1), _projectUri);
     }
 }
