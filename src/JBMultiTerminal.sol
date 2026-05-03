@@ -1711,8 +1711,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Returns held fees to the project who paid them based on the specified amount.
-    /// @dev Fee rounding during partial replenishment can zero out dust-level fee entries (< 40 wei at 2.5% fee).
-    /// This is accepted behavior — dust fees are economically insignificant.
+    /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
+    /// payer project and leave the fee project owed the 1-unit minimum fee.
     /// @param projectId The project held fees are being returned to.
     /// @param token The token that the held fees are in.
     /// @param amount The amount to base the calculation on, as a fixed point number with the same number of decimals
@@ -1762,8 +1762,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Move the start index forward to the held fee after the current one.
                     newStartIndex = startIndex + i + 1;
                 } else {
-                    // And here we overwrite with `feeAmountResultingIn` the `leftoverAmount`.
-                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: FEE});
+                    // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
+                    // splitting an already-held fee entry across repayments.
+                    feeAmount = JBFees.feeAmountResultingInFloor({amountAfterFee: leftoverAmount, feePercent: FEE});
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
