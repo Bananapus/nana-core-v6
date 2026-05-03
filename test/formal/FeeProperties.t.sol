@@ -101,6 +101,13 @@ contract FeeProperties is Test {
         uint256 fee1 = JBFees.feeAmountFrom(amount, feePercent);
         uint256 net = amount - fee1;
 
+        // The minimum fee can consume a dust amount entirely. Asking for the reverse fee of a zero net amount should
+        // remain zero; the normal round-trip invariant only applies when there is nonzero net value to reconstruct.
+        if (net == 0) {
+            assert(fee1 == amount);
+            return;
+        }
+
         uint256 fee2 = JBFees.feeAmountResultingIn(net, feePercent);
 
         // Reconstructed gross should always be >= original (never undercharge)
@@ -119,6 +126,11 @@ contract FeeProperties is Test {
 
         uint256 fee1 = JBFees.feeAmountFrom(amount, feePercent);
         uint256 net = uint256(amount) - fee1;
+
+        if (net == 0) {
+            assertEq(fee1, amount, "Round trip: dust fee can consume the full amount");
+            return;
+        }
 
         uint256 fee2 = JBFees.feeAmountResultingIn(net, feePercent);
 

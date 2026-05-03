@@ -104,7 +104,7 @@ contract CodexHeldFeeRoundingTest is TestBaseWorkflow {
         });
     }
 
-    function test_partialHeldFeeRepaymentCanEraseRemainingFee() external {
+    function test_partialHeldFeeRepaymentCannotEraseRemainingFee() external {
         // Seed the project with enough balance to send a payout that holds fees.
         _terminal.pay{value: 100}({
             projectId: _projectId,
@@ -148,12 +148,12 @@ contract CodexHeldFeeRoundingTest is TestBaseWorkflow {
         uint256 projectBalanceAfter =
             jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);
 
-        // The fee project never receives the original 1 wei fee.
-        assertEq(feeProjectBalanceAfter, 0);
-        // The payer project only gets its explicit top-up recorded.
+        // The fee project still receives the original 1 wei fee.
+        assertEq(feeProjectBalanceAfter, 1);
+        // The payer project gets its explicit top-up recorded.
         assertEq(projectBalanceAfter, 61);
-        // One wei remains stranded in the terminal: actual native balance exceeds tracked balances.
+        // All native balance remains accounted for.
         assertEq(address(_terminal).balance, 62);
-        assertEq(address(_terminal).balance - (feeProjectBalanceAfter + projectBalanceAfter), 1);
+        assertEq(address(_terminal).balance, feeProjectBalanceAfter + projectBalanceAfter);
     }
 }

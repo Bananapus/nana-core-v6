@@ -392,9 +392,13 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
         returns (JBFundAccessLimitGroup[] memory)
     {
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
+        // Safe in these tests: callers pass `_PAYOUT_AMOUNT`, which is below `type(uint224).max`.
         // forge-lint: disable-next-line(unsafe-typecast)
-        payoutLimits[0] =
-            JBCurrencyAmount({amount: uint224(payoutAmount), currency: uint32(uint160(address(usdcToken())))});
+        uint224 payoutLimit = uint224(payoutAmount);
+        // Safe in these tests: mock token addresses are intentionally used as 160-bit currency IDs.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint32 currency = uint32(uint160(address(usdcToken())));
+        payoutLimits[0] = JBCurrencyAmount({amount: payoutLimit, currency: currency});
 
         JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
         fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
