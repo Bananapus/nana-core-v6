@@ -89,6 +89,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
 
     //*********************************************************************//
+    // ------------------------- private constants ----------------------- //
+    //*********************************************************************//
+
+    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
+    uint256 private constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
+
+    /// @notice Denominator for floor-rounded back-calculating this terminal's fee from a post-fee amount.
+    uint256 private constant _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR = (JBConstants.MAX_FEE - FEE) / FEE;
+
+    //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
 
@@ -1899,24 +1909,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice The terminal fee charged from a pre-fee `amount`.
-    /// @param amount The amount before the fee is applied.
-    /// @return feeAmount The fee amount.
-    function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
-        // `FEE` is 25 and `MAX_FEE` is 1000, so `amount * FEE / MAX_FEE` is exactly `amount / 40`.
-        feeAmount = amount / 40;
-
-        return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
-    }
-
-    /// @notice The floor-rounded fee needed to leave `amountAfterFee` after fee deduction.
-    /// @param amountAfterFee The amount left after the fee is applied.
-    /// @return feeAmount The floor-rounded fee amount.
-    function _feeAmountResultingInFloor(uint256 amountAfterFee) private pure returns (uint256 feeAmount) {
-        // `MAX_FEE / (MAX_FEE - FEE) - 1` simplifies to `FEE / (MAX_FEE - FEE)`, or `1 / 39`.
-        return amountAfterFee / 39;
-    }
-
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
     /// @param token The address of the token that the fee is being paid in.
@@ -2186,5 +2178,26 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Bundle the amount info into a `JBTokenAmount` struct.
         tokenAmount =
             JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
+    }
+
+    //*********************************************************************//
+    // -------------------------- private helpers ------------------------ //
+    //*********************************************************************//
+
+    /// @notice The terminal fee charged from a pre-fee `amount`.
+    /// @dev Returns at least 1 for nonzero feeable amounts so dust payouts cannot bypass protocol fees.
+    /// @param amount The amount before the fee is applied.
+    /// @return feeAmount The fee amount.
+    function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
+        feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
+
+        return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
+    }
+
+    /// @notice The floor-rounded fee needed to leave `amountAfterFee` after fee deduction.
+    /// @param amountAfterFee The amount left after the fee is applied.
+    /// @return feeAmount The floor-rounded fee amount.
+    function _feeAmountResultingInFloor(uint256 amountAfterFee) private pure returns (uint256 feeAmount) {
+        return amountAfterFee / _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR;
     }
 }
