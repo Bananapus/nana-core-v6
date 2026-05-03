@@ -1762,9 +1762,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Move the start index forward to the held fee after the current one.
                     newStartIndex = startIndex + i + 1;
                 } else {
-                    // Partial repayments return only the proportional floor fee so the same held-fee entry cannot be
-                    // charged the 1-unit dust minimum several times across several repayments.
-                    feeAmount = JBFees.feeAmountResultingInFloor({amountAfterFee: leftoverAmount, feePercent: FEE});
+                    // And here we overwrite with `feeAmountResultingIn` the `leftoverAmount`.
+                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: FEE});
 
                     // Get fee from `leftoverAmount`.
                     unchecked {

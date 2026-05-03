@@ -20,24 +20,7 @@ library JBFees {
             x: amountAfterFee, y: JBConstants.MAX_FEE, denominator: JBConstants.MAX_FEE - feePercent
         }) - amountAfterFee;
 
-        assembly {
-            feeAmount := or(
-                feeAmount,
-                and(iszero(feeAmount), and(iszero(iszero(amountAfterFee)), iszero(iszero(feePercent))))
-            )
-        }
-        return feeAmount;
-    }
-
-    /// @notice Returns the floor-rounded fee amount that, when added to `amountAfterFee`, produces the gross amount.
-    /// @dev Use this for partial held-fee repayments where applying the 1-unit dust minimum could double charge
-    /// across several repayments of the same held-fee entry.
-    /// @param amountAfterFee The desired post-fee amount, as a fixed point number.
-    /// @param feePercent The fee percent, out of `JBConstants.MAX_FEE`.
-    /// @return The floor-rounded fee amount.
-    function feeAmountResultingInFloor(uint256 amountAfterFee, uint256 feePercent) internal pure returns (uint256) {
-        return mulDiv({x: amountAfterFee, y: JBConstants.MAX_FEE, denominator: JBConstants.MAX_FEE - feePercent})
-            - amountAfterFee;
+        return feeAmount == 0 && amountAfterFee != 0 && feePercent != 0 ? 1 : feeAmount;
     }
 
     /// @notice Returns the fee that would be taken from `amountBeforeFee`.
@@ -50,12 +33,6 @@ library JBFees {
     function feeAmountFrom(uint256 amountBeforeFee, uint256 feePercent) internal pure returns (uint256) {
         uint256 feeAmount = mulDiv({x: amountBeforeFee, y: feePercent, denominator: JBConstants.MAX_FEE});
 
-        assembly {
-            feeAmount := or(
-                feeAmount,
-                and(iszero(feeAmount), and(iszero(iszero(amountBeforeFee)), iszero(iszero(feePercent))))
-            )
-        }
-        return feeAmount;
+        return feeAmount == 0 && amountBeforeFee != 0 && feePercent != 0 ? 1 : feeAmount;
     }
 }
