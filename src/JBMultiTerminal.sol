@@ -334,7 +334,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // feeless address.
             if (!_isFeeless(address(split.hook))) {
                 unchecked {
-                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                    netPayoutAmount -= _feeAmountFrom(amount);
                 }
             }
 
@@ -377,7 +377,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // a feeless address.
             if (terminal != this && !_isFeeless(address(terminal))) {
                 unchecked {
-                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                    netPayoutAmount -= _feeAmountFrom(amount);
                 }
             }
 
@@ -439,7 +439,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // feeless address.
             if (!_isFeeless(recipient)) {
                 unchecked {
-                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                    netPayoutAmount -= _feeAmountFrom(amount);
                 }
             }
 
@@ -674,7 +674,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _processFee({
                 projectId: projectId,
                 token: token,
-                amount: _feeAmountFrom({amount: heldFee.amount}),
+                amount: _feeAmountFrom(heldFee.amount),
                 beneficiary: heldFee.beneficiary,
                 feeTerminal: feeTerminal,
                 wasHeld: true
@@ -1191,7 +1191,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
                     unchecked {
-                        reclaimAmount -= _feeAmountFrom({amount: reclaimAmount});
+                        reclaimAmount -= _feeAmountFrom(reclaimAmount);
                     }
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
@@ -1204,7 +1204,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         }
                         amountEligibleForFees += feeableAmount;
                         unchecked {
-                            reclaimAmount -= _feeAmountFrom({amount: feeableAmount});
+                            reclaimAmount -= _feeAmountFrom(feeableAmount);
                         }
                     }
                 }
@@ -1454,7 +1454,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Get the fee for the specified amount.
             uint256 specificationAmountFee =
-                _isFeeless(address(specification.hook)) ? 0 : _feeAmountFrom({amount: specification.amount});
+                _isFeeless(address(specification.hook)) ? 0 : _feeAmountFrom(specification.amount);
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
@@ -1764,7 +1764,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 break;
             } else {
                 // Notice here we take `feeAmountFrom` on the stored `.amount`.
-                uint256 feeAmount = _feeAmountFrom({amount: heldFee.amount});
+                uint256 feeAmount = _feeAmountFrom(heldFee.amount);
 
                 // Keep a reference to the amount from which the fee was taken.
                 uint256 amountPaidOut = heldFee.amount - feeAmount;
@@ -1863,7 +1863,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
         if (leftoverPayoutAmount != 0) {
             // Keep a reference to the fee for the leftover payout amount.
-            uint256 fee = _isFeeless(projectOwner) ? 0 : _feeAmountFrom({amount: leftoverPayoutAmount});
+            uint256 fee = _isFeeless(projectOwner) ? 0 : _feeAmountFrom(leftoverPayoutAmount);
 
             uint256 netLeftoverPayoutAmount;
             unchecked {
@@ -1940,7 +1940,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (uint256 feeAmount)
     {
         // Get a reference to the fee amount.
-        feeAmount = _feeAmountFrom({amount: amount});
+        feeAmount = _feeAmountFrom(amount);
 
         if (shouldHoldFees) {
             // Store the held fee.
