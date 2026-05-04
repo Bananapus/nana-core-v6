@@ -419,12 +419,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @dev Each operation within this transaction can be done in sequence separately.
     /// @dev Can only be called by the project's owner or an address with the owner's permission to `LAUNCH_RULESETS`.
     /// @param projectId The ID of the project to launch rulesets for.
+    /// @param projectUri The project's metadata URI. Pass an empty string to leave it unchanged.
     /// @param rulesetConfigurations The rulesets to queue.
     /// @param terminalConfigurations The terminals to set up.
     /// @param memo A memo to pass along to the emitted event.
     /// @return rulesetId The ID of the last successfully queued ruleset.
     function launchRulesetsFor(
         uint256 projectId,
+        string calldata projectUri,
         JBRulesetConfig[] calldata rulesetConfigurations,
         JBTerminalConfig[] calldata terminalConfigurations,
         string calldata memo
@@ -455,9 +457,23 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             alsoGrantAccessIf: sender == OMNICHAIN_RULESET_OPERATOR
         });
 
+        if (bytes(projectUri).length > 0) {
+            _requirePermissionAllowingOverrideFrom({
+                account: PROJECTS.ownerOf(projectId),
+                projectId: projectId,
+                permissionId: JBPermissionIds.SET_PROJECT_URI,
+                alsoGrantAccessIf: sender == OMNICHAIN_RULESET_OPERATOR
+            });
+        }
+
         // If the project has already had rulesets, use `queueRulesetsOf(...)` instead.
         if (RULESETS.latestRulesetIdOf(projectId) > 0) {
             revert JBController_RulesetsAlreadyLaunched(projectId);
+        }
+
+        // If provided, set the project's metadata URI.
+        if (bytes(projectUri).length > 0) {
+            uriOf[projectId] = projectUri;
         }
 
         // Set this contract as the project's controller in the directory.
@@ -470,7 +486,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // slither-disable-next-line reentrancy-events
         rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
-        emit LaunchRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
+        emit LaunchRulesets({
+            rulesetId: rulesetId, projectId: projectId, projectUri: projectUri, memo: memo, caller: _msgSender()
+        });
     }
 
     /// @notice Migrate a project from this controller to another one.

@@ -419,17 +419,17 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: 22.4.x
+          node-version: 25.9.0
       - name: Install npm dependencies
         run: npm install --omit=dev
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
-        run: forge test --fail-fast --summary --detailed --skip "*/script/**"
+        run: forge test --deny notes --fail-fast --summary --detailed --skip "*/script/**"
         env:
           RPC_ETHEREUM_MAINNET: ${{ secrets.RPC_ETHEREUM_MAINNET }}
       - name: Check contract sizes
-        run: forge build --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils
+        run: forge build --deny notes --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils
 ```
 
 **lint.yml:**
@@ -470,16 +470,19 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: 25.9.0
       - name: Install npm dependencies
         run: npm install --omit=dev
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
+      - name: Build contracts
+        run: forge build --deny notes --build-info --skip "*/test/**" --skip "*/script/**"
       - name: Run slither
-        uses: crytic/slither-action@v0.3.1
+        uses: crytic/slither-action@v0.4.1
         with:
             slither-config: slither-ci.config.json
             fail-on: medium
+            ignore-compile: true
 ```
 
 **slither-ci.config.json:**
@@ -515,7 +518,7 @@ jobs:
   },
   "dependencies": { ... },
   "devDependencies": {
-    "@sphinx-labs/plugins": "^0.33.2"
+    "@sphinx-labs/plugins": "0.33.3"
   }
 }
 ```
@@ -558,6 +561,10 @@ Only add extra remappings for:
 ### Linting
 
 Solar (Foundry's built-in linter) runs automatically during `forge build`. It scans all `.sol` files in `libs` directories, including `node_modules`.
+
+Build and lint commands must be clean: no warnings and no notes. CI should use `forge build --deny notes ...`
+so any new compiler or linter warning fails the PR. Only exclude a lint in `foundry.toml` when it is intentional
+for the repo's domain, and keep `exclude_lints` sorted alphabetically.
 
 **All test helpers must use relative imports** (e.g. `../../src/structs/JBRuleset.sol`), not bare `src/` imports. This ensures solar can resolve paths when the helper is consumed via npm in downstream repos.
 
@@ -603,7 +610,8 @@ CI checks formatting via `forge fmt --check`.
 - `forge-std` as a git submodule in `lib/`
 - Sphinx plugins as a devDependency
 - Cross-repo references use `file:../sibling-repo` in local development
-- Published versions use semver ranges (`^0.0.x`) for npm
+- Published npm dependencies are pinned to exact versions
+- GitHub dependency refs are pinned to a commit and used only when the needed Solidity sources are not published to npm
 
 ### Contract Size Checks
 

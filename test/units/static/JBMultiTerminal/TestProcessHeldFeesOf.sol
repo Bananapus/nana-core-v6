@@ -20,33 +20,9 @@ import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 
-/// @dev Harness that exposes internal held fee storage for direct manipulation in tests.
-contract ForTest_JBMultiTerminal is JBMultiTerminal {
-    constructor(
-        IJBFeelessAddresses feelessAddresses,
-        IJBPermissions permissions,
-        IJBProjects projects,
-        IJBSplits splits,
-        IJBTerminalStore store,
-        IJBTokens tokens,
-        IPermit2 permit2,
-        address trustedForwarder
-    )
-        JBMultiTerminal(feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder)
-    {}
-
-    function forTestAddHeldFee(uint256 projectId, address token, JBFee memory fee) external {
-        _heldFeesOf[projectId][token].push(fee);
-    }
-
-    function forTestSetNextHeldFeeIndex(uint256 projectId, address token, uint256 index) external {
-        _nextHeldFeeIndexOf[projectId][token] = index;
-    }
-}
-
 contract TestProcessHeldFeesOf_Local is JBTest {
-    // Target Contract (harness)
-    ForTest_JBMultiTerminal public _terminal;
+    // Target Contract
+    JBMultiTerminal public _terminal;
 
     // Mocks
     IJBPermissions public permissions = IJBPermissions(makeAddr("permissions"));
@@ -74,11 +50,28 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         );
     }
 
+    function _addHeldFee(uint256 projectId, address token, JBFee memory fee) internal {
+        // `_heldFeesOf` is the mapping at storage slot 1:
+        // mapping(uint256 projectId => mapping(address token => JBFee[])).
+        bytes32 projectSlot = keccak256(abi.encode(projectId, uint256(1)));
+        bytes32 arraySlot = keccak256(abi.encode(token, projectSlot));
+        uint256 length = uint256(vm.load(address(_terminal), arraySlot));
+        bytes32 elementSlot = bytes32(uint256(keccak256(abi.encode(arraySlot))) + length * 2);
+
+        vm.store(address(_terminal), arraySlot, bytes32(length + 1));
+        vm.store(address(_terminal), elementSlot, bytes32(fee.amount));
+        vm.store(
+            address(_terminal),
+            bytes32(uint256(elementSlot) + 1),
+            bytes32(uint256(uint160(fee.beneficiary)) | (uint256(fee.unlockTimestamp) << 160))
+        );
+    }
+
     function setUp() public {
         // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
 
-        _terminal = new ForTest_JBMultiTerminal(
+        _terminal = new JBMultiTerminal(
             feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder
         );
     }
@@ -88,7 +81,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Add a held fee with unlockTimestamp in the future
         uint48 futureTimestamp = uint48(block.timestamp + 1000);
-        _terminal.forTestAddHeldFee(
+        _addHeldFee(
             _projectId, _mockToken, JBFee({amount: 100, beneficiary: _beneficiary, unlockTimestamp: futureTimestamp})
         );
 
@@ -119,7 +112,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee that is already unlocked
         uint48 pastTimestamp = uint48(block.timestamp - 1);
         uint256 heldAmount = 1000;
-        _terminal.forTestAddHeldFee(
+        _addHeldFee(
             _projectId,
             _mockToken,
             JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
@@ -186,7 +179,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee that is already unlocked
         uint48 pastTimestamp = uint48(block.timestamp - 1);
         uint256 heldAmount = 1000;
-        _terminal.forTestAddHeldFee(
+        _addHeldFee(
             _projectId,
             _mockToken,
             JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})

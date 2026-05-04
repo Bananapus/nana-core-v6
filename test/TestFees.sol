@@ -7,6 +7,7 @@ import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
 import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.sol";
 import {IJBRulesets} from "../src/interfaces/IJBRulesets.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBFees} from "../src/libraries/JBFees.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
 import {JBFee} from "../src/structs/JBFee.sol";
@@ -177,6 +178,37 @@ contract TestFees_Local is TestBaseWorkflow {
             terminalConfigurations: _terminalConfigurations,
             memo: ""
         });
+    }
+
+    function testPayoutDustFeeRoundsUpToOne() public {
+        _terminal.pay{value: 1}({
+            projectId: _projectId,
+            amount: 1,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _beneficiary,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        uint256 ownerBalanceBefore = _projectOwner.balance;
+
+        uint256 amountPaidOut = _terminal.sendPayoutsOf({
+            projectId: _projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            amount: 1,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            minTokensPaidOut: 1
+        });
+
+        assertEq(amountPaidOut, 1);
+        assertEq(_projectOwner.balance, ownerBalanceBefore);
+
+        JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
+        assertEq(heldFees.length, 1);
+        assertEq(heldFees[0].amount, 1);
+        assertEq(JBFees.feeAmountFrom({amountBeforeFee: heldFees[0].amount, feePercent: _terminal.FEE()}), 1);
+        assertEq(address(_terminal).balance, 1);
     }
 
     function testHeldFeeIsProcessedOnMigrate() public {

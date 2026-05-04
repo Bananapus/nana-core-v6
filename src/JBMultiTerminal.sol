@@ -83,6 +83,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
+    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
+    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
+
     /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
     uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
@@ -330,7 +333,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee since the funds are leaving this contract and the split hook isn't a
             // feeless address.
             if (!_isFeeless(address(split.hook))) {
-                netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom(amount);
+                }
             }
 
             // Create the context to send to the split hook.
@@ -371,7 +376,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
             // a feeless address.
             if (terminal != this && !_isFeeless(address(terminal))) {
-                netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom(amount);
+                }
             }
 
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
@@ -431,7 +438,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee since the funds are leaving this contract and the recipient isn't a
             // feeless address.
             if (!_isFeeless(recipient)) {
-                netPayoutAmount -= JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom(amount);
+                }
             }
 
             // If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to the
@@ -665,7 +674,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _processFee({
                 projectId: projectId,
                 token: token,
-                amount: JBFees.feeAmountFrom({amountBeforeFee: heldFee.amount, feePercent: FEE}),
+                amount: _feeAmountFrom(heldFee.amount),
                 beneficiary: heldFee.beneficiary,
                 feeTerminal: feeTerminal,
                 wasHeld: true
@@ -1181,16 +1190,22 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 if (cashOutTaxRate != 0) {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
-                    reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: reclaimAmount, feePercent: FEE});
+                    unchecked {
+                        reclaimAmount -= _feeAmountFrom(reclaimAmount);
+                    }
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
                     if (feeFreeSurplus != 0) {
                         uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
                         // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
-                        _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                        unchecked {
+                            _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                        }
                         amountEligibleForFees += feeableAmount;
-                        reclaimAmount -= JBFees.feeAmountFrom({amountBeforeFee: feeableAmount, feePercent: FEE});
+                        unchecked {
+                            reclaimAmount -= _feeAmountFrom(feeableAmount);
+                        }
                     }
                 }
             }
@@ -1438,9 +1453,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             // Get the fee for the specified amount.
-            uint256 specificationAmountFee = _isFeeless(address(specification.hook))
-                ? 0
-                : JBFees.feeAmountFrom({amountBeforeFee: specification.amount, feePercent: FEE});
+            uint256 specificationAmountFee =
+                _isFeeless(address(specification.hook)) ? 0 : _feeAmountFrom(specification.amount);
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
@@ -1711,8 +1725,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Returns held fees to the project who paid them based on the specified amount.
-    /// @dev Fee rounding during partial replenishment can zero out dust-level fee entries (< 40 wei at 2.5% fee).
-    /// This is accepted behavior — dust fees are economically insignificant.
+    /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
+    /// payer project and leave the fee project owed the 1-unit minimum fee.
     /// @param projectId The project held fees are being returned to.
     /// @param token The token that the held fees are in.
     /// @param amount The amount to base the calculation on, as a fixed point number with the same number of decimals
@@ -1748,7 +1762,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 break;
             } else {
                 // Notice here we take `feeAmountFrom` on the stored `.amount`.
-                uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldFee.amount, feePercent: FEE});
+                uint256 feeAmount = _feeAmountFrom(heldFee.amount);
 
                 // Keep a reference to the amount from which the fee was taken.
                 uint256 amountPaidOut = heldFee.amount - feeAmount;
@@ -1762,8 +1776,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Move the start index forward to the held fee after the current one.
                     newStartIndex = startIndex + i + 1;
                 } else {
-                    // And here we overwrite with `feeAmountResultingIn` the `leftoverAmount`
-                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: FEE});
+                    // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
+                    // splitting an already-held fee entry across repayments.
+                    feeAmount = JBFees.feeAmountResultingInFloorForFee25(leftoverAmount);
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
@@ -1846,17 +1861,20 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
         if (leftoverPayoutAmount != 0) {
             // Keep a reference to the fee for the leftover payout amount.
-            uint256 fee = _isFeeless(projectOwner)
-                ? 0
-                : JBFees.feeAmountFrom({amountBeforeFee: leftoverPayoutAmount, feePercent: FEE});
+            uint256 fee = _isFeeless(projectOwner) ? 0 : _feeAmountFrom(leftoverPayoutAmount);
+
+            uint256 netLeftoverPayoutAmount;
+            unchecked {
+                netLeftoverPayoutAmount = leftoverPayoutAmount - fee;
+            }
 
             // Failed owner transfer consumes the payout limit by design. Same pattern as split payouts:
             // the try-catch prevents revert, failed amount is returned to project balance, and the owner can retry
             // via addToBalanceOf or in the next cycle.
-            try this.executeTransferTo({addr: projectOwner, token: token, amount: leftoverPayoutAmount - fee}) {
+            try this.executeTransferTo({addr: projectOwner, token: token, amount: netLeftoverPayoutAmount}) {
                 if (fee > 0) {
                     amountEligibleForFees += leftoverPayoutAmount;
-                    leftoverPayoutAmount -= fee;
+                    leftoverPayoutAmount = netLeftoverPayoutAmount;
                 }
             } catch (bytes memory reason) {
                 // slither-disable-next-line reentrancy-events
@@ -1864,7 +1882,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     projectId: projectId,
                     addr: projectOwner,
                     token: token,
-                    amount: leftoverPayoutAmount - fee,
+                    amount: netLeftoverPayoutAmount,
                     fee: fee,
                     reason: reason,
                     caller: sender
@@ -1920,7 +1938,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (uint256 feeAmount)
     {
         // Get a reference to the fee amount.
-        feeAmount = JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+        feeAmount = _feeAmountFrom(amount);
 
         if (shouldHoldFees) {
             // Store the held fee.
@@ -2171,5 +2189,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Bundle the amount info into a `JBTokenAmount` struct.
         tokenAmount =
             JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
+    }
+
+    //*********************************************************************//
+    // -------------------------- private helpers ------------------------ //
+    //*********************************************************************//
+
+    /// @notice The terminal fee charged from a pre-fee `amount`.
+    /// @dev Returns at least 1 for nonzero feeable amounts so dust payouts cannot bypass protocol fees.
+    /// @param amount The amount before the fee is applied.
+    /// @return feeAmount The fee amount.
+    function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
+        feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
+
+        return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
     }
 }

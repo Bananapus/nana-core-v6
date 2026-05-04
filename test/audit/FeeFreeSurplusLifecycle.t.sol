@@ -75,7 +75,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
         JBRulesetConfig[] memory feeProjectRuleset = new JBRulesetConfig[](1);
         feeProjectRuleset[0] = _rulesetConfig({
             duration: 0,
-            metadata: _metadata({allowTerminalMigration: false}),
+            metadata: _metadata(false),
             splitGroups: new JBSplitGroup[](0),
             fundAccessLimitGroups: new JBFundAccessLimitGroup[](0)
         });
@@ -94,7 +94,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
         JBRulesetConfig[] memory recipientRuleset = new JBRulesetConfig[](1);
         recipientRuleset[0] = _rulesetConfig({
             duration: 0,
-            metadata: _metadata({allowTerminalMigration: true}),
+            metadata: _metadata(true),
             splitGroups: new JBSplitGroup[](0),
             fundAccessLimitGroups: new JBFundAccessLimitGroup[](0)
         });
@@ -146,7 +146,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
         JBRulesetConfig[] memory payerRuleset = new JBRulesetConfig[](1);
         payerRuleset[0] = _rulesetConfig({
             duration: CYCLE_DURATION,
-            metadata: _metadata({allowTerminalMigration: false}),
+            metadata: _metadata(false),
             splitGroups: splitGroups,
             fundAccessLimitGroups: payerLimits
         });

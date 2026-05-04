@@ -257,6 +257,13 @@ contract BondingCurveProperties is Test {
         uint256 feeForward = JBFees.feeAmountFrom(amount, feePercent);
         uint256 netAmount = amount - feeForward;
 
+        // A dust amount can be fully consumed by the minimum fee. Reverse-fee math for zero net output should return
+        // zero, so the nonzero round-trip property starts once some net value survives the forward fee.
+        if (netAmount == 0) {
+            assert(feeForward == amount);
+            return;
+        }
+
         // Reverse fee: what fee would result in netAmount after deduction?
         uint256 feeReverse = JBFees.feeAmountResultingIn(netAmount, feePercent);
 
@@ -271,6 +278,11 @@ contract BondingCurveProperties is Test {
 
         uint256 feeForward = JBFees.feeAmountFrom(amount, feePercent);
         uint256 netAmount = amount - feeForward;
+
+        if (netAmount == 0) {
+            assertEq(feeForward, amount, "Fee round-trip: dust fee can consume the full amount");
+            return;
+        }
 
         uint256 feeReverse = JBFees.feeAmountResultingIn(netAmount, feePercent);
 

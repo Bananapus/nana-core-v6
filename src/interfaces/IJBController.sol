@@ -57,9 +57,10 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @notice Rulesets were launched for an existing project.
     /// @param rulesetId The ID of the first queued ruleset.
     /// @param projectId The ID of the project.
+    /// @param projectUri The metadata URI of the project.
     /// @param memo A memo associated with the launch.
     /// @param caller The address that called the launch function.
-    event LaunchRulesets(uint256 rulesetId, uint256 projectId, string memo, address caller);
+    event LaunchRulesets(uint256 rulesetId, uint256 projectId, string projectUri, string memo, address caller);
 
     /// @notice Tokens were minted for a beneficiary.
     /// @param beneficiary The address that received the minted tokens.
@@ -313,12 +314,14 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice Queues a project's initial rulesets and sets up terminals for it.
     /// @param projectId The ID of the project to launch rulesets for.
+    /// @param projectUri The project's metadata URI. Pass an empty string to leave it unchanged.
     /// @param rulesetConfigurations The rulesets to queue.
     /// @param terminalConfigurations The terminals to set up.
     /// @param memo A memo to pass along to the emitted event.
     /// @return rulesetId The ID of the last successfully queued ruleset.
     function launchRulesetsFor(
         uint256 projectId,
+        string calldata projectUri,
         JBRulesetConfig[] calldata rulesetConfigurations,
         JBTerminalConfig[] calldata terminalConfigurations,
         string calldata memo

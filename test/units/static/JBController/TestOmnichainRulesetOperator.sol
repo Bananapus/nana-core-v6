@@ -242,7 +242,7 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
         // Operator calls launchRulesetsFor without owning the project or having any permission grants.
         // The alsoGrantAccessIf bypass should allow this.
         vm.prank(operator);
-        _controller.launchRulesetsFor(projectId, rulesetConfigs, terminalConfigs, "");
+        _controller.launchRulesetsFor(projectId, "", rulesetConfigs, terminalConfigs, "");
     }
 
     function test_operatorCanQueueRulesetsWithoutPermission() external {
@@ -281,7 +281,7 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
                 JBPermissionIds.LAUNCH_RULESETS
             )
         );
-        _controller.launchRulesetsFor(projectId, rulesetConfigs, terminalConfigs, "");
+        _controller.launchRulesetsFor(projectId, "", rulesetConfigs, terminalConfigs, "");
 
         // Mock permission check for QUEUE_RULESETS — randomCaller has no permissions
         vm.mockCall(
@@ -319,6 +319,6 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
         // Even the operator cannot launch if rulesets already exist
         vm.prank(operator);
         vm.expectRevert(abi.encodeWithSelector(JBController.JBController_RulesetsAlreadyLaunched.selector, projectId));
-        _controller.launchRulesetsFor(projectId, rulesetConfigs, terminalConfigs, "");
+        _controller.launchRulesetsFor(projectId, "", rulesetConfigs, terminalConfigs, "");
     }
 }
