@@ -1772,7 +1772,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 } else {
                     // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
                     // splitting an already-held fee entry across repayments.
-                    feeAmount = _feeAmountResultingInFloor({amountAfterFee: leftoverAmount});
+                    feeAmount = leftoverAmount / _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR;
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
@@ -2192,12 +2192,5 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
 
         return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
-    }
-
-    /// @notice The floor-rounded fee needed to leave `amountAfterFee` after fee deduction.
-    /// @param amountAfterFee The amount left after the fee is applied.
-    /// @return feeAmount The floor-rounded fee amount.
-    function _feeAmountResultingInFloor(uint256 amountAfterFee) private pure returns (uint256 feeAmount) {
-        return amountAfterFee / _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR;
     }
 }
