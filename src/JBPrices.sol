@@ -13,12 +13,13 @@ import {IJBPriceFeed} from "./interfaces/IJBPriceFeed.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 
-/// @notice Manages and normalizes price feeds. Price feeds are contracts which return the "pricing currency" cost of 1
-/// "unit currency".
-/// @dev Price feeds are immutable once set and cannot be replaced or removed. This prevents oracle manipulation via
-/// admin-key attacks, but means a misconfigured or failing feed will cause operations using that currency pair to
-/// revert (DoS, not fund loss). Select feeds carefully — recovery requires deploying a new JBPrices contract and
-/// migrating projects.
+/// @notice Provides currency conversion for the protocol. When a project's payout limits or surplus allowances are
+/// denominated in a currency different from the token held in its terminal (e.g. USD limits with ETH held), this
+/// contract resolves the exchange rate via registered price feeds (typically Chainlink oracles).
+/// @dev Price feeds are immutable once set — they cannot be replaced or removed. This protects against oracle
+/// manipulation via admin-key attacks. If a feed is misconfigured, operations using that pair will revert (DoS, not
+/// fund loss). The inverse of any registered feed is auto-calculated. Projects can have their own feeds; project ID 0
+/// holds protocol-wide defaults.
 contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBPrices {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -85,13 +86,14 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Add a price feed for the `unitCurrency`, priced in terms of the `pricingCurrency`.
-    /// @dev Price feeds can only be added, not modified or removed. Once a feed is set for a currency pair (in either
-    /// direction), it is permanent for that project ID. Recovery from a misconfigured feed requires deploying a new
-    /// JBPrices contract.
-    /// @dev This contract's owner can add protocol-wide default price feed by passing a `projectId` of 0.
-    /// @param projectId The ID of the project to add a feed for. If `projectId` is 0, add a protocol-wide default price
-    /// feed.
+    /// @notice Register a price feed that provides the exchange rate between two currencies. For example, registering
+    /// an ETH/USD feed allows payout limits denominated in USD to be enforced against ETH balances.
+    /// @dev Price feeds are immutable — once set for a currency pair, they cannot be replaced or removed. This
+    /// prevents
+    /// admin-key oracle manipulation. The inverse rate is auto-calculated, so registering A→B also provides B→A.
+    /// @dev Pass `projectId` = 0 to set a protocol-wide default (owner only). Non-zero project IDs require controller
+    /// authorization. A default feed for a pair blocks per-project overrides for that same pair.
+    /// @param projectId The ID of the project to add a feed for. Pass 0 for a protocol-wide default.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency being priced by the feed.
     /// @param feed The address of the price feed to add.
@@ -156,11 +158,14 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /// @notice Gets the `pricingCurrency` cost for one unit of the `unitCurrency`.
-    /// @param projectId The ID of the project to check the feed for. Feeds stored in ID 0 are used by default for all
-    /// projects.
-    /// @param pricingCurrency The currency the feed's resulting price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @notice Convert between currencies — returns how much of `pricingCurrency` one unit of `unitCurrency` is
+    /// worth.
+    /// For example, `pricePerUnitOf(id, USD, ETH, 18)` returns the USD price of 1 ETH with 18 decimals.
+    /// @dev Lookup order: project-specific feed → inverse of project feed → default feed (project 0) → inverse of
+    /// default. Reverts with `JBPrices_PriceFeedNotFound` if no feed exists in any direction.
+    /// @param projectId The ID of the project to check the feed for. Falls back to project 0 (protocol defaults).
+    /// @param pricingCurrency The currency the result is denominated in.
+    /// @param unitCurrency The currency being priced.
     /// @param decimals The number of decimals the returned fixed point price should include.
     /// @return The `pricingCurrency` price of 1 `unitCurrency`, as a fixed point number with the specified number of
     /// decimals.

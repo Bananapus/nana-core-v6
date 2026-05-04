@@ -9,8 +9,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBTokenUriResolver} from "./interfaces/IJBTokenUriResolver.sol";
 
-/// @notice Stores project ownership and metadata.
-/// @dev Projects are represented as ERC-721s.
+/// @notice Each Juicebox project is an ERC-721 NFT. Whoever holds the NFT owns the project and can configure its
+/// rulesets, terminals, and permissions. Projects are created with `createFor` and the resulting token ID is used as
+/// the project's ID across the entire protocol.
 contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
@@ -50,7 +51,9 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets the address of the resolver used to retrieve the tokenURI of projects.
+    /// @notice Set the contract that resolves project NFT metadata (the `tokenURI`). This controls what artwork and
+    /// JSON metadata is returned for each project's ERC-721 token.
+    /// @dev Only this contract's owner can change the resolver.
     /// @param resolver The address of the new resolver.
     function setTokenUriResolver(IJBTokenUriResolver resolver) external override onlyOwner {
         // Store the new resolver.

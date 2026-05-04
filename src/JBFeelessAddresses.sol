@@ -6,7 +6,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
 
-/// @notice Stores a list of addresses that shouldn't incur fees when sending or receiving payments.
+/// @notice A registry of addresses exempt from the protocol's 2.5% fee. Feeless addresses don't incur fees on
+/// payouts they receive, surplus allowance they use, or cash outs where they are the beneficiary. Managed by the
+/// contract owner (typically the protocol multisig).
 contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
@@ -30,8 +32,9 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets whether an address is feeless.
-    /// @dev Can only be called by this contract's owner.
+    /// @notice Add or remove an address from the fee-exempt list. Feeless addresses don't pay the 2.5% protocol fee
+    /// on payouts received, surplus allowance used, or cash outs where they're the beneficiary.
+    /// @dev Can only be called by this contract's owner (typically the protocol multisig).
     /// @param addr The address to set as feeless or not feeless.
     /// @param flag Whether the address should be feeless (`true`) or not feeless (`false`).
     function setFeelessAddress(address addr, bool flag) external virtual override onlyOwner {

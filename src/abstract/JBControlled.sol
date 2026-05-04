@@ -4,7 +4,9 @@ pragma solidity 0.8.28;
 import {IJBControlled} from "./../interfaces/IJBControlled.sol";
 import {IJBDirectory} from "./../interfaces/IJBDirectory.sol";
 
-/// @notice Provides a modifier for contracts with functionality that can only be accessed by a project's controller.
+/// @notice Base contract that restricts certain functions to the project's current controller (as registered in
+/// `JBDirectory`). Used by `JBTokens`, `JBSplits`, `JBFundAccessLimits`, `JBRulesets`, and `JBPrices` to ensure only
+/// the controller can update project state.
 abstract contract JBControlled is IJBControlled {
     //*********************************************************************//
     // --------------------------- custom errors -------------------------- //

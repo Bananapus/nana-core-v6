@@ -9,7 +9,9 @@ import {JBAfterPayRecordedContext} from "../structs/JBAfterPayRecordedContext.so
 import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
 
-/// @notice A terminal that accepts payments and can be migrated.
+/// @notice Base interface for all Juicebox terminals. A terminal accepts payments for projects, reports surplus, and
+/// supports balance migration. Projects register their terminals in `JBDirectory`; the primary terminal for a token
+/// receives payments routed by frontends.
 interface IJBTerminal is IERC165 {
     /// @notice Funds were added to a project's balance.
     /// @param projectId The ID of the project that received the funds.

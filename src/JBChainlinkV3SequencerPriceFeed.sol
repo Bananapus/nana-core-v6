@@ -6,8 +6,9 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interf
 
 import {JBChainlinkV3PriceFeed} from "./JBChainlinkV3PriceFeed.sol";
 
-/// @notice An `IJBPriceFeed` implementation that reports prices from a Chainlink `AggregatorV3Interface` from
-/// optimistic sequencers.
+/// @notice Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime checks (for Optimism, Arbitrum, etc.). Reverts if
+/// the sequencer is down or has not been back online for at least `GRACE_PERIOD_TIME` seconds — preventing stale
+/// prices from being used immediately after an outage.
 contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -64,6 +65,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
         if (startedAt == 0) revert JBChainlinkV3SequencerPriceFeed_InvalidRound();
 
         // Revert if sequencer has too recently restarted or is currently down.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp <= GRACE_PERIOD_TIME + startedAt || answer != 0) {
             revert JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
                 block.timestamp, GRACE_PERIOD_TIME, startedAt

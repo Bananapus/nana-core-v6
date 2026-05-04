@@ -41,8 +41,13 @@ import {JBSplitGroup} from "./structs/JBSplitGroup.sol";
 import {JBSplitHookContext} from "./structs/JBSplitHookContext.sol";
 import {JBTerminalConfig} from "./structs/JBTerminalConfig.sol";
 
-/// @notice `JBController` coordinates rulesets and project tokens, and is the entry point for most operations related
-/// to rulesets and project tokens.
+/// @notice The orchestrator for every Juicebox project's lifecycle. Use the controller to launch a project, queue new
+/// rulesets (funding cycles), mint or burn tokens, deploy an ERC-20, distribute reserved tokens, and manage
+/// permissions. The controller coordinates between the terminal (money), rulesets (rules), tokens (issuance), and
+/// splits (distribution).
+/// @dev Supports ERC-2771 meta-transactions. Implements `IJBMigratable` for controller-to-controller migration.
+/// An omnichain deployer address is trusted to launch and queue rulesets on behalf of any project for cross-chain
+/// coordination.
 contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigratable {
     // A library that parses packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;
@@ -166,8 +171,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Add a price feed for a project.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `ADD_PRICE_FEED`.
+    /// @notice Registers a price feed so the project can use a new currency for payout limits or surplus allowances.
+    /// @dev Can only be called by the project's owner or an operator with `ADD_PRICE_FEED` permission. The current
+    /// ruleset must have `allowAddPriceFeed` enabled.
     /// @param projectId The ID of the project to add the feed for.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency being priced by the feed.
@@ -234,9 +240,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice Burns a project's tokens or credits from the specific holder's balance.
-    /// @dev Can only be called by the holder, an address with the holder's permission to `BURN_TOKENS`, or a project's
-    /// terminal.
+    /// @notice Burns a holder's project tokens (or credits), permanently removing them from supply. Used by terminals
+    /// during cash outs, or directly by holders who want to burn voluntarily.
+    /// @dev Can only be called by the holder, an operator with `BURN_TOKENS` permission, or a project terminal.
     /// @param holder The address whose tokens are being burned.
     /// @param projectId The ID of the project whose tokens are being burned.
     /// @param tokenCount The number of tokens to burn.
@@ -269,8 +275,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         TOKENS.burnFrom({holder: holder, projectId: projectId, count: tokenCount});
     }
 
-    /// @notice Redeem credits to claim tokens into a `beneficiary`'s account.
-    /// @dev Can only be called by the credit holder or an address with the holder's permission to `CLAIM_TOKENS`.
+    /// @notice Converts internal credits into the project's ERC-20 token, transferring them to the beneficiary's
+    /// wallet. Credits and ERC-20 tokens are interchangeable — this just makes them transferable/tradeable.
+    /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
     /// @param holder The address to redeem credits from.
     /// @param projectId The ID of the project whose tokens are being claimed.
     /// @param tokenCount The number of tokens to claim.
@@ -290,9 +297,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         TOKENS.claimTokensFor({holder: holder, projectId: projectId, count: tokenCount, beneficiary: beneficiary});
     }
 
-    /// @notice Deploys an ERC-20 token for a project. It will be used when claiming tokens (with credits).
-    /// @dev Deploys the project's ERC-20 contract.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `DEPLOY_ERC20`.
+    /// @notice Deploys a new ERC-20 token for a project. Once deployed, holders can claim their credits as this token.
+    /// Includes ERC20Votes (governance) and ERC20Permit (gasless approvals).
+    /// @dev Can only be called by the project's owner or an operator with `DEPLOY_ERC20` permission.
+    /// @dev Each project can only have one ERC-20 deployed — calling this again after deployment will revert.
     /// @param projectId The ID of the project to deploy the ERC-20 for.
     /// @param name The ERC-20's name.
     /// @param symbol The ERC-20's symbol.
@@ -368,10 +376,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice Creates a project.
-    /// @dev This will mint the project's ERC-721 to the `owner`'s address, queue the specified rulesets, and set up the
-    /// specified splits and terminals. Each operation within this transaction can be done in sequence separately.
-    /// @dev Anyone can deploy a project to any `owner`'s address.
+    /// @notice Creates a new Juicebox project in one transaction — mints the project NFT, queues initial rulesets,
+    /// and
+    /// configures terminals. This is the primary entry point for launching a project.
+    /// @dev Anyone can call this on behalf of any owner. Each sub-operation (mint, queue, configure) can also be done
+    /// individually if needed.
     /// @param owner The project's owner. The project ERC-721 will be minted to this address.
     /// @param projectUri The project's metadata URI. This is typically an IPFS hash, optionally with the `ipfs://`
     /// prefix. This can be updated by the project's owner.
@@ -414,10 +423,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
     }
 
-    /// @notice Queue a project's initial rulesets and set up terminals for it. Projects which already have rulesets
-    /// should use `queueRulesetsOf(...)`.
-    /// @dev Each operation within this transaction can be done in sequence separately.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `LAUNCH_RULESETS`.
+    /// @notice Queues the first rulesets for an existing project and configures its terminals. For projects that
+    /// already have active rulesets, use `queueRulesetsOf(...)` instead.
+    /// @dev Can only be called by the project's owner or an operator with `LAUNCH_RULESETS` permission.
+    /// @dev Each sub-operation can also be done individually if needed.
     /// @param projectId The ID of the project to launch rulesets for.
     /// @param projectUri The project's metadata URI. Pass an empty string to leave it unchanged.
     /// @param rulesetConfigurations The rulesets to queue.
@@ -508,12 +517,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (pendingReservedTokenBalance != 0) revert JBController_PendingReservedTokens(pendingReservedTokenBalance);
     }
 
-    /// @notice Add new project tokens or credits to the specified beneficiary's balance. Optionally, reserve a portion
-    /// according to the ruleset's reserved percent.
-    /// @dev Can only be called by the project's owner, an address with the owner's permission to `MINT_TOKENS`, one of
-    /// the project's terminals, or the project's data hook.
-    /// @dev If the ruleset's metadata has `allowOwnerMinting` set to `false`, this function can only be called by the
-    /// project's terminals or data hook.
+    /// @notice Mints new project tokens to a beneficiary. Optionally reserves a portion according to the ruleset's
+    /// reserved percent (which accumulates until `sendReservedTokensToSplitsOf` is called).
+    /// @dev Can be called by the project owner, an operator with `MINT_TOKENS` permission, a project terminal, or the
+    /// data hook. If `allowOwnerMinting` is false in the current ruleset, only terminals and the data hook can mint.
     /// @param projectId The ID of the project whose tokens are being minted.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param beneficiary The address which will receive the (non-reserved) tokens.
@@ -594,9 +601,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice Add one or more rulesets to the end of a project's ruleset queue. Rulesets take effect after the
-    /// previous ruleset in the queue ends, and only if they are approved by the previous ruleset's approval hook.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `QUEUE_RULESETS`.
+    /// @notice Queues new rulesets to take effect after the current one ends. Each queued ruleset must be approved by
+    /// the previous ruleset's approval hook (if one is set) before it can take effect.
+    /// @dev Can only be called by the project's owner or an operator with `QUEUE_RULESETS` permission.
     /// @param projectId The ID of the project to queue rulesets for.
     /// @param rulesetConfigurations The rulesets to queue.
     /// @param memo A memo to pass along to the emitted event.
@@ -628,17 +635,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         emit QueueRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
     }
 
-    /// @notice Sends a project's pending reserved tokens to its reserved token splits.
-    /// @dev If the project has no reserved token splits, or if they don't add up to 100%, leftover tokens are sent to
-    /// the project's owner.
+    /// @notice Mints and distributes all pending reserved tokens to the project's reserved token split recipients.
+    /// Anyone can call this — it's permissionless.
+    /// @dev If splits don't add up to 100%, the remainder goes to the project owner.
     /// @param projectId The ID of the project to send reserved tokens for.
     /// @return The amount of reserved tokens minted and sent.
     function sendReservedTokensToSplitsOf(uint256 projectId) external override returns (uint256) {
         return _sendReservedTokensToSplitsOf(projectId);
     }
 
-    /// @notice Sets a project's split groups. The new split groups must include any current splits which are locked.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to `SET_SPLIT_GROUPS`.
+    /// @notice Configures how a project distributes payouts and reserved tokens. Locked splits from the current
+    /// configuration must be preserved in the new split groups.
+    /// @dev Can only be called by the project's owner or an operator with `SET_SPLIT_GROUPS` permission.
     /// @param projectId The ID of the project to set the split groups of.
     /// @param rulesetId The ID of the ruleset the split groups should be active in. Use a `rulesetId` of 0 to set the
     /// default split groups, which are used when a ruleset has no splits set. If there are no default splits and no
@@ -716,8 +724,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         emit SetUri({projectId: projectId, uri: uri, caller: _msgSender()});
     }
 
-    /// @notice Allows a credit holder to transfer credits to another address.
-    /// @dev Can only be called by the credit holder or an address with the holder's permission to `TRANSFER_CREDITS`.
+    /// @notice Transfers internal credits (unclaimed tokens) from one address to another. Credits function like tokens
+    /// but live inside the protocol rather than as an ERC-20.
+    /// @dev Can only be called by the credit holder or an operator with `TRANSFER_CREDITS` permission. The current
+    /// ruleset must not have credit transfers paused.
     /// @param holder The address to transfer credits from.
     /// @param projectId The ID of the project whose credits are being transferred.
     /// @param recipient The address to transfer credits to.
@@ -747,8 +757,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice Get an array of a project's rulesets (with metadata) up to a maximum array size, sorted from latest to
-    /// earliest.
+    /// @notice Returns a paginated history of a project's rulesets (with decoded metadata), sorted newest-first.
     /// @param projectId The ID of the project to get the rulesets of.
     /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result. If the
     /// `startingId` is 0, passed, the project's latest ruleset will be used.
@@ -786,7 +795,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice A project's currently active ruleset and its metadata.
+    /// @notice Returns the ruleset currently governing a project, along with its decoded metadata.
     /// @param projectId The ID of the project to get the current ruleset of.
     /// @return ruleset The current ruleset's struct.
     /// @return metadata The current ruleset's metadata.
@@ -862,21 +871,21 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             });
     }
 
-    /// @notice Check whether the project's controller can currently be set.
+    /// @notice Whether the project's current ruleset allows migrating to a different controller.
     /// @param projectId The ID of the project to check.
     /// @return A `bool` which is true if the project allows controllers to be set.
     function setControllerAllowed(uint256 projectId) external view returns (bool) {
         return _currentRulesetOf(projectId).expandMetadata().allowSetController;
     }
 
-    /// @notice Check whether the project's terminals can currently be set.
+    /// @notice Whether the project's current ruleset allows changing its terminals.
     /// @param projectId The ID of the project to check.
     /// @return A `bool` which is true if the project allows terminals to be set.
     function setTerminalsAllowed(uint256 projectId) external view returns (bool) {
         return _currentRulesetOf(projectId).expandMetadata().allowSetTerminals;
     }
 
-    /// @notice Gets the a project token's total supply, including pending reserved tokens.
+    /// @notice Returns the project's total token supply including tokens that have been reserved but not yet minted.
     /// @param projectId The ID of the project to get the total token supply of.
     /// @return The total supply of the project's token, including pending reserved tokens.
     function totalTokenSupplyWithReservedTokensOf(uint256 projectId) external view override returns (uint256) {
@@ -884,7 +893,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         return TOKENS.totalSupplyOf(projectId) + pendingReservedTokenBalanceOf[projectId];
     }
 
-    /// @notice A project's next ruleset along with its metadata.
+    /// @notice Returns the ruleset that will take effect after the current one ends, along with its decoded metadata.
     /// @dev If an upcoming ruleset isn't found, returns an empty ruleset with all properties set to 0.
     /// @param projectId The ID of the project to get the next ruleset of.
     /// @return ruleset The upcoming ruleset's struct.

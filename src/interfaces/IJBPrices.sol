@@ -4,7 +4,9 @@ pragma solidity ^0.8.0;
 import {IJBPriceFeed} from "./IJBPriceFeed.sol";
 import {IJBProjects} from "./IJBProjects.sol";
 
-/// @notice Manages price feeds and provides unit prices for currency conversions.
+/// @notice Interface for the price feed registry. Resolves exchange rates between currencies via immutable price feeds
+/// (typically Chainlink). Used when payout limits or surplus allowances are denominated in a different currency than
+/// the token held in the terminal.
 interface IJBPrices {
     /// @notice A price feed was added for a project's currency pair.
     /// @param projectId The ID of the project the price feed was added for.

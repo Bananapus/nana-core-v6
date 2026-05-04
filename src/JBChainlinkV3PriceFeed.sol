@@ -6,7 +6,9 @@ import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/shared/interf
 import {IJBPriceFeed} from "./interfaces/IJBPriceFeed.sol";
 import {JBFixedPointNumber} from "./libraries/JBFixedPointNumber.sol";
 
-/// @notice An `IJBPriceFeed` implementation that reports prices from a Chainlink `AggregatorV3Interface`.
+/// @notice A price feed adapter that reads from a Chainlink V3 aggregator. Reverts if the price is stale (older than
+/// `THRESHOLD` seconds), negative, or from an incomplete round — protecting against serving outdated oracle data.
+/// Used by `JBPrices` to convert between currencies (e.g. ETH/USD).
 contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     // A library that provides utility for fixed point numbers.
     using JBFixedPointNumber for uint256;
@@ -60,6 +62,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
         if (answeredInRound < roundId) revert JBChainlinkV3PriceFeed_IncompleteRound();
 
         // Make sure the price's update threshold is met.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > THRESHOLD + updatedAt) {
             revert JBChainlinkV3PriceFeed_StalePrice(block.timestamp, THRESHOLD, updatedAt);
         }

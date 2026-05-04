@@ -12,12 +12,14 @@ import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 import {JBRulesetWeightCache} from "./structs/JBRulesetWeightCache.sol";
 
-/// @notice Manages rulesets and queuing.
-/// @dev Rulesets dictate how a project behaves for a period of time. To learn more about their functionality, see the
-/// `JBRuleset` data structure.
-/// @dev Throughout this contract, `rulesetId` is an identifier for each ruleset. The `rulesetId` is the unix timestamp
-/// when the ruleset was initialized.
-/// @dev `approvable` means a ruleset which may or may not be approved.
+/// @notice Stores and manages the economic rules for every Juicebox project. A "ruleset" defines how a project behaves
+/// for a period of time: its token issuance weight, cash-out tax rate, payout limits, reserved rate, and more.
+/// Projects queue future rulesets to schedule changes; once a ruleset's duration expires, the next approved ruleset
+/// takes effect automatically.
+/// @dev Rulesets form a linked list via `basedOnId`. Each ruleset ID is the unix timestamp when it was first stored.
+/// Weight decays across cycles using `weightCutPercent` — if many cycles elapse, the decay is computed iteratively
+/// (capped at 20,000 iterations; use `updateRulesetWeightCache` for longer gaps). Approval hooks can gate whether a
+/// queued ruleset actually takes effect.
 contract JBRulesets is JBControlled, IJBRulesets {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -86,32 +88,20 @@ contract JBRulesets is JBControlled, IJBRulesets {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Queues the upcoming approvable ruleset for the specified project.
-    /// @dev Only a project's current controller can queue its rulesets.
+    /// @notice Queues a new ruleset for a project. The ruleset takes effect after the current one ends (or immediately
+    /// if the current ruleset has `duration = 0`). Must be approved by the previous ruleset's approval hook.
+    /// @dev Only the project's current controller can call this.
     /// @param projectId The ID of the project to queue the ruleset for.
-    /// @param duration The number of seconds the ruleset lasts for, after which a new ruleset starts.
-    /// - A `duration` of 0 means this ruleset will remain active until the project owner queues a new ruleset. That new
-    /// ruleset will start immediately.
-    /// - A ruleset with a non-zero `duration` applies until the duration ends – any newly queued rulesets will be
-    /// *queued* to take effect afterwards.
-    /// - If a duration ends and no new rulesets are queued, the ruleset rolls over to a new ruleset with the same rules
-    /// (except for a new `start` timestamp and a cut `weight`).
-    /// @param weight A fixed point number with 18 decimals that contracts can use to base arbitrary calculations on.
-    /// Payment terminals generally use this to determine how many tokens should be minted when the project is paid.
-    /// @param weightCutPercent A fraction (out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`) to reduce the next ruleset's
-    /// `weight`
-    /// by.
-    /// - If a ruleset specifies a non-zero `weight`, the `weightCutPercent` does not apply.
-    /// - If the `weightCutPercent` is 0, the `weight` stays the same.
-    /// - If the `weightCutPercent` is 10% of `JBConstants.MAX_WEIGHT_CUT_PERCENT`, next ruleset's `weight` will be 90%
-    /// of the
-    /// current
-    /// one.
-    /// @param approvalHook A contract which dictates whether a proposed ruleset should be accepted or rejected. It can
-    /// be used to constrain a project owner's ability to change ruleset parameters over time.
-    /// @param metadata Arbitrary extra data to associate with this ruleset. This metadata is not used by `JBRulesets`.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
+    /// @param duration How long the ruleset lasts (seconds). 0 = no auto-cycling (stays active until explicitly
+    /// replaced). When a duration ends without a queued replacement, the ruleset rolls over with decayed weight.
+    /// @param weight Tokens minted per unit paid (18 decimals). Terminals divide payment amount by weight to determine
+    /// issuance. A value of 1 means "inherit decayed weight from previous ruleset".
+    /// @param weightCutPercent How much to reduce weight each auto-cycle (out of 1,000,000,000). Only applies when no
+    /// explicit replacement is queued. 0 = no decay. 100,000,000 = 10% cut per cycle.
+    /// @param approvalHook A contract that gates whether the *next* queued ruleset can take effect (e.g. `JBDeadline`
+    /// for minimum notice periods). Set to address(0) for no approval gate.
+    /// @param metadata Packed 256-bit field decoded by `JBRulesetMetadataResolver`. Not used by `JBRulesets` itself.
+    /// @param mustStartAtOrAfter The earliest unix timestamp the ruleset can start.
     /// @return The struct of the new ruleset.
     function queueFor(
         uint256 projectId,
@@ -169,6 +159,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 latestId = latestRulesetIdOf[projectId];
 
         // The new rulesetId timestamp is now, or an increment from now if the current timestamp is taken.
+        // forge-lint: disable-next-line(block-timestamp)
         uint256 rulesetId = latestId >= block.timestamp ? latestId + 1 : block.timestamp;
 
         // Set up the ruleset by configuring intrinsic properties.
@@ -239,6 +230,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             * targetRuleset.duration;
 
         // Determine the start timestamp to derive a weight from for the cache.
+        // forge-lint: disable-next-line(block-timestamp)
         uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;
 
         // The difference between the start of the latest queued ruleset and the start of the ruleset we're caching the
@@ -275,7 +267,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice Get an array of a project's rulesets up to a maximum array size, sorted from latest to earliest.
+    /// @notice Returns a paginated history of a project's rulesets, sorted newest-first.
     /// @param projectId The ID of the project to get the rulesets of.
     /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result. If 0 is
     /// passed, the project's latest ruleset will be used.
@@ -336,7 +328,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
     }
 
-    /// @notice The current approval status of a given project's latest ruleset.
+    /// @notice Whether the project's most recently queued ruleset has been approved, rejected, or is still pending.
     /// @param projectId The ID of the project to check the approval status of.
     /// @return The project's current approval status.
     function currentApprovalStatusForLatestRulesetOf(uint256 projectId)
@@ -354,12 +346,11 @@ contract JBRulesets is JBControlled, IJBRulesets {
         return _approvalStatusOf({projectId: projectId, ruleset: ruleset});
     }
 
-    /// @notice The ruleset that is currently active for the specified project.
-    /// @dev If a current ruleset of the project is not found, returns an empty ruleset with all properties set to 0.
-    /// @dev The first cycle returns the stored ruleset directly (cycleNumber=1, original weight). Subsequent cycles
-    /// simulate cycling with weight decay via `_simulateCycledRulesetBasedOn`. Payout limits reset each cycle because
-    /// they are keyed by `cycleNumber`, but the simulated cycle keeps the same `rulesetId` / config id as the stored
-    /// ruleset it is based on.
+    /// @notice Returns the ruleset currently governing a project. If the stored ruleset has auto-cycled, simulates
+    /// cycling with weight decay and returns the simulated current cycle.
+    /// @dev Returns an empty ruleset (all zeros) if the project has never had a ruleset queued.
+    /// @dev Payout limits reset each cycle (keyed by `cycleNumber`), but the `rulesetId` stays the same across
+    /// auto-cycles of the same stored ruleset.
     /// @param projectId The ID of the project to get the current ruleset of.
     /// @return ruleset The project's current ruleset.
     function currentOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
@@ -411,6 +402,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // the ruleset that the latest is based on, which has the latest approved configuration.
             while (
                 (approvalStatus != JBApprovalStatus.Approved && approvalStatus != JBApprovalStatus.Empty)
+                    // forge-lint: disable-next-line(block-timestamp)
                     || block.timestamp < ruleset.start
             ) {
                 rulesetId = ruleset.basedOnId;
@@ -466,8 +458,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
         approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
     }
 
-    /// @notice The ruleset that's up next for a project.
-    /// @dev If an upcoming ruleset is not found for the project, returns an empty ruleset with all properties set to 0.
+    /// @notice Returns the ruleset that will take effect after the current one ends. This could be an explicitly queued
+    /// ruleset or a simulated auto-cycle of the current one (with decayed weight).
+    /// @dev Returns an empty ruleset (all zeros) if there is no upcoming ruleset.
     /// @param projectId The ID of the project to get the upcoming ruleset of.
     /// @return ruleset The struct for the project's upcoming ruleset.
     function upcomingOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
@@ -509,6 +502,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // If the latest ruleset starts in the future, it must start in the distant future
             // Since its not the upcoming approvable ruleset. In this case, base the upcoming ruleset on the base
             // ruleset.
+            // forge-lint: disable-next-line(block-timestamp)
             while (ruleset.start > block.timestamp) {
                 ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
             }
@@ -747,12 +741,15 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
         // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.
         if (
+            // forge-lint: disable-next-line(block-timestamp)
             (block.timestamp >= baseRuleset.start
                     && approvalStatus != JBApprovalStatus.Approved
                     && approvalStatus != JBApprovalStatus.Empty)
+                // forge-lint: disable-next-line(block-timestamp)
                 || (block.timestamp < baseRuleset.start
                     && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
                     && approvalStatus != JBApprovalStatus.Approved)
+                // forge-lint: disable-next-line(block-timestamp)
                 || (block.timestamp < baseRuleset.start
                     && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
                     && approvalStatus != JBApprovalStatus.Approved
@@ -955,11 +952,13 @@ contract JBRulesets is JBControlled, IJBRulesets {
         do {
             // If the latest ruleset is expired, return an empty ruleset.
             // A ruleset with a duration of 0 cannot expire.
+            // forge-lint: disable-next-line(block-timestamp)
             if (ruleset.duration != 0 && block.timestamp >= ruleset.start + ruleset.duration) {
                 return 0;
             }
 
             // Return the ruleset's `rulesetId` if it has started.
+            // forge-lint: disable-next-line(block-timestamp)
             if (block.timestamp >= ruleset.start) {
                 return ruleset.id;
             }
@@ -1047,6 +1046,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // future.
         uint256 mustStartAtOrAfter = !allowMidRuleset
             ? block.timestamp + 1
+            // forge-lint: disable-next-line(block-timestamp)
             : baseRuleset.duration >= block.timestamp ? 1 : block.timestamp - baseRuleset.duration + 1;
 
         // Calculate what the start time should be.
@@ -1103,6 +1103,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // There is no upcoming ruleset if the latest ruleset has already started.
         // slither-disable-next-line incorrect-equality
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp >= ruleset.start) return 0;
 
         // If this is the first ruleset, it is queued.
@@ -1120,6 +1121,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             baseRuleset = _getStructFor({projectId: projectId, rulesetId: basedOnId, withMetadata: false});
 
             // If the base ruleset starts in the future,
+            // forge-lint: disable-next-line(block-timestamp)
             if (block.timestamp < baseRuleset.start) {
                 // Set the `rulesetId` to the one found.
                 rulesetId = baseRuleset.id;
@@ -1135,6 +1137,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // If the latest ruleset doesn't start until after another base ruleset return 0.
+        // forge-lint: disable-next-line(block-timestamp)
         if (baseRuleset.duration != 0 && block.timestamp < ruleset.start - baseRuleset.duration) {
             return 0;
         }

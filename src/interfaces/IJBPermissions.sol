@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import {JBPermissionsData} from "./../structs/JBPermissionsData.sol";
 
-/// @notice Stores permissions for all addresses and operators.
+/// @notice Interface for the protocol's permission system. Allows any address to authorize operators to perform
+/// specific actions on its behalf, scoped to individual projects or globally (wildcard project ID 0).
 interface IJBPermissions {
     /// @notice Permissions were set for an operator on behalf of an account.
     /// @param operator The operator whose permissions were set.

@@ -1,38 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/// @custom:member reservedPercent The reserved percent of the ruleset. This number is a percentage calculated out of
-/// `JBConstants.MAX_RESERVED_PERCENT`.
-/// @custom:member cashOutTaxRate The cash out tax rate of the ruleset. This number is a percentage calculated out of
-/// `JBConstants.MAX_CASH_OUT_TAX_RATE`.
-/// @custom:member baseCurrency The currency on which to base the ruleset's weight. By convention, this is
-/// `uint32(uint160(tokenAddress))` for tokens, or a constant ID from e.g. `JBCurrencyIds` for other currencies.
-/// @custom:member pausePay A flag indicating if the pay functionality should be paused during the ruleset.
-/// @custom:member pauseCreditTransfers A flag indicating if the project token transfer functionality should be paused
-/// during the funding cycle.
-/// @custom:member allowOwnerMinting A flag indicating if the project owner or an operator with the `MINT_TOKENS`
-/// permission from the owner should be allowed to mint project tokens on demand during this ruleset.
-/// @custom:member allowTerminalMigration A flag indicating if migrating terminals should be allowed during this
-/// ruleset.
-/// @custom:member allowSetTerminals A flag indicating if a project's terminals can be added or removed.
-/// @custom:member allowSetController A flag indicating if a project's controller can be changed.
-/// @custom:member allowAddAccountingContext A flag indicating if a project can add new accounting contexts for its
-/// terminals to use.
-/// @custom:member allowAddPriceFeed A flag indicating if a project can add new price feeds to calculate exchange rates
-/// between its tokens.
-/// @custom:member ownerMustSendPayouts A flag indicating if privileged payout distribution should be
-/// enforced, otherwise payouts can be distributed by anyone.
-/// @custom:member holdFees A flag indicating if fees should be held during this ruleset.
-/// @custom:member useTotalSurplusForCashOuts A flag indicating if cash outs should use the project's balance held
-/// in all terminals instead of the project's local terminal balance from which the cash out is being fulfilled.
-/// @custom:member useDataHookForPay A flag indicating if the data hook should be used for pay transactions during this
-/// ruleset.
-/// @custom:member useDataHookForCashOut A flag indicating if the data hook should be used for cash out transactions
-/// during
-/// this ruleset.
-/// @custom:member dataHook The data hook to use during this ruleset.
-/// @custom:member metadata Metadata of the metadata, only the 14 least significant bits can be used, the 2 most
-/// significant bits are disregarded.
+/// @notice Human-readable configuration for a ruleset's behavioral flags and parameters. This struct is packed into
+/// 256 bits for on-chain storage (see `JBRulesetMetadataResolver` for the packing layout).
+/// @custom:member reservedPercent Percentage of newly minted tokens set aside for the reserved token split group
+/// (0–10,000 basis points). 5,000 = 50% reserved.
+/// @custom:member cashOutTaxRate Tax applied when holders cash out tokens (0–10,000 basis points). Higher rate = less
+/// reclaim per token. 0 = proportional, 10,000 = no reclaim (100% tax).
+/// @custom:member baseCurrency The currency used to interpret the ruleset's weight for token issuance. Convention:
+/// `uint32(uint160(tokenAddress))` for tokens, or `JBCurrencyIds.ETH`/`JBCurrencyIds.USD` for well-known currencies.
+/// @custom:member pausePay If `true`, the project cannot receive payments during this ruleset.
+/// @custom:member pauseCreditTransfers If `true`, token credit transfers are disabled during this ruleset.
+/// @custom:member allowOwnerMinting If `true`, the project owner (or MINT_TOKENS operator) can mint tokens on demand.
+/// @custom:member allowSetCustomToken If `true`, the project can set a custom ERC-20 token via `setTokenFor`.
+/// @custom:member allowTerminalMigration If `true`, terminals can be migrated to new implementations.
+/// @custom:member allowSetTerminals If `true`, the project's terminal list can be modified.
+/// @custom:member allowSetController If `true`, the project's controller can be changed.
+/// @custom:member allowAddAccountingContext If `true`, new token accounting contexts can be added to terminals.
+/// @custom:member allowAddPriceFeed If `true`, the project can register new price feeds in `JBPrices`.
+/// @custom:member ownerMustSendPayouts If `true`, only the project owner can trigger payout distribution.
+/// @custom:member holdFees If `true`, fees are accumulated but not processed until a future ruleset (or manually).
+/// @custom:member useTotalSurplusForCashOuts If `true`, cash-out calculations use surplus across all terminals (not
+/// just the one being cashed out from).
+/// @custom:member useDataHookForPay If `true`, the data hook is called before recording payments.
+/// @custom:member useDataHookForCashOut If `true`, the data hook is called before recording cash outs.
+/// @custom:member dataHook Contract called before pay/cash-out to potentially override token counts or add hooks.
+/// @custom:member metadata 14 bits of application-specific metadata (upper 2 bits are ignored).
 struct JBRulesetMetadata {
     uint16 reservedPercent;
     uint16 cashOutTaxRate;

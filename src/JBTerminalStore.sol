@@ -25,8 +25,12 @@ import {JBPayHookSpecification} from "./structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 import {JBTokenAmount} from "./structs/JBTokenAmount.sol";
 
-/// @notice Manages all bookkeeping for inflows and outflows of funds from any terminal address.
-/// @dev This contract expects a project's controller to be an `IJBController`.
+/// @notice The accounting engine behind every terminal. Records project balances, enforces payout limits and surplus
+/// allowances, calculates how many tokens to mint per payment (based on the ruleset's weight and currency), and
+/// determines how much a token holder receives when cashing out (via the bonding curve in `JBCashOuts`).
+/// @dev Terminals call `recordPaymentFrom`, `recordPayoutFor`, `recordUsedAllowanceFrom`, and `recordCashOutFor` to
+/// update state. This contract also handles data hook integration — if a ruleset specifies a data hook, it is called
+/// before recording to potentially override token counts or specify pay/cash-out hooks.
 contract JBTerminalStore is IJBTerminalStore {
     // A library that parses the packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;
@@ -161,8 +165,9 @@ contract JBTerminalStore is IJBTerminalStore {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Records accounting contexts for a terminal's project tokens.
-    /// @dev Uses msg.sender as the terminal.
+    /// @notice Registers which tokens a terminal can accept for a project, along with their decimal precision and
+    /// currency. Called by the terminal when `addAccountingContextsFor` is invoked.
+    /// @dev Uses `msg.sender` as the terminal address. Reverts if the current ruleset disallows adding contexts.
     /// @param projectId The ID of the project.
     /// @param contexts The accounting contexts to record.
     function recordAccountingContextOf(uint256 projectId, JBAccountingContext[] calldata contexts) external override {
@@ -232,12 +237,11 @@ contract JBTerminalStore is IJBTerminalStore {
         balanceOf[msg.sender][projectId][token] = balanceOf[msg.sender][projectId][token] + amount;
     }
 
-    /// @notice Records a cash out from a project.
-    /// @dev Cashs out the project's tokens according to values provided by the ruleset's data hook. If the ruleset has
-    /// no data hook, cashs out tokens along a cash out bonding curve that is a function of the number of tokens being
-    /// burned.
+    /// @notice Records a cash out — calculates how many terminal tokens a holder receives for burning project tokens.
+    /// @dev Uses the data hook if configured, otherwise applies the bonding curve formula based on cash out tax rate,
+    /// surplus, and supply. The terminal calls this before actually burning tokens and transferring funds.
     /// @param holder The account that is cashing out tokens.
-    /// @param projectId The ID of the project being cashing out from.
+    /// @param projectId The ID of the project being cashed out from.
     /// @param cashOutCount The number of project tokens to cash out, as supplied by the caller and later burned by the
     /// terminal, as a fixed point number with 18 decimals.
     /// @param tokenToReclaim The token being reclaimed by the cash out.
@@ -310,9 +314,9 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
-    /// @notice Records a payment to a project.
-    /// @dev Mints the project's tokens according to values provided by the ruleset's data hook. If the ruleset has no
-    /// data hook, mints tokens in proportion with the amount paid.
+    /// @notice Records a payment — calculates how many project tokens to mint based on the payment amount and the
+    /// current ruleset's weight. Uses the data hook if configured, otherwise mints proportionally.
+    /// @dev Called by the terminal after accepting funds. Updates the project's recorded balance.
     /// @param payer The address that made the payment to the terminal.
     /// @param amount The amount of tokens being paid. Includes the token being paid, their value, the number of
     /// decimals included, and the currency of the amount.
@@ -353,10 +357,10 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
-    /// @notice Records a payout from a project.
-    /// @dev The balance is decremented and the used payout limit is incremented before the payout limit validation.
-    /// This is safe because the entire transaction reverts atomically if the validation fails, but callers should
-    /// be aware of this ordering.
+    /// @notice Records a payout — decrements the project's balance and enforces the payout limit. Called by the
+    /// terminal during `sendPayoutsOf`.
+    /// @dev Reverts if the total payouts for this cycle would exceed the ruleset's payout limit. The balance is
+    /// decremented before validation (safe because the entire tx reverts atomically on failure).
     /// @param projectId The ID of the project that is paying out funds.
     /// @param token The token being paid out.
     /// @param amount The amount to pay out (use from the payout limit), as a fixed point number.
@@ -428,7 +432,8 @@ contract JBTerminalStore is IJBTerminalStore {
         usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = newUsedPayoutLimitOf;
     }
 
-    /// @notice Records the migration of funds from this store.
+    /// @notice Records a terminal migration — zeros out the project's balance and returns the amount being moved to
+    /// the new terminal. The current ruleset must allow terminal migration.
     /// @param projectId The ID of the project being migrated.
     /// @param token The token being migrated.
     /// @return balance The project's current balance (which is being migrated), as a fixed point number with the same
@@ -449,8 +454,10 @@ contract JBTerminalStore is IJBTerminalStore {
         balanceOf[msg.sender][projectId][token] = 0;
     }
 
-    /// @notice Records a use of a project's surplus allowance.
-    /// @dev When surplus allowance is "used", it is taken out of the project's surplus within a terminal.
+    /// @notice Records a surplus allowance withdrawal — takes funds from the project's surplus (the balance above
+    /// payout limits) and enforces the surplus allowance cap.
+    /// @dev Called by the terminal during `useAllowanceOf`. Unlike payouts, surplus withdrawals go directly to a
+    /// beneficiary rather than through splits.
     /// @param projectId The ID of the project to use the surplus allowance of.
     /// @param token The token whose balances should contribute to the surplus allowance being reclaimed from.
     /// @param amount The amount to use from the surplus allowance, as a fixed point number.

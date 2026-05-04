@@ -4,6 +4,10 @@ pragma solidity 0.8.28;
 import {JBRuleset} from "./../structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "./../structs/JBRulesetMetadata.sol";
 
+/// @notice Unpacks the 256-bit packed `metadata` field from a `JBRuleset` into individual parameters. The metadata
+/// encodes: reservedPercent, cashOutTaxRate, baseCurrency, 14 boolean flags (pausePay, allowOwnerMinting, etc.),
+/// a data hook address, and 14 bits of custom metadata. Used throughout the protocol to read ruleset configuration
+/// without storing each field separately.
 library JBRulesetMetadataResolver {
     function reservedPercent(JBRuleset memory ruleset) internal pure returns (uint16) {
         return uint16(ruleset.metadata >> 4);

@@ -3,7 +3,9 @@ pragma solidity 0.8.28;
 
 import {IJBTerminal} from "../interfaces/IJBTerminal.sol";
 
-/// @notice Surplus calculations.
+/// @notice Calculates a project's total surplus across all its terminals. Surplus is the amount held beyond what's
+/// needed to cover the project's payout limits — it represents the pool available for cash outs and surplus allowance
+/// usage. Aggregates across multiple terminals and tokens, converting to a common currency via `JBPrices`.
 library JBSurplus {
     /// @notice Gets the total current surplus amount across all of a project's terminals.
     /// @dev This amount changes as the value of the balances changes in relation to the currency being used to measure

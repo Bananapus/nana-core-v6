@@ -8,12 +8,12 @@ import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
-/// @notice Manages minting, burning, and balances of projects' tokens and token credits.
-/// @dev Token balances can either be ERC-20s or token credits. This contract manages these two representations and
-/// allows credit -> ERC-20 claiming.
-/// @dev The total supply of a project's tokens and the balance of each account are calculated in this contract.
-/// @dev An ERC-20 contract must be set by a project's owner for ERC-20 claiming to become available. Projects can bring
-/// their own IJBToken if they prefer.
+/// @notice Manages the dual-token system for every Juicebox project. When someone pays a project, the controller mints
+/// tokens here — initially as internal "credits" tracked by this contract. Once a project deploys or attaches an
+/// ERC-20, holders can claim their credits into transferable ERC-20 tokens. Burns always consume credits first.
+/// @dev The total supply reported by `totalSupplyOf` is credits + ERC-20 supply combined, and is used by the terminal
+/// to calculate cash-out values. Projects can deploy a new ERC-20 via `deployERC20For` or bring their own via
+/// `setTokenFor` (must be 18 decimals).
 contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -74,11 +74,11 @@ contract JBTokens is JBControlled, IJBTokens {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Burns (destroys) credits or tokens.
-    /// @dev Credits are burned first, then tokens are burned.
-    /// @dev Only a project's current controller can burn its tokens.
+    /// @notice Destroy a holder's tokens for a project. Credits (internal balance) are burned first; if more tokens
+    /// need burning, the remaining amount is burned from the holder's ERC-20 balance.
+    /// @dev Only a project's current controller can burn its tokens. Called during cash outs and manual burns.
     /// @param holder The address that owns the tokens which are being burned.
-    /// @param projectId The ID of the project to the burned tokens belong to.
+    /// @param projectId The ID of the project the burned tokens belong to.
     /// @param count The number of tokens to burn.
     function burnFrom(address holder, uint256 projectId, uint256 count) external override onlyControllerOf(projectId) {
         // Get a reference to the project's current token.
@@ -131,7 +131,9 @@ contract JBTokens is JBControlled, IJBTokens {
         if (tokensToBurn > 0) token.burn({account: holder, amount: tokensToBurn});
     }
 
-    /// @notice Redeem credits to claim tokens into a holder's wallet.
+    /// @notice Convert internal credits into transferable ERC-20 tokens. The credits are subtracted from the holder's
+    /// balance and the equivalent ERC-20 tokens are minted to the beneficiary. The project must have an ERC-20
+    /// deployed or attached.
     /// @dev Only a project's controller can claim that project's tokens.
     /// @param holder The owner of the credits being redeemed.
     /// @param projectId The ID of the project whose tokens are being claimed.
@@ -180,8 +182,9 @@ contract JBTokens is JBControlled, IJBTokens {
         token.mint({account: beneficiary, amount: count});
     }
 
-    /// @notice Deploys an ERC-20 token for a project. It will be used when claiming tokens.
-    /// @dev Deploys a project's ERC-20 token contract.
+    /// @notice Deploy a new ERC-20 token for a project (cloned from the `TOKEN` implementation). Once deployed, holders
+    /// can claim their credits into this transferable token. A project can only have one token — this reverts if one
+    /// already exists.
     /// @dev Only a project's controller can deploy its token.
     /// @param projectId The ID of the project to deploy an ERC-20 token for.
     /// @param name The ERC-20's name.
@@ -231,8 +234,10 @@ contract JBTokens is JBControlled, IJBTokens {
         token.initialize({name: name, symbol: symbol, tokens: address(this)});
     }
 
-    /// @notice Mint (create) new tokens or credits.
-    /// @dev Only a project's current controller can mint its tokens.
+    /// @notice Create new tokens for a holder. If the project has an ERC-20 deployed, tokens are minted directly to
+    /// the holder's wallet. Otherwise, they're tracked as internal credits that can be claimed later.
+    /// @dev Only a project's current controller can mint its tokens. Called during payments and reserved token
+    /// distribution.
     /// @param holder The address receiving the new tokens.
     /// @param projectId The ID of the project to which the tokens belong.
     /// @param count The number of tokens to mint.
@@ -276,11 +281,12 @@ contract JBTokens is JBControlled, IJBTokens {
         });
     }
 
-    /// @notice Set a project's token if not already set.
+    /// @notice Attach an existing ERC-20 token to a project (instead of deploying a new one). The token must use 18
+    /// decimals and must not already be attached to another project. A project can only have one token.
     /// @dev Only a project's controller can set its token.
-    /// @dev If the provided ERC-20 has a pre-existing supply (minted outside this contract), that supply will be
-    /// included in `totalSupplyOf` and will dilute cash-out calculations for all token holders. Project owners are
-    /// responsible for ensuring the token's supply is appropriate before calling this function.
+    /// @dev WARNING: If the ERC-20 has supply minted outside this contract, that supply will be included in
+    /// `totalSupplyOf` and dilute cash-out values for all holders. Ensure the token's supply is appropriate before
+    /// calling.
     /// @param projectId The ID of the project to set the token of.
     /// @param token The new token's address.
     function setTokenFor(uint256 projectId, IJBToken token) external override onlyControllerOf(projectId) {
@@ -308,7 +314,8 @@ contract JBTokens is JBControlled, IJBTokens {
         emit SetToken({projectId: projectId, token: token, caller: msg.sender});
     }
 
-    /// @notice Sets the name and symbol of a project's token.
+    /// @notice Update the name and symbol of a project's ERC-20 token. The project must already have a token deployed
+    /// or attached.
     /// @dev Only a project's controller can set the token's name and symbol.
     /// @param projectId The ID of the project whose token is being updated.
     /// @param name The new name.
@@ -340,7 +347,8 @@ contract JBTokens is JBControlled, IJBTokens {
         token.setMetadata({name: name, symbol: symbol});
     }
 
-    /// @notice Allows a holder to transfer credits to another account.
+    /// @notice Move internal credits from one account to another. Credits are non-transferable on their own (they're
+    /// just a balance in this contract), so this function enables transfers via the controller.
     /// @dev Only a project's controller can transfer credits for that project.
     /// @param holder The address to transfer credits from.
     /// @param projectId The ID of the project whose credits are being transferred.
@@ -379,7 +387,8 @@ contract JBTokens is JBControlled, IJBTokens {
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice The total balance a holder has for a specified project, including both tokens and token credits.
+    /// @notice Get a holder's complete balance for a project — both their internal credits and their ERC-20 token
+    /// balance combined.
     /// @param holder The holder to get a balance for.
     /// @param projectId The project to get the `holder`'s balance for.
     /// @return balance The combined token and token credit balance of the `holder`.
@@ -400,11 +409,12 @@ contract JBTokens is JBControlled, IJBTokens {
     // --------------------------- public views -------------------------- //
     //*********************************************************************//
 
-    /// @notice The total supply for a specific project, including both tokens and token credits.
-    /// @dev WARNING: Projects that use `setTokenFor` with an external ERC-20 inherit that token's supply manipulation
+    /// @notice Get the total token supply for a project — internal credits plus the ERC-20's `totalSupply()`. This is
+    /// the denominator used in cash-out bonding curve calculations.
+    /// @dev WARNING: Projects using `setTokenFor` with an external ERC-20 inherit that token's supply manipulation
     /// surface. If the external token has a separate minting authority, `totalSupply()` can be inflated outside of
-    /// this contract, which dilutes cash-out values for all holders. Projects using `deployERC20For` are safe because
-    /// the resulting `JBERC20` is exclusively owned by this `JBTokens` contract.
+    /// this contract, diluting cash-out values for all holders. Projects using `deployERC20For` are safe because the
+    /// resulting `JBERC20` is exclusively owned by this `JBTokens` contract.
     /// @param projectId The ID of the project to get the total supply of.
     /// @return totalSupply The total supply of the project's tokens and token credits.
     function totalSupplyOf(uint256 projectId) public view override returns (uint256 totalSupply) {

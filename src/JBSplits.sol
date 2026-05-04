@@ -9,7 +9,11 @@ import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBSplit} from "./structs/JBSplit.sol";
 import {JBSplitGroup} from "./structs/JBSplitGroup.sol";
 
-/// @notice Stores and manages splits for each project.
+/// @notice Manages how a project distributes its payouts and reserved tokens. Each "split" specifies a recipient and
+/// their share (as a fraction of 1,000,000,000). Splits can be locked until a timestamp — locked splits cannot be
+/// removed or reduced until the lock expires, providing recipients with guaranteed revenue streams.
+/// @dev Splits are organized by project, ruleset, and group. Ruleset 0 is the fallback used when no splits are set for
+/// the active ruleset. The payout group ID is derived from the token address being distributed.
 contract JBSplits is JBControlled, IJBSplits {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -75,16 +79,15 @@ contract JBSplits is JBControlled, IJBSplits {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets a project's split groups.
-    /// @dev Only a project's controller can set its splits, unless the first 160 bits of the group's ID match
-    /// `msg.sender` AND the upper 96 bits are non-zero, in which case the caller can set its own splits.
-    /// GroupIds with zero upper 96 bits (i.e. bare addresses) are reserved for protocol use (e.g. terminal
-    /// payout groups keyed by token address) and always require controller authorization.
-    /// @dev The new split groups must include any currently set splits that are locked.
+    /// @notice Configure how a project distributes funds to its split recipients. Each split group defines a list of
+    /// recipients (with percentage shares) for a specific purpose (e.g. payouts in ETH, reserved token distribution).
+    /// @dev Only the project's controller can set splits — unless the group ID encodes `msg.sender` in its lower 160
+    /// bits with non-zero upper 96 bits, which enables self-managed splits (e.g. hooks managing their own groups).
+    /// @dev Locked splits cannot be removed or reduced until their lock expires. The new groups must include all
+    /// currently-locked splits.
     /// @param projectId The ID of the project to set the split groups of.
-    /// @param rulesetId The ID of the ruleset the split groups should be active in. Send
-    /// 0 to set the default split that'll be active if no ruleset has specific splits set. The default's default is the
-    /// project's owner.
+    /// @param rulesetId The ID of the ruleset the split groups should be active in. Pass 0 to set the default splits
+    /// (used when no ruleset-specific splits are configured). The default's default is the project's owner.
     /// @param splitGroups An array of split groups to set.
     function setSplitGroupsOf(
         uint256 projectId,
@@ -127,13 +130,11 @@ contract JBSplits is JBControlled, IJBSplits {
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice Get the split structs for the specified project ID, within the specified ruleset, for the specified
-    /// group. The splits stored at ruleset 0 are used by default during a ruleset if the splits for the specific
-    /// ruleset aren't set.
-    /// @dev If splits aren't found at the given `rulesetId`, they'll be sought in the FALLBACK_RULESET_ID of 0.
+    /// @notice Get the list of split recipients for a project's group within a given ruleset. Falls back to the
+    /// default splits (ruleset 0) if none are set for the specific ruleset.
     /// @param projectId The ID of the project to get splits for.
-    /// @param rulesetId An identifier within which the returned splits should be considered active.
-    /// @param groupId The identifying group of the splits.
+    /// @param rulesetId The ruleset to look up splits in. Falls back to ruleset 0 if none are found.
+    /// @param groupId The split group ID (e.g. token address for payout groups, or a custom ID for reserved tokens).
     /// @return splits An array of all splits for the project.
     function splitsOf(
         uint256 projectId,
@@ -175,6 +176,7 @@ contract JBSplits is JBControlled, IJBSplits {
         for (uint256 i; i < numberOfCurrentSplits;) {
             // If not locked, continue.
             if (
+                // forge-lint: disable-next-line(block-timestamp)
                 block.timestamp < currentSplits[i].lockedUntil
                     && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
             ) {
