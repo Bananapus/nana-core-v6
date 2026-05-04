@@ -32,8 +32,9 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets whether an address is feeless.
-    /// @dev Can only be called by this contract's owner.
+    /// @notice Add or remove an address from the fee-exempt list. Feeless addresses don't pay the 2.5% protocol fee
+    /// on payouts received, surplus allowance used, or cash outs where they're the beneficiary.
+    /// @dev Can only be called by this contract's owner (typically the protocol multisig).
     /// @param addr The address to set as feeless or not feeless.
     /// @param flag Whether the address should be feeless (`true`) or not feeless (`false`).
     function setFeelessAddress(address addr, bool flag) external virtual override onlyOwner {

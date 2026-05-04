@@ -65,10 +65,11 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets limits on the amount of funds a project can access from its terminals during a ruleset.
-    /// @dev Only a project's controller can set its fund access limits.
-    /// @dev Payout limits and surplus allowances must be specified in strictly increasing order (by currency) to
-    /// prevent duplicates.
+    /// @notice Configure how much a project can withdraw from each of its terminals during a ruleset. Payout limits
+    /// cap how much can be distributed to splits/owner; surplus allowances cap how much extra the owner can pull from
+    /// surplus. Both reset each funding cycle.
+    /// @dev Only a project's controller can set fund access limits (called during `queueRulesetsOf`).
+    /// @dev Limits within each group must be sorted by currency in strictly increasing order to prevent duplicates.
     /// @param projectId The ID of the project whose fund access limits are being set.
     /// @param rulesetId The ID of the ruleset that the limits will apply within.
     /// @param fundAccessLimitGroups An array containing payout limits and surplus allowances for each payment terminal.
@@ -156,14 +157,15 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice A project's payout limit for a given ruleset, terminal, token, and currency.
-    /// @dev The fixed point return amount will use the same number of decimals as the `terminal`.
+    /// @notice Look up how much a project can distribute (via `sendPayoutsOf`) from a specific terminal and token,
+    /// denominated in a specific currency. Returns 0 if no limit is configured for that currency.
+    /// @dev The fixed point return amount uses the same number of decimals as the terminal.
     /// @param projectId The project's ID.
     /// @param rulesetId The ruleset's ID.
     /// @param terminal The terminal the payout limit applies to.
     /// @param token The token the payout limit applies to.
     /// @param currency The currency the payout limit is denominated in.
-    /// @return payoutLimit The payout limit, as a fixed point number with the same number of decimals as the provided
+    /// @return payoutLimit The payout limit, as a fixed point number with the same number of decimals as the
     /// terminal.
     function payoutLimitOf(
         uint256 projectId,
@@ -199,10 +201,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         }
     }
 
-    /// @notice A project's payout limits for a given ruleset, terminal, and token.
-    /// @dev The total value of `token`s that a project can pay out from the terminal during the ruleset is dictated
-    /// by a list of payout limits. Each payout limit is a fixed-point amount in terms of a currency.
-    /// @dev The fixed point `amount`s returned will use the same number of decimals as the `terminal`.
+    /// @notice Get all payout limits for a project's terminal and token during a ruleset. A project can have multiple
+    /// payout limits denominated in different currencies (e.g. 10,000 USD + 5 ETH). Each is enforced independently.
+    /// @dev The fixed point `amount`s returned use the same number of decimals as the terminal.
     /// @param projectId The project's ID.
     /// @param rulesetId The ruleset's ID.
     /// @param terminal The terminal the payout limits apply to.
@@ -247,15 +248,16 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         }
     }
 
-    /// @notice A project's surplus allowance for a given ruleset, terminal, token, and currency.
-    /// @dev The fixed point return amount will use the same number of decimals as the `terminal`.
+    /// @notice Look up how much a project's owner can withdraw from the surplus (via `useAllowanceOf`) from a specific
+    /// terminal and token, denominated in a specific currency. Returns 0 if no allowance is configured.
+    /// @dev The fixed point return amount uses the same number of decimals as the terminal.
     /// @param projectId The project's ID.
     /// @param rulesetId The ruleset's ID.
     /// @param terminal The terminal the surplus allowance applies to.
     /// @param token The token the surplus allowance applies to.
     /// @param currency The currency that the surplus allowance is denominated in.
     /// @return surplusAllowance The surplus allowance, as a fixed point number with the same number of decimals as the
-    /// provided terminal.
+    /// terminal.
     function surplusAllowanceOf(
         uint256 projectId,
         uint256 rulesetId,
@@ -291,11 +293,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         }
     }
 
-    /// @notice A project's surplus allowances for a given ruleset, terminal, and token.
-    /// @dev The total value of `token`s that a project can pay out from its surplus in a terminal during the ruleset
-    /// is dictated by a list of surplus allowances. Each surplus allowance is a fixed-point amount in terms of a
-    /// currency.
-    /// @dev The fixed point `amount`s returned will use the same number of decimals as the `terminal`.
+    /// @notice Get all surplus allowances for a project's terminal and token during a ruleset. Like payout limits, a
+    /// project can have multiple surplus allowances in different currencies, each enforced independently.
+    /// @dev The fixed point `amount`s returned use the same number of decimals as the terminal.
     /// @param projectId The project's ID.
     /// @param rulesetId The ruleset's ID.
     /// @param terminal The terminal the surplus allowances apply to.

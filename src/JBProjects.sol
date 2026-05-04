@@ -51,7 +51,9 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets the address of the resolver used to retrieve the tokenURI of projects.
+    /// @notice Set the contract that resolves project NFT metadata (the `tokenURI`). This controls what artwork and
+    /// JSON metadata is returned for each project's ERC-721 token.
+    /// @dev Only this contract's owner can change the resolver.
     /// @param resolver The address of the new resolver.
     function setTokenUriResolver(IJBTokenUriResolver resolver) external override onlyOwner {
         // Store the new resolver.
