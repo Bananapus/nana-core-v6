@@ -179,6 +179,7 @@ contract JBSplits is JBControlled, IJBSplits {
         for (uint256 i; i < numberOfCurrentSplits;) {
             // If not locked, continue.
             if (
+                // forge-lint: disable-next-line(block-timestamp)
                 block.timestamp < currentSplits[i].lockedUntil
                     && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
             ) {

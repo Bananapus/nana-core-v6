@@ -59,6 +59,7 @@ contract JBDeadline is IJBRulesetApprovalHook {
             // If we've already passed the deadline, the ruleset is `Approved`.
             return (ruleset.start - ruleset.id < DURATION)
                 ? JBApprovalStatus.Failed
+                // forge-lint: disable-next-line(block-timestamp)
                 : (block.timestamp + DURATION < ruleset.start)
                     ? JBApprovalStatus.ApprovalExpected
                     : JBApprovalStatus.Approved;

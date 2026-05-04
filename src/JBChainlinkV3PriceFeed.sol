@@ -62,6 +62,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
         if (answeredInRound < roundId) revert JBChainlinkV3PriceFeed_IncompleteRound();
 
         // Make sure the price's update threshold is met.
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > THRESHOLD + updatedAt) {
             revert JBChainlinkV3PriceFeed_StalePrice(block.timestamp, THRESHOLD, updatedAt);
         }

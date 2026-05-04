@@ -171,6 +171,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 latestId = latestRulesetIdOf[projectId];
 
         // The new rulesetId timestamp is now, or an increment from now if the current timestamp is taken.
+        // forge-lint: disable-next-line(block-timestamp)
         uint256 rulesetId = latestId >= block.timestamp ? latestId + 1 : block.timestamp;
 
         // Set up the ruleset by configuring intrinsic properties.
@@ -241,6 +242,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             * targetRuleset.duration;
 
         // Determine the start timestamp to derive a weight from for the cache.
+        // forge-lint: disable-next-line(block-timestamp)
         uint256 start = block.timestamp < maxStart ? block.timestamp : maxStart;
 
         // The difference between the start of the latest queued ruleset and the start of the ruleset we're caching the
@@ -413,6 +415,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // the ruleset that the latest is based on, which has the latest approved configuration.
             while (
                 (approvalStatus != JBApprovalStatus.Approved && approvalStatus != JBApprovalStatus.Empty)
+                    // forge-lint: disable-next-line(block-timestamp)
                     || block.timestamp < ruleset.start
             ) {
                 rulesetId = ruleset.basedOnId;
@@ -511,6 +514,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // If the latest ruleset starts in the future, it must start in the distant future
             // Since its not the upcoming approvable ruleset. In this case, base the upcoming ruleset on the base
             // ruleset.
+            // forge-lint: disable-next-line(block-timestamp)
             while (ruleset.start > block.timestamp) {
                 ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
             }
@@ -749,12 +753,15 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
         // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.
         if (
+            // forge-lint: disable-next-line(block-timestamp)
             (block.timestamp >= baseRuleset.start
                     && approvalStatus != JBApprovalStatus.Approved
                     && approvalStatus != JBApprovalStatus.Empty)
+                // forge-lint: disable-next-line(block-timestamp)
                 || (block.timestamp < baseRuleset.start
                     && mustStartAtOrAfter < baseRuleset.start + baseRuleset.duration
                     && approvalStatus != JBApprovalStatus.Approved)
+                // forge-lint: disable-next-line(block-timestamp)
                 || (block.timestamp < baseRuleset.start
                     && mustStartAtOrAfter >= baseRuleset.start + baseRuleset.duration
                     && approvalStatus != JBApprovalStatus.Approved
@@ -957,11 +964,13 @@ contract JBRulesets is JBControlled, IJBRulesets {
         do {
             // If the latest ruleset is expired, return an empty ruleset.
             // A ruleset with a duration of 0 cannot expire.
+            // forge-lint: disable-next-line(block-timestamp)
             if (ruleset.duration != 0 && block.timestamp >= ruleset.start + ruleset.duration) {
                 return 0;
             }
 
             // Return the ruleset's `rulesetId` if it has started.
+            // forge-lint: disable-next-line(block-timestamp)
             if (block.timestamp >= ruleset.start) {
                 return ruleset.id;
             }
@@ -1049,6 +1058,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // future.
         uint256 mustStartAtOrAfter = !allowMidRuleset
             ? block.timestamp + 1
+            // forge-lint: disable-next-line(block-timestamp)
             : baseRuleset.duration >= block.timestamp ? 1 : block.timestamp - baseRuleset.duration + 1;
 
         // Calculate what the start time should be.
@@ -1105,6 +1115,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // There is no upcoming ruleset if the latest ruleset has already started.
         // slither-disable-next-line incorrect-equality
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp >= ruleset.start) return 0;
 
         // If this is the first ruleset, it is queued.
@@ -1122,6 +1133,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             baseRuleset = _getStructFor({projectId: projectId, rulesetId: basedOnId, withMetadata: false});
 
             // If the base ruleset starts in the future,
+            // forge-lint: disable-next-line(block-timestamp)
             if (block.timestamp < baseRuleset.start) {
                 // Set the `rulesetId` to the one found.
                 rulesetId = baseRuleset.id;
@@ -1137,6 +1149,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // If the latest ruleset doesn't start until after another base ruleset return 0.
+        // forge-lint: disable-next-line(block-timestamp)
         if (baseRuleset.duration != 0 && block.timestamp < ruleset.start - baseRuleset.duration) {
             return 0;
         }

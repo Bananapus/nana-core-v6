@@ -662,6 +662,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Can't process fees that aren't yet unlocked. Fees unlock sequentially in the array, so nothing left to do
             // if the current fee isn't yet unlocked.
+            // forge-lint: disable-next-line(block-timestamp)
             if (heldFee.unlockTimestamp > block.timestamp) break;
 
             // Delete the entry and advance the index *before* the external call. This is intentional:

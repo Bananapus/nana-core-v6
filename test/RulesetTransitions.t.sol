@@ -685,6 +685,7 @@ contract DelayedApprovalHook is ERC165, IJBRulesetApprovalHook {
 
     function approvalStatusOf(uint256, JBRuleset calldata ruleset) external view override returns (JBApprovalStatus) {
         // If enough time has passed since the ruleset was queued, approve it
+        // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp >= ruleset.start - approvalDelay) {
             return JBApprovalStatus.Approved;
         }

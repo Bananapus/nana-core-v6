@@ -852,10 +852,12 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         }
         // Deadline starts more than a `_duration` away (will be approved when enough time has passed) -> approval
         // expected.
+        // forge-lint: disable-next-line(block-timestamp)
         else if (block.timestamp + _duration < _start) {
             assertEq(uint256(_currentStatus), uint256(JBApprovalStatus.ApprovalExpected));
         }
         // If enough time has passed since deadline start, approved.
+        // forge-lint: disable-next-line(block-timestamp)
         else if (block.timestamp + _duration > _start) {
             assertEq(uint256(_currentStatus), uint256(JBApprovalStatus.Approved));
         }
