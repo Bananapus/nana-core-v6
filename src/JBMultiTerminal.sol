@@ -83,14 +83,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
+    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
+    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
+
     /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
     uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
     /// @notice The number of seconds fees can be held for.
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
-
-    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
-    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
