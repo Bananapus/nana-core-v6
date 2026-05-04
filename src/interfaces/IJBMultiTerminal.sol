@@ -12,8 +12,9 @@ import {IJBTerminal} from "./IJBTerminal.sol";
 import {IJBTerminalStore} from "./IJBTerminalStore.sol";
 import {IJBTokens} from "./IJBTokens.sol";
 
-/// @notice A terminal that manages native/ERC-20 payments, cash outs, and surplus allowance usage for any number of
-/// projects.
+/// @notice The interface for the protocol's multi-token payment terminal. Accepts ETH and ERC-20 payments, processes
+/// cash outs (token redemptions), distributes payouts to splits, manages surplus allowance withdrawals, and handles
+/// the 2.5% protocol fee lifecycle. The primary entry point for all fund movement in Juicebox.
 interface IJBMultiTerminal is IJBTerminal, IJBFeeTerminal, IJBCashOutTerminal, IJBPayoutTerminal, IJBPermitTerminal {
     /// @notice The directory of terminals and controllers for projects.
     function DIRECTORY() external view returns (IJBDirectory);

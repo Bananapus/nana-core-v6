@@ -3,7 +3,8 @@ pragma solidity ^0.8.0;
 
 import {IJBToken} from "./IJBToken.sol";
 
-/// @notice Manages minting, burning, and balances of projects' tokens and token credits.
+/// @notice Interface for the dual-token system. Manages credits (internal balances) and ERC-20 tokens for every
+/// project. Credits are minted first and can later be claimed as transferable ERC-20 tokens.
 interface IJBTokens {
     /// @notice Tokens or credits were burned from a holder's balance.
     /// @param holder The address whose tokens were burned.

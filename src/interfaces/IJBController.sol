@@ -23,8 +23,9 @@ import {JBSplit} from "./../structs/JBSplit.sol";
 import {JBSplitGroup} from "./../structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "./../structs/JBTerminalConfig.sol";
 
-/// @notice Coordinates rulesets and project tokens, and is the entry point for most operations related to rulesets and
-/// project tokens.
+/// @notice The interface for the protocol's project controller — launch projects, queue rulesets, mint/burn tokens,
+/// deploy ERC-20s, distribute reserved tokens, and manage all project configuration. This is the primary contract
+/// project owners and frontends interact with.
 interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessControl {
     /// @notice Tokens were burned from a holder's balance.
     /// @param holder The address whose tokens were burned.

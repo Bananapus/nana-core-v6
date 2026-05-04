@@ -4,7 +4,8 @@ pragma solidity ^0.8.0;
 import {JBSplit} from "./../structs/JBSplit.sol";
 import {JBSplitGroup} from "./../structs/JBSplitGroup.sol";
 
-/// @notice Stores and manages splits for each project.
+/// @notice Interface for the split storage contract. Splits define how payouts and reserved tokens are distributed —
+/// each split specifies a recipient and their percentage share. Splits can be locked until a timestamp.
 interface IJBSplits {
     /// @notice A split was set for a project.
     /// @param projectId The ID of the project the split was set for.

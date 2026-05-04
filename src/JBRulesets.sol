@@ -12,12 +12,14 @@ import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 import {JBRulesetWeightCache} from "./structs/JBRulesetWeightCache.sol";
 
-/// @notice Manages rulesets and queuing.
-/// @dev Rulesets dictate how a project behaves for a period of time. To learn more about their functionality, see the
-/// `JBRuleset` data structure.
-/// @dev Throughout this contract, `rulesetId` is an identifier for each ruleset. The `rulesetId` is the unix timestamp
-/// when the ruleset was initialized.
-/// @dev `approvable` means a ruleset which may or may not be approved.
+/// @notice Stores and manages the economic rules for every Juicebox project. A "ruleset" defines how a project behaves
+/// for a period of time: its token issuance weight, cash-out tax rate, payout limits, reserved rate, and more.
+/// Projects queue future rulesets to schedule changes; once a ruleset's duration expires, the next approved ruleset
+/// takes effect automatically.
+/// @dev Rulesets form a linked list via `basedOnId`. Each ruleset ID is the unix timestamp when it was first stored.
+/// Weight decays across cycles using `weightCutPercent` — if many cycles elapse, the decay is computed iteratively
+/// (capped at 20,000 iterations; use `updateRulesetWeightCache` for longer gaps). Approval hooks can gate whether a
+/// queued ruleset actually takes effect.
 contract JBRulesets is JBControlled, IJBRulesets {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //

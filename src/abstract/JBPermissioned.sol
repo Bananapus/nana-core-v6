@@ -6,7 +6,9 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IJBPermissioned} from "./../interfaces/IJBPermissioned.sol";
 import {IJBPermissions} from "./../interfaces/IJBPermissions.sol";
 
-/// @notice Modifiers to allow access to transactions based on which permissions the message's sender has.
+/// @notice Base contract that provides permission-checking helpers. Contracts that inherit this can require that the
+/// caller either *is* the account or has been granted a specific permission by that account (via `JBPermissions`).
+/// @dev Used by `JBController`, `JBMultiTerminal`, `JBDirectory`, and others to enforce operator authorization.
 abstract contract JBPermissioned is Context, IJBPermissioned {
     //*********************************************************************//
     // --------------------------- custom errors -------------------------- //

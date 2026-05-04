@@ -6,7 +6,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IJBProjects} from "./IJBProjects.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
 
-/// @notice Tracks the terminals and the controller used by each project.
+/// @notice Interface for the protocol's routing table. Tracks which terminals accept payments for each project and
+/// which controller manages each project's rulesets and tokens. Used by frontends and contracts to discover where to
+/// send funds.
 interface IJBDirectory {
     /// @notice A terminal was added to a project.
     /// @param projectId The ID of the project the terminal was added to.

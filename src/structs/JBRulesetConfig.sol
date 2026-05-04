@@ -6,31 +6,19 @@ import {JBFundAccessLimitGroup} from "./JBFundAccessLimitGroup.sol";
 import {JBRulesetMetadata} from "./JBRulesetMetadata.sol";
 import {JBSplitGroup} from "./JBSplitGroup.sol";
 
-/// @custom:member mustStartAtOrAfter The earliest time the ruleset can start.
-/// @custom:member duration The number of seconds the ruleset lasts for, after which a new ruleset will start. A
-/// duration of 0 means that the ruleset will stay active until the project owner explicitly issues a reconfiguration,
-/// at which point a new ruleset will immediately start with the updated properties. If the duration is greater than 0,
-/// a project owner cannot make changes to a ruleset's parameters while it is active – any proposed changes will apply
-/// to the subsequent ruleset. If no changes are proposed, a ruleset rolls over to another one with the same properties
-/// but new `start` timestamp and a cut `weight`.
-/// @custom:member weight A fixed point number with 18 decimals that contracts can use to base arbitrary calculations
-/// on. For example, payment terminals can use this to determine how many tokens should be minted when a payment is
-/// received.
-/// @custom:member weightCutPercent A percent by how much the `weight` of the subsequent ruleset should be reduced, if
-/// the
-/// project owner hasn't queued the subsequent ruleset with an explicit `weight`. If it's 0, each ruleset will have
-/// equal weight. If the number is 90%, the next ruleset will have a 10% smaller weight. This weight is out of
-/// `JBConstants.MAX_WEIGHT_CUT_PERCENT`.
-/// @custom:member approvalHook An address of a contract that says whether a proposed ruleset should be accepted or
-/// rejected. It
-/// can be used to create rules around how a project owner can change ruleset parameters over time.
-/// @custom:member metadata Metadata specifying the controller-specific parameters that a ruleset can have. These
-/// properties cannot change until the next ruleset starts.
-/// @custom:member splitGroups An array of splits to use for any number of groups while the ruleset is active.
-/// @custom:member fundAccessLimitGroups An array of structs which dictate the amount of funds a project can access from
-/// its balance in each payment terminal while the ruleset is active. Amounts are fixed point numbers using the same
-/// number of decimals as the corresponding terminal. The `_payoutLimit` and `_surplusAllowance` parameters must fit in
-/// a `uint232`.
+/// @notice The configuration passed to `JBController.launchRulesetsFor` or `queueRulesetsOf` to define a new ruleset.
+/// Includes the economic parameters (weight, duration, decay), the metadata (permissions and hooks), the split
+/// recipients, and the fund access limits.
+/// @custom:member mustStartAtOrAfter The earliest timestamp the ruleset can begin. Pass 0 to start immediately after
+/// the previous ruleset ends.
+/// @custom:member duration How long the ruleset lasts in seconds. 0 = stays active until explicitly replaced.
+/// @custom:member weight Tokens minted per unit of payment (18 decimals). Pass 1 to inherit decayed weight from the
+/// previous ruleset. Pass 0 for no token issuance.
+/// @custom:member weightCutPercent Decay rate per cycle (out of 1,000,000,000). 100,000,000 = 10% cut. 0 = no decay.
+/// @custom:member approvalHook Contract that must approve the *next* queued ruleset for it to take effect.
+/// @custom:member metadata The ruleset's behavioral flags and parameters (see `JBRulesetMetadata`).
+/// @custom:member splitGroups How payouts and reserved tokens are distributed during this ruleset.
+/// @custom:member fundAccessLimitGroups How much the project can withdraw from each terminal per cycle.
 struct JBRulesetConfig {
     uint48 mustStartAtOrAfter;
     uint32 duration;

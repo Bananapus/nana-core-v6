@@ -7,8 +7,11 @@ import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol"
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {JBPermissionsData} from "./structs/JBPermissionsData.sol";
 
-/// @notice Stores permissions for all addresses and operators. Addresses can give permissions to any other address
-/// (i.e. an *operator*) to execute specific operations on their behalf.
+/// @notice The permission system for Juicebox. Any address can authorize another address (an "operator") to perform
+/// specific actions on its behalf — like queuing rulesets, distributing payouts, or managing terminals.
+/// @dev Permissions are stored as a packed `uint256` bitmap: each of the 256 bits represents one permission's
+/// on/off state. Project ID 0 is a wildcard that grants an operator access across all projects — use with caution.
+/// @dev The ROOT permission (ID 1) implicitly grants every other permission for the scoped project.
 contract JBPermissions is ERC2771Context, IJBPermissions {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -23,19 +26,19 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // ------------------------- public constants ------------------------ //
     //*********************************************************************//
 
-    /// @notice The project ID considered a wildcard, meaning it will grant permissions to all projects.
+    /// @notice The project ID that acts as a wildcard — granting the operator permissions across all projects owned
+    /// by
+    /// the account. Setting permissions for project ID 0 is powerful and should be done carefully.
     uint256 public constant override WILDCARD_PROJECT_ID = 0;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
-    /// @notice The permissions that an operator has been given by an account for a specific project.
-    /// @dev An account can give an operator permissions that only pertain to a specific project ID.
-    /// @dev There is no project with a ID of 0 – this ID is a wildcard which gives an operator permissions pertaining
-    /// to *all* project IDs on an account's behalf. Use this with caution.
-    /// @dev Permissions are stored in a packed `uint256`. Each of the 256 bits represents the on/off state of a
-    /// permission. Applications can specify the significance of each permission ID.
+    /// @notice The packed permission bitmap that an account has granted to an operator for a specific project.
+    /// @dev Each bit in the returned `uint256` corresponds to a permission ID (0–255). A `1` bit means that
+    /// permission
+    /// is granted. See `JBPermissionIds` for the meaning of each ID.
     /// @custom:param operator The address of the operator.
     /// @custom:param account The address of the account being operated on behalf of.
     /// @custom:param projectId The project ID the permissions are scoped to. An ID of 0 grants permissions across all
@@ -55,14 +58,12 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Sets permissions for an operator.
-    /// @dev Only the `account` itself (i.e. `msg.sender == account`) can grant or revoke its operators' permissions
-    /// without restriction — including ROOT on the wildcard project ID (`projectId = 0`).
-    /// @dev A third-party caller who holds ROOT for a specific project may set *non-ROOT* permissions for that project
-    /// on someone else's behalf, but **cannot**: (a) grant ROOT to others, or (b) set any permissions on the wildcard
-    /// project ID. This prevents ROOT operators from escalating their own privileges.
-    /// @param account The account setting its operators' permissions.
-    /// @param permissionsData The data which specifies the permissions the operator is being given.
+    /// @notice Grant or revoke permissions for an operator on a specific project.
+    /// @dev Only the account itself can set permissions without restriction. A ROOT operator on a specific project can
+    /// set non-ROOT permissions for that same project on the account's behalf, but cannot grant ROOT or set wildcard
+    /// (project ID 0) permissions — preventing privilege escalation.
+    /// @param account The account whose operator permissions are being configured.
+    /// @param permissionsData The operator address, project scope, and permission IDs to set.
     function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
         // Pack the permission IDs into a uint256.
         uint256 packed = _packedPermissions(permissionsData.permissionIds);
@@ -113,16 +114,14 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /// @notice Check if an operator has all of the specified permissions for a specific address and project ID.
-    /// @param operator The operator to check.
-    /// @param account The account being operated on behalf of.
-    /// @param projectId The project ID that the operator has permission to operate under. 0 represents all projects.
-    /// @param permissionIds An array of permission IDs to check for.
-    /// @param includeRoot A flag indicating if the return value should default to true if the operator has the ROOT
-    /// permission.
-    /// @param includeWildcardProjectId A flag indicating if the return value should return true if the operator has the
-    /// specified permission on the wildcard project ID.
-    /// @return A flag indicating whether the operator has all specified permissions.
+    /// @notice Check whether an operator has *all* of the specified permissions for an account and project.
+    /// @param operator The address to check permissions for.
+    /// @param account The account that granted (or didn't grant) the permissions.
+    /// @param projectId The project ID to check within. Pass 0 to check the wildcard scope directly.
+    /// @param permissionIds The permission IDs that must all be present.
+    /// @param includeRoot If `true`, returns `true` immediately when the operator has the ROOT permission.
+    /// @param includeWildcardProjectId If `true`, also checks wildcard (project 0) permissions as a fallback.
+    /// @return Whether the operator holds every requested permission.
     function hasPermissions(
         address operator,
         address account,
@@ -187,16 +186,14 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /// @notice Check if an operator has a specific permission for a specific address and project ID.
-    /// @param operator The operator to check.
-    /// @param account The account being operated on behalf of.
-    /// @param projectId The project ID that the operator has permission to operate under. 0 represents all projects.
-    /// @param permissionId The permission ID to check for.
-    /// @param includeRoot A flag indicating if the return value should default to true if the operator has the ROOT
-    /// permission.
-    /// @param includeWildcardProjectId A flag indicating if the return value should return true if the operator has the
-    /// specified permission on the wildcard project ID.
-    /// @return A flag indicating whether the operator has the specified permission.
+    /// @notice Check whether an operator has a single permission for an account and project.
+    /// @param operator The address to check.
+    /// @param account The account that granted (or didn't grant) the permission.
+    /// @param projectId The project ID to check within. Pass 0 to check the wildcard scope directly.
+    /// @param permissionId The specific permission ID to look for (0–255).
+    /// @param includeRoot If `true`, returns `true` immediately when the operator has the ROOT permission.
+    /// @param includeWildcardProjectId If `true`, also checks wildcard (project 0) permissions as a fallback.
+    /// @return Whether the operator holds the requested permission.
     function hasPermission(
         address operator,
         address account,

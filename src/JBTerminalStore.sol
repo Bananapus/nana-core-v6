@@ -25,8 +25,12 @@ import {JBPayHookSpecification} from "./structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 import {JBTokenAmount} from "./structs/JBTokenAmount.sol";
 
-/// @notice Manages all bookkeeping for inflows and outflows of funds from any terminal address.
-/// @dev This contract expects a project's controller to be an `IJBController`.
+/// @notice The accounting engine behind every terminal. Records project balances, enforces payout limits and surplus
+/// allowances, calculates how many tokens to mint per payment (based on the ruleset's weight and currency), and
+/// determines how much a token holder receives when cashing out (via the bonding curve in `JBCashOuts`).
+/// @dev Terminals call `recordPaymentFrom`, `recordPayoutFor`, `recordUsedAllowanceFrom`, and `recordCashOutFor` to
+/// update state. This contract also handles data hook integration — if a ruleset specifies a data hook, it is called
+/// before recording to potentially override token counts or specify pay/cash-out hooks.
 contract JBTerminalStore is IJBTerminalStore {
     // A library that parses the packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;

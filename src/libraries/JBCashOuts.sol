@@ -5,7 +5,12 @@ import {mulDiv} from "@prb/math/src/Common.sol";
 
 import {JBConstants} from "./JBConstants.sol";
 
-/// @notice Cash out calculations.
+/// @notice Implements the bonding curve math for cash outs. When a token holder cashes out, this library calculates
+/// how much of the project's surplus they can reclaim based on their share of the total supply and the current
+/// cash-out tax rate. A 0% tax rate gives a proportional share; a 100% tax rate returns nothing (all surplus stays).
+/// @dev Formula: `surplus * count * [(MAX - taxRate) + taxRate * (count / supply)] / (supply * MAX)`.
+/// Also provides an inverse function (`cashOutCountFrom`) for determining how many tokens to burn for a desired
+/// reclaim amount.
 library JBCashOuts {
     /// @notice Thrown when the desired output cannot be achieved (e.g., cash out tax rate is 100%).
     error JBCashOuts_DesiredOutputNotAchievable();

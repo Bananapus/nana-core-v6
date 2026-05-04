@@ -8,12 +8,12 @@ import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
-/// @notice Manages minting, burning, and balances of projects' tokens and token credits.
-/// @dev Token balances can either be ERC-20s or token credits. This contract manages these two representations and
-/// allows credit -> ERC-20 claiming.
-/// @dev The total supply of a project's tokens and the balance of each account are calculated in this contract.
-/// @dev An ERC-20 contract must be set by a project's owner for ERC-20 claiming to become available. Projects can bring
-/// their own IJBToken if they prefer.
+/// @notice Manages the dual-token system for every Juicebox project. When someone pays a project, the controller mints
+/// tokens here — initially as internal "credits" tracked by this contract. Once a project deploys or attaches an
+/// ERC-20, holders can claim their credits into transferable ERC-20 tokens. Burns always consume credits first.
+/// @dev The total supply reported by `totalSupplyOf` is credits + ERC-20 supply combined, and is used by the terminal
+/// to calculate cash-out values. Projects can deploy a new ERC-20 via `deployERC20For` or bring their own via
+/// `setTokenFor` (must be 18 decimals).
 contract JBTokens is JBControlled, IJBTokens {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //

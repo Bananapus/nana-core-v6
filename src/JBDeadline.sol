@@ -7,10 +7,9 @@ import {JBApprovalStatus} from "./enums/JBApprovalStatus.sol";
 import {IJBRulesetApprovalHook} from "./interfaces/IJBRulesetApprovalHook.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 
-/// @notice `JBDeadline` is a ruleset approval hook which rejects rulesets if they are not queued at least `duration`
-/// seconds before the current ruleset ends. In other words, rulesets must be queued before the deadline to take effect.
-/// @dev Project rulesets are stored in a queue. Rulesets take effect after the previous ruleset in the queue ends, and
-/// only if they are approved by the previous ruleset's approval hook.
+/// @notice A ruleset approval hook that enforces a queuing deadline. If a new ruleset is not queued at least `DURATION`
+/// seconds before the current ruleset ends, it is rejected and the existing rules continue. This gives token holders
+/// a guaranteed notice period before any project configuration changes take effect.
 /// @dev If `DURATION` is set longer than the ruleset's cycle duration, no queued ruleset can ever satisfy the deadline
 /// and the current ruleset will effectively be locked in perpetuity. Choose a `DURATION` shorter than the shortest
 /// cycle it will govern.

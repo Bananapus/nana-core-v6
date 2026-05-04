@@ -6,7 +6,9 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
 
-/// @notice Stores a list of addresses that shouldn't incur fees when sending or receiving payments.
+/// @notice A registry of addresses exempt from the protocol's 2.5% fee. Feeless addresses don't incur fees on
+/// payouts they receive, surplus allowance they use, or cash outs where they are the beneficiary. Managed by the
+/// contract owner (typically the protocol multisig).
 contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //

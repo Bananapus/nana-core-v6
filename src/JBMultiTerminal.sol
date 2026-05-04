@@ -45,8 +45,13 @@ import {JBSplit} from "./structs/JBSplit.sol";
 import {JBSplitHookContext} from "./structs/JBSplitHookContext.sol";
 import {JBTokenAmount} from "./structs/JBTokenAmount.sol";
 
-/// @notice `JBMultiTerminal` manages native/ERC-20 payments, cash outs, and surplus allowance usage for any number of
-/// projects. Terminals are the entry point for operations involving inflows and outflows of funds.
+/// @notice The main entry point for all money movement in Juicebox. Handles payments (ETH or ERC-20), cash outs
+/// (burning tokens to reclaim funds), payouts (distributing funds to splits), and surplus allowance withdrawals.
+/// Charges a 2.5% protocol fee on outflows (held for 28 days before processing). Supports Permit2 for gasless
+/// ERC-20 approvals.
+/// @dev Each project can have multiple terminals for different tokens. The terminal delegates accounting to
+/// `JBTerminalStore` and splits distribution to `JBSplits`. Fees are sent to project #1 (the fee beneficiary).
+/// All external hook calls (pay hooks, cash-out hooks, split hooks) are wrapped in try-catch to prevent griefing.
 contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // A library that parses the packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;

@@ -23,8 +23,11 @@ interface IJBPayoutSplitGroupExecutor {
         returns (uint256 netPayoutAmount);
 }
 
-/// @notice External library for payout split-group distribution extracted to reduce terminal bytecode.
-/// @dev Called via DELEGATECALL from the terminal, so events are emitted from the terminal's address.
+/// @notice Handles distributing payouts to a project's split recipients. Iterates through each split, sends the
+/// proportional amount, and gracefully handles failures — if a split payout reverts (e.g. a hook is broken), the
+/// amount is returned to the project's balance rather than blocking all other splits.
+/// @dev Extracted as an external library to reduce `JBMultiTerminal` bytecode size. Called via DELEGATECALL, so events
+/// are emitted from the terminal's address.
 library JBPayoutSplitGroupLib {
     event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
     event SendPayoutToSplit(

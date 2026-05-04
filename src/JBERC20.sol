@@ -15,10 +15,11 @@ import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 
-/// @notice An ERC-20 token that can be used by a project in `JBTokens` and `JBController`.
-/// @dev By default, a project uses "credits" to track balances. Once a project sets their `IJBToken` using
-/// `JBController.deployERC20For(...)` or `JBController.setTokenFor(...)`, credits can be redeemed to claim tokens.
-/// @dev `JBController.deployERC20For(...)` deploys a `JBERC20` contract and sets it as the project's token.
+/// @notice The ERC-20 token implementation used by Juicebox projects. Includes ERC20Votes (governance delegation) and
+/// ERC20Permit (gasless approvals). Deployed as a minimal clone via `JBController.deployERC20For` — once deployed,
+/// holders can claim their internal credits into this transferable token.
+/// @dev Only `JBTokens` can mint and burn. The project owner (via `SET_TOKEN_METADATA` permission) can rename the
+/// token. Supports ERC-1271 signature validation for smart-contract wallets.
 contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //

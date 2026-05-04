@@ -13,12 +13,13 @@ import {IJBPriceFeed} from "./interfaces/IJBPriceFeed.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 
-/// @notice Manages and normalizes price feeds. Price feeds are contracts which return the "pricing currency" cost of 1
-/// "unit currency".
-/// @dev Price feeds are immutable once set and cannot be replaced or removed. This prevents oracle manipulation via
-/// admin-key attacks, but means a misconfigured or failing feed will cause operations using that currency pair to
-/// revert (DoS, not fund loss). Select feeds carefully — recovery requires deploying a new JBPrices contract and
-/// migrating projects.
+/// @notice Provides currency conversion for the protocol. When a project's payout limits or surplus allowances are
+/// denominated in a currency different from the token held in its terminal (e.g. USD limits with ETH held), this
+/// contract resolves the exchange rate via registered price feeds (typically Chainlink oracles).
+/// @dev Price feeds are immutable once set — they cannot be replaced or removed. This protects against oracle
+/// manipulation via admin-key attacks. If a feed is misconfigured, operations using that pair will revert (DoS, not
+/// fund loss). The inverse of any registered feed is auto-calculated. Projects can have their own feeds; project ID 0
+/// holds protocol-wide defaults.
 contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBPrices {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //

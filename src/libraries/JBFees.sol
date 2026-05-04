@@ -5,7 +5,11 @@ import {mulDiv} from "@prb/math/src/Common.sol";
 
 import {JBConstants} from "./../libraries/JBConstants.sol";
 
-/// @notice Fee calculations.
+/// @notice Utility functions for calculating the protocol fee (2.5%) in both directions: forward (fee from a pre-fee
+/// amount) and backward (the pre-fee amount that would yield a given post-fee amount). Used by `JBMultiTerminal`
+/// during payouts, surplus allowance usage, and cash outs.
+/// @dev Fee dust protection: if a nonzero amount with a nonzero fee would otherwise round to 0, returns 1 wei to
+/// prevent fee bypass via many tiny transfers.
 library JBFees {
     /// @notice Returns the fee that would be taken from `amountBeforeFee`.
     /// @dev Use this to forward-calculate the fee from a known pre-fee amount.

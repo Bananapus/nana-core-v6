@@ -5,7 +5,8 @@ import {IJBRulesetApprovalHook} from "./IJBRulesetApprovalHook.sol";
 import {JBApprovalStatus} from "./../enums/JBApprovalStatus.sol";
 import {JBRuleset} from "./../structs/JBRuleset.sol";
 
-/// @notice Manages rulesets and queuing for projects.
+/// @notice Interface for the ruleset storage and lifecycle contract. Rulesets define a project's economic parameters
+/// (weight, duration, cash-out rate, etc.) and are queued as a linked list with approval hooks gating transitions.
 interface IJBRulesets {
     /// @notice A ruleset was initialized from a base ruleset.
     /// @param rulesetId The ID of the initialized ruleset.

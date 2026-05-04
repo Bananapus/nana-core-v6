@@ -11,7 +11,9 @@ import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
 import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 
-/// @notice Manages the bookkeeping for payments, cash outs, payouts, and surplus allowance usage for terminals.
+/// @notice Interface for the terminal's accounting engine. Records balances, enforces payout limits and surplus
+/// allowances, calculates token issuance per payment, and determines cash-out reclaim amounts via the bonding curve.
+/// Terminals delegate all state-changing accounting to this contract.
 interface IJBTerminalStore {
     /// @notice The directory of terminals and controllers for projects.
     function DIRECTORY() external view returns (IJBDirectory);

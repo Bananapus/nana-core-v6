@@ -13,9 +13,11 @@ import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 
-/// @notice `JBDirectory` tracks the terminals and the controller used by each project.
-/// @dev Tracks which `IJBTerminal`s each project is currently accepting funds through, and which `IJBController` is
-/// managing each project's tokens and rulesets.
+/// @notice The routing table for the protocol. Every project registers which terminals accept its payments and which
+/// controller manages its rulesets and tokens. Frontends and other contracts use the directory to discover where to
+/// send funds for a given project and token.
+/// @dev Also manages controller migration — when a project upgrades its controller, the directory orchestrates the
+/// handoff including `beforeReceiveMigrationFrom`, `migrate`, and `afterReceiveMigrationFrom` lifecycle hooks.
 contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //

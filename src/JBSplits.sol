@@ -9,7 +9,11 @@ import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBSplit} from "./structs/JBSplit.sol";
 import {JBSplitGroup} from "./structs/JBSplitGroup.sol";
 
-/// @notice Stores and manages splits for each project.
+/// @notice Manages how a project distributes its payouts and reserved tokens. Each "split" specifies a recipient and
+/// their share (as a fraction of 1,000,000,000). Splits can be locked until a timestamp — locked splits cannot be
+/// removed or reduced until the lock expires, providing recipients with guaranteed revenue streams.
+/// @dev Splits are organized by project, ruleset, and group. Ruleset 0 is the fallback used when no splits are set for
+/// the active ruleset. The payout group ID is derived from the token address being distributed.
 contract JBSplits is JBControlled, IJBSplits {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
