@@ -89,6 +89,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice The number of seconds fees can be held for.
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
 
+    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
+    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
+
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
@@ -2199,7 +2202,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The amount before the fee is applied.
     /// @return feeAmount The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
-        feeAmount = amount / (JBConstants.MAX_FEE / FEE);
+        feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
 
         return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
     }
