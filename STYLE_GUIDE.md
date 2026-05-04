@@ -425,11 +425,11 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Run tests
-        run: forge test --fail-fast --summary --detailed --skip "*/script/**"
+        run: forge test --deny notes --fail-fast --summary --detailed --skip "*/script/**"
         env:
           RPC_ETHEREUM_MAINNET: ${{ secrets.RPC_ETHEREUM_MAINNET }}
       - name: Check contract sizes
-        run: forge build --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils
+        run: forge build --deny notes --sizes --skip "*/test/**" --skip "*/script/**" --skip SphinxUtils
 ```
 
 **lint.yml:**
@@ -476,7 +476,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
       - name: Build contracts
-        run: forge build --build-info --skip "*/test/**" --skip "*/script/**"
+        run: forge build --deny notes --build-info --skip "*/test/**" --skip "*/script/**"
       - name: Run slither
         uses: crytic/slither-action@v0.4.1
         with:
@@ -561,6 +561,10 @@ Only add extra remappings for:
 ### Linting
 
 Solar (Foundry's built-in linter) runs automatically during `forge build`. It scans all `.sol` files in `libs` directories, including `node_modules`.
+
+Build and lint commands must be clean: no warnings and no notes. CI should use `forge build --deny notes ...`
+so any new compiler or linter warning fails the PR. Only exclude a lint in `foundry.toml` when it is intentional
+for the repo's domain, and keep `exclude_lints` sorted alphabetically.
 
 **All test helpers must use relative imports** (e.g. `../../src/structs/JBRuleset.sol`), not bare `src/` imports. This ensures solar can resolve paths when the helper is consumed via npm in downstream repos.
 

@@ -1459,9 +1459,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
                 amountEligibleForFees += specification.amount;
-                unchecked {
-                    specification.amount -= specificationAmountFee;
-                }
+                specification.amount -= specificationAmountFee;
             }
 
             // Pass the correct token `forwardedAmount` to the hook.
