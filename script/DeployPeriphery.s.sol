@@ -5,19 +5,19 @@ import {Sphinx} from "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol"
 import {Script} from "forge-std/Script.sol";
 import {CoreDeployment, CoreDeploymentLib} from "./helpers/CoreDeploymentLib.sol";
 
-import {IJBPriceFeed} from "src/interfaces/IJBPriceFeed.sol";
-import {JBDeadline3Hours} from "src/periphery/JBDeadline3Hours.sol";
-import {JBDeadline1Day} from "src/periphery/JBDeadline1Day.sol";
-import {JBDeadline3Days} from "src/periphery/JBDeadline3Days.sol";
-import {JBDeadline7Days} from "src/periphery/JBDeadline7Days.sol";
-import {JBMatchingPriceFeed} from "src/periphery/JBMatchingPriceFeed.sol";
-import {JBChainlinkV3PriceFeed, AggregatorV3Interface} from "src/JBChainlinkV3PriceFeed.sol";
 import {AggregatorV2V3Interface} from "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV2V3Interface.sol";
-import {JBChainlinkV3SequencerPriceFeed} from "src/JBChainlinkV3SequencerPriceFeed.sol";
-import {JBController} from "src/JBController.sol";
 
-import {JBConstants} from "src/libraries/JBConstants.sol";
-import {JBCurrencyIds} from "src/libraries/JBCurrencyIds.sol";
+import {JBChainlinkV3PriceFeed, AggregatorV3Interface} from "../src/JBChainlinkV3PriceFeed.sol";
+import {JBChainlinkV3SequencerPriceFeed} from "../src/JBChainlinkV3SequencerPriceFeed.sol";
+import {JBController} from "../src/JBController.sol";
+import {IJBPriceFeed} from "../src/interfaces/IJBPriceFeed.sol";
+import {JBConstants} from "../src/libraries/JBConstants.sol";
+import {JBCurrencyIds} from "../src/libraries/JBCurrencyIds.sol";
+import {JBDeadline1Day} from "../src/periphery/JBDeadline1Day.sol";
+import {JBDeadline3Days} from "../src/periphery/JBDeadline3Days.sol";
+import {JBDeadline3Hours} from "../src/periphery/JBDeadline3Hours.sol";
+import {JBDeadline7Days} from "../src/periphery/JBDeadline7Days.sol";
+import {JBMatchingPriceFeed} from "../src/periphery/JBMatchingPriceFeed.sol";
 
 contract DeployPeriphery is Script, Sphinx {
     /// @notice tracks the deployment of the core contracts for the chain we are deploying to.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {IJBPriceFeed} from "src/interfaces/IJBPriceFeed.sol";
+import {IJBPriceFeed} from "../interfaces/IJBPriceFeed.sol";
 
 contract JBMatchingPriceFeed is IJBPriceFeed {
     constructor() {}

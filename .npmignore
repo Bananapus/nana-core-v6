@@ -9,6 +9,9 @@ node_modules
 .gitmodules
 
 # Misc
+.audit/
+.claude/
+.security-worktrees/
 .example.env
 utils/
 

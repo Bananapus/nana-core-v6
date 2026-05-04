@@ -5,20 +5,21 @@ import {Sphinx} from "@sphinx-labs/contracts/contracts/foundry/SphinxPlugin.sol"
 import {Script} from "forge-std/Script.sol";
 
 import {IPermit2} from "@uniswap/permit2/src/interfaces/IPermit2.sol";
-import {JBPermissions} from "src/JBPermissions.sol";
-import {JBProjects} from "src/JBProjects.sol";
-import {JBPrices} from "src/JBPrices.sol";
-import {JBRulesets} from "src/JBRulesets.sol";
-import {JBDirectory} from "src/JBDirectory.sol";
-import {JBERC20} from "src/JBERC20.sol";
-import {JBTokens} from "src/JBTokens.sol";
-import {JBSplits} from "src/JBSplits.sol";
-import {JBFeelessAddresses} from "src/JBFeelessAddresses.sol";
-import {JBFundAccessLimits} from "src/JBFundAccessLimits.sol";
-import {JBTerminalStore} from "src/JBTerminalStore.sol";
-import {JBMultiTerminal} from "src/JBMultiTerminal.sol";
 
 import {ERC2771Forwarder} from "@openzeppelin/contracts/metatx/ERC2771Forwarder.sol";
+
+import {JBDirectory} from "../src/JBDirectory.sol";
+import {JBERC20} from "../src/JBERC20.sol";
+import {JBFeelessAddresses} from "../src/JBFeelessAddresses.sol";
+import {JBFundAccessLimits} from "../src/JBFundAccessLimits.sol";
+import {JBMultiTerminal} from "../src/JBMultiTerminal.sol";
+import {JBPermissions} from "../src/JBPermissions.sol";
+import {JBPrices} from "../src/JBPrices.sol";
+import {JBProjects} from "../src/JBProjects.sol";
+import {JBRulesets} from "../src/JBRulesets.sol";
+import {JBSplits} from "../src/JBSplits.sol";
+import {JBTerminalStore} from "../src/JBTerminalStore.sol";
+import {JBTokens} from "../src/JBTokens.sol";
 
 contract Deploy is Script, Sphinx {
     /// @notice The universal PERMIT2 address.
