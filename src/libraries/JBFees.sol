@@ -56,4 +56,13 @@ library JBFees {
     function feeAmountResultingInFloor(uint256 amountAfterFee, uint256 feePercent) internal pure returns (uint256) {
         return mulDiv(amountAfterFee, JBConstants.MAX_FEE, JBConstants.MAX_FEE - feePercent) - amountAfterFee;
     }
+
+    /// @notice Returns the floor-rounded fee amount resulting in `amountAfterFee` for a 2.5% fee.
+    /// @dev Equivalent to `feeAmountResultingInFloor(amountAfterFee, 25)`, but avoids the generic `mulDiv` path.
+    /// @param amountAfterFee The desired post-fee amount, as a fixed point number.
+    /// @return The floor-rounded fee amount.
+    function feeAmountResultingInFloorForFee25(uint256 amountAfterFee) internal pure returns (uint256) {
+        // The specialized denominator is `(JBConstants.MAX_FEE - 25) / 25`.
+        return amountAfterFee / 39;
+    }
 }

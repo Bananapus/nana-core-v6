@@ -76,6 +76,13 @@ contract TestFeesFuzz_Local is JBTest {
         assertGe(reverseFee + afterFee, amount, "reverse fee + afterFee should be >= amount");
     }
 
+    /// @notice The specialized 2.5% floor helper matches the generic floor helper.
+    function testFuzz_feeAmountResultingInFloorForFee25_matchesGeneric(uint256 amount) external pure {
+        amount = bound(amount, 0, type(uint128).max);
+
+        assertEq(JBFees.feeAmountResultingInFloorForFee25(amount), JBFees.feeAmountResultingInFloor(amount, 25));
+    }
+
     /// @notice feeAmountFrom with MAX_FEE returns the full amount.
     function testFuzz_feeAmountFrom_maxPercent(uint256 amount) external pure {
         amount = bound(amount, 0, type(uint128).max);

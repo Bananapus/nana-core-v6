@@ -29,6 +29,7 @@ import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
+import {JBFees} from "./libraries/JBFees.sol";
 import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
 import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
@@ -94,9 +95,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
     uint256 private constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
-
-    /// @notice Denominator for floor-rounded back-calculating this terminal's fee from a post-fee amount.
-    uint256 private constant _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR = (JBConstants.MAX_FEE - FEE) / FEE;
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -339,7 +337,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee since the funds are leaving this contract and the split hook isn't a
             // feeless address.
             if (!_isFeeless(address(split.hook))) {
-                netPayoutAmount -= _feeAmountFrom({amount: amount});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                }
             }
 
             // Create the context to send to the split hook.
@@ -380,7 +380,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
             // a feeless address.
             if (terminal != this && !_isFeeless(address(terminal))) {
-                netPayoutAmount -= _feeAmountFrom({amount: amount});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                }
             }
 
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
@@ -440,7 +442,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee since the funds are leaving this contract and the recipient isn't a
             // feeless address.
             if (!_isFeeless(recipient)) {
-                netPayoutAmount -= _feeAmountFrom({amount: amount});
+                unchecked {
+                    netPayoutAmount -= _feeAmountFrom({amount: amount});
+                }
             }
 
             // If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to the
@@ -1190,16 +1194,22 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 if (cashOutTaxRate != 0) {
                     // Non-zero tax: fees apply to the full reclaim amount.
                     amountEligibleForFees += reclaimAmount;
-                    reclaimAmount -= _feeAmountFrom({amount: reclaimAmount});
+                    unchecked {
+                        reclaimAmount -= _feeAmountFrom({amount: reclaimAmount});
+                    }
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
                     uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
                     if (feeFreeSurplus != 0) {
                         uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
                         // slither-disable-next-line reentrancy-no-eth,reentrancy-eth,reentrancy-benign
-                        _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                        unchecked {
+                            _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                        }
                         amountEligibleForFees += feeableAmount;
-                        reclaimAmount -= _feeAmountFrom({amount: feeableAmount});
+                        unchecked {
+                            reclaimAmount -= _feeAmountFrom({amount: feeableAmount});
+                        }
                     }
                 }
             }
@@ -1453,7 +1463,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
                 amountEligibleForFees += specification.amount;
-                specification.amount -= specificationAmountFee;
+                unchecked {
+                    specification.amount -= specificationAmountFee;
+                }
             }
 
             // Pass the correct token `forwardedAmount` to the hook.
@@ -1772,7 +1784,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 } else {
                     // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
                     // splitting an already-held fee entry across repayments.
-                    feeAmount = leftoverAmount / _FEE_AMOUNT_RESULTING_IN_FLOOR_DENOMINATOR;
+                    feeAmount = JBFees.feeAmountResultingInFloorForFee25({amountAfterFee: leftoverAmount});
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
@@ -1857,13 +1869,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Keep a reference to the fee for the leftover payout amount.
             uint256 fee = _isFeeless(projectOwner) ? 0 : _feeAmountFrom({amount: leftoverPayoutAmount});
 
+            uint256 netLeftoverPayoutAmount;
+            unchecked {
+                netLeftoverPayoutAmount = leftoverPayoutAmount - fee;
+            }
+
             // Failed owner transfer consumes the payout limit by design. Same pattern as split payouts:
             // the try-catch prevents revert, failed amount is returned to project balance, and the owner can retry
             // via addToBalanceOf or in the next cycle.
-            try this.executeTransferTo({addr: projectOwner, token: token, amount: leftoverPayoutAmount - fee}) {
+            try this.executeTransferTo({addr: projectOwner, token: token, amount: netLeftoverPayoutAmount}) {
                 if (fee > 0) {
                     amountEligibleForFees += leftoverPayoutAmount;
-                    leftoverPayoutAmount -= fee;
+                    leftoverPayoutAmount = netLeftoverPayoutAmount;
                 }
             } catch (bytes memory reason) {
                 // slither-disable-next-line reentrancy-events
@@ -1871,7 +1888,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     projectId: projectId,
                     addr: projectOwner,
                     token: token,
-                    amount: leftoverPayoutAmount - fee,
+                    amount: netLeftoverPayoutAmount,
                     fee: fee,
                     reason: reason,
                     caller: sender
