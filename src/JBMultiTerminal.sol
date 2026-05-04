@@ -1780,7 +1780,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 } else {
                     // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
                     // splitting an already-held fee entry across repayments.
-                    feeAmount = JBFees.feeAmountResultingInFloorForFee25({amountAfterFee: leftoverAmount});
+                    feeAmount = JBFees.feeAmountResultingInFloorForFee25(leftoverAmount);
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
