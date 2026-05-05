@@ -1410,8 +1410,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param cashOutCount The number of tokens to cash out.
     /// @param metadata Bytes to send along to the emitted event and cash out hooks as applicable.
     /// @param ruleset The ruleset active during this cash out as a `JBRuleset` struct.
-    /// @param cashOutTaxRate The cash out tax rate influencing the reclaim amount, out of `JBConstants.MAX_CASH_OUT_TAX_RATE`.
-    /// @param beneficiary The address which will receive any terminal tokens that are cashed out.
+    /// @param cashOutTaxRate The cash out tax rate influencing the reclaim amount, out of
+    /// `JBConstants.MAX_CASH_OUT_TAX_RATE`. @param beneficiary The address which will receive any terminal tokens that
+    /// are cashed out.
     /// @param specifications The hook specifications to fulfill.
     /// @return amountEligibleForFees The amount of funds which were allocated to cash out hooks and are eligible for
     /// fees.
