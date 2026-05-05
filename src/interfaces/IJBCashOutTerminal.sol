@@ -12,7 +12,7 @@ interface IJBCashOutTerminal is IJBTerminal {
     /// @notice A cash out was processed for a project.
     /// @param rulesetId The ID of the ruleset during the cash out.
     /// @param rulesetCycleNumber The cycle number of the ruleset during the cash out.
-    /// @param projectId The ID of the project being cashed out from.
+    /// @param projectId The ID of the project to cash out from.
     /// @param holder The address whose tokens were cashed out.
     /// @param beneficiary The address that received the reclaimed funds.
     /// @param cashOutCount The number of tokens cashed out.
@@ -48,8 +48,8 @@ interface IJBCashOutTerminal is IJBTerminal {
     );
 
     /// @notice Simulates cashing out project tokens from this terminal without modifying state.
-    /// @param holder The address whose tokens are being cashed out.
-    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param holder The address cashing out tokens.
+    /// @param projectId The ID of the project cashing out tokens.
     /// @param cashOutCount The number of project tokens to cash out.
     /// @param tokenToReclaim The token to reclaim from the project's surplus.
     /// @param beneficiary The address that would receive the reclaimed tokens.
@@ -77,8 +77,8 @@ interface IJBCashOutTerminal is IJBTerminal {
 
     /// @notice Cashes out a holder's tokens for a project, reclaiming the token's proportional share of the project's
     /// surplus.
-    /// @param holder The address whose tokens are being cashed out.
-    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param holder The address cashing out tokens.
+    /// @param projectId The ID of the project cashing out tokens.
     /// @param cashOutCount The number of project tokens to cash out.
     /// @param tokenToReclaim The token to reclaim from the project's surplus.
     /// @param minTokensReclaimed The minimum number of terminal tokens expected to be reclaimed.

@@ -11,7 +11,7 @@ interface IJBPrices {
     /// @notice A price feed was added for a project's currency pair.
     /// @param projectId The ID of the project the price feed was added for.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @param unitCurrency The currency the feed prices.
     /// @param feed The price feed that was added.
     /// @param caller The address that added the price feed.
     event AddPriceFeed(
@@ -31,7 +31,7 @@ interface IJBPrices {
     /// @notice Returns the price feed for a project's currency pair.
     /// @param projectId The ID of the project to get the price feed of.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @param unitCurrency The currency the feed prices.
     /// @return The price feed for the currency pair.
     function priceFeedFor(
         uint256 projectId,
@@ -45,7 +45,7 @@ interface IJBPrices {
     /// @notice Returns the unit price for a currency pair.
     /// @param projectId The ID of the project to get the price for.
     /// @param pricingCurrency The currency the returned price is in terms of.
-    /// @param unitCurrency The currency being priced.
+    /// @param unitCurrency The currency to price.
     /// @param decimals The number of decimals the returned price should use.
     /// @return The unit price.
     function pricePerUnitOf(
@@ -61,7 +61,7 @@ interface IJBPrices {
     /// @notice Adds a price feed for a project's currency pair.
     /// @param projectId The ID of the project to add the price feed for.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @param unitCurrency The currency the feed prices.
     /// @param feed The price feed to add.
     function addPriceFeedFor(
         uint256 projectId,

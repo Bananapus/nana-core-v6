@@ -104,7 +104,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice The directory of terminals and controllers for PROJECTS.
     IJBDirectory public immutable override DIRECTORY;
 
-    /// @notice The contract that stores addresses that shouldn't incur fees when being paid towards or from.
+    /// @notice The contract that stores addresses that shouldn't incur fees when paid towards or from.
     IJBFeelessAddresses public immutable override FEELESS_ADDRESSES;
 
     /// @notice The Permit2 contract used for token approvals and transfers.
@@ -140,23 +140,23 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
 
-    /// @notice Fees that are being held for each project.
+    /// @notice Fees currently held for each project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
     /// @dev Held fees can be processed at any time by this terminal's owner.
-    /// @custom:param projectId The ID of the project that is holding fees.
-    /// @custom:param token The token that the fees are held in.
+    /// @custom:param projectId The ID of the project holding fees.
+    /// @custom:param token The token the fees are held in.
     mapping(uint256 projectId => mapping(address token => JBFee[])) internal _heldFeesOf;
 
     /// @notice The next index to use when processing a next held fee.
-    /// @custom:param projectId The ID of the project that is holding fees.
-    /// @custom:param token The token that the fees are held in.
+    /// @custom:param projectId The ID of the project holding fees.
+    /// @custom:param token The token the fees are held in.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _nextHeldFeeIndexOf;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    /// @param feelessAddresses A contract that stores addresses that shouldn't incur fees when being paid towards or
+    /// @param feelessAddresses A contract that stores addresses that shouldn't incur fees when paid towards or
     /// from.
     /// @param permissions A contract storing permissions.
     /// @param projects A contract which mints ERC-721s that represent project ownership and transfers.
@@ -230,8 +230,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param projectId The ID of the project to add funds to the balance of.
     /// @param amount The amount of tokens to add to the balance, as a fixed point number with the same number of
     /// decimals as this terminal. If this is a native token terminal, this is ignored and `msg.value` is used instead.
-    /// @param token The token being added to the balance.
-    /// @param shouldReturnHeldFees A flag indicating if held fees should be returned based on the amount being added.
+    /// @param token The token to add to the balance.
+    /// @param shouldReturnHeldFees If true, return held fees proportional to the amount added.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the emitted event.
     function addToBalanceOf(
@@ -260,11 +260,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Burns project tokens to reclaim a share of the project's surplus (determined by the bonding curve) or
     /// to trigger custom logic through the ruleset's data hook and cash out hook.
     /// @dev Only the token holder or an operator with `CASH_OUT_TOKENS` permission from that holder can call this.
-    /// @param holder The account whose tokens are being cashed out.
+    /// @param holder The account cashing out tokens.
     /// @param projectId The ID of the project the project tokens belong to.
     /// @param cashOutCount The number of project tokens to cash out and burn, as a fixed point number with 18
     /// decimals.
-    /// @param tokenToReclaim The token being reclaimed.
+    /// @param tokenToReclaim The token to reclaim.
     /// @param minTokensReclaimed The minimum number of terminal tokens expected in return, as a fixed point number with
     /// the same number of decimals as this terminal. If the amount of tokens minted for the beneficiary would be less
     /// than this amount, the cash out is reverted.
@@ -308,8 +308,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Only accepts calls from this terminal itself.
     /// @param split The split to pay.
     /// @param projectId The ID of the project the split belongs to.
-    /// @param token The address of the token being paid to the split.
-    /// @param amount The total amount being paid to the split, as a fixed point number with the same number of
+    /// @param token The address of the token to pay to the split.
+    /// @param amount The total amount to pay to the split, as a fixed point number with the same number of
     /// decimals as this terminal.
     /// @return netPayoutAmount The amount sent to the split after subtracting fees.
     function executePayout(
@@ -457,7 +457,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Process a specified amount of fees for a project.
     /// @dev Only accepts calls from this terminal itself.
     /// @param projectId The ID of the project paying the fee.
-    /// @param token The token the fee is being paid in.
+    /// @param token The token the fee is paid in.
     /// @param amount The fee amount, as a fixed point number with 18 decimals.
     /// @param beneficiary The address to mint tokens to (from the project which receives fees), and pass along to the
     /// ruleset's data hook and pay hook if applicable.
@@ -506,9 +506,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Migrate a project's funds and operations to a new terminal that accepts the same token type.
     /// @dev Only a project's owner or an operator with the `MIGRATE_TERMINAL` permission from that owner can migrate
     /// the project's terminal.
-    /// @param projectId The ID of the project being migrated.
-    /// @param token The address of the token being migrated.
-    /// @param to The terminal contract being migrated to, which will receive the project's funds and operations.
+    /// @param projectId The ID of the project to migrate.
+    /// @param token The address of the token to migrate.
+    /// @param to The terminal to migrate to, which will receive the project's funds and operations.
     /// @return balance The amount of funds that were migrated, as a fixed point number with the same amount of decimals
     /// as this terminal.
     function migrateBalanceOf(
@@ -569,12 +569,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Pay a project with tokens. The project's current ruleset determines how many project tokens the
-    /// beneficiary receives in return.
-    /// @param projectId The ID of the project being paid.
-    /// @param amount The amount of terminal tokens being received, as a fixed point number with the same number of
+    /// beneficiary will receive.
+    /// @param projectId The ID of the project to pay.
+    /// @param amount The amount of tokens to send, as a fixed point number with the same number of
     /// decimals as this terminal. If this terminal's token is native, this is ignored and `msg.value` is used in its
     /// place.
-    /// @param token The token being paid.
+    /// @param token The token to pay with.
     /// @param beneficiary The address to mint tokens to, and pass along to the ruleset's data hook and pay hook if
     /// applicable.
     /// @param minReturnedTokens The minimum number of project tokens expected in return for this payment, as a fixed
@@ -702,10 +702,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Payouts to non-feeless addresses incur the 2.5% protocol fee. Projects whose terminal is feeless are
     /// exempt.
     /// @param projectId The ID of the project having its payouts sent.
-    /// @param token The token being sent.
+    /// @param token The token to send.
     /// @param amount The total number of terminal tokens to send, as a fixed point number with same number of decimals
     /// as this terminal.
-    /// @param currency The expected currency of the payouts being sent. Must match the currency of one of the
+    /// @param currency The expected currency of the payouts. Must match the currency of one of the
     /// project's current ruleset's payout limits.
     /// @param minTokensPaidOut The minimum number of terminal tokens that the `amount` should be worth (if expressed
     /// in terms of this terminal's currency), as a fixed point number with the same number of decimals as this
@@ -733,10 +733,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Only the project's owner or an operator with `USE_ALLOWANCE` permission can call this.
     /// @dev Incurs the 2.5% protocol fee unless the caller is a feeless address.
     /// @param projectId The ID of the project to use the surplus allowance of.
-    /// @param token The token being paid out from the surplus.
+    /// @param token The token to pay out from the surplus.
     /// @param amount The amount of terminal tokens to use from the project's current surplus allowance, as a fixed
     /// point number with the same amount of decimals as this terminal.
-    /// @param currency The expected currency of the amount being paid out. Must match the currency of one of the
+    /// @param currency The expected currency of the amount to pay out. Must match the currency of one of the
     /// project's current ruleset's surplus allowances.
     /// @param minTokensPaidOut The minimum number of terminal tokens that should be returned from the surplus allowance
     /// (excluding fees), as a fixed point number with 18 decimals. If the amount of surplus used would be less than
@@ -835,12 +835,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Returns the fees currently being held for a project. Fees are held for 28 days after a payout before
+    /// @notice Returns the fees currently held for a project. Fees are held for 28 days after a payout before
     /// they can be processed (sent to the fee project).
     /// @dev Held fees can be returned to the project by calling `addToBalanceOf` with `shouldReturnHeldFees = true`
     /// before the 28-day lock expires.
-    /// @param projectId The ID of the project that is holding fees.
-    /// @param token The token that the fees are held in.
+    /// @param projectId The ID of the project holding fees.
+    /// @param token The token the fees are held in.
     /// @param count The maximum number of held fees to return.
     /// @return heldFees The held fees.
     function heldFeesOf(
@@ -879,8 +879,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Simulates a cash out without modifying state — use this to preview how many tokens a holder would
     /// reclaim.
-    /// @param holder The address whose tokens are being cashed out.
-    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param holder The address cashing out tokens.
+    /// @param projectId The ID of the project cashing out tokens.
     /// @param cashOutCount The number of project tokens to cash out.
     /// @param tokenToReclaim The token to reclaim from the project's surplus.
     /// @param beneficiary The address that would receive the reclaimed tokens.
@@ -922,9 +922,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Simulates a payment without modifying state — use this to preview how many project tokens a payer
     /// would
     /// receive.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The token being paid in.
-    /// @param amount The amount of tokens being paid.
+    /// @param projectId The ID of the project to pay.
+    /// @param token The token to pay with.
+    /// @param amount The amount of tokens to pay.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook and pay hooks.
     /// @return ruleset The project's current ruleset.
@@ -986,9 +986,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     /// @notice Accepts an incoming token.
-    /// @param projectId The ID of the project that the transfer is being accepted for.
-    /// @param token The token being accepted.
-    /// @param amount The number of tokens being accepted.
+    /// @param projectId The ID of the project to accept the transfer for.
+    /// @param token The token to accept.
+    /// @param amount The number of tokens to accept.
     /// @param metadata The metadata in which permit2 context is provided.
     /// @return amount The number of tokens which have been accepted.
     function _acceptFundsFor(
@@ -1052,10 +1052,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Adds funds to a project's balance without minting tokens.
     /// @param projectId The ID of the project to add funds to the balance of.
-    /// @param token The address of the token being added to the project's balance.
+    /// @param token The address of the token to add to the project's balance.
     /// @param amount The amount of tokens to add as a fixed point number with the same number of decimals as this
     /// terminal. If this is a native token terminal, this is ignored and `msg.value` is used instead.
-    /// @param shouldReturnHeldFees A flag indicating if held fees should be returned based on the amount being added.
+    /// @param shouldReturnHeldFees If true, return held fees proportional to the amount added.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the emitted event.
     function _addToBalanceOf(
@@ -1088,10 +1088,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Logic to be triggered before transferring tokens from this terminal.
     /// @param to The address the transfer is going to.
-    /// @param token The token being transferred.
-    /// @param amount The number of tokens being transferred, as a fixed point number with the same number of decimals
+    /// @param token The token to transfer.
+    /// @param amount The number of tokens to transfer, as a fixed point number with the same number of decimals
     /// as this terminal.
-    /// @return payValue The value to attach to the transaction being sent.
+    /// @return payValue The value to attach to the transaction.
     function _beforeTransferTo(address to, address token, uint256 amount) internal returns (uint256) {
         // If the token is the native token, no allowance needed, and the full amount should be used as the payValue.
         if (token == JBConstants.NATIVE_TOKEN) return amount;
@@ -1131,9 +1131,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// those
     /// tokens.
     /// @param holder The account cashing out tokens.
-    /// @param projectId The ID of the project whose tokens are being cashed out.
+    /// @param projectId The ID of the project cashing out tokens.
     /// @param cashOutCount The number of project tokens to cash out, as a fixed point number with 18 decimals.
-    /// @param tokenToReclaim The address of the token which is being cashed out.
+    /// @param tokenToReclaim The address of the token to reclaim.
     /// @param beneficiary The address to send the reclaimed terminal tokens to.
     /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hook if
     /// applicable.
@@ -1281,9 +1281,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
     /// recipient terminal's `addToBalance` function.
     /// @param terminal The terminal on which the project is expecting to receive funds.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded, as a fixed point number with the amount of decimals that the terminal's
+    /// @param projectId The ID of the project to fund.
+    /// @param token The token to use.
+    /// @param amount The amount to fund, as a fixed point number with the amount of decimals that the terminal's
     /// accounting context specifies.
     /// @param metadata Additional metadata to include with the payment.
     function _efficientAddToBalance(
@@ -1316,9 +1316,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
     /// terminal's `pay` function.
     /// @param terminal The terminal on which the project is expecting to receive payments.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The token being paid in.
-    /// @param amount The amount being paid, as a fixed point number with the amount of decimals that the terminal's
+    /// @param projectId The ID of the project to pay.
+    /// @param token The token to pay with.
+    /// @param amount The amount to pay, as a fixed point number with the amount of decimals that the terminal's
     /// accounting context specifies.
     /// @param beneficiary The address to receive any platform tokens minted.
     /// @param metadata Additional metadata to include with the payment.
@@ -1368,9 +1368,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
     /// @param terminal The recipient terminal.
-    /// @param projectId The ID of the project being funded.
-    /// @param token The token being used.
-    /// @param amount The amount being funded.
+    /// @param projectId The ID of the project to fund.
+    /// @param token The token to use.
+    /// @param amount The amount to fund.
     /// @param metadata Additional metadata to include with the payment.
     function _externalAddToBalance(
         IJBTerminal terminal,
@@ -1402,15 +1402,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Fulfills a list of cash out hook specifications.
-    /// @param projectId The ID of the project being cashed out from.
-    /// @param beneficiaryReclaimAmount The number of tokens that are being cashed out from the project.
-    /// @param holder The address that holds the tokens being cashed out.
-    /// @param cashOutCount The number of tokens being cashed out.
+    /// @param projectId The ID of the project to cash out from.
+    /// @param beneficiaryReclaimAmount The number of tokens to cash out from the project.
+    /// @param holder The address holding the tokens to cash out.
+    /// @param cashOutCount The number of tokens to cash out.
     /// @param metadata Bytes to send along to the emitted event and cash out hooks as applicable.
-    /// @param ruleset The ruleset the cash out is being made during as a `JBRuleset` struct.
+    /// @param ruleset The ruleset active during this cash out as a `JBRuleset` struct.
     /// @param cashOutTaxRate The cash out tax rate influencing the reclaim amount.
     /// @param beneficiary The address which will receive any terminal tokens that are cashed out.
-    /// @param specifications The hook specifications being fulfilled.
+    /// @param specifications The hook specifications to fulfill.
     /// @return amountEligibleForFees The amount of funds which were allocated to cash out hooks and are eligible for
     /// fees.
     function _fulfillCashOutHookSpecificationsFor(
@@ -1503,13 +1503,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Fulfills a list of pay hook specifications.
-    /// @param projectId The ID of the project being paid.
+    /// @param projectId The ID of the project to pay.
     /// @param specifications The pay hook specifications to be fulfilled.
     /// @param tokenAmount The amount of tokens that the project was paid.
     /// @param payer The address that sent the payment.
-    /// @param ruleset The ruleset the payment is being accepted during.
+    /// @param ruleset The ruleset active during this payment.
     /// @param beneficiary The address which will receive any tokens that the payment yields.
-    /// @param newlyIssuedTokenCount The amount of tokens that are being issued and sent to the beneificary.
+    /// @param newlyIssuedTokenCount The number of tokens issued and sent to the beneficiary.
     /// @param metadata Bytes to send along to the emitted event and pay hooks as applicable.
     function _fulfillPayHookSpecificationsFor(
         uint256 projectId,
@@ -1590,9 +1590,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Internal implementation of payment logic. Records the payment in the store, mints tokens via the
     /// controller, and fulfills any pay hook specifications from the data hook.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The address of the token which the project is being paid with.
-    /// @param amount The amount of terminal tokens being received, as a fixed point number with the same number of
+    /// @param projectId The ID of the project to pay.
+    /// @param token The address of the token to pay the project with.
+    /// @param amount The amount of tokens to send, as a fixed point number with the same number of
     /// decimals as this terminal. If this terminal's token is the native token, `amount` is ignored and `msg.value` is
     /// used in its place.
     /// @param payer The address making the payment.
@@ -1671,11 +1671,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Process a fee of the specified amount from a project.
     /// @param projectId The ID of the project paying the fee.
-    /// @param token The token the fee is being paid in.
+    /// @param token The token the fee is paid in.
     /// @param amount The fee amount, as a fixed point number with 18 decimals.
     /// @param beneficiary The address which will receive any platform tokens minted.
     /// @param feeTerminal The terminal that'll receive the fee.
-    /// @param wasHeld A flag indicating if the fee being processed was being held by this terminal.
+    /// @param wasHeld A flag indicating if the fee to process was held by this terminal.
     function _processFee(
         uint256 projectId,
         address token,
@@ -1730,7 +1730,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Returns held fees to the project who paid them based on the specified amount.
     /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee.
-    /// @param projectId The project held fees are being returned to.
+    /// @param projectId The project held fees are to return to.
     /// @param token The token that the held fees are in.
     /// @param amount The amount to base the calculation on, as a fixed point number with the same number of decimals
     /// as this terminal.
@@ -1811,10 +1811,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Sends payouts to a project's payout split group using the specified ruleset.
     /// @param projectId The ID of the project to send the payouts of.
-    /// @param token The token being paid out.
+    /// @param token The token to pay out.
     /// @param amount The number of terminal tokens to pay out, as a fixed point number with same number of decimals as
     /// this terminal.
-    /// @param currency The expected currency of the amount being paid out. Must match the currency of one of the
+    /// @param currency The expected currency of the amount to pay out. Must match the currency of one of the
     /// project's current ruleset's payout limits.
     /// @return amountPaidOut The total amount that was paid out.
     function _sendPayoutsOf(
@@ -1925,10 +1925,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
-    /// @param token The address of the token that the fee is being paid in.
+    /// @param token The address of the token that the fee is paid in.
     /// @param amount The fee's token amount, as a fixed point number with 18 decimals.
     /// @param beneficiary The address to mint the platform's project's tokens for.
-    /// @param shouldHoldFees If fees should be tracked and held instead of being exercised immediately.
+    /// @param shouldHoldFees If fees should be tracked and held instead of processing them immediately.
     /// @return feeAmount The amount of the fee taken.
     function _takeFeeFrom(
         uint256 projectId,
@@ -1981,8 +1981,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Transfers tokens.
     /// @param from The address the transfer should originate from.
     /// @param to The address the transfer should go to.
-    /// @param token The token being transfered.
-    /// @param amount The number of tokens being transferred, as a fixed point number with the same number of decimals
+    /// @param token The token to transfer.
+    /// @param amount The number of tokens to transfer, as a fixed point number with the same number of decimals
     /// as this terminal.
     function _transferFrom(address from, address payable to, address token, uint256 amount) internal {
         if (from == address(this)) {
@@ -2011,10 +2011,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Incurs the protocol fee unless the caller is a feeless address.
     /// @param projectId The ID of the project to use the surplus allowance of.
     /// @param owner The project's owner.
-    /// @param token The token being paid out from the surplus.
+    /// @param token The token to pay out from the surplus.
     /// @param amount The amount of terminal tokens to use from the project's current surplus allowance, as a fixed
     /// point number with the same amount of decimals as this terminal.
-    /// @param currency The expected currency of the amount being paid out. Must match the currency of one of the
+    /// @param currency The expected currency of the amount to pay out. Must match the currency of one of the
     /// project's current ruleset's surplus allowances.
     /// @param beneficiary The address to send the funds to.
     /// @param feeBeneficiary The address to send the tokens resulting from paying the fee.
@@ -2174,7 +2174,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Packages a payment amount with the token's accounting context.
     /// @param projectId The ID of the project the token amount belongs to.
-    /// @param token The token being paid.
+    /// @param token The token to pay with.
     /// @param value The token amount's value.
     /// @return tokenAmount The packaged token amount.
     function _tokenAmountOf(

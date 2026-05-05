@@ -16,9 +16,9 @@ library JBCashOuts {
     error JBCashOuts_DesiredOutputNotAchievable();
 
     /// @notice Returns the amount of surplus terminal tokens which can be reclaimed based on the total surplus, the
-    /// number of tokens being cashed out, the total token supply, and the ruleset's cash out tax rate.
+    /// number of tokens to cash out, the total token supply, and the ruleset's cash out tax rate.
     /// @param surplus The total amount of surplus terminal tokens.
-    /// @param cashOutCount The number of tokens being cashed out, as a fixed point number with 18 decimals.
+    /// @param cashOutCount The number of tokens to cash out, as a fixed point number with 18 decimals.
     /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
     /// @param cashOutTaxRate The current ruleset's cash out tax rate.
     /// @return reclaimableSurplus The amount of surplus tokens that can be reclaimed.

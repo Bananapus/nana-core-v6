@@ -59,7 +59,7 @@ interface IJBTerminalStore {
 
     /// @notice Returns the reclaimable surplus for a project given a cash-out count, total supply, and surplus.
     /// @param projectId The ID of the project.
-    /// @param cashOutCount The number of tokens being cashed out.
+    /// @param cashOutCount The number of tokens to cash out.
     /// @param totalSupply The total token supply.
     /// @param surplus The project's surplus.
     /// @return The reclaimable surplus amount.
@@ -76,7 +76,7 @@ interface IJBTerminalStore {
     /// @notice Returns the reclaimable surplus for a project across multiple terminals, considering only specific
     /// tokens.
     /// @param projectId The ID of the project.
-    /// @param cashOutCount The number of tokens being cashed out.
+    /// @param cashOutCount The number of tokens to cash out.
     /// @param terminals The terminals to include in the surplus calculation. If empty, all project terminals are used.
     /// @param tokens The tokens to include in the surplus calculation.
     /// @param decimals The number of decimals to express the result with.
@@ -114,7 +114,7 @@ interface IJBTerminalStore {
 
     /// @notice Returns the reclaimable surplus for a project across all terminals using all accounting contexts.
     /// @param projectId The ID of the project.
-    /// @param cashOutCount The number of tokens being cashed out.
+    /// @param cashOutCount The number of tokens to cash out.
     /// @param decimals The number of decimals to express the result with.
     /// @param currency The currency to express the result in.
     /// @return The reclaimable surplus amount.
@@ -145,9 +145,9 @@ interface IJBTerminalStore {
     /// @notice Simulates a cash out without modifying state.
     /// @param terminal The terminal to simulate the cash out from.
     /// @param holder The address cashing out.
-    /// @param projectId The ID of the project being cashed out from.
-    /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param tokenToReclaim The token being reclaimed.
+    /// @param projectId The ID of the project to cash out from.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
@@ -175,8 +175,8 @@ interface IJBTerminalStore {
     /// @notice Simulates a payment without modifying state.
     /// @param terminal The terminal to simulate the payment from.
     /// @param payer The address of the payer.
-    /// @param amount The amount being paid.
-    /// @param projectId The ID of the project being paid.
+    /// @param amount The amount to pay.
+    /// @param projectId The ID of the project to pay.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
@@ -237,15 +237,15 @@ interface IJBTerminalStore {
 
     /// @notice Records a balance addition for a project.
     /// @param projectId The ID of the project.
-    /// @param token The token being added.
-    /// @param amount The amount being added.
+    /// @param token The token added.
+    /// @param amount The amount added.
     function recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) external;
 
     /// @notice Records a cash out from a project.
     /// @param holder The address cashing out.
-    /// @param projectId The ID of the project being cashed out from.
-    /// @param cashOutCount The number of project tokens being cashed out.
-    /// @param tokenToReclaim The token being reclaimed.
+    /// @param projectId The ID of the project to cash out from.
+    /// @param cashOutCount The number of project tokens to cash out.
+    /// @param tokenToReclaim The token to reclaim.
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
     /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Extra data to pass along to the data hook.
@@ -271,8 +271,8 @@ interface IJBTerminalStore {
 
     /// @notice Records a payment to a project.
     /// @param payer The address of the payer.
-    /// @param amount The amount being paid.
-    /// @param projectId The ID of the project being paid.
+    /// @param amount The amount to pay.
+    /// @param projectId The ID of the project to pay.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook.
     /// @return ruleset The project's current ruleset.
@@ -290,8 +290,8 @@ interface IJBTerminalStore {
 
     /// @notice Records a payout from a project.
     /// @param projectId The ID of the project paying out.
-    /// @param token The token being paid out.
-    /// @param amount The amount being paid out.
+    /// @param token The token to pay out.
+    /// @param amount The amount to pay out.
     /// @param currency The currency the amount is denominated in.
     /// @return ruleset The project's current ruleset.
     /// @return amountPaidOut The amount paid out in the token's native decimals.
@@ -305,14 +305,14 @@ interface IJBTerminalStore {
         returns (JBRuleset memory ruleset, uint256 amountPaidOut);
 
     /// @notice Records a terminal migration for a project.
-    /// @param projectId The ID of the project being migrated.
-    /// @param token The token being migrated.
+    /// @param projectId The ID of the project to migrate.
+    /// @param token The token to migrate.
     /// @return balance The balance that was migrated.
     function recordTerminalMigration(uint256 projectId, address token) external returns (uint256 balance);
 
     /// @notice Records surplus allowance usage for a project.
     /// @param projectId The ID of the project using surplus allowance.
-    /// @param token The token being used.
+    /// @param token The token to use.
     /// @param amount The amount of surplus allowance to use.
     /// @param currency The currency the amount is denominated in.
     /// @return ruleset The project's current ruleset.

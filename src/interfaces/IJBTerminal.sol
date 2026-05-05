@@ -107,9 +107,9 @@ interface IJBTerminal is IERC165 {
         returns (uint256);
 
     /// @notice Simulates paying a project through this terminal without modifying state.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The token being paid in.
-    /// @param amount The amount of tokens being paid.
+    /// @param projectId The ID of the project to pay.
+    /// @param token The token to pay with.
+    /// @param amount The amount of tokens to pay.
     /// @param beneficiary The address to mint project tokens to.
     /// @param metadata Extra data to pass along to the data hook and pay hooks.
     /// @return ruleset The project's current ruleset.
@@ -139,8 +139,8 @@ interface IJBTerminal is IERC165 {
 
     /// @notice Adds funds to a project's balance.
     /// @param projectId The ID of the project to add funds to.
-    /// @param token The token being added.
-    /// @param amount The amount of tokens being added.
+    /// @param token The token added.
+    /// @param amount The amount of tokens added.
     /// @param shouldReturnHeldFees Whether held fees should be returned based on the amount added.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the emitted event.
@@ -156,16 +156,16 @@ interface IJBTerminal is IERC165 {
         payable;
 
     /// @notice Migrates a project's funds from this terminal to another.
-    /// @param projectId The ID of the project being migrated.
-    /// @param token The address of the token being migrated.
+    /// @param projectId The ID of the project to migrate.
+    /// @param token The address of the token to migrate.
     /// @param to The terminal to migrate to.
     /// @return balance The amount of funds that were migrated.
     function migrateBalanceOf(uint256 projectId, address token, IJBTerminal to) external returns (uint256 balance);
 
     /// @notice Pays a project in a specified token.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The token being paid in.
-    /// @param amount The amount of tokens being paid.
+    /// @param projectId The ID of the project to pay.
+    /// @param token The token to pay with.
+    /// @param amount The amount of tokens to pay.
     /// @param beneficiary The address to mint project tokens to.
     /// @param minReturnedTokens The minimum number of project tokens expected in return.
     /// @param memo A memo to pass along to the emitted event.

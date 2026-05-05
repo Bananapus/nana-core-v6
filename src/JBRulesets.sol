@@ -791,7 +791,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @notice Initializes a ruleset with the specified properties.
     /// @param projectId The ID of the project to initialize the ruleset for.
     /// @param baseRuleset The ruleset struct to base the newly initialized one on.
-    /// @param rulesetId The `rulesetId` for the ruleset being initialized.
+    /// @param rulesetId The `rulesetId` for the ruleset to initialize.
     /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
     /// timestamp.
     /// @param weight The weight to give the newly initialized ruleset.

@@ -17,7 +17,7 @@ interface IJBPayoutTerminal is IJBTerminal {
     /// @notice A direct payout transfer reverted.
     /// @param projectId The ID of the project the payout was for.
     /// @param addr The address the payout was sent to.
-    /// @param token The token being paid out.
+    /// @param token The token to pay out.
     /// @param amount The amount of the payout.
     /// @param fee The fee taken from the payout.
     /// @param reason The revert reason.
@@ -98,7 +98,7 @@ interface IJBPayoutTerminal is IJBTerminal {
 
     /// @notice Sends a project's payouts to its payout split group according to its ruleset's payout limits.
     /// @param projectId The ID of the project to send payouts for.
-    /// @param token The token being paid out.
+    /// @param token The token to pay out.
     /// @param amount The total amount of tokens to pay out.
     /// @param currency The currency the amount is denominated in.
     /// @param minTokensPaidOut The minimum number of terminal tokens expected to be paid out.
@@ -115,7 +115,7 @@ interface IJBPayoutTerminal is IJBTerminal {
 
     /// @notice Uses a project's surplus allowance to send funds to a beneficiary.
     /// @param projectId The ID of the project to use the surplus allowance of.
-    /// @param token The token being paid out.
+    /// @param token The token to pay out.
     /// @param amount The amount of the surplus allowance to use.
     /// @param currency The currency the amount is denominated in.
     /// @param minTokensPaidOut The minimum number of terminal tokens expected to be paid out.

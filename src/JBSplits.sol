@@ -13,7 +13,7 @@ import {JBSplitGroup} from "./structs/JBSplitGroup.sol";
 /// their share (as a fraction of 1,000,000,000). Splits can be locked until a timestamp — locked splits cannot be
 /// removed or reduced until the lock expires, providing recipients with guaranteed revenue streams.
 /// @dev Splits are organized by project, ruleset, and group. Ruleset 0 is the fallback used when no splits are set for
-/// the active ruleset. The payout group ID is derived from the token address being distributed.
+/// the active ruleset. The payout group ID is derived from the token address to distribute.
 contract JBSplits is JBControlled, IJBSplits {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -161,7 +161,7 @@ contract JBSplits is JBControlled, IJBSplits {
     /// @notice Sets the splits for a group given a project, ruleset, and group ID.
     /// @dev The new splits must include any currently set splits that are locked.
     /// @dev The sum of the split `percent`s within one group must be less than 100%.
-    /// @param projectId The ID of the project splits are being set for.
+    /// @param projectId The ID of the project splits are to set for.
     /// @param rulesetId The ID of the ruleset the splits should be considered active within.
     /// @param groupId The ID of the group to set the splits within.
     /// @param splits An array of splits to set.

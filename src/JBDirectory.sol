@@ -93,7 +93,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// `SET_CONTROLLER` permission.
     /// - OR the caller is the project's current controller.
     /// - OR the caller `isAllowedToSetFirstController` and the project has no controller yet.
-    /// @param projectId The ID of the project whose controller is being set.
+    /// @param projectId The ID of the project to set the controller for.
     /// @param controller The address of the controller to set.
     function setControllerOf(uint256 projectId, IERC165 controller) external override {
         // Keep a reference to the current controller.
@@ -172,9 +172,9 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// @dev Can only be called by the project's owner or an address with `SET_PRIMARY_TERMINAL` permission. The
     /// terminal must accept the token for this project. If the terminal isn't already in the project's terminal list,
     /// it will be added automatically (requires `ADD_TERMINALS` permission).
-    /// @param projectId The ID of the project whose primary terminal is being set.
+    /// @param projectId The ID of the project to set the primary terminal for.
     /// @param token The token to set the primary terminal for.
-    /// @param terminal The terminal being set as the primary terminal.
+    /// @param terminal The terminal to set as the primary terminal.
     function setPrimaryTerminalOf(uint256 projectId, address token, IJBTerminal terminal) external override {
         // Enforce permissions.
         _requirePermissionFrom({
@@ -209,7 +209,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// cash outs for a project. This overwrites the existing list.
     /// @dev Can only be called by the project's owner, an address with `SET_TERMINALS` permission, or the project's
     /// controller. Unless the caller is the controller, the ruleset must have `allowSetTerminals` enabled.
-    /// @param projectId The ID of the project whose terminals are being set.
+    /// @param projectId The ID of the project to set terminals for.
     /// @param terminals An array of terminal addresses to set for the project.
     function setTerminalsOf(uint256 projectId, IJBTerminal[] calldata terminals) external override {
         // Cache the controller to avoid redundant storage reads.

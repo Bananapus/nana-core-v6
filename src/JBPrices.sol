@@ -53,7 +53,7 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     /// @custom:param projectId The ID of the project the feed applies to. Feeds stored in ID 0 are used by default for
     /// all projects.
     /// @custom:param pricingCurrency The currency the feed's resulting price is in terms of.
-    /// @custom:param unitCurrency The currency being priced by the feed.
+    /// @custom:param unitCurrency The currency the feed prices.
     mapping(uint256 projectId => mapping(uint256 pricingCurrency => mapping(uint256 unitCurrency => IJBPriceFeed)))
         public
         override priceFeedFor;
@@ -95,7 +95,7 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     /// authorization. A default feed for a pair blocks per-project overrides for that same pair.
     /// @param projectId The ID of the project to add a feed for. Pass 0 for a protocol-wide default.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @param unitCurrency The currency the feed prices.
     /// @param feed The address of the price feed to add.
     function addPriceFeedFor(
         uint256 projectId,
@@ -165,7 +165,7 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     /// default. Reverts with `JBPrices_PriceFeedNotFound` if no feed exists in any direction.
     /// @param projectId The ID of the project to check the feed for. Falls back to project 0 (protocol defaults).
     /// @param pricingCurrency The currency the result is denominated in.
-    /// @param unitCurrency The currency being priced.
+    /// @param unitCurrency The currency to price.
     /// @param decimals The number of decimals the returned fixed point price should include.
     /// @return The `pricingCurrency` price of 1 `unitCurrency`, as a fixed point number with the specified number of
     /// decimals.

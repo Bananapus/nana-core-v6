@@ -127,7 +127,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @notice Validates a signature on behalf of this token contract (ERC-1271).
     /// @dev Allows the project owner or an operator with `SIGN_FOR_ERC20` permission to sign messages on behalf of
     /// this token. Useful for Etherscan contract verification and other off-chain signature flows.
-    /// @param hash The hash of the data being signed.
+    /// @param hash The hash of the data to sign.
     /// @param signature The signature to validate.
     /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
