@@ -1238,7 +1238,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Splits a token count into beneficiary and reserved portions.
     /// @param tokenCount The total token count, including reserved tokens.
-    /// @param reservedPercent The reserved percent to apply.
+    /// @param reservedPercent The reserved percent to apply, out of `JBConstants.MAX_RESERVED_PERCENT`.
     /// @return beneficiaryTokenCount The number of tokens for the beneficiary.
     /// @return reservedTokenCount The number of tokens to reserve.
     function _splitTokenCount(

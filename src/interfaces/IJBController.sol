@@ -69,7 +69,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param tokenCount The total number of tokens minted, including reserved tokens.
     /// @param beneficiaryTokenCount The number of tokens minted for the beneficiary.
     /// @param memo A memo associated with the mint.
-    /// @param reservedPercent The reserved percent applied to the mint.
+    /// @param reservedPercent The reserved percent applied to the mint, out of `JBConstants.MAX_RESERVED_PERCENT`.
     /// @param caller The address that called the mint function.
     event MintTokens(
         address indexed beneficiary,

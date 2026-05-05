@@ -13,7 +13,8 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member beneficiary The specified address that should be the beneficiary of anything that this payment
 /// yields.
 /// @custom:member weight The weight of the ruleset during which the payment is made.
-/// @custom:member reservedPercent The reserved percent of the ruleset the payment is made during.
+/// @custom:member reservedPercent The reserved percent of the ruleset the payment is made during, out of
+/// `JBConstants.MAX_RESERVED_PERCENT`.
 /// @custom:member metadata Extra data specified by the payer.
 struct JBBeforePayRecordedContext {
     address terminal;
