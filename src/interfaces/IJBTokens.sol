@@ -122,7 +122,7 @@ interface IJBTokens {
 
     /// @notice Claims tokens from a holder's credits into a beneficiary's account.
     /// @param holder The address to claim credits from.
-    /// @param projectId The ID of the project whose tokens are to claim.
+    /// @param projectId The ID of the project to claim tokens for.
     /// @param count The number of tokens to claim.
     /// @param beneficiary The address to send the claimed tokens to.
     function claimTokensFor(address holder, uint256 projectId, uint256 count, address beneficiary) external;
@@ -144,7 +144,7 @@ interface IJBTokens {
 
     /// @notice Mints tokens or credits for a holder.
     /// @param holder The address to mint tokens for.
-    /// @param projectId The ID of the project whose tokens are to mint.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param count The number of tokens to mint.
     /// @return token The project's token, if one exists.
     function mintFor(address holder, uint256 projectId, uint256 count) external returns (IJBToken token);
@@ -162,7 +162,7 @@ interface IJBTokens {
 
     /// @notice Transfers credits from one holder to another.
     /// @param holder The address to transfer credits from.
-    /// @param projectId The ID of the project whose credits are to transfer.
+    /// @param projectId The ID of the project to transfer credits for.
     /// @param recipient The address to transfer credits to.
     /// @param count The number of credits to transfer.
     function transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 count) external;

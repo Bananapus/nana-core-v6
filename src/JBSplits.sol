@@ -161,7 +161,7 @@ contract JBSplits is JBControlled, IJBSplits {
     /// @notice Sets the splits for a group given a project, ruleset, and group ID.
     /// @dev The new splits must include any currently set splits that are locked.
     /// @dev The sum of the split `percent`s within one group must be less than 100%.
-    /// @param projectId The ID of the project splits are to set for.
+    /// @param projectId The ID of the project to set splits for.
     /// @param rulesetId The ID of the ruleset the splits should be considered active within.
     /// @param groupId The ID of the group to set the splits within.
     /// @param splits An array of splits to set.

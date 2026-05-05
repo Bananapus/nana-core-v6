@@ -14,7 +14,7 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member surplus The surplus amount used for the calculation, as a fixed point number with 18 decimals.
 /// Includes the token of the surplus, the surplus value, the number of decimals
 /// included, and the currency of the surplus.
-/// @custom:member useTotalSurplus If surplus across all of a project's terminals is to use when making cash outs.
+/// @custom:member useTotalSurplus If true, use surplus across all of a project's terminals when calculating cash outs.
 /// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is made during.
 /// @custom:member beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Useful for data hooks
 /// that charge their own fees — they can skip fees when value stays in the protocol (e.g. project-to-project

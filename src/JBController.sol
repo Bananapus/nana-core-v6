@@ -279,7 +279,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// wallet. Credits and ERC-20 tokens are interchangeable — this just makes them transferable/tradeable.
     /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
     /// @param holder The address to redeem credits from.
-    /// @param projectId The ID of the project whose tokens are to claim.
+    /// @param projectId The ID of the project to claim tokens for.
     /// @param tokenCount The number of tokens to claim.
     /// @param beneficiary The account the claimed tokens will go to.
     function claimTokensFor(
@@ -521,7 +521,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// reserved percent (which accumulates until `sendReservedTokensToSplitsOf` is called).
     /// @dev Can be called by the project owner, an operator with `MINT_TOKENS` permission, a project terminal, or the
     /// data hook. If `allowOwnerMinting` is false in the current ruleset, only terminals and the data hook can mint.
-    /// @param projectId The ID of the project whose tokens are to mint.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param beneficiary The address which will receive the (non-reserved) tokens.
     /// @param memo A memo to pass along to the emitted event.
@@ -729,7 +729,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @dev Can only be called by the credit holder or an operator with `TRANSFER_CREDITS` permission. The current
     /// ruleset must not have credit transfers paused.
     /// @param holder The address to transfer credits from.
-    /// @param projectId The ID of the project whose credits are to transfer.
+    /// @param projectId The ID of the project to transfer credits for.
     /// @param recipient The address to transfer credits to.
     /// @param creditCount The number of credits to transfer.
     function transferCreditsFrom(
@@ -844,7 +844,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
-    /// @param projectId The ID of the project whose tokens are to mint.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
     /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.

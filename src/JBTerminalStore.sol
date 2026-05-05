@@ -436,8 +436,8 @@ contract JBTerminalStore is IJBTerminalStore {
     /// the new terminal. The current ruleset must allow terminal migration.
     /// @param projectId The ID of the project to migrate.
     /// @param token The token to migrate.
-    /// @return balance The project's current balance (which is to migrate), as a fixed point number with the same
-    /// amount of decimals as its relative terminal.
+    /// @return balance The project's current balance (the amount that will migrate), as a fixed point number with the
+    /// same amount of decimals as its relative terminal.
     function recordTerminalMigration(uint256 projectId, address token) external override returns (uint256 balance) {
         // Get a reference to the project's current ruleset.
         JBRuleset memory ruleset = RULESETS.currentOf(projectId);
@@ -462,7 +462,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param token The token whose balances should contribute to the surplus allowance to reclaim from.
     /// @param amount The amount to use from the surplus allowance, as a fixed point number.
     /// @param currency The currency of the `amount`. Must match the currency of the surplus allowance.
-    /// @return ruleset The ruleset during the surplus allowance is to use during, as a `JBRuleset` struct.
+    /// @return ruleset The ruleset the surplus allowance applies to, as a `JBRuleset` struct.
     /// @return usedAmount The amount of terminal tokens used, as a fixed point number with the same amount of decimals
     /// as its relative terminal.
     function recordUsedAllowanceOf(
@@ -841,7 +841,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @dev When `useTotalSurplusForCashOuts` is enabled, surplus is aggregated from ALL registered terminals without
     /// validation. Projects MUST only register trusted terminals — an untrusted terminal can over-report surplus and
     /// cause the executing terminal to overpay cash-outs.
-    /// @param terminal The terminal the cash out is to record from.
+    /// @param terminal The terminal recording the cash out.
     /// @param projectId The ID of the project to cash out from.
     /// @param tokenToReclaim The token to reclaim.
     /// @param ruleset The ruleset during the cash out.

@@ -83,7 +83,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice A project was prepared for migration from another controller.
     /// @param projectId The ID of the project to prepare for migration.
-    /// @param from The controller the project is to migrate from.
+    /// @param from The controller to migrate from.
     /// @param caller The address that called the prep migration function.
     event PrepMigration(uint256 indexed projectId, address from, address caller);
 
@@ -226,7 +226,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     function pendingReservedTokenBalanceOf(uint256 projectId) external view returns (uint256);
 
     /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
-    /// @param projectId The ID of the project whose tokens are to mint.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
     /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
@@ -276,7 +276,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice Redeems credits to claim tokens into a beneficiary's account.
     /// @param holder The address to redeem credits from.
-    /// @param projectId The ID of the project whose tokens are to claim.
+    /// @param projectId The ID of the project to claim tokens for.
     /// @param tokenCount The number of tokens to claim.
     /// @param beneficiary The account the claimed tokens will go to.
     function claimTokensFor(address holder, uint256 projectId, uint256 tokenCount, address beneficiary) external;
@@ -331,7 +331,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         returns (uint256 rulesetId);
 
     /// @notice Mints new project tokens or credits to a beneficiary, optionally reserving a portion.
-    /// @param projectId The ID of the project whose tokens are to mint.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param beneficiary The address which will receive the non-reserved tokens.
     /// @param memo A memo to pass along to the emitted event.
@@ -384,7 +384,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
 
     /// @notice Transfers credits from one address to another.
     /// @param holder The address to transfer credits from.
-    /// @param projectId The ID of the project whose credits are to transfer.
+    /// @param projectId The ID of the project to transfer credits for.
     /// @param recipient The address to transfer credits to.
     /// @param creditCount The number of credits to transfer.
     function transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 creditCount) external;

@@ -1730,7 +1730,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Returns held fees to the project who paid them based on the specified amount.
     /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee.
-    /// @param projectId The project held fees are to return to.
+    /// @param projectId The project to return held fees to.
     /// @param token The token that the held fees are in.
     /// @param amount The amount to base the calculation on, as a fixed point number with the same number of decimals
     /// as this terminal.
