@@ -40,7 +40,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     /// permission
     /// is granted. See `JBPermissionIds` for the meaning of each ID.
     /// @custom:param operator The address of the operator.
-    /// @custom:param account The address of the account being operated on behalf of.
+    /// @custom:param account The address of the account operated on behalf of.
     /// @custom:param projectId The project ID the permissions are scoped to. An ID of 0 grants permissions across all
     /// projects.
     mapping(address operator => mapping(address account => mapping(uint256 projectId => uint256)))
@@ -62,7 +62,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     /// @dev Only the account itself can set permissions without restriction. A ROOT operator on a specific project can
     /// set non-ROOT permissions for that same project on the account's behalf, but cannot grant ROOT or set wildcard
     /// (project ID 0) permissions — preventing privilege escalation.
-    /// @param account The account whose operator permissions are being configured.
+    /// @param account The account to configure operator permissions for.
     /// @param permissionsData The operator address, project scope, and permission IDs to set.
     function setPermissionsFor(address account, JBPermissionsData calldata permissionsData) external override {
         // Pack the permission IDs into a uint256.

@@ -12,17 +12,17 @@ interface IJBMigratable is IERC165 {
     event Migrate(uint256 indexed projectId, IERC165 to, address caller);
 
     /// @notice Called after this controller has been set as the project's controller in the directory.
-    /// @param from The controller being migrated from.
+    /// @param from The controller to migrate from.
     /// @param projectId The ID of the project that was migrated.
     function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external;
 
-    /// @notice Prepares this controller to receive a project being migrated from another controller.
-    /// @param from The controller being migrated from.
-    /// @param projectId The ID of the project being migrated.
+    /// @notice Prepares this controller to receive a project to migrate from another controller.
+    /// @param from The controller to migrate from.
+    /// @param projectId The ID of the project to migrate.
     function beforeReceiveMigrationFrom(IERC165 from, uint256 projectId) external;
 
     /// @notice Migrates a project from this controller to another.
-    /// @param projectId The ID of the project being migrated.
+    /// @param projectId The ID of the project to migrate.
     /// @param to The controller to migrate the project to.
     function migrate(uint256 projectId, IERC165 to) external;
 }

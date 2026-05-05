@@ -70,7 +70,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     /// surplus. Both reset each funding cycle.
     /// @dev Only a project's controller can set fund access limits (called during `queueRulesetsOf`).
     /// @dev Limits within each group must be sorted by currency in strictly increasing order to prevent duplicates.
-    /// @param projectId The ID of the project whose fund access limits are being set.
+    /// @param projectId The ID of the project to set fund access limits for.
     /// @param rulesetId The ID of the ruleset that the limits will apply within.
     /// @param fundAccessLimitGroups An array containing payout limits and surplus allowances for each payment terminal.
     /// Amounts are fixed point numbers using the same number of decimals as the associated terminal.

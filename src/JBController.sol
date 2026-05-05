@@ -176,7 +176,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// ruleset must have `allowAddPriceFeed` enabled.
     /// @param projectId The ID of the project to add the feed for.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
-    /// @param unitCurrency The currency being priced by the feed.
+    /// @param unitCurrency The currency the feed prices.
     /// @param feed The address of the price feed to add.
     function addPriceFeedFor(
         uint256 projectId,
@@ -204,7 +204,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Called after this controller has been set as the project's controller in the directory.
     /// @dev Can only be called by the directory.
-    /// @param from The controller being migrated from.
+    /// @param from The controller to migrate from.
     /// @param projectId The ID of the project that migrated to this controller.
     function afterReceiveMigrationFrom(IERC165 from, uint256 projectId) external view override {
         from; // Suppress unused variable warning.
@@ -214,9 +214,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         if (_msgSender() != address(DIRECTORY)) revert JBController_OnlyDirectory(_msgSender(), DIRECTORY);
     }
 
-    /// @notice Prepares this controller to receive a project being migrated from another controller.
+    /// @notice Prepares this controller to receive a project to migrate from another controller.
     /// @dev This controller should not be the project's controller yet.
-    /// @param from The controller being migrated from.
+    /// @param from The controller to migrate from.
     /// @param projectId The ID of the project that will migrate to this controller.
     function beforeReceiveMigrationFrom(IERC165 from, uint256 projectId) external override {
         // Keep a reference to the sender.
@@ -243,8 +243,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Burns a holder's project tokens (or credits), permanently removing them from supply. Used by terminals
     /// during cash outs, or directly by holders who want to burn voluntarily.
     /// @dev Can only be called by the holder, an operator with `BURN_TOKENS` permission, or a project terminal.
-    /// @param holder The address whose tokens are being burned.
-    /// @param projectId The ID of the project whose tokens are being burned.
+    /// @param holder The address to burn tokens for.
+    /// @param projectId The ID of the project to burn tokens for.
     /// @param tokenCount The number of tokens to burn.
     /// @param memo A memo to pass along to the emitted event.
     function burnTokensOf(
@@ -279,7 +279,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// wallet. Credits and ERC-20 tokens are interchangeable — this just makes them transferable/tradeable.
     /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
     /// @param holder The address to redeem credits from.
-    /// @param projectId The ID of the project whose tokens are being claimed.
+    /// @param projectId The ID of the project to claim tokens for.
     /// @param tokenCount The number of tokens to claim.
     /// @param beneficiary The account the claimed tokens will go to.
     function claimTokensFor(
@@ -338,9 +338,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// terminal.
     /// @dev Can only be called by this controller.
     /// @param terminal The terminal to pay.
-    /// @param projectId The ID of the project being paid.
-    /// @param token The token being paid with.
-    /// @param splitTokenCount The number of tokens being paid.
+    /// @param projectId The ID of the project to pay.
+    /// @param token The token to pay with.
+    /// @param splitTokenCount The number of tokens to pay.
     /// @param beneficiary The payment's beneficiary.
     /// @param metadata The pay metadata sent to the terminal.
     function executePayReservedTokenToTerminal(
@@ -521,7 +521,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// reserved percent (which accumulates until `sendReservedTokensToSplitsOf` is called).
     /// @dev Can be called by the project owner, an operator with `MINT_TOKENS` permission, a project terminal, or the
     /// data hook. If `allowOwnerMinting` is false in the current ruleset, only terminals and the data hook can mint.
-    /// @param projectId The ID of the project whose tokens are being minted.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param beneficiary The address which will receive the (non-reserved) tokens.
     /// @param memo A memo to pass along to the emitted event.
@@ -694,7 +694,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Sets the name and symbol of a project's token.
     /// @dev Can only be called by the project's owner or an address with the owner's permission to
     /// `SET_TOKEN_METADATA`.
-    /// @param projectId The ID of the project whose token is being updated.
+    /// @param projectId The ID of the project to update the token for.
     /// @param name The new name.
     /// @param symbol The new symbol.
     function setTokenMetadataOf(uint256 projectId, string calldata name, string calldata symbol) external override {
@@ -729,7 +729,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @dev Can only be called by the credit holder or an operator with `TRANSFER_CREDITS` permission. The current
     /// ruleset must not have credit transfers paused.
     /// @param holder The address to transfer credits from.
-    /// @param projectId The ID of the project whose credits are being transferred.
+    /// @param projectId The ID of the project to transfer credits for.
     /// @param recipient The address to transfer credits to.
     /// @param creditCount The number of credits to transfer.
     function transferCreditsFrom(
@@ -844,7 +844,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
-    /// @param projectId The ID of the project whose tokens are being minted.
+    /// @param projectId The ID of the project to mint tokens for.
     /// @param tokenCount The number of tokens to mint, including any reserved tokens.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
     /// @return beneficiaryTokenCount The number of tokens that would be minted for the beneficiary.
@@ -960,7 +960,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Queues one or more rulesets and stores information pertinent to the configuration.
     /// @param projectId The ID of the project to queue rulesets for.
-    /// @param rulesetConfigurations The rulesets being queued.
+    /// @param rulesetConfigurations The rulesets to queue.
     /// @return rulesetId The ID of the last ruleset that was successfully queued.
     function _queueRulesets(
         uint256 projectId,

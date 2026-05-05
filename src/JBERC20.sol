@@ -127,7 +127,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @notice Validates a signature on behalf of this token contract (ERC-1271).
     /// @dev Allows the project owner or an operator with `SIGN_FOR_ERC20` permission to sign messages on behalf of
     /// this token. Useful for Etherscan contract verification and other off-chain signature flows.
-    /// @param hash The hash of the data being signed.
+    /// @param hash The hash of the data to sign.
     /// @param signature The signature to validate.
     /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
@@ -170,17 +170,17 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
         return super.decimals();
     }
 
-    /// @notice The token's name.
+    /// @notice The token's name, set during initialization.
     function name() public view virtual override returns (string memory) {
         return _name;
     }
 
-    /// @notice Required override.
+    /// @notice The current nonce for a given account, used for permit signatures.
     function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
 
-    /// @notice The token's symbol.
+    /// @notice The token's ticker symbol, set during initialization.
     function symbol() public view virtual override returns (string memory) {
         return _symbol;
     }
@@ -195,7 +195,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Initializes the token.
+    /// @notice Initialize a new project token with the given name, symbol, and owner.
     /// @param name_ The token's name.
     /// @param symbol_ The token's symbol.
     /// @param tokens The JBTokens contract that manages this token.

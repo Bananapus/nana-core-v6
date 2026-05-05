@@ -47,7 +47,7 @@ contract JBTokens is JBControlled, IJBTokens {
     /// @custom:param projectId The ID of the project to which the credits belong.
     mapping(address holder => mapping(uint256 projectId => uint256)) public override creditBalanceOf;
 
-    /// @notice Each token's project.
+    /// @notice The project ID that a given ERC-20 token is associated with.
     /// @custom:param token The address of the token associated with the project.
     // slither-disable-next-line unused-return
     mapping(IJBToken token => uint256) public override projectIdOf;
@@ -77,7 +77,7 @@ contract JBTokens is JBControlled, IJBTokens {
     /// @notice Destroy a holder's tokens for a project. Credits (internal balance) are burned first; if more tokens
     /// need burning, the remaining amount is burned from the holder's ERC-20 balance.
     /// @dev Only a project's current controller can burn its tokens. Called during cash outs and manual burns.
-    /// @param holder The address that owns the tokens which are being burned.
+    /// @param holder The address to burn tokens from.
     /// @param projectId The ID of the project the burned tokens belong to.
     /// @param count The number of tokens to burn.
     function burnFrom(address holder, uint256 projectId, uint256 count) external override onlyControllerOf(projectId) {
@@ -135,8 +135,8 @@ contract JBTokens is JBControlled, IJBTokens {
     /// balance and the equivalent ERC-20 tokens are minted to the beneficiary. The project must have an ERC-20
     /// deployed or attached.
     /// @dev Only a project's controller can claim that project's tokens.
-    /// @param holder The owner of the credits being redeemed.
-    /// @param projectId The ID of the project whose tokens are being claimed.
+    /// @param holder The owner of the credits to redeem.
+    /// @param projectId The ID of the project to claim tokens for.
     /// @param count The number of tokens to claim.
     /// @param beneficiary The account into which the claimed tokens will go.
     function claimTokensFor(
@@ -317,7 +317,7 @@ contract JBTokens is JBControlled, IJBTokens {
     /// @notice Update the name and symbol of a project's ERC-20 token. The project must already have a token deployed
     /// or attached.
     /// @dev Only a project's controller can set the token's name and symbol.
-    /// @param projectId The ID of the project whose token is being updated.
+    /// @param projectId The ID of the project to update the token for.
     /// @param name The new name.
     /// @param symbol The new symbol.
     function setTokenMetadataFor(
@@ -351,7 +351,7 @@ contract JBTokens is JBControlled, IJBTokens {
     /// just a balance in this contract), so this function enables transfers via the controller.
     /// @dev Only a project's controller can transfer credits for that project.
     /// @param holder The address to transfer credits from.
-    /// @param projectId The ID of the project whose credits are being transferred.
+    /// @param projectId The ID of the project to transfer credits for.
     /// @param recipient The recipient of the credits.
     /// @param count The number of token credits to transfer.
     function transferCreditsFrom(

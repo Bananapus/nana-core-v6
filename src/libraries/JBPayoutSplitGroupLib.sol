@@ -44,9 +44,9 @@ library JBPayoutSplitGroupLib {
     /// @param splits The splits contract to read splits from.
     /// @param store The terminal store used to restore balance when a payout fails.
     /// @param projectId The ID of the project to send the payouts of.
-    /// @param token The address of the token being paid out.
-    /// @param rulesetId The ID of the ruleset of the split group being paid.
-    /// @param amount The total amount being paid out.
+    /// @param token The address of the token to pay out.
+    /// @param rulesetId The ID of the ruleset of the split group to pay.
+    /// @param amount The total amount to pay out.
     /// @param caller The original caller of the terminal payout flow.
     /// @return leftoverAmount The leftover amount after split payouts.
     /// @return amountEligibleForFees The amount of payouts that are eligible for fees.
@@ -121,8 +121,8 @@ library JBPayoutSplitGroupLib {
     /// @param store The terminal store used to restore balance when a payout fails.
     /// @param split The split to pay.
     /// @param projectId The ID of the project the split was specified by.
-    /// @param token The address of the token being paid out.
-    /// @param amount The total amount that the split is being paid.
+    /// @param token The address of the token to pay out.
+    /// @param amount The total amount that the split is paid.
     /// @param caller The original caller of the terminal payout flow.
     /// @return netPayoutAmount The amount sent to the split after subtracting fees.
     function _sendPayoutToSplit(
