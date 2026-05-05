@@ -14,7 +14,8 @@ import {JBSplitGroup} from "./JBSplitGroup.sol";
 /// @custom:member duration How long the ruleset lasts in seconds. 0 = stays active until explicitly replaced.
 /// @custom:member weight Tokens minted per unit of payment (18 decimals). Pass 1 to inherit decayed weight from the
 /// previous ruleset. Pass 0 for no token issuance.
-/// @custom:member weightCutPercent Decay rate per cycle (out of 1,000,000,000). 100,000,000 = 10% cut. 0 = no decay.
+/// @custom:member weightCutPercent Decay rate per cycle, out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`. 100,000,000 =
+/// 10% cut. 0 = no decay.
 /// @custom:member approvalHook Contract that must approve the *next* queued ruleset for it to take effect.
 /// @custom:member metadata The ruleset's behavioral flags and parameters (see `JBRulesetMetadata`).
 /// @custom:member splitGroups How payouts and reserved tokens are distributed during this ruleset.

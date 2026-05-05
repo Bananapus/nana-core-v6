@@ -16,7 +16,7 @@ interface IJBCashOutTerminal is IJBTerminal {
     /// @param holder The address whose tokens were cashed out.
     /// @param beneficiary The address that received the reclaimed funds.
     /// @param cashOutCount The number of tokens cashed out.
-    /// @param cashOutTaxRate The cash out tax rate applied.
+    /// @param cashOutTaxRate The cash out tax rate applied, out of `JBConstants.MAX_CASH_OUT_TAX_RATE`.
     /// @param reclaimAmount The amount of funds reclaimed.
     /// @param metadata Extra metadata associated with the cash out.
     /// @param caller The address that called the cash out function.

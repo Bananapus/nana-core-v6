@@ -22,7 +22,8 @@ interface IJBRulesets {
     /// @param projectId The ID of the project the ruleset was queued for.
     /// @param duration The duration of the ruleset in seconds.
     /// @param weight The weight of the ruleset.
-    /// @param weightCutPercent The percent by which the weight decreases each cycle.
+    /// @param weightCutPercent The percent by which the weight decreases each cycle, out of
+    /// `JBConstants.MAX_WEIGHT_CUT_PERCENT`.
     /// @param approvalHook The approval hook for the ruleset.
     /// @param metadata The packed ruleset metadata.
     /// @param mustStartAtOrAfter The earliest time the ruleset can start.
@@ -89,7 +90,8 @@ interface IJBRulesets {
     /// @param baseRulesetStart The start time of the base ruleset.
     /// @param baseRulesetDuration The duration of the base ruleset.
     /// @param baseRulesetWeight The weight of the base ruleset.
-    /// @param baseRulesetWeightCutPercent The weight cut percent of the base ruleset.
+    /// @param baseRulesetWeightCutPercent The weight cut percent of the base ruleset, out of
+    /// `JBConstants.MAX_WEIGHT_CUT_PERCENT`.
     /// @param baseRulesetCacheId The cache ID of the base ruleset.
     /// @param start The start time to derive the weight for.
     /// @return weight The derived weight.
@@ -150,7 +152,8 @@ interface IJBRulesets {
     /// @param projectId The ID of the project to queue the ruleset for.
     /// @param duration The duration of the ruleset in seconds.
     /// @param weight The weight of the ruleset.
-    /// @param weightCutPercent The percent by which the weight decreases each cycle.
+    /// @param weightCutPercent The percent by which the weight decreases each cycle, out of
+    /// `JBConstants.MAX_WEIGHT_CUT_PERCENT`.
     /// @param approvalHook The approval hook for the ruleset.
     /// @param metadata The packed ruleset metadata.
     /// @param mustStartAtOrAfter The earliest time the ruleset can start.

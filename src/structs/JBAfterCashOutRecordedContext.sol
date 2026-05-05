@@ -7,7 +7,8 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// @custom:member projectId The ID of the project to cash out from.
 /// @custom:member rulesetId The ID of the ruleset the cash out is made during.
 /// @custom:member cashOutCount The number of project tokens to cash out.
-/// @custom:member cashOutTaxRate The current ruleset's cash out tax rate.
+/// @custom:member cashOutTaxRate The current ruleset's cash out tax rate, out of
+/// `JBConstants.MAX_CASH_OUT_TAX_RATE`.
 /// @custom:member reclaimedAmount The token amount reclaimed from the project's terminal balance. Includes the
 /// token
 /// reclaimed, the value, the number of decimals included, and the currency of the amount.

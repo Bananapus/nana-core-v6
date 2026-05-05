@@ -15,8 +15,9 @@ import {IJBRulesetApprovalHook} from "./../interfaces/IJBRulesetApprovalHook.sol
 /// @custom:member duration How many seconds the ruleset lasts. 0 = no auto-cycling (must be explicitly replaced).
 /// @custom:member weight Tokens minted per unit paid (18 decimals). The terminal divides payment amount by weight to
 /// determine token issuance. Higher weight = more tokens per unit of payment.
-/// @custom:member weightCutPercent How much to reduce weight each cycle (out of 1,000,000,000). 100,000,000 = 10% cut
-/// per cycle. 0 = no decay. Only applies when a cycle auto-rolls without an explicitly queued replacement.
+/// @custom:member weightCutPercent How much to reduce weight each cycle, out of
+/// `JBConstants.MAX_WEIGHT_CUT_PERCENT`. 100,000,000 = 10% cut per cycle. 0 = no decay. Only applies when a cycle
+/// auto-rolls without an explicitly queued replacement.
 /// @custom:member approvalHook A contract that gates whether queued rulesets can take effect (e.g. `JBDeadline` for
 /// minimum notice periods). If the hook rejects a queued ruleset, the current one continues.
 /// @custom:member metadata Packed 256-bit field containing reservedPercent, cashOutTaxRate, baseCurrency, boolean

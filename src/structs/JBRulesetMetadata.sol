@@ -3,10 +3,11 @@ pragma solidity ^0.8.0;
 
 /// @notice Human-readable configuration for a ruleset's behavioral flags and parameters. This struct is packed into
 /// 256 bits for on-chain storage (see `JBRulesetMetadataResolver` for the packing layout).
-/// @custom:member reservedPercent Percentage of newly minted tokens set aside for the reserved token split group
-/// (0–10,000 basis points). 5,000 = 50% reserved.
-/// @custom:member cashOutTaxRate Tax applied when holders cash out tokens (0–10,000 basis points). Higher rate = less
-/// reclaim per token. 0 = proportional, 10,000 = no reclaim (100% tax).
+/// @custom:member reservedPercent Percentage of newly minted tokens set aside for the reserved token split group,
+/// out of `JBConstants.MAX_RESERVED_PERCENT`. 5,000 = 50% reserved.
+/// @custom:member cashOutTaxRate Tax applied when holders cash out tokens, out of
+/// `JBConstants.MAX_CASH_OUT_TAX_RATE`. Higher rate = less reclaim per token. 0 = proportional, 10,000 = no reclaim
+/// (100% tax).
 /// @custom:member baseCurrency The currency used to interpret the ruleset's weight for token issuance. Convention:
 /// `uint32(uint160(tokenAddress))` for tokens, or `JBCurrencyIds.ETH`/`JBCurrencyIds.USD` for well-known currencies.
 /// @custom:member pausePay If `true`, the project cannot receive payments during this ruleset.

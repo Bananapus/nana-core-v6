@@ -20,7 +20,7 @@ library JBCashOuts {
     /// @param surplus The total amount of surplus terminal tokens.
     /// @param cashOutCount The number of tokens to cash out, as a fixed point number with 18 decimals.
     /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
-    /// @param cashOutTaxRate The current ruleset's cash out tax rate.
+    /// @param cashOutTaxRate The current ruleset's cash out tax rate, out of `JBConstants.MAX_CASH_OUT_TAX_RATE`.
     /// @return reclaimableSurplus The amount of surplus tokens that can be reclaimed.
     function cashOutFrom(
         uint256 surplus,
@@ -64,7 +64,7 @@ library JBCashOuts {
     /// @param surplus The total amount of surplus terminal tokens.
     /// @param desiredOutput The minimum amount of surplus tokens the caller wants to receive.
     /// @param totalSupply The total token supply, as a fixed point number with 18 decimals.
-    /// @param cashOutTaxRate The current ruleset's cash out tax rate.
+    /// @param cashOutTaxRate The current ruleset's cash out tax rate, out of `JBConstants.MAX_CASH_OUT_TAX_RATE`.
     /// @return count The minimum number of tokens to cash out.
     function minCashOutCountFor(
         uint256 surplus,

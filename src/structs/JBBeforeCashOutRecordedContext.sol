@@ -15,7 +15,8 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// Includes the token of the surplus, the surplus value, the number of decimals
 /// included, and the currency of the surplus.
 /// @custom:member useTotalSurplus If true, use surplus across all of a project's terminals when calculating cash outs.
-/// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is made during.
+/// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is made during, out of
+/// `JBConstants.MAX_CASH_OUT_TAX_RATE`.
 /// @custom:member beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Useful for data hooks
 /// that charge their own fees — they can skip fees when value stays in the protocol (e.g. project-to-project
 /// routing).

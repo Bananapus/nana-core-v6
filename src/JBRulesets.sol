@@ -96,8 +96,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// replaced). When a duration ends without a queued replacement, the ruleset rolls over with decayed weight.
     /// @param weight Tokens minted per unit paid (18 decimals). Terminals divide payment amount by weight to determine
     /// issuance. A value of 1 means "inherit decayed weight from previous ruleset".
-    /// @param weightCutPercent How much to reduce weight each auto-cycle (out of 1,000,000,000). Only applies when no
-    /// explicit replacement is queued. 0 = no decay. 100,000,000 = 10% cut per cycle.
+    /// @param weightCutPercent How much to reduce weight each auto-cycle, out of
+    /// `JBConstants.MAX_WEIGHT_CUT_PERCENT`. Only applies when no explicit replacement is queued. 0 = no decay.
+    /// 100,000,000 = 10% cut per cycle.
     /// @param approvalHook A contract that gates whether the *next* queued ruleset can take effect (e.g. `JBDeadline`
     /// for minimum notice periods). Set to address(0) for no approval gate.
     /// @param metadata Packed 256-bit field decoded by `JBRulesetMetadataResolver`. Not used by `JBRulesets` itself.
@@ -614,7 +615,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @param baseRulesetStart The start time of the base ruleset.
     /// @param baseRulesetDuration The duration of the base ruleset.
     /// @param baseRulesetWeight The weight of the base ruleset.
-    /// @param baseRulesetWeightCutPercent The weight cut percent of the base ruleset.
+    /// @param baseRulesetWeightCutPercent The weight cut percent of the base ruleset, out of
+    /// `JBConstants.MAX_WEIGHT_CUT_PERCENT`.
     /// @param baseRulesetCacheId The ID of the ruleset to base the calculation on (the previous ruleset).
     /// @param start The start time of the ruleset to derive a weight for.
     /// @return weight The derived weight, as a fixed point number with 18 decimals.
