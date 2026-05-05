@@ -13,7 +13,7 @@ interface IJBPermitTerminal is IJBTerminal {
     /// @param reason The failure reason.
     event Permit2AllowanceFailed(address indexed token, address indexed owner, bytes reason);
 
-    /// @notice The Permit2 contract used for token approvals.
+    /// @notice The Permit2 contract used for gasless ERC-20 token approvals during payments.
     // forge-lint: disable-next-line(mixed-case-function)
     function PERMIT2() external returns (IPermit2);
 }

@@ -88,7 +88,7 @@ interface IJBTokens {
     /// @return The credit balance.
     function creditBalanceOf(address holder, uint256 projectId) external view returns (uint256);
 
-    /// @notice Returns the project ID associated with a token.
+    /// @notice The project ID that a given ERC-20 token contract is associated with.
     /// @param token The token to get the project ID of.
     /// @return The project ID.
     function projectIdOf(IJBToken token) external view returns (uint256);
