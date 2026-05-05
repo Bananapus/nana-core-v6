@@ -1239,7 +1239,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
     /// @notice Gets a project's surplus amount in a terminal as measured by a given ruleset, across multiple accounting
     /// contexts.
-    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
+    /// @dev This amount changes as the value of the balance changes in relation to the currency used to measure
     /// various payout limits.
     /// @param terminal The terminal to calculate surplus for.
     /// @param projectId The ID of the project to get the surplus for.
@@ -1285,7 +1285,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
     /// @notice Get a project's surplus amount of a specific token in a given terminal as measured by a given ruleset
     /// (one specific accounting context).
-    /// @dev This amount changes as the value of the balance changes in relation to the currency being used to measure
+    /// @dev This amount changes as the value of the balance changes in relation to the currency used to measure
     /// the payout limits.
     /// @param terminal The terminal to calculate surplus for.
     /// @param projectId The ID of the project to get the surplus of.

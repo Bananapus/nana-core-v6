@@ -8,7 +8,7 @@ import {IJBTerminal} from "../interfaces/IJBTerminal.sol";
 /// usage. Aggregates across multiple terminals and tokens, converting to a common currency via `JBPrices`.
 library JBSurplus {
     /// @notice Gets the total current surplus amount across all of a project's terminals.
-    /// @dev This amount changes as the value of the balances changes in relation to the currency being used to measure
+    /// @dev This amount changes as the value of the balances changes in relation to the currency used to measure
     /// the project's payout limits.
     /// @param projectId The ID of the project to get the total surplus for.
     /// @param terminals The terminals to look for surplus within.
