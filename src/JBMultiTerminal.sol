@@ -107,7 +107,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice The contract that stores addresses that shouldn't incur fees when being paid towards or from.
     IJBFeelessAddresses public immutable override FEELESS_ADDRESSES;
 
-    /// @notice The permit2 utility.
+    /// @notice The Permit2 contract used for token approvals and transfers.
     IPermit2 public immutable override PERMIT2;
 
     /// @notice Mints ERC-721s that represent project ownership and transfers.

@@ -170,17 +170,17 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
         return super.decimals();
     }
 
-    /// @notice The token's name.
+    /// @notice The token's name, set during initialization.
     function name() public view virtual override returns (string memory) {
         return _name;
     }
 
-    /// @notice Required override.
+    /// @notice The current nonce for a given account, used for permit signatures.
     function nonces(address owner) public view virtual override(ERC20Permit, Nonces) returns (uint256) {
         return super.nonces(owner);
     }
 
-    /// @notice The token's symbol.
+    /// @notice The token's ticker symbol, set during initialization.
     function symbol() public view virtual override returns (string memory) {
         return _symbol;
     }
@@ -195,7 +195,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Initializes the token.
+    /// @notice Initialize a new project token with the given name, symbol, and owner.
     /// @param name_ The token's name.
     /// @param symbol_ The token's symbol.
     /// @param tokens The JBTokens contract that manages this token.
