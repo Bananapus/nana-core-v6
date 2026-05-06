@@ -88,9 +88,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
-    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
-    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
-
     /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
     uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
@@ -2200,10 +2197,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     /// @notice The terminal fee charged from a pre-fee `amount`.
-    /// @dev Rounds down. Dust amounts below the fee threshold (< 40 wei for 2.5% fee) pay zero fee.
     /// @param amount The amount before the fee is applied.
-    /// @return feeAmount The fee amount.
-    function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
-        feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
+    /// @return The fee amount.
+    function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
+        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
     }
 }
