@@ -101,10 +101,10 @@ contract FeeProperties is Test {
         uint256 fee1 = JBFees.feeAmountFrom(amount, feePercent);
         uint256 net = amount - fee1;
 
-        // The minimum fee can consume a dust amount entirely. Asking for the reverse fee of a zero net amount should
-        // remain zero; the normal round-trip invariant only applies when there is nonzero net value to reconstruct.
+        // With floor rounding, net can only be zero when feePercent == MAX_FEE. For feePercent < MAX_FEE,
+        // feeAmountFrom always returns less than amount, so net > 0.
         if (net == 0) {
-            assert(fee1 == amount);
+            assert(feePercent == MAX_FEE);
             return;
         }
 
@@ -127,8 +127,9 @@ contract FeeProperties is Test {
         uint256 fee1 = JBFees.feeAmountFrom(amount, feePercent);
         uint256 net = uint256(amount) - fee1;
 
+        // With floor rounding, net == 0 only when feePercent == MAX_FEE.
         if (net == 0) {
-            assertEq(fee1, amount, "Round trip: dust fee can consume the full amount");
+            assertEq(uint256(feePercent), MAX_FEE, "Round trip: net zero only at 100% fee");
             return;
         }
 

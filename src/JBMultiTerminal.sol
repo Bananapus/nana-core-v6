@@ -88,9 +88,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
-    /// @notice Denominator for forward-calculating this terminal's fee from a pre-fee amount.
-    uint256 internal constant _FEE_AMOUNT_FROM_DENOMINATOR = JBConstants.MAX_FEE / FEE;
-
     /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
     uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
@@ -1782,9 +1779,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Move the start index forward to the held fee after the current one.
                     newStartIndex = startIndex + i + 1;
                 } else {
-                    // Use the floor variant here. The minimum 1-unit fee applies when a fee is created, not while
-                    // splitting an already-held fee entry across repayments.
-                    feeAmount = JBFees.feeAmountResultingInFloorForFee25(leftoverAmount);
+                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: FEE});
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
@@ -2202,12 +2197,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     /// @notice The terminal fee charged from a pre-fee `amount`.
-    /// @dev Returns at least 1 for nonzero feeable amounts so dust payouts cannot bypass protocol fees.
     /// @param amount The amount before the fee is applied.
-    /// @return feeAmount The fee amount.
-    function _feeAmountFrom(uint256 amount) private pure returns (uint256 feeAmount) {
-        feeAmount = amount / _FEE_AMOUNT_FROM_DENOMINATOR;
-
-        return feeAmount == 0 && amount != 0 ? 1 : feeAmount;
+    /// @return The fee amount.
+    function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
+        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
     }
 }

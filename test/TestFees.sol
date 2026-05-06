@@ -180,7 +180,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
     }
 
-    function testPayoutDustFeeRoundsUpToOne() public {
+    function testPayoutDustFeeFloorsToZero() public {
         _terminal.pay{value: 1}({
             projectId: _projectId,
             amount: 1,
@@ -202,13 +202,16 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         assertEq(amountPaidOut, 1);
-        assertEq(_projectOwner.balance, ownerBalanceBefore);
+        // Dust amounts below the fee rounding threshold (< 40 wei for 2.5%) pay zero fee.
+        // The full 1 wei goes to the project owner.
+        assertEq(_projectOwner.balance, ownerBalanceBefore + 1);
 
+        // A zero-amount held fee entry is still pushed (no early-return guard in _takeFeeFrom),
+        // but the actual fee is 0.
         JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
         assertEq(heldFees.length, 1);
-        assertEq(heldFees[0].amount, 1);
-        assertEq(JBFees.feeAmountFrom({amountBeforeFee: heldFees[0].amount, feePercent: _terminal.FEE()}), 1);
-        assertEq(address(_terminal).balance, 1);
+        assertEq(heldFees[0].amount, 0);
+        assertEq(JBFees.feeAmountFrom({amountBeforeFee: 1, feePercent: _terminal.FEE()}), 0);
     }
 
     function testHeldFeeIsProcessedOnMigrate() public {
