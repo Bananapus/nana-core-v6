@@ -40,6 +40,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 ### Fee Arithmetic
 
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
+- **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
 - **Held fee entries are mutated in place.** If the accounting is off by even one unit in the wrong direction, `_returnHeldFees` can corrupt the entry.
 
 ### Weight Decay

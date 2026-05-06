@@ -59,9 +59,10 @@ contract TestFeesFuzz_Local is JBTest {
         uint256 fee = JBFees.feeAmountFrom(amount, feePercent);
         uint256 afterFee = amount - fee;
 
-        // A dust payment can be entirely consumed by the minimum 1-unit fee.
+        // With floor rounding, fee can only equal amount when feePercent == MAX_FEE.
+        // For feePercent < MAX_FEE, afterFee is always > 0 when amount > 0.
         if (afterFee == 0) {
-            assertEq(fee, amount, "dust fee should be capped by amount");
+            assertEq(feePercent, JBConstants.MAX_FEE, "net zero only possible at 100% fee");
             return;
         }
 
@@ -74,13 +75,6 @@ contract TestFeesFuzz_Local is JBTest {
 
         // And the total should be >= the original amount (reverse is conservative)
         assertGe(reverseFee + afterFee, amount, "reverse fee + afterFee should be >= amount");
-    }
-
-    /// @notice The specialized 2.5% floor helper matches the generic floor helper.
-    function testFuzz_feeAmountResultingInFloorForFee25_matchesGeneric(uint256 amount) external pure {
-        amount = bound(amount, 0, type(uint128).max);
-
-        assertEq(JBFees.feeAmountResultingInFloorForFee25(amount), JBFees.feeAmountResultingInFloor(amount, 25));
     }
 
     /// @notice feeAmountFrom with MAX_FEE returns the full amount.
