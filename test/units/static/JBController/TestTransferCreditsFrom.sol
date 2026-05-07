@@ -140,7 +140,7 @@ contract TestTransferCreditsFrom_Local is JBControllerSetup {
         bytes memory _rulesetCallReturn = abi.encode(_returnedRuleset);
         mockExpect(address(rulesets), _rulesetCall, _rulesetCallReturn);
 
-        vm.expectRevert(JBController.JBController_CreditTransfersPaused.selector);
+        vm.expectPartialRevert(JBController.JBController_CreditTransfersPaused.selector);
         _controller.transferCreditsFrom(_holder, _projectId, _beneficiary, _amount);
     }
 

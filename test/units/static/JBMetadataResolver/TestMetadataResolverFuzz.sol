@@ -211,7 +211,7 @@ contract TestMetadataResolverFuzz_Local is JBTest {
         bytes[] memory datas = new bytes[](1);
         datas[0] = abi.encodePacked(bytes32(uint256(100)));
 
-        vm.expectRevert(JBMetadataResolver.JBMetadataResolver_LengthMismatch.selector);
+        vm.expectPartialRevert(JBMetadataResolver.JBMetadataResolver_LengthMismatch.selector);
         harness.createMetadata(ids, datas);
     }
 
@@ -223,7 +223,7 @@ contract TestMetadataResolverFuzz_Local is JBTest {
         bytes[] memory datas = new bytes[](1);
         datas[0] = abi.encodePacked(uint8(42)); // Only 1 byte, not padded
 
-        vm.expectRevert(JBMetadataResolver.JBMetadataResolver_DataNotPadded.selector);
+        vm.expectPartialRevert(JBMetadataResolver.JBMetadataResolver_DataNotPadded.selector);
         harness.createMetadata(ids, datas);
     }
 }

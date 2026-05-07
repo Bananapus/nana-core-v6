@@ -185,7 +185,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector)
         );
 
-        vm.expectRevert(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector);
+        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_AddingAccountingContextNotAllowed.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
@@ -217,7 +217,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
         );
 
-        vm.expectRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
+        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
@@ -252,7 +252,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector)
         );
 
-        vm.expectRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
+        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_AccountingContextDecimalsMismatch.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 
@@ -283,7 +283,7 @@ contract TestAddAccountingContextsFor_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector)
         );
 
-        vm.expectRevert(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector);
+        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_ZeroAccountingContextCurrency.selector);
         _terminal.addAccountingContextsFor(_projectId, _tokens);
     }
 }

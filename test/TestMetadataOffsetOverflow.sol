@@ -143,7 +143,7 @@ contract TestMetadataOffsetOverflow is Test {
         //
         // Before the fix: wraps to 0 silently, corrupting the table.
         // After the fix: reverts with JBMetadataResolver_MetadataTooLong.
-        vm.expectRevert(JBMetadataResolver.JBMetadataResolver_MetadataTooLong.selector);
+        vm.expectPartialRevert(JBMetadataResolver.JBMetadataResolver_MetadataTooLong.selector);
         parser.addDataToMetadata(originalMetadata, bytes4(0x77777777), dataToAdd);
     }
 

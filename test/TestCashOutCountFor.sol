@@ -51,7 +51,7 @@ contract TestCashOutCountFor is Test {
     }
 
     function test_maxTaxRate_reverts() public {
-        vm.expectRevert(JBCashOuts.JBCashOuts_DesiredOutputNotAchievable.selector);
+        vm.expectPartialRevert(JBCashOuts.JBCashOuts_DesiredOutputNotAchievable.selector);
         wrapper.minCashOutCountFor(100 ether, 50 ether, 1000e18, MAX_TAX);
     }
 

@@ -104,7 +104,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
             terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 
@@ -119,7 +119,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
             terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 

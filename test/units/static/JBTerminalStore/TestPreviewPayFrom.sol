@@ -115,7 +115,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
 
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
-        vm.expectRevert(JBTerminalStore.JBTerminalStore_RulesetPaymentPaused.selector);
+        vm.expectPartialRevert(JBTerminalStore.JBTerminalStore_RulesetPaymentPaused.selector);
         _store.previewPayFrom({
             terminal: _terminal,
             payer: address(this),

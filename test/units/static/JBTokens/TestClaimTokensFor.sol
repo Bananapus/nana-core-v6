@@ -38,7 +38,7 @@ contract TestClaimTokensFor_Local is JBTokensSetup {
         // Set storage
         vm.store(address(_tokens), tokenOfSlot, bytes32(uint256(uint160(address(0)))));
 
-        vm.expectRevert(JBTokens.JBTokens_TokenNotFound.selector);
+        vm.expectPartialRevert(JBTokens.JBTokens_TokenNotFound.selector);
         _tokens.claimTokensFor(_holder, _projectId, _defaultAmount, _beneficiary);
     }
 

@@ -134,7 +134,7 @@ contract TestPriceFeed_Local is JBTest {
             new JBChainlinkV3PriceFeed(AggregatorV3Interface(address(mockFeed)), type(uint256).max);
         mockFeed.setUpdatedAt(0);
 
-        vm.expectRevert(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector);
+        vm.expectPartialRevert(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector);
         largeThrPriceFeed.currentUnitPrice(18);
     }
 

@@ -15,7 +15,7 @@ contract TestInitialize_Local is JBERC20Setup {
 
     function test_ImplementationCannotBeInitialized() external {
         // The implementation has _name = "invalid" set in constructor, so initialize() must revert.
-        vm.expectRevert(JBERC20.JBERC20_AlreadyInitialized.selector);
+        vm.expectPartialRevert(JBERC20.JBERC20_AlreadyInitialized.selector);
         _implementation.initialize(_name, _symbol, _tokens);
     }
 

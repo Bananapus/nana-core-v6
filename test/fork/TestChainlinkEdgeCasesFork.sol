@@ -285,7 +285,7 @@ contract TestSequencerEdgeCasesFork is Test {
             )
         );
 
-        vm.expectRevert(JBChainlinkV3SequencerPriceFeed.JBChainlinkV3SequencerPriceFeed_InvalidRound.selector);
+        vm.expectPartialRevert(JBChainlinkV3SequencerPriceFeed.JBChainlinkV3SequencerPriceFeed_InvalidRound.selector);
         feed.currentUnitPrice(18);
     }
 

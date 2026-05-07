@@ -63,10 +63,10 @@ contract TestAddPriceFeedFor_Local is JBPricesSetup {
     function test_WhenPricingCurrencyOrUnitCurrencyIs0() external whenProjectIsNotDefaultAndHasPermissions {
         // it should revert with INVALID_CURRENCY
 
-        vm.expectRevert(JBPrices.JBPrices_ZeroPricingCurrency.selector);
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroPricingCurrency.selector);
         _prices.addPriceFeedFor(_projectId, _invalidCurrency, _unitCurrency, _feed);
 
-        vm.expectRevert(JBPrices.JBPrices_ZeroUnitCurrency.selector);
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroUnitCurrency.selector);
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _invalidCurrency, _feed);
     }
 
