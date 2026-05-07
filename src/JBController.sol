@@ -479,7 +479,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // If the project has already had rulesets, use `queueRulesetsOf(...)` instead.
         if (RULESETS.latestRulesetIdOf(projectId) > 0) {
-            revert JBController_RulesetsAlreadyLaunched(projectId);
+            revert JBController_RulesetsAlreadyLaunched({projectId: projectId});
         }
 
         // If provided, set the project's metadata URI.
@@ -571,7 +571,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             ruleset.id != 0 && !ruleset.allowOwnerMinting() && !senderIsTerminalOrDataHook
                 && !senderHasDataHookMintPermission
         ) {
-            revert JBController_MintNotAllowedAndNotTerminalOrHook(sender);
+            revert JBController_MintNotAllowedAndNotTerminalOrHook({caller: sender});
         }
 
         // Determine the reserved percent to use.
@@ -979,16 +979,16 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Make sure its reserved percent is valid.
             if (rulesetConfig.metadata.reservedPercent > JBConstants.MAX_RESERVED_PERCENT) {
-                revert JBController_InvalidReservedPercent(
-                    rulesetConfig.metadata.reservedPercent, JBConstants.MAX_RESERVED_PERCENT
-                );
+                revert JBController_InvalidReservedPercent({
+                    percent: rulesetConfig.metadata.reservedPercent, limit: JBConstants.MAX_RESERVED_PERCENT
+                });
             }
 
             // Make sure its cash out tax rate is valid.
             if (rulesetConfig.metadata.cashOutTaxRate > JBConstants.MAX_CASH_OUT_TAX_RATE) {
-                revert JBController_InvalidCashOutTaxRate(
-                    rulesetConfig.metadata.cashOutTaxRate, JBConstants.MAX_CASH_OUT_TAX_RATE
-                );
+                revert JBController_InvalidCashOutTaxRate({
+                    rate: rulesetConfig.metadata.cashOutTaxRate, limit: JBConstants.MAX_CASH_OUT_TAX_RATE
+                });
             }
 
             // Queue its ruleset.

@@ -329,7 +329,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (split.hook != IJBSplitHook(address(0))) {
             // Make sure that the address supports the split hook interface.
             if (!split.hook.supportsInterface(type(IJBSplitHook).interfaceId)) {
-                revert JBMultiTerminal_SplitHookInvalid(split.hook);
+                revert JBMultiTerminal_SplitHookInvalid({hook: split.hook});
             }
 
             // This payout is eligible for a fee since the funds are leaving this contract and the split hook isn't a
@@ -369,7 +369,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // The project must have a terminal to send funds to.
             if (terminal == IJBTerminal(address(0))) {
-                revert JBMultiTerminal_RecipientProjectTerminalNotFound(split.projectId, token);
+                revert JBMultiTerminal_RecipientProjectTerminalNotFound({projectId: split.projectId, token: token});
             }
 
             // Fees apply to fund egress, not intra-terminal accounting. When both projects share this terminal,
@@ -473,7 +473,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         require(msg.sender == address(this));
 
         if (address(feeTerminal) == address(0)) {
-            revert JBMultiTerminal_FeeTerminalNotFound(token);
+            revert JBMultiTerminal_FeeTerminalNotFound({token: token});
         }
 
         // Send the projectId in the metadata.
@@ -1017,7 +1017,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Make sure the permit allowance is enough for this payment. If not we revert early.
             if (amount > allowance.amount) {
-                revert JBMultiTerminal_PermitAllowanceNotEnough(amount, allowance.amount);
+                revert JBMultiTerminal_PermitAllowanceNotEnough({amount: amount, allowance: allowance.amount});
             }
 
             // Keep a reference to the permit rules.
@@ -1032,7 +1032,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the allowance to `spend` tokens for the user.
             try PERMIT2.permit({owner: _msgSender(), permitSingle: permitSingle, signature: allowance.signature}) {}
             catch (bytes memory reason) {
-                emit Permit2AllowanceFailed(token, _msgSender(), reason);
+                emit Permit2AllowanceFailed({token: token, owner: _msgSender(), reason: reason});
             }
         }
 

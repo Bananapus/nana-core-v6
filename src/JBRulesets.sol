@@ -123,7 +123,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Weight cut percent must be less than or equal to 100%.
         if (weightCutPercent > JBConstants.MAX_WEIGHT_CUT_PERCENT) {
-            revert JBRulesets_InvalidWeightCutPercent(weightCutPercent);
+            revert JBRulesets_InvalidWeightCutPercent({percent: weightCutPercent});
         }
 
         // Weight must fit into a uint112.
@@ -137,7 +137,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Make sure the min start date fits in a uint48, and that the start date of the following ruleset will also fit
         // within the max.
         if (mustStartAtOrAfter + duration > type(uint48).max) {
-            revert JBRulesets_InvalidRulesetEndTime(mustStartAtOrAfter + duration, type(uint48).max);
+            revert JBRulesets_InvalidRulesetEndTime({timestamp: mustStartAtOrAfter + duration, limit: type(uint48).max});
         }
 
         // Approval hook should be a valid contract, supporting the correct interface
@@ -152,7 +152,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
                 // with the
                 // wrong interface
             } catch {
-                revert JBRulesets_InvalidRulesetApprovalHook(approvalHook); // No ERC165 support
+                revert JBRulesets_InvalidRulesetApprovalHook({hook: approvalHook}); // No ERC165 support
             }
         }
 
@@ -664,7 +664,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // If too many iterations remain after cache lookup, require the cache to be populated first.
         // This prevents gas exhaustion for short-duration rulesets with large cycle counts.
         if (weightCutMultiple > _WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD) {
-            revert JBRulesets_WeightCacheRequired(projectId);
+            revert JBRulesets_WeightCacheRequired({projectId: projectId});
         }
 
         // Cache the cut factor and max percent to avoid recomputing each iteration.

@@ -66,9 +66,9 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
         // Revert if sequencer has too recently restarted or is currently down.
         // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp <= GRACE_PERIOD_TIME + startedAt || answer != 0) {
-            revert JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
-                block.timestamp, GRACE_PERIOD_TIME, startedAt
-            );
+            revert JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting({
+                timestamp: block.timestamp, gracePeriodTime: GRACE_PERIOD_TIME, startedAt: startedAt
+            });
         }
 
         return super.currentUnitPrice(decimals);

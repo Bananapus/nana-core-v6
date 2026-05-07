@@ -50,7 +50,7 @@ abstract contract JBControlled is IJBControlled {
         // Cache the controller address to avoid a redundant external call on revert.
         address controller = address(DIRECTORY.controllerOf(projectId));
         if (controller != msg.sender) {
-            revert JBControlled_ControllerUnauthorized(controller);
+            revert JBControlled_ControllerUnauthorized({controller: controller});
         }
     }
 }

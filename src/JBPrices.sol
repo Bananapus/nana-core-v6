@@ -123,10 +123,11 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
             priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
                 || priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
         ) {
-            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
-                    != IJBPriceFeed(address(0))
+            revert JBPrices_PriceFeedAlreadyExists({
+                feed: priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
                     ? priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
-                    : priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency]);
+                    : priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency]
+            });
         }
 
         // Make sure this project doesn't already have a price feed for the pair or its inverse.
@@ -134,10 +135,11 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
             priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
                 || priceFeedFor[projectId][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
         ) {
-            revert JBPrices_PriceFeedAlreadyExists(priceFeedFor[projectId][pricingCurrency][unitCurrency]
-                    != IJBPriceFeed(address(0))
+            revert JBPrices_PriceFeedAlreadyExists({
+                feed: priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
                     ? priceFeedFor[projectId][pricingCurrency][unitCurrency]
-                    : priceFeedFor[projectId][unitCurrency][pricingCurrency]);
+                    : priceFeedFor[projectId][unitCurrency][pricingCurrency]
+            });
         }
 
         // Price feed immutability is by design to prevent admin-key attacks on price oracles.

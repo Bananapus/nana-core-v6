@@ -91,7 +91,7 @@ contract JBTokens is JBControlled, IJBTokens {
 
         // There must be enough tokens to burn across the holder's combined token and credit balance.
         if (count > tokenBalance + creditBalance) {
-            revert JBTokens_InsufficientTokensToBurn(count, tokenBalance + creditBalance);
+            revert JBTokens_InsufficientTokensToBurn({count: count, tokenBalance: tokenBalance + creditBalance});
         }
 
         // The amount of tokens to burn.
@@ -262,7 +262,7 @@ contract JBTokens is JBControlled, IJBTokens {
 
         // The total supply after minting can't exceed the maximum value storable in a uint208.
         if (supply + count > type(uint208).max) {
-            revert JBTokens_OverflowAlert(supply + count, type(uint208).max);
+            revert JBTokens_OverflowAlert({value: supply + count, limit: type(uint208).max});
         }
 
         if (tokensWereClaimed) {
