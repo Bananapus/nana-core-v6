@@ -180,7 +180,7 @@ contract JBSplits is JBControlled, IJBSplits {
                 block.timestamp < currentSplits[i].lockedUntil
                     && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
             ) {
-                revert JBSplits_PreviousLockedSplitsNotIncluded(projectId, rulesetId);
+                revert JBSplits_PreviousLockedSplitsNotIncluded({projectId: projectId, rulesetId: rulesetId});
             }
             unchecked {
                 ++i;

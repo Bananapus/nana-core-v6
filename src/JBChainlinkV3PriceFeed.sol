@@ -70,7 +70,9 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
         // Make sure the price's update threshold is met.
         // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp > THRESHOLD + updatedAt) {
-            revert JBChainlinkV3PriceFeed_StalePrice(block.timestamp, THRESHOLD, updatedAt);
+            revert JBChainlinkV3PriceFeed_StalePrice({
+                timestamp: block.timestamp, threshold: THRESHOLD, updatedAt: updatedAt
+            });
         }
 
         // Make sure the price is positive.

@@ -121,7 +121,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // If setting the controller is not allowed, revert.
         if (!allowSetController) {
-            revert JBDirectory_SetControllerNotAllowed(projectId);
+            revert JBDirectory_SetControllerNotAllowed({projectId: projectId});
         }
 
         // Prepare the new controller to receive the project.
@@ -183,7 +183,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // If the terminal doesn't accept the token, revert.
         if (terminal.accountingContextForTokenOf({projectId: projectId, token: token}).token == address(0)) {
-            revert JBDirectory_TokenNotAccepted(projectId, token, terminal);
+            revert JBDirectory_TokenNotAccepted({projectId: projectId, token: token, terminal: terminal});
         }
 
         // If the terminal is not already in the project's terminal list, require ADD_TERMINALS permission.
@@ -227,7 +227,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // If the caller is not the project's controller, the project's ruleset must allow setting terminals.
         if (msg.sender != address(controller) && !allowSetTerminals) {
-            revert JBDirectory_SetTerminalsNotAllowed(projectId);
+            revert JBDirectory_SetTerminalsNotAllowed({projectId: projectId});
         }
 
         // Set the stored terminals for the project.
@@ -352,7 +352,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // The project's ruleset must allow setting terminals.
         if (!allowSetTerminals) {
-            revert JBDirectory_SetTerminalsNotAllowed(projectId);
+            revert JBDirectory_SetTerminalsNotAllowed({projectId: projectId});
         }
 
         // Add the new terminal.

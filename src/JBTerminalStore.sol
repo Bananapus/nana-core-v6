@@ -189,7 +189,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Make sure the token accounting context isn't already set.
             if (_accountingContextForTokenOf[msg.sender][projectId][context.token].token != address(0)) {
-                revert JBTerminalStore_AccountingContextAlreadySet(context.token);
+                revert JBTerminalStore_AccountingContextAlreadySet({token: context.token});
             }
 
             // Keep track of a flag indicating if we know the provided decimals are incorrect.
@@ -311,7 +311,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // The amount being reclaimed must be within the project's balance.
         if (balanceDiff > currentBalance) {
-            revert JBTerminalStore_InadequateTerminalStoreBalance(balanceDiff, currentBalance);
+            revert JBTerminalStore_InadequateTerminalStoreBalance({amount: balanceDiff, balance: currentBalance});
         }
 
         // Remove the reclaimed funds from the project's balance.
@@ -412,7 +412,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // The amount being paid out must be available.
         if (amountPaidOut > currentBalance) {
-            revert JBTerminalStore_InadequateTerminalStoreBalance(amountPaidOut, currentBalance);
+            revert JBTerminalStore_InadequateTerminalStoreBalance({amount: amountPaidOut, balance: currentBalance});
         }
 
         // The new total amount which has been paid out during this ruleset.
@@ -428,7 +428,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Make sure the new used amount is within the payout limit.
         if (newUsedPayoutLimitOf > payoutLimit || payoutLimit == 0) {
-            revert JBTerminalStore_InadequateControllerPayoutLimit(newUsedPayoutLimitOf, payoutLimit);
+            revert JBTerminalStore_InadequateControllerPayoutLimit({amount: newUsedPayoutLimitOf, limit: payoutLimit});
         }
 
         // Removed the paid out funds from the project's token balance.
@@ -533,7 +533,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Make sure the new used amount is within the allowance.
         if (newUsedSurplusAllowanceOf > surplusAllowance || surplusAllowance == 0) {
-            revert JBTerminalStore_InadequateControllerAllowance(newUsedSurplusAllowanceOf, surplusAllowance);
+            revert JBTerminalStore_InadequateControllerAllowance({
+                amount: newUsedSurplusAllowanceOf, allowance: surplusAllowance
+            });
         }
 
         // Cache the balance slot to avoid redundant storage reads.
@@ -923,7 +925,7 @@ contract JBTerminalStore is IJBTerminalStore {
         // Noop specifications are informational only, so they can't also request forwarded funds.
         for (uint256 i; i < hookSpecifications.length;) {
             if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                revert JBTerminalStore_NoopHookSpecHasAmount({amount: hookSpecifications[i].amount});
             }
             unchecked {
                 ++i;
@@ -991,7 +993,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Can't cash out more tokens than are in the supply.
         if (cashOutCount > effectiveTotalSupply) {
-            revert JBTerminalStore_InsufficientTokens(cashOutCount, effectiveTotalSupply);
+            revert JBTerminalStore_InsufficientTokens({count: cashOutCount, totalSupply: effectiveTotalSupply});
         }
 
         // SECURITY NOTE: The data hook has absolute control over cash-out pricing.
@@ -1115,7 +1117,7 @@ contract JBTerminalStore is IJBTerminalStore {
         // Ensure that the specifications have valid amounts.
         for (uint256 i; i < hookSpecifications.length;) {
             if (hookSpecifications[i].noop && hookSpecifications[i].amount != 0) {
-                revert JBTerminalStore_NoopHookSpecHasAmount(hookSpecifications[i].amount);
+                revert JBTerminalStore_NoopHookSpecHasAmount({amount: hookSpecifications[i].amount});
             }
 
             uint256 specifiedAmount = hookSpecifications[i].amount;
@@ -1123,7 +1125,9 @@ contract JBTerminalStore is IJBTerminalStore {
             // Can't send more to hook than was paid.
             if (specifiedAmount != 0) {
                 if (specifiedAmount > balanceDiff) {
-                    revert JBTerminalStore_InvalidAmountToForwardHook(specifiedAmount, balanceDiff);
+                    revert JBTerminalStore_InvalidAmountToForwardHook({
+                        amount: specifiedAmount, paidAmount: balanceDiff
+                    });
                 }
 
                 // Decrement the total amount being added to the local balance.
