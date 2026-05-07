@@ -97,7 +97,9 @@ contract TestChainlinkEdgeCasesFork is Test {
             )
         );
 
-        vm.expectRevert(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector, 5, 5, 0)
+        );
         feed.currentUnitPrice(18);
     }
 
@@ -121,7 +123,11 @@ contract TestChainlinkEdgeCasesFork is Test {
             )
         );
 
-        vm.expectRevert(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector, 10, 9, realUpdatedAt
+            )
+        );
         feed.currentUnitPrice(18);
     }
 
