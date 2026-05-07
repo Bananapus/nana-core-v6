@@ -75,7 +75,15 @@ contract TestSetFundAccessLimitsFor_Local is JBFundAccessSetup {
             });
         }
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector,
+                _projectId,
+                _ruleset,
+                0,
+                1
+            )
+        );
         _fundAccess.setFundAccessLimitsFor(_projectId, _ruleset, _fundAccessLimitGroup);
     }
 
@@ -103,7 +111,15 @@ contract TestSetFundAccessLimitsFor_Local is JBFundAccessSetup {
             });
         }
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBFundAccessLimits.JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering.selector,
+                _projectId,
+                _ruleset,
+                0,
+                1
+            )
+        );
         _fundAccess.setFundAccessLimitsFor(_projectId, _ruleset, _fundAccessLimitGroup);
     }
 
