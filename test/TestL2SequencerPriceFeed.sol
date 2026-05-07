@@ -106,7 +106,7 @@ contract TestL2SequencerPriceFeed_Local is Test {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBChainlinkV3SequencerPriceFeed.JBChainlinkV3SequencerPriceFeed_InvalidRound.selector
+                JBChainlinkV3SequencerPriceFeed.JBChainlinkV3SequencerPriceFeed_InvalidRound.selector, 0
             )
         );
         _sequencerFeed.currentUnitPrice(18);
@@ -220,7 +220,9 @@ contract TestL2SequencerPriceFeed_Local is Test {
             abi.encode(uint80(1), int256(2000e8), block.timestamp, uint256(0), uint80(1))
         );
 
-        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector, 1, 1, 0)
+        );
         _baseFeed.currentUnitPrice(18);
     }
 
@@ -236,7 +238,9 @@ contract TestL2SequencerPriceFeed_Local is Test {
             abi.encode(uint80(1), int256(2000e8), block.timestamp, uint256(0), uint80(1))
         );
 
-        vm.expectRevert(abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(JBChainlinkV3PriceFeed.JBChainlinkV3PriceFeed_IncompleteRound.selector, 1, 1, 0)
+        );
         _sequencerFeed.currentUnitPrice(18);
     }
 
