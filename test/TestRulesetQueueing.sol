@@ -165,7 +165,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         // Deploy a project.
         uint256 projectId = launchProjectForTest();
 
-        vm.expectRevert(JBController.JBController_RulesetsArrayEmpty.selector);
+        vm.expectPartialRevert(JBController.JBController_RulesetsArrayEmpty.selector);
 
         // call
         vm.prank(multisig());

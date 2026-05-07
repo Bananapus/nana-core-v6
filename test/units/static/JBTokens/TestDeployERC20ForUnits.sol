@@ -30,14 +30,14 @@ contract TestDeployERC20ForUnits_Local is JBTokensSetup {
     function test_WhenNameLengthEQZero() external whenCallerIsController {
         // it will revert EMPTY_NAME
 
-        vm.expectRevert(JBTokens.JBTokens_EmptyName.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBTokens.JBTokens_EmptyName.selector, _projectId));
         _tokens.deployERC20For({projectId: _projectId, name: "", symbol: _symbol, salt: bytes32(0)});
     }
 
     function test_WhenSymbolLengthEQZero() external whenCallerIsController {
         // it will revert EMPTY_SYMBOL
 
-        vm.expectRevert(JBTokens.JBTokens_EmptySymbol.selector);
+        vm.expectRevert(abi.encodeWithSelector(JBTokens.JBTokens_EmptySymbol.selector, _projectId));
         _tokens.deployERC20For({projectId: _projectId, name: _name, symbol: "", salt: bytes32(0)});
     }
 

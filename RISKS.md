@@ -79,7 +79,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 ### Key Backstop
 
-`JBTerminalStore_InadequateTerminalStoreBalance` should stop any path from pulling more than the terminal's recorded balance. Auditors should verify no caller can inflate that recorded balance without the terminal actually holding the funds.
+`JBTerminalStore_InadequateTerminalStoreBalance` should stop any path from pulling more than the terminal's recorded balance. Reviewers should verify no caller can inflate that recorded balance without the terminal actually holding the funds.
 
 ## 4. Access Control
 

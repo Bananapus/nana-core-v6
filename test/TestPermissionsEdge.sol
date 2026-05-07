@@ -130,7 +130,7 @@ contract TestPermissionsEdge_Local is TestBaseWorkflow {
         zeroPermission[0] = 0;
 
         vm.prank(_account);
-        vm.expectRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
+        vm.expectPartialRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
         _permissions.setPermissionsFor(
             _account, JBPermissionsData({operator: _operator, projectId: PROJECT_ID, permissionIds: zeroPermission})
         );

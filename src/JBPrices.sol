@@ -26,9 +26,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     //*********************************************************************//
 
     error JBPrices_PriceFeedAlreadyExists(IJBPriceFeed feed);
-    error JBPrices_PriceFeedNotFound();
-    error JBPrices_ZeroPricingCurrency();
-    error JBPrices_ZeroUnitCurrency();
+    error JBPrices_PriceFeedNotFound(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency);
+    error JBPrices_ZeroPricingCurrency(uint256 projectId, uint256 pricingCurrency);
+    error JBPrices_ZeroUnitCurrency(uint256 projectId, uint256 unitCurrency);
 
     //*********************************************************************//
     // ------------------------- public constants ------------------------ //
@@ -111,10 +111,12 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         projectId == DEFAULT_PROJECT_ID ? _checkOwner() : _onlyControllerOf(projectId);
 
         // Make sure the pricing currency isn't 0.
-        if (pricingCurrency == 0) revert JBPrices_ZeroPricingCurrency();
+        if (pricingCurrency == 0) {
+            revert JBPrices_ZeroPricingCurrency({projectId: projectId, pricingCurrency: pricingCurrency});
+        }
 
         // Make sure the unit currency isn't 0.
-        if (unitCurrency == 0) revert JBPrices_ZeroUnitCurrency();
+        if (unitCurrency == 0) revert JBPrices_ZeroUnitCurrency({projectId: projectId, unitCurrency: unitCurrency});
 
         // Make sure there isn't already a default price feed for the pair or its inverse.
         if (
@@ -212,7 +214,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         }
 
         // No price feed available, revert.
-        revert JBPrices_PriceFeedNotFound();
+        revert JBPrices_PriceFeedNotFound({
+            projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency
+        });
     }
 
     //*********************************************************************//

@@ -60,19 +60,19 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     //*********************************************************************//
 
     error JBController_AddingPriceFeedNotAllowed(uint256 projectId);
-    error JBController_CreditTransfersPaused();
+    error JBController_CreditTransfersPaused(uint256 projectId, uint256 rulesetId);
     error JBController_InvalidCashOutTaxRate(uint256 rate, uint256 limit);
     error JBController_InvalidReservedPercent(uint256 percent, uint256 limit);
     error JBController_MintNotAllowedAndNotTerminalOrHook(address caller);
-    error JBController_NoReservedTokens();
+    error JBController_NoReservedTokens(uint256 projectId);
     error JBController_OnlyDirectory(address sender, IJBDirectory directory);
     error JBController_PendingReservedTokens(uint256 pendingReservedTokenBalance);
     error JBController_RulesetsAlreadyLaunched(uint256 projectId);
-    error JBController_RulesetsArrayEmpty();
+    error JBController_RulesetsArrayEmpty(uint256 projectId, uint256 rulesetConfigurationCount);
     error JBController_RulesetSetTokenNotAllowed(uint256 projectId);
-    error JBController_TerminalTokensNotTransferred();
-    error JBController_ZeroTokensToBurn();
-    error JBController_ZeroTokensToMint();
+    error JBController_TerminalTokensNotTransferred(address terminal, address token, uint256 allowance);
+    error JBController_ZeroTokensToBurn(uint256 projectId, address holder);
+    error JBController_ZeroTokensToMint(uint256 projectId, address beneficiary);
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
@@ -163,7 +163,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         RULESETS = rulesets;
         SPLITS = splits;
         TOKENS = tokens;
-        // slither-disable-next-line missing-zero-check
         OMNICHAIN_RULESET_OPERATOR = omnichainRulesetOperator;
     }
 
@@ -235,7 +234,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             from.supportsInterface(type(IJBController).interfaceId)
                 && IJBController(address(from)).pendingReservedTokenBalanceOf(projectId) > 0
         ) {
-            // slither-disable-next-line unused-return
             IJBController(address(from)).sendReservedTokensToSplitsOf(projectId);
         }
     }
@@ -261,11 +259,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             account: holder,
             projectId: projectId,
             permissionId: JBPermissionIds.BURN_TOKENS,
-            alsoGrantAccessIf: _isTerminalOf(projectId, _msgSender())
+            alsoGrantAccessIf: _isTerminalOf({projectId: projectId, terminal: _msgSender()})
         });
 
         // There must be tokens to burn.
-        if (tokenCount == 0) revert JBController_ZeroTokensToBurn();
+        if (tokenCount == 0) revert JBController_ZeroTokensToBurn({projectId: projectId, holder: holder});
 
         emit BurnTokens({
             holder: holder, projectId: projectId, tokenCount: tokenCount, memo: memo, caller: _msgSender()
@@ -359,7 +357,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Approve the tokens being paid.
         IERC20(address(token)).forceApprove({spender: address(terminal), value: splitTokenCount});
 
-        // slither-disable-next-line unused-return
         terminal.pay({
             projectId: projectId,
             token: address(token),
@@ -371,8 +368,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
 
         // Make sure that the terminal received the tokens.
-        if (IERC20(address(token)).allowance({owner: address(this), spender: address(terminal)}) != 0) {
-            revert JBController_TerminalTokensNotTransferred();
+        uint256 allowance = IERC20(address(token)).allowance({owner: address(this), spender: address(terminal)});
+        if (allowance != 0) {
+            revert JBController_TerminalTokensNotTransferred({
+                terminal: address(terminal), token: address(token), allowance: allowance
+            });
         }
     }
 
@@ -400,7 +400,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (uint256 projectId)
     {
         // Mint the project ERC-721 into the owner's wallet.
-        // slither-disable-next-line reentrancy-benign
         projectId = PROJECTS.createFor(owner);
 
         // If provided, set the project's metadata URI.
@@ -415,7 +414,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         _configureTerminals({projectId: projectId, terminalConfigurations: terminalConfigurations});
 
         // Queue the rulesets.
-        // slither-disable-next-line reentrancy-events
         uint256 rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchProject({
@@ -445,7 +443,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (uint256 rulesetId)
     {
         // Make sure there are rulesets being queued.
-        if (rulesetConfigurations.length == 0) revert JBController_RulesetsArrayEmpty();
+        if (rulesetConfigurations.length == 0) {
+            revert JBController_RulesetsArrayEmpty({
+                projectId: projectId, rulesetConfigurationCount: rulesetConfigurations.length
+            });
+        }
 
         // Keep a reference to the sender.
         address sender = _msgSender();
@@ -492,7 +494,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         _configureTerminals({projectId: projectId, terminalConfigurations: terminalConfigurations});
 
         // Queue the first ruleset.
-        // slither-disable-next-line reentrancy-events
         rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchRulesets({
@@ -539,7 +540,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (uint256 beneficiaryTokenCount)
     {
         // There should be tokens to mint.
-        if (tokenCount == 0) revert JBController_ZeroTokensToMint();
+        if (tokenCount == 0) revert JBController_ZeroTokensToMint({projectId: projectId, beneficiary: beneficiary});
 
         // Keep a reference to the reserved percent.
         uint256 reservedPercent;
@@ -549,11 +550,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // Cache common values used in both permission checks.
         address sender = _msgSender();
-        bool senderIsTerminal = _isTerminalOf(projectId, sender);
+        bool senderIsTerminal = _isTerminalOf({projectId: projectId, terminal: sender});
         bool senderIsTerminalOrDataHook = senderIsTerminal || sender == ruleset.dataHook();
         // Only query the data hook if the sender isn't already a terminal or the data hook itself.
-        bool senderHasDataHookMintPermission =
-            !senderIsTerminalOrDataHook && _hasDataHookMintPermissionFor(projectId, ruleset, sender);
+        bool senderHasDataHookMintPermission = !senderIsTerminalOrDataHook
+            && _hasDataHookMintPermissionFor({projectId: projectId, ruleset: ruleset, addr: sender});
 
         // Minting is restricted to: the project's owner, addresses with permission to `MINT_TOKENS`, the project's
         // terminals, and the project's data hook.
@@ -581,7 +582,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         if (beneficiaryTokenCount != 0) {
             // Mint the tokens.
-            // slither-disable-next-line reentrancy-benign,reentrancy-events,unused-return
             TOKENS.mintFor({holder: beneficiary, projectId: projectId, count: beneficiaryTokenCount});
         }
 
@@ -618,7 +618,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (uint256 rulesetId)
     {
         // Make sure there are rulesets being queued.
-        if (rulesetConfigurations.length == 0) revert JBController_RulesetsArrayEmpty();
+        if (rulesetConfigurations.length == 0) {
+            revert JBController_RulesetsArrayEmpty({
+                projectId: projectId, rulesetConfigurationCount: rulesetConfigurations.length
+            });
+        }
 
         // Enforce permissions.
         _requirePermissionAllowingOverrideFrom({
@@ -629,7 +633,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
 
         // Queue the rulesets.
-        // slither-disable-next-line reentrancy-events
         rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit QueueRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
@@ -748,7 +751,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
         // Credit transfers must not be paused.
-        if (ruleset.pauseCreditTransfers()) revert JBController_CreditTransfersPaused();
+        if (ruleset.pauseCreditTransfers()) {
+            revert JBController_CreditTransfersPaused({projectId: projectId, rulesetId: ruleset.id});
+        }
 
         TOKENS.transferCreditsFrom({holder: holder, projectId: projectId, recipient: recipient, count: creditCount});
     }
@@ -939,7 +944,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             JBTerminalConfig memory terminalConfig = terminalConfigurations[i];
 
             // Add the accounting contexts for the specified tokens.
-            // slither-disable-next-line calls-loop
             terminalConfig.terminal
                 .addAccountingContextsFor({
                     projectId: projectId, accountingContexts: terminalConfig.accountingContextsToAccept
@@ -988,7 +992,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             }
 
             // Queue its ruleset.
-            // slither-disable-next-line calls-loop
             JBRuleset memory ruleset = RULESETS.queueFor({
                 projectId: projectId,
                 duration: rulesetConfig.duration,
@@ -1000,13 +1003,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             });
 
             // Set its split groups.
-            // slither-disable-next-line calls-loop
             SPLITS.setSplitGroupsOf({
                 projectId: projectId, rulesetId: ruleset.id, splitGroups: rulesetConfig.splitGroups
             });
 
             // Set its fund access limits.
-            // slither-disable-next-line calls-loop
             FUND_ACCESS_LIMITS.setFundAccessLimitsFor({
                 projectId: projectId, rulesetId: ruleset.id, fundAccessLimitGroups: rulesetConfig.fundAccessLimitGroups
             });
@@ -1070,12 +1071,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 // If the split has a hook, call its `processSplitWith` function.
                 if (split.hook != IJBSplitHook(address(0))) {
                     // Send the tokens to the split hook.
-                    // slither-disable-next-line reentrancy-events
                     _sendTokens({
                         projectId: projectId, tokenCount: splitTokenCount, recipient: address(split.hook), token: token
                     });
 
-                    // slither-disable-next-line calls-loop,reentrancy-events
                     try split.hook
                         .processSplitWith(
                             JBSplitHookContext({
@@ -1099,7 +1098,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
                     if (split.projectId != 0) {
                         // Get a reference to the receiving project's primary payment terminal for the token.
-                        // slither-disable-next-line calls-loop
                         IJBTerminal terminal = token == IJBToken(address(0))
                             ? IJBTerminal(address(0))
                             : DIRECTORY.primaryTerminalOf({projectId: split.projectId, token: address(token)});
@@ -1108,17 +1106,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         // which accepts the token, send the tokens to the beneficiary.
                         if (address(token) == address(0) || address(terminal) == address(0)) {
                             // Mint the tokens to the beneficiary.
-                            // slither-disable-next-line reentrancy-events
                             _sendTokens({
                                 projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
                             });
                         } else {
                             // Use the `projectId` in the pay metadata.
-                            // slither-disable-next-line reentrancy-events
                             bytes memory metadata = bytes(abi.encodePacked(projectId));
 
                             // Try to fulfill the payment.
-                            // slither-disable-next-line calls-loop
                             try this.executePayReservedTokenToTerminal({
                                 projectId: split.projectId,
                                 terminal: terminal,
@@ -1142,7 +1137,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         }
                     } else if (beneficiary == address(0xdead)) {
                         // If the split has no project ID, and the beneficiary is 0xdead, burn.
-                        // slither-disable-next-line calls-loop
                         TOKENS.burnFrom({holder: address(this), projectId: projectId, count: splitTokenCount});
                     } else {
                         // If the split has no project Id, send to beneficiary.
@@ -1180,7 +1174,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         tokenCount = pendingReservedTokenBalanceOf[projectId];
 
         // Revert if there are no pending reserved tokens
-        if (tokenCount == 0) revert JBController_NoReservedTokens();
+        if (tokenCount == 0) revert JBController_NoReservedTokens({projectId: projectId});
 
         // Get the ruleset to read the reserved percent from.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);

@@ -170,7 +170,7 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
         JBTerminalConfig[] memory _terminalConfigs = new JBTerminalConfig[](0);
         JBRulesetConfig[] memory _rulesetConfigs = new JBRulesetConfig[](0);
 
-        vm.expectRevert(JBController.JBController_RulesetsArrayEmpty.selector);
+        vm.expectPartialRevert(JBController.JBController_RulesetsArrayEmpty.selector);
 
         _controller.launchRulesetsFor(1, "", _rulesetConfigs, _terminalConfigs, "");
     }

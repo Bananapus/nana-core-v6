@@ -19,11 +19,11 @@ import {JBSplit} from "../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
-/// @notice Audit response: proves 3 design decisions are intentional and correct.
-/// Finding 1: currentOf() first cycle NOT skipped — returns the stored ruleset directly.
-/// Finding 2: Splits groupId namespace is intentional — contracts can self-authorize their own namespace.
-/// Finding 3: Same-terminal fee exemption is intentional — fees apply to fund egress, not intra-terminal accounting.
-contract TestAuditResponseDesignProofs is TestBaseWorkflow {
+/// @notice Regression coverage: proves 3 design decisions are intentional and correct.
+/// Case 1: currentOf() first cycle NOT skipped — returns the stored ruleset directly.
+/// Case 2: Splits groupId namespace is intentional — contracts can self-authorize their own namespace.
+/// Case 3: Same-terminal fee exemption is intentional — fees apply to fund egress, not intra-terminal accounting.
+contract TestRegressionResponseDesignProofs is TestBaseWorkflow {
     IJBController private _controller;
     IJBRulesets private _rulesets;
     IJBTerminal private _terminal;
@@ -41,7 +41,7 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
     }
 
     // ───────────────────────────────────────────────────────────
-    //  Finding 1: currentOf() first cycle NOT skipped
+    //  Case 1: currentOf() first cycle NOT skipped
     // ───────────────────────────────────────────────────────────
 
     /// @notice During the first cycle, currentOf() returns the original stored weight and cycleNumber=1.
@@ -94,7 +94,7 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
     }
 
     // ───────────────────────────────────────────────────────────
-    //  Finding 2: Splits groupId namespace — bare addresses reserved for protocol
+    //  Case 2: Splits groupId namespace — bare addresses reserved for protocol
     // ───────────────────────────────────────────────────────────
 
     /// @notice A contract can set splits in its own namespace when upper 96 bits are non-zero.
@@ -162,7 +162,7 @@ contract TestAuditResponseDesignProofs is TestBaseWorkflow {
     }
 
     // ───────────────────────────────────────────────────────────
-    //  Finding 3: Same-terminal fee exemption is intentional
+    //  Case 3: Same-terminal fee exemption is intentional
     // ───────────────────────────────────────────────────────────
 
     /// @notice When project A pays out to project B on the SAME terminal, no fee is taken.

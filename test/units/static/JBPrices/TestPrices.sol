@@ -214,11 +214,11 @@ contract TestPrices_Local is JBPricesSetup {
         MockPriceFeed feed = new MockPriceFeed(1000e18, 18);
 
         vm.prank(_owner);
-        vm.expectRevert(JBPrices.JBPrices_ZeroPricingCurrency.selector);
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroPricingCurrency.selector);
         _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, 0, _unitCurrency, feed);
 
         vm.prank(_owner);
-        vm.expectRevert(JBPrices.JBPrices_ZeroUnitCurrency.selector);
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroUnitCurrency.selector);
         _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, _pricingCurrency, 0, feed);
     }
 

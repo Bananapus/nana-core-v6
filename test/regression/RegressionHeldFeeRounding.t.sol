@@ -14,7 +14,7 @@ import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 
-contract CodexHeldFeeRoundingTest is TestBaseWorkflow {
+contract RegressionHeldFeeRoundingTest is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
 

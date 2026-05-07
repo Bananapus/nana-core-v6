@@ -12,6 +12,13 @@ import {JBConstants} from "./JBConstants.sol";
 /// @dev Kept local to this file because `executePayout(...)` is an implementation detail, not a shared public
 /// interface.
 interface IJBPayoutSplitGroupExecutor {
+    /// @notice Executes one payout split from the terminal that is using this library.
+    /// @param split The split to pay.
+    /// @param projectId The ID of the project paying the split.
+    /// @param token The token being paid out.
+    /// @param amount The amount assigned to the split.
+    /// @param originalMessageSender The account that started the payout flow.
+    /// @return netPayoutAmount The amount that was actually paid after fees or hook behavior.
     function executePayout(
         JBSplit calldata split,
         uint256 projectId,
@@ -30,6 +37,7 @@ interface IJBPayoutSplitGroupExecutor {
 /// are emitted from the terminal's address.
 library JBPayoutSplitGroupLib {
     event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
+
     event SendPayoutToSplit(
         uint256 indexed projectId,
         uint256 indexed rulesetId,
@@ -80,7 +88,6 @@ library JBPayoutSplitGroupLib {
             uint256 payoutAmount = mulDiv(leftoverAmount, split.percent, leftoverPercentage);
 
             // The final payout amount after taking out any fees.
-            // slither-disable-next-line calls-loop
             uint256 netPayoutAmount = _sendPayoutToSplit({
                 store: store, split: split, projectId: projectId, token: token, amount: payoutAmount, caller: caller
             });
@@ -140,7 +147,6 @@ library JBPayoutSplitGroupLib {
         // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
         // `recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
         // distribution.
-        // slither-disable-next-line reentrancy-events,calls-loop
         try IJBPayoutSplitGroupExecutor(address(this))
             .executePayout({
             split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
@@ -154,7 +160,6 @@ library JBPayoutSplitGroupLib {
             });
 
             // Add balance back to the project.
-            // slither-disable-next-line calls-loop
             store.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
 
             // Since the payout failed the netPayoutAmount is zero.

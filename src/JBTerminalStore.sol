@@ -40,8 +40,10 @@ contract JBTerminalStore is IJBTerminalStore {
     //*********************************************************************//
 
     error JBTerminalStore_AccountingContextAlreadySet(address token);
-    error JBTerminalStore_AccountingContextDecimalsMismatch();
-    error JBTerminalStore_AddingAccountingContextNotAllowed();
+    error JBTerminalStore_AccountingContextDecimalsMismatch(
+        address token, uint256 providedDecimals, uint256 expectedDecimals
+    );
+    error JBTerminalStore_AddingAccountingContextNotAllowed(uint256 projectId, uint256 rulesetId, address terminal);
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
     error JBTerminalStore_InadequateControllerPayoutLimit(uint256 amount, uint256 limit);
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
@@ -49,10 +51,10 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
     error JBTerminalStore_NoopHookSpecHasAmount(uint256 amount);
     error JBTerminalStore_RulesetNotFound(uint256 projectId);
-    error JBTerminalStore_RulesetPaymentPaused();
-    error JBTerminalStore_TerminalMigrationNotAllowed();
+    error JBTerminalStore_RulesetPaymentPaused(uint256 projectId, uint256 rulesetId);
+    error JBTerminalStore_TerminalMigrationNotAllowed(uint256 projectId, uint256 rulesetId);
     error JBTerminalStore_Uint224Overflow(uint256 value);
-    error JBTerminalStore_ZeroAccountingContextCurrency();
+    error JBTerminalStore_ZeroAccountingContextCurrency(address token);
 
     //*********************************************************************//
     // -------------------------- internal constants --------------------- //
@@ -176,7 +178,9 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Make sure that if there's a ruleset, it allows adding accounting contexts.
         if (ruleset.id != 0 && !ruleset.allowAddAccountingContext()) {
-            revert JBTerminalStore_AddingAccountingContextNotAllowed();
+            revert JBTerminalStore_AddingAccountingContextNotAllowed({
+                projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender
+            });
         }
 
         // Record each accounting context.
@@ -190,15 +194,17 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Keep track of a flag indicating if we know the provided decimals are incorrect.
             bool knownInvalidDecimals;
+            uint256 expectedDecimals;
 
             // Check if the token is the native token and has the correct decimals.
             if (context.token == JBConstants.NATIVE_TOKEN && context.decimals != 18) {
                 knownInvalidDecimals = true;
+                expectedDecimals = 18;
             } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
-                // slither-disable-next-line calls-loop
                 try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
                     if (context.decimals != decimals) {
                         knownInvalidDecimals = true;
+                        expectedDecimals = decimals;
                     }
                 } catch {
                     // The token didn't support `decimals`.
@@ -210,11 +216,13 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Make sure the decimals are correct.
             if (knownInvalidDecimals) {
-                revert JBTerminalStore_AccountingContextDecimalsMismatch();
+                revert JBTerminalStore_AccountingContextDecimalsMismatch({
+                    token: context.token, providedDecimals: context.decimals, expectedDecimals: expectedDecimals
+                });
             }
 
             // Make sure the currency is non-zero.
-            if (context.currency == 0) revert JBTerminalStore_ZeroAccountingContextCurrency();
+            if (context.currency == 0) revert JBTerminalStore_ZeroAccountingContextCurrency({token: context.token});
 
             // Store the accounting context.
             _accountingContextForTokenOf[msg.sender][projectId][context.token] = context;
@@ -444,7 +452,7 @@ contract JBTerminalStore is IJBTerminalStore {
 
         // Terminal migration must be allowed.
         if (!ruleset.allowTerminalMigration()) {
-            revert JBTerminalStore_TerminalMigrationNotAllowed();
+            revert JBTerminalStore_TerminalMigrationNotAllowed({projectId: projectId, rulesetId: ruleset.id});
         }
 
         // Return the current balance, which is the amount being migrated.
@@ -991,7 +999,7 @@ contract JBTerminalStore is IJBTerminalStore {
         // completely overriding the terminal's bonding curve math. For example, setting
         // effectiveTotalSupply = surplus makes reclaimAmount = effectiveCashOutCount, bypassing the curve.
         // The terminal still burns the caller-supplied cashOutCount after pricing completes.
-        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+        // Project owners must review their data hooks with the same rigor as the terminal.
 
         // If the ruleset has a data hook which is enabled for cash outs, use it to derive a claim amount and memo.
         if (ruleset.useDataHookForCashOut() && ruleset.dataHook() != address(0)) {
@@ -1067,7 +1075,9 @@ contract JBTerminalStore is IJBTerminalStore {
         if (ruleset.cycleNumber == 0) revert JBTerminalStore_RulesetNotFound(projectId);
 
         // The ruleset must not have payments paused.
-        if (ruleset.pausePay()) revert JBTerminalStore_RulesetPaymentPaused();
+        if (ruleset.pausePay()) {
+            revert JBTerminalStore_RulesetPaymentPaused({projectId: projectId, rulesetId: ruleset.id});
+        }
 
         // The weight according to which new tokens are to be minted, as a fixed point number with 18 decimals.
         uint256 weight;
@@ -1075,7 +1085,7 @@ contract JBTerminalStore is IJBTerminalStore {
         // SECURITY NOTE: The data hook has absolute control over payment token minting.
         // It can return an arbitrary weight (overriding the ruleset's weight) and hook specifications
         // that divert payment funds to external hooks before they reach the project's balance.
-        // Project owners MUST audit their data hooks with the same rigor as the terminal.
+        // Project owners must review their data hooks with the same rigor as the terminal.
 
         // If the ruleset has a data hook enabled for payments, use it to derive a weight and memo.
         if (ruleset.useDataHookForPay() && ruleset.dataHook() != address(0)) {
@@ -1319,7 +1329,6 @@ contract JBTerminalStore is IJBTerminalStore {
             });
 
         // Add up all the balances.
-        // slither-disable-next-line calls-loop
         surplus = (surplus == 0 || accountingContext.currency == targetCurrency)
             ? surplus
             : mulDiv({
@@ -1335,7 +1344,6 @@ contract JBTerminalStore is IJBTerminalStore {
             });
 
         // Get a reference to the payout limit during the ruleset for the token.
-        // slither-disable-next-line calls-loop
         JBCurrencyAmount[] memory payoutLimits = IJBController(address(DIRECTORY.controllerOf(projectId)))
             .FUND_ACCESS_LIMITS()
             .payoutLimitsOf({
@@ -1375,7 +1383,6 @@ contract JBTerminalStore is IJBTerminalStore {
 
             // Convert the `payoutLimit`'s amount to be in terms of the provided currency.
             if (payoutLimit.amount != 0 && payoutLimit.currency != targetCurrency) {
-                // slither-disable-next-line calls-loop
                 uint256 converted = mulDiv({
                     x: payoutLimit.amount,
                     y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the

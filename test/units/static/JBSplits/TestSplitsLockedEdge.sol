@@ -10,7 +10,7 @@ import {JBSplitGroup} from "../../../../src/structs/JBSplitGroup.sol";
 import {JBSplitsSetup} from "./JBSplitsSetup.sol";
 
 /// @notice Edge case tests for JBSplits lock enforcement.
-/// Key finding: locks only enforce within the SAME rulesetId. A project owner
+/// Key behavior: locks only enforce within the SAME rulesetId. A project owner
 /// can bypass a locked split by setting splits under a different rulesetId.
 contract TestSplitsLockedEdge_Local is JBSplitsSetup {
     uint256 constant PROJECT_ID = 1;
@@ -209,7 +209,11 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         JBSplitGroup[] memory groups = new JBSplitGroup[](1);
         groups[0] = JBSplitGroup({groupId: GROUP_ID, splits: splitArray});
 
-        vm.expectRevert(JBSplits.JBSplits_TotalPercentExceeds100.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBSplits.JBSplits_TotalPercentExceeds100.selector, PROJECT_ID, RULESET_ID_A, GROUP_ID, 1_100_000_000
+            )
+        );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, groups);
     }
 
@@ -221,7 +225,9 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         JBSplitGroup[] memory groups = new JBSplitGroup[](1);
         groups[0] = JBSplitGroup({groupId: GROUP_ID, splits: splitArray});
 
-        vm.expectRevert(JBSplits.JBSplits_ZeroSplitPercent.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(JBSplits.JBSplits_ZeroSplitPercent.selector, PROJECT_ID, RULESET_ID_A, GROUP_ID, 0)
+        );
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, groups);
     }
 

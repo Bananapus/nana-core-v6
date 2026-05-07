@@ -89,7 +89,7 @@ When a flow is unclear, read the contract that owns the state before the contrac
 2. `test/TestTerminalPreviewParity.sol`
 3. `test/invariants/TerminalStoreInvariant.t.sol`
 4. `test/invariants/RulesetsInvariant.t.sol`
-5. `test/audit/CrossTerminalSurplusSpoof.t.sol`
+5. `test/regression/CrossTerminalSurplusSpoof.t.sol`
 
 ## Install
 
@@ -123,7 +123,7 @@ This repo contains the main core deployments and periphery deployment helpers. M
 src/
   core contracts, periphery helpers, interfaces, libraries, enums, structs, and abstract bases
 test/
-  unit, integration, fork, invariant, audit, formal, and regression coverage
+  unit, integration, fork, invariant, review, formal, and regression coverage
 script/
   Deploy.s.sol
   DeployPeriphery.s.sol
@@ -135,7 +135,7 @@ script/
 - Hooks can materially change payment and cash-out behavior.
 - Permissions are flexible, which makes broad or wildcard grants risky.
 - Multi-terminal and multi-token accounting is powerful, but it is easy to misuse if an integration assumes a single-terminal model.
-- Fee, surplus, and reclaim logic stay high-priority audit areas.
+- Fee, surplus, and reclaim logic stay high-priority review areas.
 
 The easiest way to misread V6 is to treat core like a simple crowdfunding terminal. It is closer to a configurable accounting and settlement layer.
 

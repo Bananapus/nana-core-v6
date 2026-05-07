@@ -140,10 +140,8 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
         }
 
         // Set the new controller after migration completes.
-        // slither-disable-next-line reentrancy-no-eth
         controllerOf[projectId] = controller;
 
-        // slither-disable-next-line reentrancy-events
         emit SetController({projectId: projectId, controller: controller, caller: msg.sender});
 
         // Notify the new controller that migration is complete and it is now the active controller.
@@ -286,7 +284,6 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
             IJBTerminal terminal = terminals[i];
 
             // If the terminal accepts the specified token, return it.
-            // slither-disable-next-line calls-loop
             if (terminal.accountingContextForTokenOf({projectId: projectId, token: token}).token != address(0)) {
                 return terminal;
             }

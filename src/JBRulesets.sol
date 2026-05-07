@@ -217,7 +217,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
             _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // Nothing to cache if the target ruleset doesn't have a duration or a weight cut percent.
-        // slither-disable-next-line incorrect-equality
         if (targetRuleset.duration == 0 || targetRuleset.weightCutPercent == 0) return;
 
         // Get a reference to the current cache.
@@ -356,7 +355,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @return ruleset The project's current ruleset.
     function currentOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
         // If the project does not have a ruleset, return an empty struct.
-        // slither-disable-next-line incorrect-equality
         if (latestRulesetIdOf[projectId] == 0) {
             return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
         }
@@ -375,7 +373,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
             // Check to see if this ruleset's approval hook is approved if it exists.
             // If so, return it.
-            // slither-disable-next-line incorrect-equality
             if (approvalStatus == JBApprovalStatus.Approved || approvalStatus == JBApprovalStatus.Empty) {
                 return ruleset;
             }
@@ -413,7 +410,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // If the base has no duration, it's still the current one.
-        // slither-disable-next-line incorrect-equality
         if (ruleset.duration == 0) return ruleset;
 
         // Return a simulation of the current ruleset.
@@ -466,7 +462,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @return ruleset The struct for the project's upcoming ruleset.
     function upcomingOf(uint256 projectId) external view override returns (JBRuleset memory ruleset) {
         // If the project does not have a latest ruleset, return an empty struct.
-        // slither-disable-next-line incorrect-equality
         if (latestRulesetIdOf[projectId] == 0) {
             return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
         }
@@ -487,7 +482,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
             // If the approval hook is empty, expects approval, or has approved the ruleset, return it.
             if (
-                // slither-disable-next-line incorrect-equality
                 approvalStatus == JBApprovalStatus.Approved || approvalStatus == JBApprovalStatus.ApprovalExpected
                     || approvalStatus == JBApprovalStatus.Empty
             ) return ruleset;
@@ -510,7 +504,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         }
 
         // There's no queued if the current has a duration of 0.
-        // slither-disable-next-line incorrect-equality
         if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
 
         // Get a reference to the approval status.
@@ -518,7 +511,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // Check to see if this ruleset's approval hook hasn't failed.
         // If so, return a ruleset based on it.
-        // slither-disable-next-line incorrect-equality
         if (approvalStatus == JBApprovalStatus.Approved || approvalStatus == JBApprovalStatus.Empty) {
             return _simulateCycledRulesetBasedOn({projectId: projectId, baseRuleset: ruleset, allowMidRuleset: false});
         }
@@ -528,7 +520,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
 
         // There's no queued if the base, which must still be the current, has a duration of 0.
-        // slither-disable-next-line incorrect-equality
         if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
 
         // Return a simulated cycled ruleset.
@@ -557,7 +548,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         returns (uint256)
     {
         // A subsequent ruleset to one with a duration of 0 should be the next number.
-        // slither-disable-next-line incorrect-equality
         if (baseRulesetDuration == 0) {
             return baseRulesetCycleNumber + 1;
         }
@@ -585,7 +575,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         returns (uint256 start)
     {
         // A subsequent ruleset to one with a duration of 0 should start as soon as possible.
-        // slither-disable-next-line incorrect-equality
         if (baseRulesetDuration == 0) return mustStartAtOrAfter;
 
         // The time when the ruleset immediately after the specified ruleset starts.
@@ -598,7 +587,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         // The amount of seconds since the `mustStartAtOrAfter` time which results in a start time that might satisfy
         // the specified limits.
-        // slither-disable-next-line weak-prng
         uint256 timeFromImmediateStartMultiple = (mustStartAtOrAfter - nextImmediateStart) % baseRulesetDuration;
 
         // A reference to the first possible start timestamp.
@@ -634,7 +622,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         returns (uint256 weight)
     {
         // A subsequent ruleset to one with a duration of 0 should have the next possible weight.
-        // slither-disable-next-line incorrect-equality
         if (baseRulesetDuration == 0) {
             return mulDiv(
                 baseRulesetWeight,
@@ -647,7 +634,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         weight = baseRulesetWeight;
 
         // If the weight cut percent is 0, the weight doesn't change.
-        // slither-disable-next-line incorrect-equality
         if (baseRulesetWeightCutPercent == 0) return weight;
 
         // The difference between the start of the base ruleset and the proposed start.
@@ -719,7 +705,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 latestId = latestRulesetIdOf[projectId];
 
         // If the project doesn't have a ruleset yet, initialize one.
-        // slither-disable-next-line incorrect-equality
         if (latestId == 0) {
             // Use an empty ruleset as the base.
             return _initializeRulesetFor({
@@ -807,7 +792,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         internal
     {
         // If there is no base, initialize a first ruleset.
-        // slither-disable-next-line incorrect-equality
         if (baseRuleset.cycleNumber == 0) {
             // Set fresh intrinsic properties.
             _packAndStoreIntrinsicPropertiesOf({
@@ -910,7 +894,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @return The approval status of the project.
     function _approvalStatusOf(uint256 projectId, JBRuleset memory ruleset) internal view returns (JBApprovalStatus) {
         // If there is no ruleset ID to check the approval hook of, the approval hook is empty.
-        // slither-disable-next-line incorrect-equality
         if (ruleset.basedOnId == 0) return JBApprovalStatus.Empty;
 
         // Read only the packed user properties to extract the approval hook address,
@@ -928,7 +911,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Wrap in try/catch to prevent a reverting approval hook from permanently freezing the project.
         // Note: A malicious hook that consumes all gas (e.g. infinite loop) could still DoS via gas exhaustion.
         // This is accepted risk since the project owner chose their own approval hook.
-        // slither-disable-next-line calls-loop
         try approvalHook.approvalStatusOf({projectId: projectId, ruleset: ruleset}) returns (JBApprovalStatus status) {
             return status;
         } catch {
@@ -988,7 +970,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         returns (JBRuleset memory ruleset)
     {
         // Return an empty ruleset if the specified `rulesetId` is 0.
-        // slither-disable-next-line incorrect-equality
         if (rulesetId == 0) return ruleset;
 
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -1104,12 +1085,10 @@ contract JBRulesets is JBControlled, IJBRulesets {
         JBRuleset memory ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: false});
 
         // There is no upcoming ruleset if the latest ruleset has already started.
-        // slither-disable-next-line incorrect-equality
         // forge-lint: disable-next-line(block-timestamp)
         if (block.timestamp >= ruleset.start) return 0;
 
         // If this is the first ruleset, it is queued.
-        // slither-disable-next-line incorrect-equality
         if (ruleset.cycleNumber == 1) return rulesetId;
 
         // Get a reference to the ID of the ruleset the latest ruleset was based on.

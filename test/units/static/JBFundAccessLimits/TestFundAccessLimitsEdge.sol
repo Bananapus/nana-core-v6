@@ -8,7 +8,7 @@ import {JBFundAccessLimitGroup} from "../../../../src/structs/JBFundAccessLimitG
 import {JBTest} from "../../../helpers/JBTest.sol";
 
 /// @notice Edge case tests for JBFundAccessLimits append behavior and packing.
-/// The key finding is that setFundAccessLimitsFor uses .push() (append), not replace.
+/// The key behavior is that setFundAccessLimitsFor uses .push() (append), not replace.
 /// If called twice for the same rulesetId, limits accumulate rather than being replaced.
 contract TestFundAccessLimitsEdge_Local is JBTest {
     IJBDirectory public directory = IJBDirectory(makeAddr("directory"));
@@ -104,7 +104,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
             terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 
@@ -119,7 +119,7 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
             terminal: TERMINAL, token: TOKEN, payoutLimits: payoutLimits, surplusAllowances: new JBCurrencyAmount[](0)
         });
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 

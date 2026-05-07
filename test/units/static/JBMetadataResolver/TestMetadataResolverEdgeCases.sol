@@ -207,7 +207,7 @@ contract TestMetadataResolverEdgeCases is JBTest {
         // Adding a 7th entry: table grows from 30 bytes (1 word) to 35 bytes (2 words).
         // All offsets += 1. lastOffset (212) becomes 213.
         // newOffset = 213 + 43 = 256 > 255 → revert.
-        vm.expectRevert(JBMetadataResolver.JBMetadataResolver_MetadataTooLong.selector);
+        vm.expectPartialRevert(JBMetadataResolver.JBMetadataResolver_MetadataTooLong.selector);
         harness.addToMetadata(metadata, bytes4(0x77777777), abi.encodePacked(bytes32(uint256(7))));
     }
 

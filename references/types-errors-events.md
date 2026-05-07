@@ -182,7 +182,6 @@ Errors an agent is most likely to encounter. All are custom errors (revert with 
 | `JBSplits_TotalPercentExceeds100` | `JBSplits` | Split percentages sum exceeds `SPLITS_TOTAL_PERCENT`. |
 | `JBPrices_PriceFeedAlreadyExists` | `JBPrices` | Feed already set for that currency pair (immutable). |
 | `JBPrices_PriceFeedNotFound` | `JBPrices` | No feed found for the requested currency pair. |
-| `JBPermissions_CantSetRootPermissionForWildcardProject` | `JBPermissions` | Tried to grant ROOT with `projectId = 0` (wildcard). |
 | `JBRulesets_InvalidWeight` | `JBRulesets` | Weight exceeds `uint112.max`. |
 | `JBRulesets_InvalidWeightCutPercent` | `JBRulesets` | `weightCutPercent` exceeds `MAX_WEIGHT_CUT_PERCENT`. |
 | `JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering` | `JBFundAccessLimits` | Payout limit currencies not in strictly increasing order. |

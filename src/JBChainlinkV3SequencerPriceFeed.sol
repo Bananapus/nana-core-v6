@@ -14,7 +14,7 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBChainlinkV3SequencerPriceFeed_InvalidRound();
+    error JBChainlinkV3SequencerPriceFeed_InvalidRound(uint256 startedAt);
     error JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
         uint256 timestamp, uint256 gracePeriodTime, uint256 startedAt
     );
@@ -58,11 +58,10 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     /// @return The current unit price from the feed, as a fixed point number with the specified number of decimals.
     function currentUnitPrice(uint256 decimals) public view override returns (uint256) {
         // Fetch sequencer status.
-        // slither-disable-next-line unused-return
         (, int256 answer, uint256 startedAt,,) = SEQUENCER_FEED.latestRoundData();
 
         // Check if round is valid to prevent an edge-case where Arbitrum uptime contract is not init.
-        if (startedAt == 0) revert JBChainlinkV3SequencerPriceFeed_InvalidRound();
+        if (startedAt == 0) revert JBChainlinkV3SequencerPriceFeed_InvalidRound({startedAt: startedAt});
 
         // Revert if sequencer has too recently restarted or is currently down.
         // forge-lint: disable-next-line(block-timestamp)

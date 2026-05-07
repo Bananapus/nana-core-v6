@@ -19,7 +19,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - Token metadata is more editable than in v5. The controller now exposes a dedicated token-metadata update path.
 - Approval-hook handling is safer. The v6 codebase and tests are built around preventing a bad approval hook from freezing project behavior.
 - Fee accounting is tighter than in v5, especially around fee-free surplus behavior and cross-flow bookkeeping.
-- The repo carries much broader test coverage than the v5 tree, including dedicated audit, invariant, fork, and formal-style suites.
+- The repo carries much broader test coverage than the v5 tree, including dedicated review, invariant, fork, and formal-style suites.
 - The implementation baseline moved from the v5 `0.8.23` world to `0.8.28`.
 
 ## Verified deltas

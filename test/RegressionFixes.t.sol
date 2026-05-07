@@ -23,11 +23,11 @@ import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 
-/// @notice Tests for three audit fixes: F-3, F-4, and F-5.
-/// F-5: Saturating subtraction in _tokenSurplusFrom prevents underflow when usedPayoutLimit > payoutLimit.amount.
-/// F-3: _capFeeFreeSurplus after _efficientPay in executePayout caps fee-free surplus at STORE.balanceOf.
-/// F-4: _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf caps fee-free surplus at remaining balance.
-contract AuditFixesTest is TestBaseWorkflow {
+/// @notice Tests for three regression fixes: and .
+/// Saturating subtraction in _tokenSurplusFrom prevents underflow when usedPayoutLimit > payoutLimit.amount.
+/// _capFeeFreeSurplus after _efficientPay in executePayout caps fee-free surplus at STORE.balanceOf.
+/// _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf caps fee-free surplus at remaining balance.
+contract RegressionFixesTest is TestBaseWorkflow {
     // --- Core protocol references ---
     IJBController private _controller;
     JBMultiTerminal private _terminal;
@@ -53,7 +53,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     }
 
     // ==========================================
-    // F-5: Saturating subtraction in _tokenSurplusFrom
+    // Saturating subtraction in _tokenSurplusFrom
     // ==========================================
 
     /// @notice When a new ruleset activates with a lower payout limit than what was already used under a previous
@@ -163,7 +163,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     }
 
     /// @notice Verify that currentSurplusOf does not revert when the project has zero payout limits in the new ruleset
-    /// (meaning all balance is surplus). This is a simpler version of the F-5 scenario.
+    /// (meaning all balance is surplus). This is a simpler version of the scenario.
     function test_F5_currentSurplusOfWithZeroPayoutLimit() external {
         // Fee project.
         _launchFeeProject();
@@ -244,7 +244,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     }
 
     // ==========================================
-    // F-3: _capFeeFreeSurplus after _efficientPay in executePayout
+    // _capFeeFreeSurplus after _efficientPay in executePayout
     // ==========================================
 
     /// @notice When project A pays out to project B via a same-terminal split (not addToBalance), and project B has
@@ -255,7 +255,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     ///   2. Project A: has 100% split paying project B (same terminal, preferAddToBalance=false).
     ///   3. After sendPayoutsOf, verify _feeFreeSurplusOf[B] <= STORE.balanceOf[B].
     ///   4. Verify a subsequent zero-tax cashout from B charges correct fees (not overcharged).
-    function test_F3_feeFreeSurplusCappedWhenDataHookDivertsFunds() external {
+    function test_feeFreeSurplusCappedWhenDataHookDivertsFunds() external {
         // --- Fee project ---
         _launchFeeProject();
 
@@ -379,7 +379,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         // Send payouts from project A: 10 ETH goes to project B via the split.
         // The data hook diverts 5 ETH to the pay hook, so STORE.balanceOf[B] only increases by 5 ETH.
         // But _feeFreeSurplusOf[B] was incremented by the full 10 ETH before the pay.
-        // After the fix (F-3), _capFeeFreeSurplus caps it at 5 ETH.
+        // After the fix (), _capFeeFreeSurplus caps it at 5 ETH.
         _terminal.sendPayoutsOf({
             projectId: projectIdA,
             token: JBConstants.NATIVE_TOKEN,
@@ -395,7 +395,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         assertLe(
             feeFreeSurplus,
             storeBalance,
-            "F-3: _feeFreeSurplusOf must not exceed STORE.balanceOf after data hook diverts funds"
+            "_feeFreeSurplusOf must not exceed STORE.balanceOf after data hook diverts funds"
         );
 
         // The store should have recorded only the portion not diverted to the pay hook.
@@ -407,7 +407,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         _verifyCashOutFees(projectIdB);
     }
 
-    /// @dev Helper to verify cashout fees for F-3 (extracted to reduce stack depth).
+    /// @dev Helper to verify cashout fees for (extracted to reduce stack depth).
     function _verifyCashOutFees(uint256 projectIdB) private {
         address splitBeneficiary = makeAddr("split-beneficiary");
         uint256 beneficiaryTokens = _tokens.totalBalanceOf(splitBeneficiary, projectIdB);
@@ -429,21 +429,18 @@ contract AuditFixesTest is TestBaseWorkflow {
             uint256 expectedFee = mulDiv(5 ether, 25, 1000);
             uint256 expectedNet = 5 ether - expectedFee;
             assertApproxEqAbs(
-                reclaimAmount,
-                expectedNet,
-                2,
-                "F-3: Cashout should charge correct fee (2.5% of capped fee-free surplus)"
+                reclaimAmount, expectedNet, 2, "Cashout should charge correct fee (2.5% of capped fee-free surplus)"
             );
 
             // Crucially, the fee should NOT be calculated on the full 10 ETH payout amount.
             // Without the fix, feeFreeSurplus would be 10 ETH but balance only 5 ETH,
             // causing an overcharge.
-            assertLt(reclaimAmount, 5 ether, "F-3: Fee must be deducted from cashout");
+            assertLt(reclaimAmount, 5 ether, "Fee must be deducted from cashout");
         }
     }
 
     // ==========================================
-    // F-4: _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf
+    // _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf
     // ==========================================
 
     /// @notice After a cashout, _feeFreeSurplusOf is capped at the remaining STORE.balanceOf.
@@ -506,7 +503,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         assertLe(
             _readFeeFreeSurplus(projectId, JBConstants.NATIVE_TOKEN),
             _store.balanceOf(address(_terminal), projectId, JBConstants.NATIVE_TOKEN),
-            "F-4: _feeFreeSurplusOf must be <= STORE.balanceOf after partial cashout"
+            "_feeFreeSurplusOf must be <= STORE.balanceOf after partial cashout"
         );
         assertGt(reclaim, 0, "Partial cashout should reclaim something");
     }
@@ -530,7 +527,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         assertLe(
             _readFeeFreeSurplus(projectId, JBConstants.NATIVE_TOKEN),
             _store.balanceOf(address(_terminal), projectId, JBConstants.NATIVE_TOKEN),
-            "F-4: _feeFreeSurplusOf must be <= STORE.balanceOf after second cashout"
+            "_feeFreeSurplusOf must be <= STORE.balanceOf after second cashout"
         );
         assertGt(reclaim, 0, "Second cashout should reclaim something");
     }
@@ -559,9 +556,7 @@ contract AuditFixesTest is TestBaseWorkflow {
         uint256 feeFreeSurplusAfterDrain = _readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN);
         uint256 balanceAfterDrain = _store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN);
 
-        assertLe(
-            feeFreeSurplusAfterDrain, balanceAfterDrain, "F-4: fee-free surplus must be <= balance after full drain"
-        );
+        assertLe(feeFreeSurplusAfterDrain, balanceAfterDrain, "fee-free surplus must be <= balance after full drain");
 
         // Now pay B again directly. This should be fee-free since fee-free surplus was cleared.
         _payProject(projectIdB, makeAddr("f4-fresh-user"), 5 ether);
@@ -574,7 +569,7 @@ contract AuditFixesTest is TestBaseWorkflow {
     // Helper functions
     // ==========================================
 
-    /// @dev Launch a pair of projects for the F-4 drain test: project B (zero tax) and project A (100% split to B).
+    /// @dev Launch a pair of projects for the drain test: project B (zero tax) and project A (100% split to B).
     function _launchPayoutPairForF4(string memory label) private returns (uint256 projectIdA, uint256 projectIdB) {
         // Project B: zero tax.
         JBRulesetConfig[] memory rulesetConfigB = new JBRulesetConfig[](1);

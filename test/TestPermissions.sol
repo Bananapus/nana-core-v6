@@ -142,7 +142,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
 
             // Set em.
             vm.prank(_projectOwner);
-            vm.expectRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
+            vm.expectPartialRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
             _permissions.setPermissionsFor(_projectOwner, permData[0]);
         }
     }
@@ -176,7 +176,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
         }
 
         // If setting with a zero permission id, will revert.
-        if (hasZero) vm.expectRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
+        if (hasZero) vm.expectPartialRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
 
         // Set the permissions.
         vm.prank(_account);
