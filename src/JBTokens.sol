@@ -19,8 +19,8 @@ contract JBTokens is JBControlled, IJBTokens {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBTokens_EmptyName();
-    error JBTokens_EmptySymbol();
+    error JBTokens_EmptyName(uint256 projectId);
+    error JBTokens_EmptySymbol(uint256 projectId);
     error JBTokens_EmptyToken(uint256 projectId);
     error JBTokens_InsufficientCredits(uint256 count, uint256 creditBalance);
     error JBTokens_InsufficientTokensToBurn(uint256 count, uint256 tokenBalance);
@@ -28,7 +28,7 @@ contract JBTokens is JBControlled, IJBTokens {
     error JBTokens_ProjectAlreadyHasToken(IJBToken token);
     error JBTokens_TokenAlreadyBeingUsed(uint256 projectId);
     error JBTokens_TokenCantBeAdded(uint256 projectId);
-    error JBTokens_TokenNotFound();
+    error JBTokens_TokenNotFound(uint256 projectId);
     error JBTokens_TokensMustHave18Decimals(uint256 decimals);
 
     //*********************************************************************//
@@ -49,7 +49,6 @@ contract JBTokens is JBControlled, IJBTokens {
 
     /// @notice The project ID that a given ERC-20 token is associated with.
     /// @custom:param token The address of the token associated with the project.
-    // slither-disable-next-line unused-return
     mapping(IJBToken token => uint256) public override projectIdOf;
 
     /// @notice Each project's attached token contract.
@@ -153,7 +152,7 @@ contract JBTokens is JBControlled, IJBTokens {
         IJBToken token = tokenOf[projectId];
 
         // The project must have a token contract attached.
-        if (token == IJBToken(address(0))) revert JBTokens_TokenNotFound();
+        if (token == IJBToken(address(0))) revert JBTokens_TokenNotFound({projectId: projectId});
 
         // Get a reference to the amount of credits the holder has.
         uint256 creditBalance = creditBalanceOf[holder][projectId];
@@ -204,10 +203,10 @@ contract JBTokens is JBControlled, IJBTokens {
         returns (IJBToken token)
     {
         // There must be a name.
-        if (bytes(name).length == 0) revert JBTokens_EmptyName();
+        if (bytes(name).length == 0) revert JBTokens_EmptyName({projectId: projectId});
 
         // There must be a symbol.
-        if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol();
+        if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol({projectId: projectId});
 
         // The project shouldn't already have a token.
         if (tokenOf[projectId] != IJBToken(address(0))) revert JBTokens_ProjectAlreadyHasToken(tokenOf[projectId]);
@@ -268,7 +267,6 @@ contract JBTokens is JBControlled, IJBTokens {
 
         if (tokensWereClaimed) {
             // If tokens should be claimed, mint tokens into the holder's wallet.
-            // slither-disable-next-line reentrancy-events
             token.mint({account: holder, amount: count});
         } else {
             // Otherwise, add the tokens to their credits and the credit supply.
@@ -333,13 +331,13 @@ contract JBTokens is JBControlled, IJBTokens {
         IJBToken token = tokenOf[projectId];
 
         // The project must have a token contract attached.
-        if (token == IJBToken(address(0))) revert JBTokens_TokenNotFound();
+        if (token == IJBToken(address(0))) revert JBTokens_TokenNotFound({projectId: projectId});
 
         // There must be a name.
-        if (bytes(name).length == 0) revert JBTokens_EmptyName();
+        if (bytes(name).length == 0) revert JBTokens_EmptyName({projectId: projectId});
 
         // There must be a symbol.
-        if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol();
+        if (bytes(symbol).length == 0) revert JBTokens_EmptySymbol({projectId: projectId});
 
         emit SetTokenMetadata({projectId: projectId, name: name, symbol: symbol, caller: msg.sender});
 

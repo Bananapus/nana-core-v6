@@ -13,7 +13,7 @@ import {JBConstants} from "./JBConstants.sol";
 /// reclaim amount.
 library JBCashOuts {
     /// @notice Thrown when the desired output cannot be achieved (e.g., cash out tax rate is 100%).
-    error JBCashOuts_DesiredOutputNotAchievable();
+    error JBCashOuts_DesiredOutputNotAchievable(uint256 desiredOutput, uint256 cashOutTaxRate, uint256 maxTaxRate);
 
     /// @notice Returns the amount of surplus terminal tokens which can be reclaimed based on the total surplus, the
     /// number of tokens to cash out, the total token supply, and the ruleset's cash out tax rate.
@@ -81,7 +81,11 @@ library JBCashOuts {
 
         // If the cash out tax rate is at maximum, no output is achievable.
         if (cashOutTaxRate == JBConstants.MAX_CASH_OUT_TAX_RATE) {
-            revert JBCashOuts_DesiredOutputNotAchievable();
+            revert JBCashOuts_DesiredOutputNotAchievable({
+                desiredOutput: desiredOutput,
+                cashOutTaxRate: cashOutTaxRate,
+                maxTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE
+            });
         }
 
         // If the desired output meets or exceeds the surplus, the entire supply must be cashed out.

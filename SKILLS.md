@@ -19,7 +19,7 @@
 | Packed metadata, errors, events, and hook return shapes | [`references/types-errors-events.md`](./references/types-errors-events.md) |
 | Payment and cash-out behavior in tests | [`test/TestPayBurnRedeemFlow.sol`](./test/TestPayBurnRedeemFlow.sol), [`test/TestCashOut.sol`](./test/TestCashOut.sol), [`test/TestMultiTerminalSurplus.sol`](./test/TestMultiTerminalSurplus.sol), [`test/TestTerminalPreviewParity.sol`](./test/TestTerminalPreviewParity.sol) |
 | Permissions, rulesets, and invariants | [`test/TestPermissions.sol`](./test/TestPermissions.sol), [`test/PermissionEscalation.t.sol`](./test/PermissionEscalation.t.sol), [`test/TestRulesetQueueing.sol`](./test/TestRulesetQueueing.sol), [`test/ComprehensiveInvariant.t.sol`](./test/ComprehensiveInvariant.t.sol), [`test/PermissionsInvariant.t.sol`](./test/PermissionsInvariant.t.sol) |
-| Economic and exploit coverage | [`test/EconomicSimulation.t.sol`](./test/EconomicSimulation.t.sol), [`test/CoreExploitTests.t.sol`](./test/CoreExploitTests.t.sol), [`test/FlashLoanAttacks.t.sol`](./test/FlashLoanAttacks.t.sol), [`test/WeirdTokenTests.t.sol`](./test/WeirdTokenTests.t.sol), [`test/AuditFixes.t.sol`](./test/AuditFixes.t.sol) |
+| Economic and exploit coverage | [`test/EconomicSimulation.t.sol`](./test/EconomicSimulation.t.sol), [`test/CoreExploitTests.t.sol`](./test/CoreExploitTests.t.sol), [`test/FlashLoanAttacks.t.sol`](./test/FlashLoanAttacks.t.sol), [`test/WeirdTokenTests.t.sol`](./test/WeirdTokenTests.t.sol), [`test/RegressionFixes.t.sol`](./test/RegressionFixes.t.sol) |
 
 ## Repo Map
 

@@ -17,7 +17,7 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBChainlinkV3PriceFeed_IncompleteRound();
+    error JBChainlinkV3PriceFeed_IncompleteRound(uint80 roundId, uint80 answeredInRound, uint256 updatedAt);
     error JBChainlinkV3PriceFeed_NegativePrice(int256 price);
     error JBChainlinkV3PriceFeed_StalePrice(uint256 timestamp, uint256 threshold, uint256 updatedAt);
 
@@ -51,15 +51,21 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     /// @return The current unit price from the feed, as a fixed point number with the specified number of decimals.
     function currentUnitPrice(uint256 decimals) public view virtual override returns (uint256) {
         // Get the latest round information from the feed.
-        // slither-disable-next-line unused-return
         (uint80 roundId, int256 price,, uint256 updatedAt, uint80 answeredInRound) = FEED.latestRoundData();
 
         // Make sure the round is finished (check before stale price to avoid false stale on incomplete rounds).
-        // slither-disable-next-line incorrect-equality
-        if (updatedAt == 0) revert JBChainlinkV3PriceFeed_IncompleteRound();
+        if (updatedAt == 0) {
+            revert JBChainlinkV3PriceFeed_IncompleteRound({
+                roundId: roundId, answeredInRound: answeredInRound, updatedAt: updatedAt
+            });
+        }
 
         // Make sure the answer was provided in the current round.
-        if (answeredInRound < roundId) revert JBChainlinkV3PriceFeed_IncompleteRound();
+        if (answeredInRound < roundId) {
+            revert JBChainlinkV3PriceFeed_IncompleteRound({
+                roundId: roundId, answeredInRound: answeredInRound, updatedAt: updatedAt
+            });
+        }
 
         // Make sure the price's update threshold is met.
         // forge-lint: disable-next-line(block-timestamp)

@@ -25,8 +25,8 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBERC20_AlreadyInitialized();
-    error JBERC20_Unauthorized();
+    error JBERC20_AlreadyInitialized(uint256 currentNameLength, uint256 newNameLength);
+    error JBERC20_Unauthorized(address caller, address tokens);
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
@@ -48,11 +48,9 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     //*********************************************************************//
 
     /// @notice The token's name.
-    // slither-disable-next-line shadowing-state
     string private _name;
 
     /// @notice The token's symbol.
-    // slither-disable-next-line shadowing-state
     string private _symbol;
 
     //*********************************************************************//
@@ -82,7 +80,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @notice Only the JBTokens contract can call this function.
     // forge-lint: disable-next-line(unwrapped-modifier-logic)
     modifier onlyTokens() {
-        if (msg.sender != address(TOKENS)) revert JBERC20_Unauthorized();
+        if (msg.sender != address(TOKENS)) revert JBERC20_Unauthorized({caller: msg.sender, tokens: address(TOKENS)});
         _;
     }
 
@@ -132,7 +130,6 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
         // Recover the signer from the signature. Return invalid if recovery fails.
-        // slither-disable-next-line unused-return
         (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(hash, signature);
         if (error != ECDSA.RecoverError.NoError) return 0xffffffff;
 
@@ -201,7 +198,11 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @param tokens The JBTokens contract that manages this token.
     function initialize(string memory name_, string memory symbol_, address tokens) public override {
         // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
-        if (bytes(_name).length != 0 || bytes(name_).length == 0) revert JBERC20_AlreadyInitialized();
+        if (bytes(_name).length != 0 || bytes(name_).length == 0) {
+            revert JBERC20_AlreadyInitialized({
+                currentNameLength: bytes(_name).length, newNameLength: bytes(name_).length
+            });
+        }
 
         _name = name_;
         _symbol = symbol_;

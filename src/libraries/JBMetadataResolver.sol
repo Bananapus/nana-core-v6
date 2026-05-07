@@ -25,10 +25,10 @@ pragma solidity 0.8.28;
  *            +-----------------------+
  */
 library JBMetadataResolver {
-    error JBMetadataResolver_DataNotPadded();
-    error JBMetadataResolver_LengthMismatch();
-    error JBMetadataResolver_MetadataTooLong();
-    error JBMetadataResolver_MetadataTooShort();
+    error JBMetadataResolver_DataNotPadded(uint256 dataLength);
+    error JBMetadataResolver_LengthMismatch(uint256 idsLength, uint256 datasLength);
+    error JBMetadataResolver_MetadataTooLong(uint256 offset, uint256 maxOffset);
+    error JBMetadataResolver_MetadataTooShort(uint256 metadataLength, uint256 minMetadataLength);
 
     // The various sizes used in bytes.
     uint256 constant ID_SIZE = 4;
@@ -61,7 +61,7 @@ library JBMetadataResolver {
         returns (bytes memory newMetadata)
     {
         // Validate data padding upfront so that the fast path below cannot bypass the check.
-        if (dataToAdd.length < 32) revert JBMetadataResolver_DataNotPadded();
+        if (dataToAdd.length < 32) revert JBMetadataResolver_DataNotPadded({dataLength: dataToAdd.length});
 
         // Empty original metadata and maybe something in the first 32 bytes: create new metadata
         if (originalMetadata.length <= RESERVED_SIZE) {
@@ -70,7 +70,11 @@ library JBMetadataResolver {
         }
 
         // There is something in the table offset, but not a valid entry - avoid overwriting
-        if (originalMetadata.length < RESERVED_SIZE + ID_SIZE + 1) revert JBMetadataResolver_MetadataTooShort();
+        if (originalMetadata.length < RESERVED_SIZE + ID_SIZE + 1) {
+            revert JBMetadataResolver_MetadataTooShort({
+                metadataLength: originalMetadata.length, minMetadataLength: RESERVED_SIZE + ID_SIZE + 1
+            });
+        }
 
         // Get the first data offset - upcast to avoid overflow (same for other offset)...
         uint256 firstOffset = uint8(originalMetadata[RESERVED_SIZE + ID_SIZE]);
@@ -104,7 +108,9 @@ library JBMetadataResolver {
                     // Increment every offset by 1 (as the table now takes one more word)
                     for (uint256 j = RESERVED_SIZE + ID_SIZE; j < lastOffsetIndex + 1; j += TOTAL_ID_SIZE) {
                         uint256 incremented = uint256(uint8(originalMetadata[j])) + 1;
-                        if (incremented > 255) revert JBMetadataResolver_MetadataTooLong();
+                        if (incremented > 255) {
+                            revert JBMetadataResolver_MetadataTooLong({offset: incremented, maxOffset: 255});
+                        }
                         // forge-lint: disable-next-line(unsafe-typecast)
                         newMetadata[j] = bytes1(uint8(incremented));
                     }
@@ -121,7 +127,7 @@ library JBMetadataResolver {
         // taken by the last data
         // Compute in uint256 first — casting directly to uint8 silently wraps offsets > 255.
         uint256 newOffset = lastOffset + numberOfWordslastData;
-        if (newOffset > 255) revert JBMetadataResolver_MetadataTooLong();
+        if (newOffset > 255) revert JBMetadataResolver_MetadataTooLong({offset: newOffset, maxOffset: 255});
         // forge-lint: disable-next-line(unsafe-typecast)
         newMetadata = abi.encodePacked(newMetadata, idToAdd, bytes1(uint8(newOffset)));
 
@@ -167,7 +173,9 @@ library JBMetadataResolver {
     /// @param datas The list of corresponding datas
     /// @return metadata The resulting metadata
     function createMetadata(bytes4[] memory ids, bytes[] memory datas) internal pure returns (bytes memory metadata) {
-        if (ids.length != datas.length) revert JBMetadataResolver_LengthMismatch();
+        if (ids.length != datas.length) {
+            revert JBMetadataResolver_LengthMismatch({idsLength: ids.length, datasLength: datas.length});
+        }
 
         // Return empty bytes for empty input arrays to avoid underflow in offset calculation below.
         if (ids.length == 0) return bytes("");
@@ -191,7 +199,7 @@ library JBMetadataResolver {
             bytes memory data = datas[i];
 
             if (data.length < 32 || data.length % JBMetadataResolver.WORD_SIZE != 0) {
-                revert JBMetadataResolver_DataNotPadded();
+                revert JBMetadataResolver_DataNotPadded({dataLength: data.length});
             }
 
             // forge-lint: disable-next-line(unsafe-typecast)
@@ -199,7 +207,7 @@ library JBMetadataResolver {
             offset += data.length / JBMetadataResolver.WORD_SIZE;
 
             // Overflowing a bytes1?
-            if (offset > 255) revert JBMetadataResolver_MetadataTooLong();
+            if (offset > 255) revert JBMetadataResolver_MetadataTooLong({offset: offset, maxOffset: 255});
         }
 
         // Pad the table to a multiple of 32B
@@ -277,7 +285,7 @@ library JBMetadataResolver {
     /// @param purpose A string describing the purpose associated with the id
     /// @return id The resulting ID.
     function getId(string memory purpose) internal view returns (bytes4) {
-        return getId(purpose, address(this));
+        return getId({purpose: purpose, target: address(this)});
     }
 
     /// @notice Returns an unique id following a suggested format (`xor(address(this), purpose name)` where purpose name

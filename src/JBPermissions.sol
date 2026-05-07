@@ -17,8 +17,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBPermissions_CantSetRootPermissionForWildcardProject();
-    error JBPermissions_NoZeroPermission();
+    error JBPermissions_NoZeroPermission(address account, address operator, uint256 projectId);
     error JBPermissions_PermissionIdOutOfBounds(uint256 permissionId);
     error JBPermissions_Unauthorized(address account, address operator, uint256 projectId, uint256 permissionId);
 
@@ -69,7 +68,11 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
         uint256 packed = _packedPermissions(permissionsData.permissionIds);
 
         // Make sure the 0 permission is not set.
-        if (_includesPermission({permissions: packed, permissionId: 0})) revert JBPermissions_NoZeroPermission();
+        if (_includesPermission({permissions: packed, permissionId: 0})) {
+            revert JBPermissions_NoZeroPermission({
+                account: account, operator: permissionsData.operator, projectId: permissionsData.projectId
+            });
+        }
 
         // Cache the sender.
         address msgSender = _msgSender();

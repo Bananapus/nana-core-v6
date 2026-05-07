@@ -10,7 +10,7 @@ import {JBSplitGroup} from "../../../../src/structs/JBSplitGroup.sol";
 import {JBSplitsSetup} from "./JBSplitsSetup.sol";
 
 /// @notice Edge case tests for JBSplits lock enforcement.
-/// Key finding: locks only enforce within the SAME rulesetId. A project owner
+/// Key behavior: locks only enforce within the SAME rulesetId. A project owner
 /// can bypass a locked split by setting splits under a different rulesetId.
 contract TestSplitsLockedEdge_Local is JBSplitsSetup {
     uint256 constant PROJECT_ID = 1;

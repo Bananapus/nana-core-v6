@@ -18,8 +18,12 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering();
-    error JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering();
+    error JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering(
+        uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 limitIndex
+    );
+    error JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering(
+        uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 allowanceIndex
+    );
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
@@ -102,7 +106,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                 // Make sure the payout limits are passed in strictly increasing order (sorted by currency) to prevent
                 // duplicates.
                 if (j != 0 && payoutLimit.currency <= fundAccessLimitGroup.payoutLimits[j - 1].currency) {
-                    revert JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering();
+                    revert JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering({
+                        projectId: projectId, rulesetId: rulesetId, groupIndex: i, limitIndex: j
+                    });
                 }
 
                 // Set the payout limit if there is one.
@@ -127,7 +133,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
                 // Make sure the surplus allowances are passed in strictly increasing order (sorted by currency) to
                 // prevent duplicates.
                 if (j != 0 && surplusAllowance.currency <= fundAccessLimitGroup.surplusAllowances[j - 1].currency) {
-                    revert JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering();
+                    revert JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering({
+                        projectId: projectId, rulesetId: rulesetId, groupIndex: i, allowanceIndex: j
+                    });
                 }
 
                 // Set the surplus allowance if there is one.

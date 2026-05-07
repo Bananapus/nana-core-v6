@@ -81,12 +81,6 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         address caller
     );
 
-    /// @notice A project was prepared for migration from another controller.
-    /// @param projectId The ID of the project to prepare for migration.
-    /// @param from The controller to migrate from.
-    /// @param caller The address that called the prep migration function.
-    event PrepMigration(uint256 indexed projectId, address from, address caller);
-
     /// @notice Rulesets were queued for a project.
     /// @param rulesetId The ID of the first queued ruleset.
     /// @param projectId The ID of the project.

@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {mulDiv} from "@prb/math/src/Common.sol";
 
+import {IJBPayoutTerminal} from "../interfaces/IJBPayoutTerminal.sol";
 import {IJBSplits} from "../interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBSplit} from "../structs/JBSplit.sol";
@@ -12,6 +13,13 @@ import {JBConstants} from "./JBConstants.sol";
 /// @dev Kept local to this file because `executePayout(...)` is an implementation detail, not a shared public
 /// interface.
 interface IJBPayoutSplitGroupExecutor {
+    /// @notice Executes one payout split from the terminal that is using this library.
+    /// @param split The split to pay.
+    /// @param projectId The ID of the project paying the split.
+    /// @param token The token being paid out.
+    /// @param amount The amount assigned to the split.
+    /// @param originalMessageSender The account that started the payout flow.
+    /// @return netPayoutAmount The amount that was actually paid after fees or hook behavior.
     function executePayout(
         JBSplit calldata split,
         uint256 projectId,
@@ -29,17 +37,6 @@ interface IJBPayoutSplitGroupExecutor {
 /// @dev Extracted as an external library to reduce `JBMultiTerminal` bytecode size. Called via DELEGATECALL, so events
 /// are emitted from the terminal's address.
 library JBPayoutSplitGroupLib {
-    event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
-    event SendPayoutToSplit(
-        uint256 indexed projectId,
-        uint256 indexed rulesetId,
-        uint256 indexed group,
-        JBSplit split,
-        uint256 amount,
-        uint256 netAmount,
-        address caller
-    );
-
     /// @notice Sends payouts to the payout splits group specified in a project's ruleset.
     /// @param splits The splits contract to read splits from.
     /// @param store The terminal store used to restore balance when a payout fails.
@@ -80,7 +77,6 @@ library JBPayoutSplitGroupLib {
             uint256 payoutAmount = mulDiv(leftoverAmount, split.percent, leftoverPercentage);
 
             // The final payout amount after taking out any fees.
-            // slither-disable-next-line calls-loop
             uint256 netPayoutAmount = _sendPayoutToSplit({
                 store: store, split: split, projectId: projectId, token: token, amount: payoutAmount, caller: caller
             });
@@ -102,7 +98,7 @@ library JBPayoutSplitGroupLib {
                 leftoverPercentage -= split.percent;
             }
 
-            emit SendPayoutToSplit({
+            emit IJBPayoutTerminal.SendPayoutToSplit({
                 projectId: projectId,
                 rulesetId: rulesetId,
                 group: uint256(uint160(token)),
@@ -140,7 +136,6 @@ library JBPayoutSplitGroupLib {
         // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
         // `recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
         // distribution.
-        // slither-disable-next-line reentrancy-events,calls-loop
         try IJBPayoutSplitGroupExecutor(address(this))
             .executePayout({
             split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
@@ -149,12 +144,11 @@ library JBPayoutSplitGroupLib {
         ) {
             return payoutAmount;
         } catch (bytes memory failureReason) {
-            emit PayoutReverted({
+            emit IJBPayoutTerminal.PayoutReverted({
                 projectId: projectId, split: split, amount: amount, reason: failureReason, caller: caller
             });
 
             // Add balance back to the project.
-            // slither-disable-next-line calls-loop
             store.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
 
             // Since the payout failed the netPayoutAmount is zero.

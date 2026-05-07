@@ -18,7 +18,7 @@ import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 
-contract CodexMigrationFeeFailure is TestBaseWorkflow {
+contract RegressionMigrationFeeFailure is TestBaseWorkflow {
     IJBController private _controller;
     JBDirectory private _directory;
     JBTerminalStore private _store;

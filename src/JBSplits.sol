@@ -20,8 +20,8 @@ contract JBSplits is JBControlled, IJBSplits {
     //*********************************************************************//
 
     error JBSplits_PreviousLockedSplitsNotIncluded(uint256 projectId, uint256 rulesetId);
-    error JBSplits_TotalPercentExceeds100();
-    error JBSplits_ZeroSplitPercent();
+    error JBSplits_TotalPercentExceeds100(uint256 projectId, uint256 rulesetId, uint256 groupId, uint256 percentTotal);
+    error JBSplits_ZeroSplitPercent(uint256 projectId, uint256 rulesetId, uint256 groupId, uint256 splitIndex);
 
     //*********************************************************************//
     // ------------------------- public constants ------------------------ //
@@ -198,13 +198,21 @@ contract JBSplits is JBControlled, IJBSplits {
             JBSplit memory split = splits[i];
 
             // The percent should be greater than 0.
-            if (split.percent == 0) revert JBSplits_ZeroSplitPercent();
+            if (split.percent == 0) {
+                revert JBSplits_ZeroSplitPercent({
+                    projectId: projectId, rulesetId: rulesetId, groupId: groupId, splitIndex: i
+                });
+            }
 
             // Add to the `percent` total.
             percentTotal += split.percent;
 
             // Ensure the total does not exceed 100%.
-            if (percentTotal > JBConstants.SPLITS_TOTAL_PERCENT) revert JBSplits_TotalPercentExceeds100();
+            if (percentTotal > JBConstants.SPLITS_TOTAL_PERCENT) {
+                revert JBSplits_TotalPercentExceeds100({
+                    projectId: projectId, rulesetId: rulesetId, groupId: groupId, percentTotal: percentTotal
+                });
+            }
 
             uint256 packedSplitParts1;
 

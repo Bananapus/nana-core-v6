@@ -353,7 +353,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         // Split recipient gets less than nominal due to outbound transfer fee
         assertTrue(actualReceived > 0, "Split beneficiary should receive something");
         // The terminal sends a computed net amount, but the FOT tax reduces what arrives
-        // This documents the information finding: FOT tokens cause split recipients to receive less
+        // This documents the information case: FOT tokens cause split recipients to receive less
 
         // INVARIANT: Terminal's recorded balance must never exceed actual token balance.
         // With FOT tokens, the terminal may hold fewer tokens than recorded (inbound fee on pay).

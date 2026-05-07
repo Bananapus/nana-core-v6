@@ -274,7 +274,7 @@ contract PermissionsInvariantTest is Test {
         }
     }
 
-    /// @notice hasPermission returns true iff the bit is set (no false positives/negatives).
+    /// @notice hasPermission returns true iff the bit is set (no incorrect true/false results).
     function invariant_hasPermissionMatchesBits() public view {
         JBPermissions perms = handler.PERMISSIONS();
 
