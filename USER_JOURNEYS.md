@@ -198,10 +198,10 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 
 **Failure Modes**
 - operators receive broader permissions than they need
-- reviewers assume downstream access still depends only on project ownership
+- auditors assume downstream access still depends only on project ownership
 
 **Postconditions**
-- permissions are narrow, reviewable, and scoped to the actions the operator actually needs
+- permissions are narrow, auditable, and scoped to the actions the operator actually needs
 
 ## Trust Boundaries
 

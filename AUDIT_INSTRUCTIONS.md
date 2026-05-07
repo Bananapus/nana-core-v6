@@ -1,8 +1,8 @@
-# Review Guide
+# Audit Instructions
 
 This is the core Juicebox V6 protocol. Most ecosystem invariants eventually reduce to this repo.
 
-## Review Objective
+## Audit Objective
 
 Find issues that:
 

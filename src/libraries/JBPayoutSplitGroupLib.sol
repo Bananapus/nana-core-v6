@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {mulDiv} from "@prb/math/src/Common.sol";
 
-import {IJBPayoutTerminal} from "../interfaces/IJBPayoutTerminal.sol";
 import {IJBSplits} from "../interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBSplit} from "../structs/JBSplit.sol";
@@ -37,6 +36,18 @@ interface IJBPayoutSplitGroupExecutor {
 /// @dev Extracted as an external library to reduce `JBMultiTerminal` bytecode size. Called via DELEGATECALL, so events
 /// are emitted from the terminal's address.
 library JBPayoutSplitGroupLib {
+    event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
+
+    event SendPayoutToSplit(
+        uint256 indexed projectId,
+        uint256 indexed rulesetId,
+        uint256 indexed group,
+        JBSplit split,
+        uint256 amount,
+        uint256 netAmount,
+        address caller
+    );
+
     /// @notice Sends payouts to the payout splits group specified in a project's ruleset.
     /// @param splits The splits contract to read splits from.
     /// @param store The terminal store used to restore balance when a payout fails.
@@ -98,7 +109,7 @@ library JBPayoutSplitGroupLib {
                 leftoverPercentage -= split.percent;
             }
 
-            emit IJBPayoutTerminal.SendPayoutToSplit({
+            emit SendPayoutToSplit({
                 projectId: projectId,
                 rulesetId: rulesetId,
                 group: uint256(uint160(token)),
@@ -144,7 +155,7 @@ library JBPayoutSplitGroupLib {
         ) {
             return payoutAmount;
         } catch (bytes memory failureReason) {
-            emit IJBPayoutTerminal.PayoutReverted({
+            emit PayoutReverted({
                 projectId: projectId, split: split, amount: amount, reason: failureReason, caller: caller
             });
 

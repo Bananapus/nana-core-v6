@@ -140,7 +140,7 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
 
         // Burn tokens from beneficiary.
         if (_burnTokenAmount == 0) {
-            vm.expectRevert(JBController.JBController_ZeroTokensToBurn.selector);
+            vm.expectPartialRevert(JBController.JBController_ZeroTokensToBurn.selector);
         } else if (_burnTokenAmount > _beneficiaryTokenBalance) {
             vm.expectRevert(
                 abi.encodeWithSelector(

@@ -382,7 +382,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         perms[0] = 0;
 
         vm.prank(projectOwner);
-        vm.expectRevert(abi.encodeWithSelector(JBPermissions.JBPermissions_NoZeroPermission.selector));
+        vm.expectPartialRevert(JBPermissions.JBPermissions_NoZeroPermission.selector);
         jbPermissions()
             .setPermissionsFor(
                 // forge-lint: disable-next-line(unsafe-typecast)

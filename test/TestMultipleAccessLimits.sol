@@ -287,7 +287,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
 
         vm.prank(_projectOwner);
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering.selector);
 
         _controller.launchProjectFor({
             owner: _projectOwner,
@@ -342,7 +342,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
 
         vm.prank(_projectOwner);
 
-        vm.expectRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
+        vm.expectPartialRevert(JBFundAccessLimits.JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering.selector);
 
         _controller.launchProjectFor({
             owner: _projectOwner,

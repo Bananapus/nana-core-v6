@@ -254,8 +254,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Burns project tokens to reclaim a share of the project's surplus (determined by the bonding curve) or
-    /// to trigger custom logic through the ruleset's data hook and cash out hook.
+    /// @notice Cash out project tokens. The project's current ruleset determines the reclaimed surplus and any data
+    /// hook or cash out hook behavior.
     /// @dev Only the token holder or an operator with `CASH_OUT_TOKENS` permission from that holder can call this.
     /// @param holder The account cashing out tokens.
     /// @param projectId The ID of the project the project tokens belong to.
@@ -565,8 +565,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Pay a project with tokens. The project's current ruleset determines how many project tokens the
-    /// beneficiary will receive.
+    /// @notice Pay a project. The project's current ruleset determines how many project tokens the beneficiary receives
+    /// and any data hook or pay hook behavior.
     /// @param projectId The ID of the project to pay.
     /// @param amount The amount of tokens to send, as a fixed point number with the same number of
     /// decimals as the token's accounting context. If this terminal's token is native, this is ignored and `msg.value`
