@@ -242,7 +242,9 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         groups[0] = JBSplitGroup({groupId: groupId, splits: splits});
 
         vm.prank(caller);
-        vm.expectRevert(JBSplits.JBSplits_ZeroSplitPercent.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(JBSplits.JBSplits_ZeroSplitPercent.selector, _projectId, _rulesetId, groupId, 0)
+        );
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 
@@ -271,7 +273,15 @@ contract TestSelfManagedSplitGroups_Local is JBSplitsSetup {
         groups[0] = JBSplitGroup({groupId: groupId, splits: splits});
 
         vm.prank(caller);
-        vm.expectRevert(JBSplits.JBSplits_TotalPercentExceeds100.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBSplits.JBSplits_TotalPercentExceeds100.selector,
+                _projectId,
+                _rulesetId,
+                groupId,
+                JBConstants.SPLITS_TOTAL_PERCENT + 1
+            )
+        );
         _splits.setSplitGroupsOf(_projectId, _rulesetId, groups);
     }
 
