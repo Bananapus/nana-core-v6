@@ -3,8 +3,6 @@ pragma solidity 0.8.28;
 
 import {JBFeelessAddresses} from "../../../../src/JBFeelessAddresses.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
-import {IJBPermissions} from "../../../../src/interfaces/IJBPermissions.sol";
-import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 
 /*
@@ -14,15 +12,11 @@ Tests relative to this contract will be dependent on mock calls/emits and stdSto
 contract JBFeelessSetup is JBTest {
     address _owner = makeAddr("owner");
 
-    // Mock contracts
-    IJBPermissions _permissions = IJBPermissions(makeAddr("permissions"));
-    IJBProjects _projects = IJBProjects(makeAddr("projects"));
-
     // Target Contract
     IJBFeelessAddresses public _feelessAddresses;
 
     function feelessAddressesSetup() public virtual {
         // Instantiate the contract being tested
-        _feelessAddresses = new JBFeelessAddresses(_owner, _permissions, _projects);
+        _feelessAddresses = new JBFeelessAddresses(_owner);
     }
 }
