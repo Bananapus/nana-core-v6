@@ -1070,10 +1070,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
                 // If the split has a hook, call its `processSplitWith` function.
                 if (split.hook != IJBSplitHook(address(0))) {
-                    // Send the tokens to the split hook.
-                    _sendTokens({
-                        projectId: projectId, tokenCount: splitTokenCount, recipient: address(split.hook), token: token
-                    });
+                    if (token != IJBToken(address(0))) {
+                        // ERC-20: grant the hook an allowance and let it pull tokens via transferFrom.
+                        IERC20(address(token)).forceApprove({spender: address(split.hook), value: splitTokenCount});
+                    } else {
+                        // Credits: send directly — there is no allowance mechanism for credits.
+                        TOKENS.transferCreditsFrom({
+                            holder: address(this),
+                            projectId: projectId,
+                            recipient: address(split.hook),
+                            count: splitTokenCount
+                        });
+                    }
 
                     try split.hook
                         .processSplitWith(
@@ -1087,8 +1095,17 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             })
                         ) {}
                     catch (bytes memory reason) {
-                        // If the hook reverts, the tokens already transferred to it stay with the hook.
                         emit SplitHookReverted({projectId: projectId, hook: address(split.hook), reason: reason});
+                    }
+
+                    // For ERC-20 tokens, burn any tokens the hook did not consume.
+                    if (token != IJBToken(address(0))) {
+                        uint256 remaining =
+                            IERC20(address(token)).allowance({owner: address(this), spender: address(split.hook)});
+                        if (remaining > 0) {
+                            IERC20(address(token)).forceApprove({spender: address(split.hook), value: 0});
+                            TOKENS.burnFrom({holder: address(this), projectId: projectId, count: remaining});
+                        }
                     }
                     // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
                 } else {

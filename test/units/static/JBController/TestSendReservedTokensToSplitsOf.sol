@@ -183,8 +183,8 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             abi.encodeCall(IJBTokens.mintFor, (address(_controller), _projectId, _tokenCount));
         mockExpect(address(tokens), _tokensMintCall, abi.encode(_token));
 
-        // Mock send after minting to controller.
-        mockExpect(address(_token), abi.encodeCall(IERC20.transfer, (address(_hook), _tokenCount)), abi.encode(true));
+        // Mock forceApprove granting the hook an allowance.
+        mockExpect(address(_token), abi.encodeCall(IERC20.approve, (address(_hook), _tokenCount)), abi.encode(true));
 
         // split hook data
         JBSplitHookContext memory _context = JBSplitHookContext({
@@ -199,6 +199,19 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         // mock call to split hook processSplitWith
         bytes memory _hookCall = abi.encodeCall(IJBSplitHook.processSplitWith, (_context));
         mockExpect(address(_hook), _hookCall, "");
+
+        // Mock allowance check after processSplitWith — hook didn't consume anything.
+        mockExpect(
+            address(_token),
+            abi.encodeCall(IERC20.allowance, (address(_controller), address(_hook))),
+            abi.encode(_tokenCount)
+        );
+
+        // Mock revoking the leftover allowance.
+        mockExpect(address(_token), abi.encodeCall(IERC20.approve, (address(_hook), 0)), abi.encode(true));
+
+        // Mock burning the unconsumed tokens.
+        mockExpect(address(tokens), abi.encodeCall(IJBTokens.burnFrom, (address(_controller), _projectId, _tokenCount)), "");
 
         vm.expectEmit();
         emit IJBController.SendReservedTokensToSplits(

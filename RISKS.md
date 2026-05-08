@@ -65,7 +65,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 | `_cashOutTokensOf` | `STORE.recordCashOutFor`, `controller.burnTokensOf`, beneficiary transfer | Cash-out hooks, then fee processing | MEDIUM |
 | `executePayout` | `STORE.recordPayoutFor` already consumed payout limit | Split hooks, terminal pay/addToBalance | MEDIUM |
 | `processHeldFeesOf` | Held-fee entry deleted and index advanced | `_processFee` -> `this.executeProcessFee` -> `terminal.pay` | LOW |
-| `_sendReservedTokensToSplitsOf` | Pending reserved balance zeroed, tokens minted | Split hooks, terminal payments | LOW |
+| `_sendReservedTokensToSplitsOf` | Pending reserved balance zeroed, tokens minted. ERC-20 tokens approved to hook via `forceApprove`; unconsumed allowance revoked and tokens burned after hook call. Credits still transferred directly. | Split hooks, terminal payments | LOW |
 | `_useAllowanceOf` | `STORE.recordUsedAllowanceOf` | Fee processing, beneficiary transfer | LOW |
 | `migrateBalanceOf` | `STORE.recordTerminalMigration` | `to.addToBalanceOf` | LOW |
 
@@ -74,7 +74,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Pay hook -> `cashOutTokensOf`.** The hook sees post-payment balance and post-mint supply.
 - **Cash-out hook -> `pay`.** The hook runs after burn and payout but before fee processing completes.
 - **Split hook -> `pay` on the same project.** Core now reverts same-project intra-terminal self-pay minting, but the path is still worth checking.
-- **Reserved-token split hook reentry.** Hooks see post-mint state after pending reserved balance is zeroed.
+- **Reserved-token split hook reentry.** Hooks see post-mint state after pending reserved balance is zeroed. For ERC-20 tokens, the hook receives an allowance (not a direct transfer) and can pull tokens during `processSplitWith`; any unconsumed allowance is revoked afterward. For credits, tokens are transferred directly before the hook call.
 - **Fee processing reentry.** `_processFee` makes an external fee payment into project `#1`; hook behavior there still matters.
 
 ### Key Backstop
@@ -187,7 +187,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 - Failed split payouts still consume payout limit.
 - Failed owner payouts also still consume payout limit.
-- Reserved-token split hook reverts can strand tokens at the hook after transfer.
+- Reserved-token split hook reverts: for ERC-20 tokens, the controller uses an allowance model — it approves the hook, calls `processSplitWith`, and if the hook reverts or does not consume the full allowance the controller revokes the approval and burns the remainder. Tokens are not stranded at the hook. For credit-only projects (no ERC-20 deployed), credits are still transferred directly before the hook call, so a revert can strand credits at the hook.
 
 ### Terminal Migration Resets Used Payout Limits
 
