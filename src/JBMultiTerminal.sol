@@ -334,7 +334,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // This payout is eligible for a fee since the funds are leaving this contract and the split hook isn't a
             // feeless address.
-            if (!_isFeeless(address(split.hook))) {
+            if (!_isFeeless(address(split.hook), projectId)) {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
@@ -377,7 +377,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // the fee model taxes value leaving the protocol ecosystem, not internal rebalancing.
             // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
             // a feeless address.
-            if (terminal != this && !_isFeeless(address(terminal))) {
+            if (terminal != this && !_isFeeless(address(terminal), projectId)) {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
@@ -440,7 +440,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // This payout is eligible for a fee since the funds are leaving this contract and the recipient isn't a
             // feeless address.
-            if (!_isFeeless(recipient)) {
+            if (!_isFeeless(recipient, projectId)) {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
@@ -546,7 +546,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
             // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
             uint256 feeAmount;
-            if (!_isFeeless(address(to)) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
+            if (!_isFeeless(address(to), projectId) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
                 feeAmount = _takeFeeFrom({
                     projectId: projectId,
                     token: token,
@@ -904,6 +904,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         )
     {
+        bool feeless = _isFeeless(beneficiary, projectId);
         (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) =
             STORE.previewCashOutFrom({
                 terminal: address(this),
@@ -911,7 +912,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 projectId: projectId,
                 cashOutCount: cashOutCount,
                 tokenToReclaim: tokenToReclaim,
-                beneficiaryIsFeeless: _isFeeless(beneficiary),
+                beneficiaryIsFeeless: feeless,
                 metadata: metadata
             });
     }
@@ -1155,7 +1156,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 cashOutTaxRate;
 
         // Cache whether the beneficiary is feeless.
-        bool beneficiaryIsFeeless = _isFeeless(beneficiary);
+        bool beneficiaryIsFeeless = _isFeeless(beneficiary, projectId);
 
         {
             // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
@@ -1446,7 +1447,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Get the fee for the specified amount.
             uint256 specificationAmountFee =
-                _isFeeless(address(specification.hook)) ? 0 : _feeAmountFrom(specification.amount);
+                _isFeeless(address(specification.hook), projectId) ? 0 : _feeAmountFrom(specification.amount);
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
@@ -1842,7 +1843,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
         if (leftoverPayoutAmount != 0) {
             // Keep a reference to the fee for the leftover payout amount.
-            uint256 fee = _isFeeless(projectOwner) ? 0 : _feeAmountFrom(leftoverPayoutAmount);
+            uint256 fee = _isFeeless(projectOwner, projectId) ? 0 : _feeAmountFrom(leftoverPayoutAmount);
 
             uint256 netLeftoverPayoutAmount;
             unchecked {
@@ -2025,7 +2026,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Take a fee from the `amountPaidOut`, if needed.
         // The net amount is the final amount withdrawn after the fee has been taken.
         netAmountPaidOut = amountPaidOut
-            - (_isFeeless(owner) || _isFeeless(beneficiary)
+            - (_isFeeless(owner, projectId) || _isFeeless(beneficiary, projectId)
                     ? 0
                     : _takeFeeFrom({
                         projectId: projectId,
@@ -2113,9 +2114,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Returns a flag indicating if interacting with an address should not incur fees.
     /// @param addr The address to check.
-    /// @return A flag indicating if the address should not incur fees.
-    function _isFeeless(address addr) internal view returns (bool) {
-        return FEELESS_ADDRESSES.isFeeless(addr);
+    /// @param projectId The ID of the project to check the per-project feeless status for.
+    /// @return A flag indicating if the address should not incur fees (globally or for the project).
+    function _isFeeless(address addr, uint256 projectId) internal view returns (bool) {
+        return FEELESS_ADDRESSES.isFeelessFor(addr, projectId);
     }
 
     /// @notice The calldata. Preferred to use over `msg.data`.

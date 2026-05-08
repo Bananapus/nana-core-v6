@@ -299,7 +299,7 @@ contract TestBaseWorkflow is JBTest, DeployPermit2 {
         _jbPrices = new JBPrices(_jbDirectory, _jbPermissions, _jbProjects, _multisig, _trustedForwarder);
         _jbSplits = new JBSplits(_jbDirectory);
         _jbFundAccessLimits = new JBFundAccessLimits(_jbDirectory);
-        _jbFeelessAddresses = new JBFeelessAddresses(_multisig);
+        _jbFeelessAddresses = new JBFeelessAddresses(_multisig, _jbPermissions, _jbProjects);
 
         _usdcToken = new MockERC20("USDC", "USDC");
 

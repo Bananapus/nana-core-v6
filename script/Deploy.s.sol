@@ -93,7 +93,7 @@ contract Deploy is Script, Sphinx {
         new JBFundAccessLimits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
 
         JBFeelessAddresses feeless =
-            new JBFeelessAddresses{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(safeAddress());
+            new JBFeelessAddresses{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(safeAddress(), permissions, projects);
 
         new JBMultiTerminal{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
             permissions: permissions,

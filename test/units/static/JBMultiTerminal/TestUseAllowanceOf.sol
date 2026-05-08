@@ -59,7 +59,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // feeless check
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(true)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(true)
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
@@ -95,7 +95,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // feeless check
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(true)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(true)
         );
 
         mockExpect(mockToken, abi.encodeCall(IERC20.transfer, (address(this), 100)), abi.encode(true));
@@ -145,12 +145,12 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // first feeless check which will return false.
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(false)
         );
 
         // second which is true for beneficiary.
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (beneficiary)), abi.encode(true)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)), abi.encode(true)
         );
 
         mockExpect(mockToken, abi.encodeCall(IERC20.transfer, (beneficiary, 100)), abi.encode(true));
@@ -245,12 +245,12 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // first feeless check which will return false.
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(false)
         );
 
         // second which is also false.
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (beneficiary)), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)), abi.encode(false)
         );
 
         mockExpect(mockToken, abi.encodeCall(IERC20.transfer, (beneficiary, 98)), abi.encode(true));
@@ -390,12 +390,12 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // first feeless check: owner is NOT feeless
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(false)
         );
 
         // second feeless check: beneficiary is NOT feeless
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (beneficiary)), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)), abi.encode(false)
         );
 
         // Fee is 2.5% of 100 = 2, so net = 98
@@ -525,12 +525,12 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // first feeless check: false
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (address(this))), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)), abi.encode(false)
         );
 
         // second feeless check: false
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (beneficiary)), abi.encode(false)
+            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)), abi.encode(false)
         );
 
         // Fee = 2.5% of 100 = 2, net = 98
