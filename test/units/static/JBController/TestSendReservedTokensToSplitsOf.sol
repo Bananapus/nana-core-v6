@@ -211,7 +211,9 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         mockExpect(address(_token), abi.encodeCall(IERC20.approve, (address(_hook), 0)), abi.encode(true));
 
         // Mock burning the unconsumed tokens.
-        mockExpect(address(tokens), abi.encodeCall(IJBTokens.burnFrom, (address(_controller), _projectId, _tokenCount)), "");
+        mockExpect(
+            address(tokens), abi.encodeCall(IJBTokens.burnFrom, (address(_controller), _projectId, _tokenCount)), ""
+        );
 
         vm.expectEmit();
         emit IJBController.SendReservedTokensToSplits(
