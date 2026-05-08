@@ -151,6 +151,9 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
     function test_GivenTokenIsNative() external whenPermissioned {
         // it will addToBalanceOf with value in msgvalue
 
+        // Fund the terminal so it can forward native ETH.
+        vm.deal(address(_terminal), _defaultAmount);
+
         // mock _isFeeless to return true (skip migration fee for this unit test)
         mockExpect(
             address(feelessAddresses),
