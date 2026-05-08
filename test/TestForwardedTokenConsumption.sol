@@ -341,7 +341,7 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: useDataHookForPay,
             useDataHookForCashOut: useDataHookForCashOut,
             dataHook: dataHook,

@@ -67,7 +67,7 @@ library JBRulesetMetadataResolver {
         return ((ruleset.metadata >> 78) & 1) == 1;
     }
 
-    function useTotalSurplusForCashOuts(JBRuleset memory ruleset) internal pure returns (bool) {
+    function scopeCashOutsToLocalBalances(JBRuleset memory ruleset) internal pure returns (bool) {
         return ((ruleset.metadata >> 79) & 1) == 1;
     }
 
@@ -123,8 +123,8 @@ library JBRulesetMetadataResolver {
         if (rulesetMetadata.ownerMustSendPayouts) packed |= 1 << 77;
         // hold fees in bit 78.
         if (rulesetMetadata.holdFees) packed |= 1 << 78;
-        // useTotalSurplusForCashOuts in bit 79.
-        if (rulesetMetadata.useTotalSurplusForCashOuts) packed |= 1 << 79;
+        // scopeCashOutsToLocalBalances in bit 79.
+        if (rulesetMetadata.scopeCashOutsToLocalBalances) packed |= 1 << 79;
         // use pay data source in bit 80.
         if (rulesetMetadata.useDataHookForPay) packed |= 1 << 80;
         // use cash out data source in bit 81.
@@ -154,7 +154,7 @@ library JBRulesetMetadataResolver {
             allowAddPriceFeed: allowAddPriceFeed(ruleset),
             ownerMustSendPayouts: ownerMustSendPayouts(ruleset),
             holdFees: holdFees(ruleset),
-            useTotalSurplusForCashOuts: useTotalSurplusForCashOuts(ruleset),
+            scopeCashOutsToLocalBalances: scopeCashOutsToLocalBalances(ruleset),
             useDataHookForPay: useDataHookForPay(ruleset),
             useDataHookForCashOut: useDataHookForCashOut(ruleset),
             dataHook: dataHook(ruleset),

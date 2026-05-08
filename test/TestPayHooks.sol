@@ -60,7 +60,7 @@ contract TestPayHooks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: true,
             useDataHookForCashOut: true,
             dataHook: _DATA_HOOK,

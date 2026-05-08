@@ -123,7 +123,7 @@ Ordering to keep in mind:
 Replay these sequences:
 
 1. `pay` with a data hook that changes weight or hook specs and then reenters through a pay hook
-2. `cashOutTokensOf` when cross-terminal surplus and `useTotalSurplusForCashOuts` matter
+2. `cashOutTokensOf` when cross-terminal surplus and `scopeCashOutsToLocalBalances` matter
 3. `sendPayoutsOf` into splits that route to another project, hook, or failing beneficiary
 4. held-fee accumulation followed by migration or balance depletion
 5. permission grants involving operators, wildcard project IDs, or later controller changes

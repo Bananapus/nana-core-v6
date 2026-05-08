@@ -674,7 +674,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: holdFees,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),

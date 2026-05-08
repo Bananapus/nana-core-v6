@@ -43,7 +43,7 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
             allowAddAccountingContext: true,
             allowAddPriceFeed: true,
             holdFees: true,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: true,
             useDataHookForCashOut: true,
             dataHook: _hookAddress,

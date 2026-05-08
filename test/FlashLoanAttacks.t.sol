@@ -51,7 +51,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -101,7 +101,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -385,7 +385,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -513,7 +513,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -601,11 +601,11 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Test 11: Flash loan across two terminals with useTotalSurplus
+    //  Test 11: Flash loan across two terminals with scopeCashOutsToLocalBalances
     // ═══════════════════════════════════════════════════════════════════
 
     function test_flashLoan_acrossTwoTerminals() public {
-        // Launch project with useTotalSurplusForCashOuts and two terminals
+        // Launch project with scopeCashOutsToLocalBalances and two terminals
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
         rulesetConfig[0].mustStartAtOrAfter = 0;
         rulesetConfig[0].duration = 0;
@@ -627,7 +627,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -730,7 +730,7 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),

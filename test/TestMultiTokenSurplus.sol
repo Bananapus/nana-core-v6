@@ -60,7 +60,7 @@ contract TestMultiTokenSurplus_Local is TestBaseWorkflow {
             allowAddPriceFeed: true,
             ownerMustSendPayouts: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),

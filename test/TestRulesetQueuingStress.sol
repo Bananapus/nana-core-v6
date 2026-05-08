@@ -83,7 +83,7 @@ contract MockApprovalHookConfigurable is IJBRulesetApprovalHook {
                 allowAddAccountingContext: false,
                 allowAddPriceFeed: false,
                 holdFees: false,
-                useTotalSurplusForCashOuts: false,
+                scopeCashOutsToLocalBalances: false,
                 useDataHookForPay: false,
                 useDataHookForCashOut: false,
                 dataHook: address(0),

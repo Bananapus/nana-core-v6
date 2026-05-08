@@ -62,7 +62,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             allowAddAccountingContext: true,
             allowAddPriceFeed: true,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),

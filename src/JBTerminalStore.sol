@@ -847,14 +847,13 @@ contract JBTerminalStore is IJBTerminalStore {
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
-    /// @notice Computes the surplus relevant for a cash out (total or local, depending on ruleset flag).
-    /// @dev When `useTotalSurplusForCashOuts` is enabled, surplus is aggregated from ALL registered terminals without
-    /// validation. Projects MUST only register trusted terminals — an untrusted terminal can over-report surplus and
-    /// cause the executing terminal to overpay cash-outs.
-    /// @param terminal The terminal recording the cash out.
+    /// @notice Computes the surplus relevant for a cash out by aggregating across all registered terminals.
+    /// @dev Surplus is aggregated from ALL registered terminals without validation. Projects MUST only register
+    /// trusted terminals — an untrusted terminal can over-report surplus and cause the executing terminal to overpay
+    /// cash-outs.
     /// @param projectId The ID of the project to cash out from.
     /// @param tokenToReclaim The token to reclaim.
-    /// @param ruleset The ruleset during the cash out.
+    /// @param terminal The terminal recording the cash out (used to resolve accounting context).
     /// @return The surplus amount in the token's native decimals and currency.
     function _cashOutSurplusOf(
         address terminal,
@@ -869,32 +868,13 @@ contract JBTerminalStore is IJBTerminalStore {
         // Look up the accounting context (decimals, currency) for the token being reclaimed at this terminal.
         JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
 
-        // If the ruleset uses total surplus, aggregate across ALL terminals and ALL tokens.
-        if (ruleset.useTotalSurplusForCashOuts()) {
-            return JBSurplus.currentSurplusOf({
-                projectId: projectId,
-                // Get every terminal the project has registered.
-                terminals: DIRECTORY.terminalsOf(projectId),
-                // Empty tokens array = include all tokens at each terminal.
-                tokens: new address[](0),
-                // Express the result in the reclaimed token's decimals and currency.
-                decimals: accountingContext.decimals,
-                currency: accountingContext.currency
-            });
-        }
-
-        // Otherwise, only account for the specific token's surplus at this terminal.
-        JBAccountingContext[] memory singleContext = new JBAccountingContext[](1);
-        singleContext[0] = accountingContext;
-
-        // Compute surplus from only this terminal using only the reclaimed token's balance.
-        return _surplusFrom({
-            terminal: terminal,
+        // Always aggregate surplus across ALL terminals and ALL tokens.
+        return JBSurplus.currentSurplusOf({
             projectId: projectId,
-            accountingContexts: singleContext,
-            ruleset: ruleset,
-            targetDecimals: accountingContext.decimals,
-            targetCurrency: accountingContext.currency
+            terminals: DIRECTORY.terminalsOf(projectId),
+            tokens: new address[](0),
+            decimals: accountingContext.decimals,
+            currency: accountingContext.currency
         });
     }
 
@@ -1019,7 +999,7 @@ contract JBTerminalStore is IJBTerminalStore {
                 decimals: accountingContext.decimals,
                 currency: accountingContext.currency
             });
-            context.useTotalSurplus = ruleset.useTotalSurplusForCashOuts();
+            context.scopeCashOutsToLocalBalances = ruleset.scopeCashOutsToLocalBalances();
             context.cashOutTaxRate = ruleset.cashOutTaxRate();
             context.beneficiaryIsFeeless = beneficiaryIsFeeless;
             context.metadata = metadata;
