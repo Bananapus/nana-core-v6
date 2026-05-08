@@ -21,8 +21,8 @@ pragma solidity ^0.8.0;
 /// @custom:member allowAddPriceFeed If `true`, the project can register new price feeds in `JBPrices`.
 /// @custom:member ownerMustSendPayouts If `true`, only the project owner can trigger payout distribution.
 /// @custom:member holdFees If `true`, fees are accumulated but not processed until a future ruleset (or manually).
-/// @custom:member useTotalSurplusForCashOuts If `true`, cash-out calculations use surplus across all terminals (not
-/// just the one to cash out from).
+/// @custom:member scopeCashOutsToLocalBalances If `true`, omnichain cash-out calculations use only the local chain's
+/// balances (not cross-chain aggregates).
 /// @custom:member useDataHookForPay If `true`, the data hook is called before recording payments.
 /// @custom:member useDataHookForCashOut If `true`, the data hook is called before recording cash outs.
 /// @custom:member dataHook Contract called before pay/cash-out to potentially override token counts or add hooks.
@@ -42,7 +42,7 @@ struct JBRulesetMetadata {
     bool allowAddPriceFeed;
     bool ownerMustSendPayouts;
     bool holdFees;
-    bool useTotalSurplusForCashOuts;
+    bool scopeCashOutsToLocalBalances;
     bool useDataHookForPay;
     bool useDataHookForCashOut;
     address dataHook;

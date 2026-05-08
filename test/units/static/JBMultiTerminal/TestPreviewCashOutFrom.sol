@@ -86,7 +86,9 @@ contract TestPreviewCashOutFrom_Local is JBMultiTerminalSetup {
         accountingContexts[0] = accountingContext;
 
         mockExpect(
-            address(feelessAddresses), abi.encodeCall(IJBFeelessAddresses.isFeeless, (_beneficiary)), abi.encode(true)
+            address(feelessAddresses),
+            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_beneficiary, _projectId)),
+            abi.encode(true)
         );
 
         mockExpect(

@@ -50,7 +50,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 ### Surplus Manipulation
 
-- **Cross-terminal surplus is a trust boundary.** When `useTotalSurplusForCashOuts` is enabled, one terminal can price a cash out using value reported by other terminals.
+- **Cross-terminal surplus is a trust boundary.** Cash outs always aggregate surplus across all registered terminals, so one terminal can price a cash out using value reported by other terminals.
 - **Cross-terminal price-feed mismatch changes reclaim values.** If feeds differ or go stale across terminals, aggregated surplus can be wrong.
 
 ## 3. Reentrancy Surface
@@ -197,7 +197,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 ### 8.1 Cross-terminal surplus is opt-in shared trust
 
-When a project enables `useTotalSurplusForCashOuts`, it is choosing shared treasury semantics across terminals. That can improve pricing, but it also means each listed terminal is part of the trust boundary.
+Cash outs always aggregate surplus across all registered terminals (shared treasury semantics). This improves pricing, but it also means each listed terminal is part of the trust boundary. The `scopeCashOutsToLocalBalances` metadata flag controls only cross-chain aggregation — local multi-terminal aggregation is always on.
 
 ### 8.2 Failed fee routing is intentionally fail-open
 

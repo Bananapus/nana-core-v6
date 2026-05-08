@@ -129,6 +129,9 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
     function test_GivenTokenEQNATIVE_TOKEN() external {
         // it will call external pay with msgvalue
 
+        // Fund the terminal so it can forward native ETH.
+        vm.deal(address(_terminal), _defaultAmount);
+
         // mock pay call to fee terminal
         mockExpect(
             address(_feeTerminal),

@@ -15,7 +15,7 @@ import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 import {IJBRulesetApprovalHook} from "../../src/interfaces/IJBRulesetApprovalHook.sol";
 
-/// @notice Verifies that `useTotalSurplusForCashOuts` trusts every terminal in the directory,
+/// @notice Verifies that `scopeCashOutsToLocalBalances` trusts every terminal in the directory,
 /// even though settlement still comes from the specific terminal the holder cashes out through.
 contract CrossTerminalSurplusSpoof_Local is TestBaseWorkflow {
     IJBController private _controller;
@@ -51,7 +51,7 @@ contract CrossTerminalSurplusSpoof_Local is TestBaseWorkflow {
             allowAddPriceFeed: false,
             ownerMustSendPayouts: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),

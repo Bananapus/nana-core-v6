@@ -45,7 +45,7 @@ contract JBERC20Inheritance_Local is JBERC20(IJBPermissions(address(1)), IJBProj
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: false,
+            scopeCashOutsToLocalBalances: false,
             useDataHookForPay: true,
             useDataHookForCashOut: true,
             dataHook: address(0),

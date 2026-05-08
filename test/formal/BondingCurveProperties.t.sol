@@ -324,7 +324,7 @@ contract BondingCurveProperties is Test {
             allowAddPriceFeed: boolFlags & 256 != 0,
             ownerMustSendPayouts: boolFlags & 512 != 0,
             holdFees: boolFlags & 1024 != 0,
-            useTotalSurplusForCashOuts: boolFlags & 2048 != 0,
+            scopeCashOutsToLocalBalances: boolFlags & 2048 != 0,
             useDataHookForPay: boolFlags & 4096 != 0,
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
@@ -352,7 +352,7 @@ contract BondingCurveProperties is Test {
         assert(roundTripped.allowAddPriceFeed == original.allowAddPriceFeed);
         assert(roundTripped.ownerMustSendPayouts == original.ownerMustSendPayouts);
         assert(roundTripped.holdFees == original.holdFees);
-        assert(roundTripped.useTotalSurplusForCashOuts == original.useTotalSurplusForCashOuts);
+        assert(roundTripped.scopeCashOutsToLocalBalances == original.scopeCashOutsToLocalBalances);
         assert(roundTripped.useDataHookForPay == original.useDataHookForPay);
         assert(roundTripped.useDataHookForCashOut == original.useDataHookForCashOut);
         assert(roundTripped.dataHook == original.dataHook);
@@ -389,7 +389,7 @@ contract BondingCurveProperties is Test {
             allowAddPriceFeed: boolFlags & 256 != 0,
             ownerMustSendPayouts: boolFlags & 512 != 0,
             holdFees: boolFlags & 1024 != 0,
-            useTotalSurplusForCashOuts: boolFlags & 2048 != 0,
+            scopeCashOutsToLocalBalances: boolFlags & 2048 != 0,
             useDataHookForPay: boolFlags & 4096 != 0,
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
@@ -420,9 +420,9 @@ contract BondingCurveProperties is Test {
         assertEq(result.ownerMustSendPayouts, original.ownerMustSendPayouts, "ownerMustSendPayouts mismatch");
         assertEq(result.holdFees, original.holdFees, "holdFees mismatch");
         assertEq(
-            result.useTotalSurplusForCashOuts,
-            original.useTotalSurplusForCashOuts,
-            "useTotalSurplusForCashOuts mismatch"
+            result.scopeCashOutsToLocalBalances,
+            original.scopeCashOutsToLocalBalances,
+            "scopeCashOutsToLocalBalances mismatch"
         );
         assertEq(result.useDataHookForPay, original.useDataHookForPay, "useDataHookForPay mismatch");
         assertEq(result.useDataHookForCashOut, original.useDataHookForCashOut, "useDataHookForCashOut mismatch");

@@ -104,7 +104,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -187,7 +187,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -270,7 +270,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             allowAddAccountingContext: true,
             allowAddPriceFeed: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: true,
             dataHook: address(_dataHook),
@@ -403,7 +403,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             cashOutCount: _cashOutCount,
             totalSupply: _totalSupply,
             surplus: _reclaimedTokenAmount,
-            useTotalSurplus: true,
+            scopeCashOutsToLocalBalances: true,
             cashOutTaxRate: 0,
             beneficiaryIsFeeless: false,
             metadata: ""
@@ -507,7 +507,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
                 decimals: _accountingContexts.decimals,
                 currency: _accountingContexts.currency
             }),
-            useTotalSurplus: true,
+            scopeCashOutsToLocalBalances: true,
             cashOutTaxRate: 0,
             beneficiaryIsFeeless: true,
             metadata: ""
@@ -564,7 +564,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
                 decimals: _accountingContexts.decimals,
                 currency: _accountingContexts.currency
             }),
-            useTotalSurplus: true,
+            scopeCashOutsToLocalBalances: true,
             cashOutTaxRate: 0,
             beneficiaryIsFeeless: false,
             metadata: ""
@@ -618,7 +618,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
                 decimals: _accountingContexts.decimals,
                 currency: _accountingContexts.currency
             }),
-            useTotalSurplus: true,
+            scopeCashOutsToLocalBalances: true,
             cashOutTaxRate: 0,
             beneficiaryIsFeeless: false,
             metadata: ""

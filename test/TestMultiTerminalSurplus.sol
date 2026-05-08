@@ -17,7 +17,7 @@ import {MockPriceFeed} from "./mock/MockPriceFeed.sol";
 import {MockERC20} from "./mock/MockERC20.sol";
 
 /// @notice Tests for multi-terminal surplus aggregation edge cases, including cross-terminal
-/// surplus with useTotalSurplusForCashOuts, cash out balance limits, and price conversion.
+/// surplus with scopeCashOutsToLocalBalances, cash out balance limits, and price conversion.
 contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBMultiTerminal private _terminal1;
@@ -51,7 +51,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         // Price feed: 1 ETH = 2000 USDC (6 decimals).
         _ethToUsdcFeed = new MockPriceFeed(2000e6, 6);
 
-        // Metadata with useTotalSurplusForCashOuts = true.
+        // Metadata with scopeCashOutsToLocalBalances = true.
         JBRulesetMetadata memory _metadata = JBRulesetMetadata({
             reservedPercent: 0,
             cashOutTaxRate: 0,
@@ -67,7 +67,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
             allowAddPriceFeed: true,
             ownerMustSendPayouts: false,
             holdFees: false,
-            useTotalSurplusForCashOuts: true,
+            scopeCashOutsToLocalBalances: true,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -178,7 +178,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         assertGt(totalSurplusEth, ethAmount, "total surplus should include converted USDC value");
     }
 
-    /// @notice With useTotalSurplusForCashOuts enabled, cash out from terminal 1 uses combined surplus.
+    /// @notice With scopeCashOutsToLocalBalances enabled, cash out from terminal 1 uses combined surplus.
     function test_cashOutUsesTotalSurplusWhenEnabled() public {
         uint256 ethAmount = 1 ether;
         uint256 usdcAmount = 2000e6; // $2000 = 1 ETH
@@ -187,7 +187,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
         _payUsdc(_user, usdcAmount);
 
         // User cashes out from terminal 1 (ETH).
-        // useTotalSurplusForCashOuts is enabled, so the bonding curve should consider
+        // scopeCashOutsToLocalBalances is enabled, so the bonding curve should consider
         // the total surplus across both terminals, not just terminal 1's ETH balance.
         uint256 userBalanceBefore = _user.balance;
 
@@ -210,7 +210,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
     }
 
     /// @notice Cash out from terminal 1 cannot extract more ETH than terminal 1 holds,
-    /// even with useTotalSurplusForCashOuts enabled.
+    /// even with scopeCashOutsToLocalBalances enabled.
     function test_cashOutCannotExceedTerminalBalance() public {
         uint256 ethAmount = 1 ether;
         uint256 usdcAmount = 20_000e6; // $20,000 = 10 ETH -- much more value than in terminal 1
@@ -220,7 +220,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
 
         // The total surplus in ETH terms is ~11 ETH, but terminal 1 only holds 1 ETH.
         // Cashing out all tokens from terminal 1 should be bounded by the terminal's ETH balance.
-        // With cashOutTaxRate=0 and useTotalSurplusForCashOuts=true, the reclaim amount
+        // With cashOutTaxRate=0 and scopeCashOutsToLocalBalances=true, the reclaim amount
         // = totalSurplus * cashOutCount / totalSupply.
         // The total token supply includes tokens from both payments.
 
