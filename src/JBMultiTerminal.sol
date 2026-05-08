@@ -905,16 +905,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         )
     {
         bool feeless = _isFeeless({addr: beneficiary, projectId: projectId});
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) =
-            STORE.previewCashOutFrom({
-                terminal: address(this),
-                holder: holder,
-                projectId: projectId,
-                cashOutCount: cashOutCount,
-                tokenToReclaim: tokenToReclaim,
-                beneficiaryIsFeeless: feeless,
-                metadata: metadata
-            });
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.previewCashOutFrom({
+            terminal: address(this),
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: feeless,
+            metadata: metadata
+        });
     }
 
     /// @notice Simulates a payment without modifying state — use this to preview how many project tokens a payer
@@ -1446,10 +1445,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             // Get the fee for the specified amount.
-            uint256 specificationAmountFee =
-                _isFeeless({addr: address(specification.hook), projectId: projectId})
-                    ? 0
-                    : _feeAmountFrom(specification.amount);
+            uint256 specificationAmountFee = _isFeeless({addr: address(specification.hook), projectId: projectId})
+                ? 0
+                : _feeAmountFrom(specification.amount);
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {

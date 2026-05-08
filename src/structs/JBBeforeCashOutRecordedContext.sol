@@ -15,7 +15,7 @@ import {JBTokenAmount} from "./JBTokenAmount.sol";
 /// Includes the token of the surplus, the surplus value, the number of decimals
 /// included, and the currency of the surplus.
 /// @custom:member scopeCashOutsToLocalBalances If true, omnichain hooks should use only local chain balances for cash
-/// outs (skip cross-chain aggregation). Default false = aggregate across all chains.
+/// outs (skip cross-chain aggregation).
 /// @custom:member cashOutTaxRate The cash out tax rate of the ruleset the cash out is made during, out of
 /// `JBConstants.MAX_CASH_OUT_TAX_RATE`.
 /// @custom:member beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Useful for data hooks

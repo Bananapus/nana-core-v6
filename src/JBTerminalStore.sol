@@ -847,37 +847,6 @@ contract JBTerminalStore is IJBTerminalStore {
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
 
-    /// @notice Computes the surplus relevant for a cash out by aggregating across all registered terminals.
-    /// @dev Surplus is aggregated from ALL registered terminals without validation. Projects MUST only register
-    /// trusted terminals — an untrusted terminal can over-report surplus and cause the executing terminal to overpay
-    /// cash-outs.
-    /// @param projectId The ID of the project to cash out from.
-    /// @param tokenToReclaim The token to reclaim.
-    /// @param terminal The terminal recording the cash out (used to resolve accounting context).
-    /// @return The surplus amount in the token's native decimals and currency.
-    function _cashOutSurplusOf(
-        address terminal,
-        uint256 projectId,
-        address tokenToReclaim,
-        JBRuleset memory ruleset
-    )
-        internal
-        view
-        returns (uint256)
-    {
-        // Look up the accounting context (decimals, currency) for the token being reclaimed at this terminal.
-        JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
-
-        // Always aggregate surplus across ALL terminals and ALL tokens.
-        return JBSurplus.currentSurplusOf({
-            projectId: projectId,
-            terminals: DIRECTORY.terminalsOf(projectId),
-            tokens: new address[](0),
-            decimals: accountingContext.decimals,
-            currency: accountingContext.currency
-        });
-    }
-
     /// @notice Calls the data hook, validates noop specifications, and computes the bonding curve reclaim amount.
     /// @dev Extracted from `_computeCashOutFrom` to keep it under the EVM stack depth limit (16 slots).
     /// @param ruleset The current ruleset (used to resolve the data hook address).
@@ -959,13 +928,17 @@ contract JBTerminalStore is IJBTerminalStore {
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
-        // Get the project's current surplus for the token being reclaimed.
-        uint256 surplus = _cashOutSurplusOf({
-            terminal: terminal, projectId: projectId, tokenToReclaim: tokenToReclaim, ruleset: ruleset
-        });
-
         // Get the accounting context for the token being reclaimed.
         JBAccountingContext memory accountingContext = _accountingContextForTokenOf[terminal][projectId][tokenToReclaim];
+
+        // Get the project's current surplus across ALL terminals and ALL tokens.
+        uint256 surplus = JBSurplus.currentSurplusOf({
+            projectId: projectId,
+            terminals: DIRECTORY.terminalsOf(projectId),
+            tokens: new address[](0),
+            decimals: accountingContext.decimals,
+            currency: accountingContext.currency
+        });
 
         // Get the total number of outstanding project tokens.
         uint256 effectiveTotalSupply =

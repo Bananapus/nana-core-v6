@@ -12,15 +12,14 @@ contract TestSetFeelessAddress_Local is JBFeelessSetup {
     }
 
     function test_WhenCallerIsOwner() external {
-        // it should set isFeelessForProject[0] and emit SetFeelessAddress
+        // it should set isFeelessFor[0] and emit SetFeelessAddress
         vm.expectEmit();
         emit IJBFeelessAddresses.SetFeelessAddress(0, _feeLess, true, address(_owner));
 
         vm.prank(_owner);
         _feelessAddresses.setFeelessAddress(_feeLess, true);
 
-        bool result = _feelessAddresses.isFeelessForProject(0, _feeLess);
-        assertEq(result, true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0}), true);
     }
 
     function test_WhenCallerIsOwner_SetFeelessAddressFor() external {
@@ -32,10 +31,10 @@ contract TestSetFeelessAddress_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessAddressFor({projectId: projectId, addr: _feeLess, flag: true});
 
-        // Direct mapping check
-        assertEq(_feelessAddresses.isFeelessForProject(projectId, _feeLess), true);
+        // Project-specific check
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId}), true);
         // Wildcard (project 0) should NOT be set
-        assertEq(_feelessAddresses.isFeelessForProject(0, _feeLess), false);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0}), false);
         // isFeelessFor should return true for the specific project
         assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId}), true);
         // isFeelessFor should return false for a different project

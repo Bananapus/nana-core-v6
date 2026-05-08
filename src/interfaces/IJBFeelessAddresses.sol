@@ -9,15 +9,7 @@ interface IJBFeelessAddresses {
     /// @param addr The address whose feeless status was set.
     /// @param isFeeless Whether the address is feeless.
     /// @param caller The address that set the feeless status.
-    event SetFeelessAddress(
-        uint256 indexed projectId, address indexed addr, bool indexed isFeeless, address caller
-    );
-
-    /// @notice Returns whether the specified address is feeless for a specific project.
-    /// @param projectId The ID of the project. 0 stores the global (all-project) feeless status.
-    /// @param addr The address to check.
-    /// @return A flag indicating whether the address is feeless for the project.
-    function isFeelessForProject(uint256 projectId, address addr) external view returns (bool);
+    event SetFeelessAddress(uint256 indexed projectId, address indexed addr, bool indexed isFeeless, address caller);
 
     /// @notice Returns whether the specified address is feeless for a specific project, considering both the wildcard
     /// (projectId 0) and project-specific feeless status.

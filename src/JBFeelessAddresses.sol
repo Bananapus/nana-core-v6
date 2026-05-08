@@ -12,14 +12,12 @@ import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
 /// @dev `projectId = 0` is the wildcard — an address feeless for project 0 is feeless for ALL projects.
 contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     //*********************************************************************//
-    // --------------------- public stored properties -------------------- //
+    // -------------------- internal stored properties ------------------- //
     //*********************************************************************//
 
-    /// @notice Check if the specified address is feeless for a specific project.
+    /// @notice Raw feeless status per project per address.
     /// @dev `projectId = 0` stores the global (all-project) feeless status.
-    /// @custom:param projectId The ID of the project. 0 means all projects.
-    /// @custom:param addr The address to check.
-    mapping(uint256 projectId => mapping(address addr => bool)) public override isFeelessForProject;
+    mapping(uint256 projectId => mapping(address addr => bool)) internal _isFeelessFor;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -38,7 +36,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @param addr The address to set as feeless or not feeless.
     /// @param flag Whether the address should be feeless (`true`) or not feeless (`false`).
     function setFeelessAddress(address addr, bool flag) external virtual override onlyOwner {
-        isFeelessForProject[0][addr] = flag;
+        _isFeelessFor[0][addr] = flag;
 
         emit SetFeelessAddress({projectId: 0, addr: addr, isFeeless: flag, caller: _msgSender()});
     }
@@ -50,7 +48,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @param addr The address to set as feeless or not feeless for the project.
     /// @param flag Whether the address should be feeless for the project (`true`) or not (`false`).
     function setFeelessAddressFor(uint256 projectId, address addr, bool flag) external virtual override onlyOwner {
-        isFeelessForProject[projectId][addr] = flag;
+        _isFeelessFor[projectId][addr] = flag;
 
         emit SetFeelessAddress({projectId: projectId, addr: addr, isFeeless: flag, caller: _msgSender()});
     }
@@ -65,7 +63,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @param projectId The ID of the project to check.
     /// @return A flag indicating whether the address is feeless (globally or for the project).
     function isFeelessFor(address addr, uint256 projectId) external view override returns (bool) {
-        return isFeelessForProject[0][addr] || isFeelessForProject[projectId][addr];
+        return _isFeelessFor[0][addr] || _isFeelessFor[projectId][addr];
     }
 
     /// @notice Indicates whether this contract adheres to the specified interface.

@@ -22,7 +22,7 @@ pragma solidity ^0.8.0;
 /// @custom:member ownerMustSendPayouts If `true`, only the project owner can trigger payout distribution.
 /// @custom:member holdFees If `true`, fees are accumulated but not processed until a future ruleset (or manually).
 /// @custom:member scopeCashOutsToLocalBalances If `true`, omnichain cash-out calculations use only the local chain's
-/// balances (not cross-chain aggregates). Default `false` = aggregate across all chains.
+/// balances (not cross-chain aggregates).
 /// @custom:member useDataHookForPay If `true`, the data hook is called before recording payments.
 /// @custom:member useDataHookForCashOut If `true`, the data hook is called before recording cash outs.
 /// @custom:member dataHook Contract called before pay/cash-out to potentially override token counts or add hooks.
