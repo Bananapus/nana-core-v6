@@ -155,6 +155,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 
 | Function | What it does |
 |----------|--------------|
-| `setFeelessAddress(address addr, bool flag)` | Adds or removes an address from the fee exemption list. Owner-only. (`JBFeelessAddresses`) |
+| `setFeelessAddress(address addr, bool flag)` | Adds or removes an address from the global (all-project) fee exemption list. Owner-only. (`JBFeelessAddresses`) |
+| `setFeelessAddressFor(uint256 projectId, address addr, bool flag)` | Adds or removes an address from a project's fee exemption list. `projectId = 0` = global wildcard. Owner-only. (`JBFeelessAddresses`) |
+| `isFeelessFor(address addr, uint256 projectId)` | Returns whether an address is feeless for a project (checks both wildcard and project-specific). (`JBFeelessAddresses`) |
 | `setControllerAllowed(uint256 projectId)` | Returns whether a project's controller can currently be set. (`IJBDirectoryAccessControl`) |
 | `setTerminalsAllowed(uint256 projectId)` | Returns whether a project's terminals can currently be set. (`IJBDirectoryAccessControl`) |

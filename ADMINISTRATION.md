@@ -41,7 +41,7 @@ High-value admin functions include:
 - `JBMultiTerminal.useAllowanceOf(...)`, `migrateBalanceOf(...)`, `cashOutTokensOf(...)` when permission-gated by the holder or delegated authority
 - `JBPermissions.setPermissionsFor(...)`
 - `JBPrices.addPriceFeedFor(...)` for protocol defaults or project-local feeds
-- `JBFeelessAddresses.setFeelessAddress(...)`
+- `JBFeelessAddresses.setFeelessAddress(...)`, `setFeelessAddressFor(...)`
 - `JBProjects.setTokenUriResolver(...)`
 
 The practical split is simple:

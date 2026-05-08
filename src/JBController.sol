@@ -187,7 +187,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         override
     {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.ADD_PRICE_FEED});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.ADD_PRICE_FEED
+        });
 
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
@@ -314,7 +316,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (IJBToken token)
     {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.DEPLOY_ERC20});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.DEPLOY_ERC20
+        });
 
         // If a salt is provided, use it.
         bytes32 saltHash = salt != bytes32(0) ? keccak256(abi.encodePacked(_msgSender(), salt)) : bytes32(0);
@@ -450,14 +454,21 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // Enforce permissions.
         bool isOmnichainOperator = sender == OMNICHAIN_RULESET_OPERATOR;
-        _requireOwnerPermissionAllowingOverride({
-            projectId: projectId, permissionId: JBPermissionIds.LAUNCH_RULESETS, alsoGrantAccessIf: isOmnichainOperator
+        _requirePermissionAllowingOverrideFrom({
+            account: _ownerOf(projectId),
+            projectId: projectId,
+            permissionId: JBPermissionIds.LAUNCH_RULESETS,
+            alsoGrantAccessIf: isOmnichainOperator
         });
-        _requireOwnerPermissionAllowingOverride({
-            projectId: projectId, permissionId: JBPermissionIds.SET_TERMINALS, alsoGrantAccessIf: isOmnichainOperator
+        _requirePermissionAllowingOverrideFrom({
+            account: _ownerOf(projectId),
+            projectId: projectId,
+            permissionId: JBPermissionIds.SET_TERMINALS,
+            alsoGrantAccessIf: isOmnichainOperator
         });
         if (bytes(projectUri).length > 0) {
-            _requireOwnerPermissionAllowingOverride({
+            _requirePermissionAllowingOverrideFrom({
+                account: _ownerOf(projectId),
                 projectId: projectId,
                 permissionId: JBPermissionIds.SET_PROJECT_URI,
                 alsoGrantAccessIf: isOmnichainOperator
@@ -545,7 +556,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         // Minting is restricted to: the project's owner, addresses with permission to `MINT_TOKENS`, the project's
         // terminals, and the project's data hook.
-        _requireOwnerPermissionAllowingOverride({
+        _requirePermissionAllowingOverrideFrom({
+            account: _ownerOf(projectId),
             projectId: projectId,
             permissionId: JBPermissionIds.MINT_TOKENS,
             alsoGrantAccessIf: senderIsTerminalOrDataHook || senderHasDataHookMintPermission
@@ -611,7 +623,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
 
         // Enforce permissions.
-        _requireOwnerPermissionAllowingOverride({
+        _requirePermissionAllowingOverrideFrom({
+            account: _ownerOf(projectId),
             projectId: projectId,
             permissionId: JBPermissionIds.QUEUE_RULESETS,
             alsoGrantAccessIf: _msgSender() == OMNICHAIN_RULESET_OPERATOR
@@ -649,7 +662,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         override
     {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.SET_SPLIT_GROUPS});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_SPLIT_GROUPS
+        });
 
         // Set the split groups.
         SPLITS.setSplitGroupsOf({projectId: projectId, rulesetId: rulesetId, splitGroups: splitGroups});
@@ -661,7 +676,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param token The new token's address.
     function setTokenFor(uint256 projectId, IJBToken token) external override {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN
+        });
 
         // Get a reference to the current ruleset.
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
@@ -683,7 +700,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param symbol The new symbol.
     function setTokenMetadataOf(uint256 projectId, string calldata name, string calldata symbol) external override {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN_METADATA});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_TOKEN_METADATA
+        });
 
         TOKENS.setTokenMetadataFor({projectId: projectId, name: name, symbol: symbol});
     }
@@ -696,7 +715,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param uri The metadata URI to set.
     function setUriOf(uint256 projectId, string calldata uri) external override {
         // Enforce permissions.
-        _requireOwnerPermission({projectId: projectId, permissionId: JBPermissionIds.SET_PROJECT_URI});
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.SET_PROJECT_URI
+        });
 
         // Set the project's metadata URI.
         uriOf[projectId] = uri;
@@ -1306,33 +1327,6 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @return The owner of the project.
     function _ownerOf(uint256 projectId) internal view returns (address) {
         return PROJECTS.ownerOf(projectId);
-    }
-
-    /// @notice Requires that the sender has permission from the project owner.
-    /// @param projectId The ID of the project.
-    /// @param permissionId The required permission.
-    function _requireOwnerPermission(uint256 projectId, uint256 permissionId) internal view {
-        _requirePermissionFrom({account: _ownerOf(projectId), projectId: projectId, permissionId: permissionId});
-    }
-
-    /// @notice Requires that the sender has permission from the project owner, or that an override condition is met.
-    /// @param projectId The ID of the project.
-    /// @param permissionId The required permission.
-    /// @param alsoGrantAccessIf An override condition that also grants access.
-    function _requireOwnerPermissionAllowingOverride(
-        uint256 projectId,
-        uint256 permissionId,
-        bool alsoGrantAccessIf
-    )
-        internal
-        view
-    {
-        _requirePermissionAllowingOverrideFrom({
-            account: _ownerOf(projectId),
-            projectId: projectId,
-            permissionId: permissionId,
-            alsoGrantAccessIf: alsoGrantAccessIf
-        });
     }
 
     /// @notice The project's upcoming ruleset.
