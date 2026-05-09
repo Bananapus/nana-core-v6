@@ -249,18 +249,19 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
         assertGt(amountPaidOut, 0, "Should pay out with exact limit");
     }
 
-    /// @notice sendPayouts with 1 wei over limit should revert (not capped).
-    function test_sendPayouts_overLimitReverts() public {
+    /// @notice sendPayouts with 1 wei over limit should cap to the limit.
+    function test_sendPayouts_overLimitCaps() public {
         vm.prank(owner);
-        vm.expectRevert();
-        jbMultiTerminal()
+        uint256 amountPaidOut = jbMultiTerminal()
             .sendPayoutsOf({
             projectId: projectStandard,
             token: JBConstants.NATIVE_TOKEN,
-            amount: 5 ether + 1, // 1 wei over limit
+            amount: 5 ether + 1, // 1 wei over limit — caps to 5 ether
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
         });
+        // Should have paid out exactly the limit (5 ether), not 5 ether + 1.
+        assertEq(amountPaidOut, 5 ether);
     }
 
     /// @notice sendPayouts with zero amount should be a no-op or revert.

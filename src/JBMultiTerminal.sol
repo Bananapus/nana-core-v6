@@ -1815,6 +1815,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (ruleset, amountPaidOut) =
             STORE.recordPayoutFor({projectId: projectId, token: token, amount: amount, currency: currency});
 
+        // If nothing to pay out (e.g. payout limit already used or not configured), return early.
+        if (amountPaidOut == 0) return amountPaidOut;
+
         // Get a reference to the project's owner.
         // The owner will receive tokens minted by paying the platform fee and receive any leftover funds not sent to
         // payout splits.

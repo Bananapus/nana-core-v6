@@ -136,14 +136,23 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         // mock call to JBRulesets currentOf
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
-        /* // mock call to JBDirectory controllerOf
-        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)),
-        abi.encode(_controller));
+        // mock call to JBDirectory controllerOf
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
 
         // mock call to controller FUND_ACCESS_LIMITS
         mockExpect(
-        address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
-        ); */
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+
+        // mock payoutLimitOf to return 0 (no limit configured)
+        mockExpect(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitOf,
+                (_projectId, block.timestamp, address(this), address(_token), _currency)
+            ),
+            abi.encode(uint256(0))
+        );
 
         _;
     }
@@ -152,21 +161,13 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         external
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRulesetAndAccessLimitsIsntCalled
     {
-        // it will revert JBTerminalStore_InadequateTerminalStoreBalance
+        // With no payout limit configured, the amount caps to 0 and returns early (no balance check reached).
 
         // Register accounting context so the store can look up decimals/currency for the token.
         _registerContext(address(_token), _currency);
 
-        // setup calldata
-        JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
-        _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _defaultValue, 0
-            )
-        );
-        _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
+        (, uint256 amountPaidOut) = _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
+        assertEq(amountPaidOut, 0);
     }
 
     function test_GivenTheCallingCurrencyEqTheContextCurrency()
@@ -270,20 +271,12 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         external
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRulesetAndAccessLimitsIsntCalled
     {
-        // it will revert INADEQUATE_TERMINAL_STORE_BALANCE
+        // With no payout limit configured, the amount caps to 0 and returns early (no balance check reached).
 
         // Register accounting context so the store can look up decimals/currency for the token.
         _registerContext(address(_token), _currency);
 
-        // setup calldata
-        JBAccountingContext[] memory _contexts = new JBAccountingContext[](1);
-        _contexts[0] = JBAccountingContext({token: address(_token), decimals: 18, currency: _currency});
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, _defaultValue, 0
-            )
-        );
-        _store.recordPayoutFor(_projectId, _contexts[0].token, _defaultValue, _currency);
+        (, uint256 amountPaidOut) = _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
+        assertEq(amountPaidOut, 0);
     }
 }

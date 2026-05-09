@@ -79,7 +79,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - `pricePerUnitOf()` is on `IJBPrices`, NOT `IJBController` -- access via `IJBController(ctrl).PRICES().pricePerUnitOf(...)`
 - `JBRulesetConfig` fields need explicit casts: `uint48 mustStartAtOrAfter`, `uint32 duration`, `uint112 weight`, `uint32 weightCutPercent`
 - Zero-amount `pay{value:0}()` and zero-count `cashOutTokensOf(count=0)` are valid no-ops (mint/return 0)
-- `sendPayoutsOf()` reverts when `amount > payout limit` -- does NOT auto-cap
+- `sendPayoutsOf()` auto-caps `amount` to the remaining payout limit -- does NOT revert. Use `minTokensPaidOut` to enforce a minimum.
 - `IJBTokens.claimTokensFor()` takes 4 args: `(holder, projectId, count, beneficiary)` -- NOT 3
 - `JBFeelessAddresses.setFeelessAddress()` NOT `setIsFeelessAddress()` -- the function name omits "Is"
 - Named returns auto-return (no explicit `return` statement needed in Solidity)
@@ -105,7 +105,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - `IJBDirectoryAccessControl` has `setControllerAllowed()` and `setTerminalsAllowed()` -- NOT `setControllerAllowedFor()`
 - Price feeds are immutable once set in `JBPrices` -- they cannot be replaced or removed
 - `JBFundAccessLimits` requires payout limits and surplus allowances to be in strictly increasing currency order to prevent duplicates
-- **Empty `fundAccessLimitGroups` = zero payouts, NOT unlimited.** If a ruleset's `fundAccessLimitGroups` array is empty (or has no entry for the terminal/token), `payoutLimitsOf()` returns an empty array → cumulative limit is 0 → `sendPayoutsOf()` reverts on any amount. To allow unlimited payouts, explicitly set a payout limit with `amount: type(uint224).max`.
+- **Empty `fundAccessLimitGroups` = zero payouts, NOT unlimited.** If a ruleset's `fundAccessLimitGroups` array is empty (or has no entry for the terminal/token), `payoutLimitsOf()` returns an empty array → cumulative limit is 0 → `sendPayoutsOf()` caps to 0 and returns 0. To allow unlimited payouts, explicitly set a payout limit with `amount: type(uint224).max`.
 - **`groupId` (uint256) vs `currency` (uint32) are different types for the same address.** `JBSplitGroup.groupId` is `uint256(uint160(tokenAddress))` while `JBAccountingContext.currency` is `uint32(uint160(tokenAddress))`. These truncate differently — only `NATIVE_TOKEN` (0x000000000000000000000000000000000000EEEe) matches by coincidence. Don't confuse them.
 - **`JBAccountingContext.currency` is NOT `baseCurrency` — by design.** `baseCurrency` in ruleset metadata uses abstract real-world values (1 = ETH, 2 = USD) so rulesets are portable across chains — `baseCurrency=2` means "issue X tokens per USD" whether on Ethereum, Base, or Arbitrum. `JBAccountingContext.currency` uses token-derived values (`uint32(uint160(tokenAddress))`) because terminals track specific tokens at specific addresses — e.g. NATIVE_TOKEN = 61166, USDC on Ethereum = 909516616, USDC on Base = 3169378579. `JBPrices` mediates between the two: it converts token-derived currencies to/from abstract currencies (e.g. USDC token → USD concept, NATIVE_TOKEN → ETH concept) so that payout limits denominated in USD work correctly regardless of which token the terminal holds. The separation is what makes cross-chain consistency possible: same ruleset, different terminal accounting per chain.
 - **Don't queue multiple identical rulesets.** A ruleset with a `duration` automatically cycles — no need to queue copies. Queue multiple rulesets only when configuration actually changes between periods (e.g. different weight, splits, or limits).
@@ -166,7 +166,7 @@ Errors an agent is most likely to encounter. All are custom errors (revert with 
 | `JBMultiTerminal_PermitAllowanceNotEnough` | `JBMultiTerminal` | Permit2 allowance insufficient for the payment amount. |
 | `JBTerminalStore_RulesetPaymentPaused` | `JBTerminalStore` | `pausePay` is set in the current ruleset. |
 | `JBTerminalStore_RulesetNotFound` | `JBTerminalStore` | No ruleset exists for the project (not launched). |
-| `JBTerminalStore_InadequateControllerPayoutLimit` | `JBTerminalStore` | `sendPayoutsOf` amount exceeds the payout limit for this cycle. |
+
 | `JBTerminalStore_InadequateControllerAllowance` | `JBTerminalStore` | `useAllowanceOf` amount exceeds the surplus allowance. |
 | `JBTerminalStore_InadequateTerminalStoreBalance` | `JBTerminalStore` | Withdrawal exceeds the terminal's recorded balance. |
 | `JBTerminalStore_InsufficientTokens` | `JBTerminalStore` | Cash out count exceeds the holder's token balance. |
