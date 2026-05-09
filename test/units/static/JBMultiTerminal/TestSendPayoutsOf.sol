@@ -28,6 +28,8 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
     function test_WhenAmountPaidOutLtMinTokensPaidOut() external {
         // it will revert UNDER_MIN_TOKENS_PAID_OUT
+        // When recordPayoutFor returns 0 (capped), the early return in _sendPayoutsOf yields 0,
+        // and the _checkMin in sendPayoutsOf reverts.
 
         // needed for terminal store mock call
         JBRuleset memory returnedRuleset = JBRuleset({
@@ -44,31 +46,11 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
         JBAccountingContext memory mockTokenContext = JBAccountingContext({token: address(0), decimals: 0, currency: 0});
 
-        // record payout mock call
+        // record payout mock call — returns 0 (capped to limit)
         mockExpect(
             address(store),
             abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
             abi.encode(returnedRuleset, 0)
-        );
-
-        // projects owner of
-        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(this)));
-
-        // needed for splits return call
-        JBSplit[] memory returnedSplits = new JBSplit[](0);
-
-        // mock splits of call
-        mockExpect(
-            address(splits),
-            abi.encodeCall(IJBSplits.splitsOf, (_projectId, returnedRuleset.id, 0)),
-            abi.encode(returnedSplits)
-        );
-
-        // mock directory call for fee processing
-        mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (1, address(0))),
-            abi.encode(address(_terminal))
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
@@ -77,17 +59,18 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
     function test_WhenOwnerMustSendPayoutsButCallerDNEQOwner() external {
         // it will check permissions
+        // Must return non-zero amountPaidOut to reach the permission check (0 triggers early return).
 
         // needed for terminal store mock call
         JBRuleset memory returnedRuleset = generateUnfriendlyRuleset();
 
         JBAccountingContext memory mockTokenContext = JBAccountingContext({token: address(0), decimals: 0, currency: 0});
 
-        // record payout mock call
+        // record payout mock call — return non-zero to reach permission check
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
-            abi.encode(returnedRuleset, 0)
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 1, 0)),
+            abi.encode(returnedRuleset, 1)
         );
 
         address owner = makeAddr("owner");
@@ -110,11 +93,12 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
                 JBPermissionIds.SEND_PAYOUTS
             )
         );
-        _terminal.sendPayoutsOf(_projectId, address(0), 0, 0, 1);
+        _terminal.sendPayoutsOf(_projectId, address(0), 1, 0, 0);
     }
 
     function test_WhenExecutePayoutFails() external {
-        // it will revert PayoutReverted
+        // it will emit PayoutReverted
+        // Must return non-zero amountPaidOut to reach the splits distribution (0 triggers early return).
 
         // needed for terminal store mock call
         JBRuleset memory returnedRuleset = JBRuleset({
@@ -131,11 +115,11 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
         JBAccountingContext memory mockTokenContext = JBAccountingContext({token: address(0), decimals: 0, currency: 0});
 
-        // record payout mock call
+        // record payout mock call — return non-zero to reach split distribution
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 0, 0)),
-            abi.encode(returnedRuleset, 0)
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, mockTokenContext.token, 100, 0)),
+            abi.encode(returnedRuleset, 100)
         );
 
         // projects owner of
@@ -183,7 +167,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
             address(this)
         );
 
-        _terminal.sendPayoutsOf(_projectId, address(0), 0, 0, 0);
+        _terminal.sendPayoutsOf(_projectId, address(0), 100, 0, 0);
     }
 
     // it will revert UNDER_MIN_TOKENS_PAID_OUT
