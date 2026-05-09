@@ -523,10 +523,9 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        // Try to send more — should fail (limit exhausted)
+        // Try to send more — should cap to 0 (limit exhausted)
         vm.prank(projectOwner);
-        vm.expectRevert();
-        jbMultiTerminal()
+        uint256 secondPayout = jbMultiTerminal()
             .sendPayoutsOf({
             projectId: pid,
             token: JBConstants.NATIVE_TOKEN,
@@ -534,6 +533,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             minTokensPaidOut: 0
         });
+        assertEq(secondPayout, 0, "Exhausted limit should cap to 0");
 
         // Advance to cycle 2
         vm.warp(block.timestamp + 7 days + 1);

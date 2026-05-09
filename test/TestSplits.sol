@@ -2,7 +2,7 @@
 pragma solidity ^0.8.6;
 
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
-import {JBTerminalStore} from "../src/JBTerminalStore.sol";
+
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBDirectory} from "../src/interfaces/IJBDirectory.sol";
 import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
@@ -195,23 +195,15 @@ contract TestSplits_Local is TestBaseWorkflow {
         assertEq(_splitsGuy.balance, _beneficiaryNativeBalance);
 
         // Check that split groups of "0" don't extend the payout limit (keeping this out of a number test, for
-        // brevity).
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector,
-                _nativePayoutLimit * 2,
-                _nativePayoutLimit
-            )
-        );
-
-        // First payout meets our native token payout limit.
-        _terminal.sendPayoutsOf({
+        // brevity). Second payout should cap to 0 since the limit is already used.
+        uint256 _secondPayout = _terminal.sendPayoutsOf({
             projectId: _projectId,
             amount: _nativePayoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN, // Unused.
             minTokensPaidOut: 0
         });
+        assertEq(_secondPayout, 0);
 
         vm.prank(_projectOwner);
         _controller.sendReservedTokensToSplitsOf(_projectId);

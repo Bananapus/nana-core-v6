@@ -45,7 +45,7 @@ contract JBTerminalStore is IJBTerminalStore {
     );
     error JBTerminalStore_AddingAccountingContextNotAllowed(uint256 projectId, uint256 rulesetId, address terminal);
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
-    error JBTerminalStore_InadequateControllerPayoutLimit(uint256 amount, uint256 limit);
+
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
     error JBTerminalStore_InsufficientTokens(uint256 count, uint256 totalSupply);
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
@@ -392,6 +392,27 @@ contract JBTerminalStore is IJBTerminalStore {
         // Get a reference to the project's current ruleset.
         ruleset = RULESETS.currentOf(projectId);
 
+        // Get the payout limit for this currency.
+        uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
+            .payoutLimitOf({
+            projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
+        });
+
+        // Get the already-used payout limit for this cycle.
+        uint256 usedPayoutLimit =
+            usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency];
+
+        // Cap the amount to the remaining payout limit instead of reverting.
+        uint256 remainingPayoutLimit = payoutLimit > usedPayoutLimit ? payoutLimit - usedPayoutLimit : 0;
+        if (amount > remainingPayoutLimit) {
+            amount = remainingPayoutLimit;
+        }
+
+        // If nothing can be paid out, return early with zero.
+        if (amount == 0) {
+            return (ruleset, 0);
+        }
+
         // Convert the amount to the balance's currency.
         amountPaidOut = (currency == accountingContext.currency)
             ? amount
@@ -415,29 +436,13 @@ contract JBTerminalStore is IJBTerminalStore {
             revert JBTerminalStore_InadequateTerminalStoreBalance({amount: amountPaidOut, balance: currentBalance});
         }
 
-        // The new total amount which has been paid out during this ruleset.
-        uint256 newUsedPayoutLimitOf =
-            usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] + amount;
-
-        // Amount must be within what is still available to pay out.
-        // Validate BEFORE writing to storage to avoid wasting gas on SSTORE when the tx will revert.
-        uint256 payoutLimit = IJBController(address(DIRECTORY.controllerOf(projectId))).FUND_ACCESS_LIMITS()
-            .payoutLimitOf({
-            projectId: projectId, rulesetId: ruleset.id, terminal: msg.sender, token: token, currency: currency
-        });
-
-        // Make sure the new used amount is within the payout limit.
-        if (newUsedPayoutLimitOf > payoutLimit || payoutLimit == 0) {
-            revert JBTerminalStore_InadequateControllerPayoutLimit({amount: newUsedPayoutLimitOf, limit: payoutLimit});
-        }
-
         // Removed the paid out funds from the project's token balance.
         unchecked {
             balanceOf[msg.sender][projectId][token] = currentBalance - amountPaidOut;
         }
 
         // Store the new used payout limit.
-        usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = newUsedPayoutLimitOf;
+        usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency] = usedPayoutLimit + amount;
     }
 
     /// @notice Records a terminal migration — zeros out the project's balance and returns the amount moved to

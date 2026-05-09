@@ -351,7 +351,8 @@ Modifiers and return types go on their own indented lines.
 
 ```solidity
 // Direct validation
-if (amount > limit) revert JBTerminalStore_InadequateControllerPayoutLimit(amount, limit);
+// Cap to remaining payout limit instead of reverting
+if (amount > remainingPayoutLimit) amount = remainingPayoutLimit;
 
 // External call to untrusted hook
 try hook.afterPayRecordedWith(context) {} catch (bytes memory reason) {

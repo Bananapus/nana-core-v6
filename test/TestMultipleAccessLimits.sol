@@ -3,7 +3,7 @@ pragma solidity ^0.8.6;
 
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {JBFundAccessLimits} from "../src/JBFundAccessLimits.sol";
-import {JBTerminalStore} from "../src/JBTerminalStore.sol";
+
 import {JBTokens} from "../src/JBTokens.sol";
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
@@ -503,13 +503,8 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         assertEq(_tokens.totalBalanceOf(_beneficiary, _projectId), _userTokenBalance);
         uint256 initTerminalBalance = address(__terminal).balance;
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 1_800_000_000, 0
-            )
-        );
-        // First payout should be fine based on price.
-        __terminal.sendPayoutsOf({
+        // No USD payout limit set — sendPayoutsOf caps to 0 and returns 0.
+        uint256 _amountPaidOut = __terminal.sendPayoutsOf({
             projectId: _projectId,
             amount: 1_800_000_000,
             currency: JBCurrencyIds.USD,
@@ -517,21 +512,11 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        uint256 _amountPaidOut = mulDiv(
-            1_800_000_000,
-            10 ** 18, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the `_amount.value`'s fidelity as possible
-            // when converting.
-            _prices.pricePerUnitOf({
-                projectId: 1, pricingCurrency: JBCurrencyIds.USD, unitCurrency: _nativeCurrency, decimals: 18
-            })
-        );
+        // Nothing should have been paid out.
+        assertEq(_amountPaidOut, 0);
 
-        // Make sure the remaining balance is correct.
-        assertApproxEqAbs(
-            address(__terminal).balance,
-            initTerminalBalance - mulDiv(_amountPaidOut, JBConstants.MAX_FEE, JBConstants.MAX_FEE + __terminal.FEE()),
-            10_000_000_000
-        );
+        // Balance should be unchanged.
+        assertEq(address(__terminal).balance, initTerminalBalance);
     }
 
     function testMultipleDistroLimitCurrencies() external {

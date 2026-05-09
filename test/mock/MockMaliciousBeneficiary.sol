@@ -11,13 +11,8 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 /// @dev Attempts to re-enter sendPayoutsOf after receiving control-flow.
 contract MaliciousPayoutBeneficiary is IERC721Receiver, Test {
     function reEnter(address _terminal) internal {
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 1.5e19, 10 * 10 ** 18
-            )
-        );
-
-        IJBMultiTerminal(_terminal)
+        // Reentrancy attempt — payout limit already used, so the cap returns 0 (no funds extracted).
+        uint256 _reentrantPayout = IJBMultiTerminal(_terminal)
             .sendPayoutsOf({
             projectId: 2,
             amount: 5 * 10 ** 18,
@@ -25,6 +20,7 @@ contract MaliciousPayoutBeneficiary is IERC721Receiver, Test {
             token: JBConstants.NATIVE_TOKEN,
             minTokensPaidOut: 0
         });
+        assertEq(_reentrantPayout, 0);
     }
 
     receive() external payable {

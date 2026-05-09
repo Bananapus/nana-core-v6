@@ -484,11 +484,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 )
             );
 
-            // Revert if there's no payout limit.
-        } else if (_nativeCurrencyPayoutLimit == 0) {
-            vm.expectRevert(
-                abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0)
-            );
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
@@ -760,11 +755,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 )
             );
 
-            // Revert if there's no payout limit.
-        } else if (_nativeCurrencyPayoutLimit == 0) {
-            vm.expectRevert(
-                abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0)
-            );
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
@@ -1012,11 +1002,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                 )
             );
 
-            // Revert if there's no payout limit.
-        } else if (_nativeCurrencyPayoutLimit == 0) {
-            vm.expectRevert(
-                abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0)
-            );
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
@@ -1471,13 +1456,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                         _nativePayAmount
                     )
                 );
-                // Revert if there's no payout limit.
-            } else if (_nativeCurrencyPayoutLimit == 0) {
-                vm.expectRevert(
-                    abi.encodeWithSelector(
-                        JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0
-                    )
-                );
             }
 
             // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project
@@ -1547,13 +1525,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                         JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector,
                         _toNative(_usdCurrencyPayoutLimit),
                         _nativePayAmount
-                    )
-                );
-                // Revert if there's no payout limit.
-            } else if (_usdCurrencyPayoutLimit == 0) {
-                vm.expectRevert(
-                    abi.encodeWithSelector(
-                        JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0
                     )
                 );
             }
@@ -2138,13 +2109,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                         _nativePayAmount
                     )
                 );
-                // Revert if there's no payout limit.
-            } else if (_nativeCurrencyPayoutLimit == 0) {
-                vm.expectRevert(
-                    abi.encodeWithSelector(
-                        JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0
-                    )
-                );
             }
 
             // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project
@@ -2194,13 +2158,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                         JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector,
                         _usdCurrencyPayoutLimit,
                         _usdcPayAmount
-                    )
-                );
-                // Revert if there's no payout limit.
-            } else if (_usdCurrencyPayoutLimit == 0) {
-                vm.expectRevert(
-                    abi.encodeWithSelector(
-                        JBTerminalStore.JBTerminalStore_InadequateControllerPayoutLimit.selector, 0, 0
                     )
                 );
             }
