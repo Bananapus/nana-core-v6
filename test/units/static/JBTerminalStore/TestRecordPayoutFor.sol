@@ -137,9 +137,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
 
         // mock call to JBDirectory controllerOf
-        mockExpect(
-            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller)
-        );
+        mockExpect(address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller));
 
         // mock call to controller FUND_ACCESS_LIMITS
         mockExpect(
@@ -168,8 +166,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         // Register accounting context so the store can look up decimals/currency for the token.
         _registerContext(address(_token), _currency);
 
-        (, uint256 amountPaidOut) =
-            _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
+        (, uint256 amountPaidOut) = _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
         assertEq(amountPaidOut, 0);
     }
 
@@ -279,8 +276,7 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         // Register accounting context so the store can look up decimals/currency for the token.
         _registerContext(address(_token), _currency);
 
-        (, uint256 amountPaidOut) =
-            _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
+        (, uint256 amountPaidOut) = _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
         assertEq(amountPaidOut, 0);
     }
 }

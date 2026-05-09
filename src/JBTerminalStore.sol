@@ -399,8 +399,7 @@ contract JBTerminalStore is IJBTerminalStore {
         });
 
         // Get the already-used payout limit for this cycle.
-        uint256 usedPayoutLimit =
-            usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency];
+        uint256 usedPayoutLimit = usedPayoutLimitOf[msg.sender][projectId][token][ruleset.cycleNumber][currency];
 
         // Cap the amount to the remaining payout limit instead of reverting.
         uint256 remainingPayoutLimit = payoutLimit > usedPayoutLimit ? payoutLimit - usedPayoutLimit : 0;

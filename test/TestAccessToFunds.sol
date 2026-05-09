@@ -483,7 +483,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                     _nativePayAmount
                 )
             );
-
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
@@ -754,7 +753,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                     _nativePayAmount
                 )
             );
-
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
@@ -1001,7 +999,6 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
                     _nativePayAmount
                 )
             );
-
         }
 
         // Pay out native tokens up to the payout limit. Since `splits[]` is empty, everything goes to project owner.
