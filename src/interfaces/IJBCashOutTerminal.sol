@@ -75,16 +75,16 @@ interface IJBCashOutTerminal is IJBTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 
-    /// @notice Cashes out a holder's tokens for a project, reclaiming the token's proportional share of the project's
-    /// surplus.
-    /// @param holder The address cashing out tokens.
-    /// @param projectId The ID of the project cashing out tokens.
-    /// @param cashOutCount The number of project tokens to cash out.
-    /// @param tokenToReclaim The token to reclaim from the project's surplus.
-    /// @param minTokensReclaimed The minimum number of terminal tokens expected to be reclaimed.
-    /// @param beneficiary The address to send the reclaimed tokens to.
+    /// @notice Burn a holder's project tokens to reclaim a proportional share of the project's surplus (paid out as a
+    /// terminal token).
+    /// @param holder The address whose project tokens are being burned.
+    /// @param projectId The ID of the project whose project tokens are being burned.
+    /// @param cashOutCount The number of project tokens to burn.
+    /// @param tokenToReclaim The terminal token to reclaim from the project's surplus.
+    /// @param minTokensReclaimed The minimum number of terminal tokens that must be reclaimed.
+    /// @param beneficiary The address to send the reclaimed terminal tokens to.
     /// @param metadata Extra data to send to the data hook and cash out hooks.
-    /// @return reclaimAmount The amount of tokens reclaimed from the project's surplus.
+    /// @return reclaimAmount The number of terminal tokens reclaimed from the project's surplus.
     function cashOutTokensOf(
         address holder,
         uint256 projectId,
