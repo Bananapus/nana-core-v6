@@ -274,7 +274,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Converts a holder's internal project token credits into the project's ERC-20 representation,
-    /// transferring them to the beneficiary's wallet. Credits and the ERC-20 are equivalent project tokens — this just
+    /// transferring them to the beneficiary's wallet. Credits and the ERC-20 are equivalent project tokens — this
+    /// just
     /// makes them transferable/tradeable.
     /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
     /// @param holder The address whose project token credits are being redeemed.
