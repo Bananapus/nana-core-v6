@@ -220,14 +220,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Adds funds to a project's balance without minting tokens. Useful for topping up a project or returning
-    /// funds. Can also unlock previously held fees by returning them to the project's balance.
+    /// @notice Adds funds (terminal tokens) to a project's balance without minting project tokens. Useful for topping
+    /// up a project or returning funds. Can also unlock previously held fees by returning them to the project's
+    /// balance.
     /// @dev If `shouldReturnHeldFees` is true, the added amount offsets held fees proportionally.
     /// @param projectId The ID of the project to add funds to the balance of.
-    /// @param amount The amount of tokens to add to the balance, as a fixed point number with the same number of
-    /// decimals as the token's accounting context. If this is a native token terminal, this is ignored and `msg.value`
-    /// is used instead.
-    /// @param token The token to add to the balance.
+    /// @param token The terminal token being added (the ERC-20, or `JBConstants.NATIVE_TOKEN` for native).
+    /// @param amount The amount of the terminal `token` to add, as a fixed point number with the same number of
+    /// decimals as the token's accounting context. If `token` is the native token, this argument is ignored and
+    /// `msg.value` is used instead.
     /// @param shouldReturnHeldFees If true, return held fees proportional to the amount added.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the emitted event.
@@ -254,24 +255,25 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Cash out project tokens. The project's current ruleset determines the reclaimed surplus and any data
-    /// hook or cash out hook behavior.
-    /// @dev Only the token holder or an operator with `CASH_OUT_TOKENS` permission from that holder can call this.
-    /// @param holder The account cashing out tokens.
+    /// @notice Burn project tokens to reclaim a share of the project's surplus (held as a terminal token). The
+    /// project's current ruleset determines the reclaimed amount, plus any data hook or cash out hook behavior.
+    /// @dev Only the project token holder, or an operator with `CASH_OUT_TOKENS` permission from that holder, can call
+    /// this.
+    /// @dev Two distinct tokens are involved: **project tokens** (`cashOutCount`) are burned from `holder`, and
+    /// **terminal tokens** (`tokenToReclaim`) are sent to `beneficiary` in exchange.
+    /// @param holder The account whose project tokens are being burned.
     /// @param projectId The ID of the project the project tokens belong to.
-    /// @param cashOutCount The number of project tokens to cash out and burn, as a fixed point number with 18
-    /// decimals.
-    /// @param tokenToReclaim The token to reclaim.
-    /// @param minTokensReclaimed The minimum number of terminal tokens expected in return, as a fixed point number with
-    /// the same number of decimals as the token's accounting context. If the amount of tokens minted for the
-    /// beneficiary would be less than this amount, the cash out is reverted.
-    /// @param beneficiary The address to send the cashed out terminal tokens to, and to pass along to the ruleset's
+    /// @param cashOutCount The number of project tokens to burn, as a fixed point number with 18 decimals.
+    /// @param tokenToReclaim The terminal token to reclaim from the project's surplus.
+    /// @param minTokensReclaimed The minimum number of terminal tokens that must be returned to `beneficiary` for the
+    /// call to succeed, as a fixed point number with the same number of decimals as the terminal token's accounting
+    /// context. If fewer terminal tokens would be reclaimed, the cash out is reverted.
+    /// @param beneficiary The address to send the reclaimed terminal tokens to, and to pass along to the ruleset's
     /// data hook and cash out hook if applicable.
     /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hook if
     /// applicable.
-    /// @return reclaimAmount The amount of terminal tokens that the project tokens were cashed out for, as a fixed
-    /// point
-    /// number with 18 decimals.
+    /// @return reclaimAmount The amount of **terminal tokens** sent to `beneficiary` in exchange for the burned project
+    /// tokens, as a fixed point number with the same number of decimals as the terminal token's accounting context.
     function cashOutTokensOf(
         address holder,
         uint256 projectId,
@@ -565,22 +567,25 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Pay a project. The project's current ruleset determines how many project tokens the beneficiary receives
-    /// and any data hook or pay hook behavior.
+    /// @notice Pay a project with a payment token. The project's ruleset determines how many project tokens the
+    /// beneficiary receives, plus any data hook or pay hook behavior.
+    /// @dev Two distinct tokens are involved: the **payment token** (`token`, e.g. ETH or an ERC-20) flows from the
+    /// payer into the terminal, and **project tokens** (the project's own ERC-20 / credit balance) are minted to the
+    /// `beneficiary` according to the ruleset's weight.
     /// @param projectId The ID of the project to pay.
-    /// @param amount The amount of tokens to send, as a fixed point number with the same number of
-    /// decimals as the token's accounting context. If this terminal's token is native, this is ignored and `msg.value`
-    /// is used in its place.
-    /// @param token The token to pay with.
-    /// @param beneficiary The address to mint tokens to, and pass along to the ruleset's data hook and pay hook if
-    /// applicable.
-    /// @param minReturnedTokens The minimum number of project tokens expected in return for this payment, as a fixed
-    /// point number with the same number of decimals as the token's accounting context. If the amount of tokens minted
-    /// for the beneficiary would be less than this amount, the payment is reverted.
+    /// @param token The payment token to pay with (the ERC-20, or `JBConstants.NATIVE_TOKEN` for native).
+    /// @param amount The amount of the payment `token` to send, as a fixed point number with the same number of
+    /// decimals as the token's accounting context. If `token` is the native token, this argument is ignored and
+    /// `msg.value` is used in its place.
+    /// @param beneficiary The address to mint project tokens to, and to pass along to the ruleset's data hook and pay
+    /// hook if applicable.
+    /// @param minReturnedTokens The minimum number of project tokens the beneficiary must receive for the payment to
+    /// succeed, as a fixed point number with 18 decimals. If fewer project tokens would be minted, the payment is
+    /// reverted.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Bytes to pass along to the emitted event, as well as the data hook and pay hook if applicable.
-    /// @return beneficiaryTokenCount The number of tokens minted to the beneficiary, as a fixed point number with 18
-    /// decimals.
+    /// @return beneficiaryTokenCount The number of **project tokens** minted to `beneficiary`, as a fixed point number
+    /// with 18 decimals.
     function pay(
         uint256 projectId,
         address token,
@@ -728,21 +733,23 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Withdraws funds from a project's surplus (beyond what's needed for payouts) up to the current ruleset's
     /// surplus allowance. Sent directly to a beneficiary address rather than through splits.
     /// @dev Only the project's owner or an operator with `USE_ALLOWANCE` permission can call this.
-    /// @dev Incurs the 2.5% protocol fee unless the caller is a feeless address.
+    /// @dev Incurs the 2.5% protocol fee unless the caller is a feeless address. The fee is charged in the terminal
+    /// token (`token`); the fee project mints **project tokens** in return and sends them to `feeBeneficiary`.
     /// @param projectId The ID of the project to use the surplus allowance of.
-    /// @param token The token to pay out from the surplus.
-    /// @param amount The amount of terminal tokens to use from the project's current surplus allowance, as a fixed
+    /// @param token The terminal token to pay out from the surplus.
+    /// @param amount The amount of terminal `token` to use from the project's current surplus allowance, as a fixed
     /// point number with the same number of decimals as the token's accounting context.
-    /// @param currency The expected currency of the amount to pay out. Must match the currency of one of the
-    /// project's current ruleset's surplus allowances.
-    /// @param minTokensPaidOut The minimum number of terminal tokens that should be returned from the surplus allowance
-    /// (excluding fees), as a fixed point number with 18 decimals. If the amount of surplus used would be less than
-    /// this amount, the transaction is reverted.
-    /// @param beneficiary The address to send the surplus funds to.
-    /// @param feeBeneficiary The address to send the tokens resulting from paying the fee.
+    /// @param currency The expected currency of `amount`. Must match the currency of one of the project's current
+    /// ruleset's surplus allowances.
+    /// @param minTokensPaidOut The minimum number of terminal tokens that must be returned from the surplus allowance
+    /// (excluding fees), as a fixed point number with the same number of decimals as the terminal token's accounting
+    /// context. If less would be paid out, the transaction is reverted.
+    /// @param beneficiary The address to send the reclaimed terminal tokens to.
+    /// @param feeBeneficiary The address that receives the **project tokens** minted by the fee project in exchange
+    /// for the protocol fee paid in terminal tokens.
     /// @param memo A memo to pass along to the emitted event.
-    /// @return netAmountPaidOut The number of tokens that were sent to the beneficiary, as a fixed point number with
-    /// the same number of decimals as the token's accounting context.
+    /// @return netAmountPaidOut The number of **terminal tokens** sent to `beneficiary`, net of the protocol fee, as a
+    /// fixed point number with the same number of decimals as the terminal token's accounting context.
     function useAllowanceOf(
         uint256 projectId,
         address token,

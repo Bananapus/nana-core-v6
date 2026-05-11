@@ -261,18 +261,18 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     )
         external;
 
-    /// @notice Burns a holder's project tokens or credits.
-    /// @param holder The address to burn tokens for.
-    /// @param projectId The ID of the project to burn tokens for.
-    /// @param tokenCount The number of tokens to burn.
+    /// @notice Burns a holder's project tokens or unclaimed project token credits, removing them from supply.
+    /// @param holder The address whose project tokens (or credits) are being burned.
+    /// @param projectId The ID of the project whose project tokens are being burned.
+    /// @param tokenCount The number of project tokens (or credits) to burn.
     /// @param memo A memo to pass along to the emitted event.
     function burnTokensOf(address holder, uint256 projectId, uint256 tokenCount, string calldata memo) external;
 
-    /// @notice Redeems credits to claim tokens into a beneficiary's account.
-    /// @param holder The address to redeem credits from.
-    /// @param projectId The ID of the project to claim tokens for.
-    /// @param tokenCount The number of tokens to claim.
-    /// @param beneficiary The account the claimed tokens will go to.
+    /// @notice Converts project token credits into the project's ERC-20 representation, sending them to a beneficiary.
+    /// @param holder The address whose project token credits are being redeemed.
+    /// @param projectId The ID of the project whose project tokens are being claimed.
+    /// @param tokenCount The number of project token credits to convert into ERC-20 project tokens.
+    /// @param beneficiary The account that receives the resulting ERC-20 project tokens.
     function claimTokensFor(address holder, uint256 projectId, uint256 tokenCount, address beneficiary) external;
 
     /// @notice Deploys an ERC-20 token for a project.
@@ -324,13 +324,16 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         external
         returns (uint256 rulesetId);
 
-    /// @notice Mints new project tokens or credits to a beneficiary, optionally reserving a portion.
-    /// @param projectId The ID of the project to mint tokens for.
-    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
-    /// @param beneficiary The address which will receive the non-reserved tokens.
+    /// @notice Mints new project tokens (or credits) to a beneficiary, optionally reserving a portion for the ruleset's
+    /// reserved splits.
+    /// @param projectId The ID of the project whose project tokens are being minted.
+    /// @param tokenCount The total number of project tokens to mint (the beneficiary's share plus the reserved share if
+    /// `useReservedPercent` is true).
+    /// @param beneficiary The address that receives the non-reserved portion of the minted project tokens.
     /// @param memo A memo to pass along to the emitted event.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
-    /// @return beneficiaryTokenCount The number of tokens minted for the beneficiary.
+    /// @return beneficiaryTokenCount The number of project tokens minted to `beneficiary` (excluding the reserved
+    /// share).
     function mintTokensOf(
         uint256 projectId,
         uint256 tokenCount,

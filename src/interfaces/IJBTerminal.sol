@@ -137,10 +137,10 @@ interface IJBTerminal is IERC165 {
     /// @param accountingContexts The accounting contexts to add.
     function addAccountingContextsFor(uint256 projectId, JBAccountingContext[] calldata accountingContexts) external;
 
-    /// @notice Adds funds to a project's balance.
+    /// @notice Adds terminal tokens to a project's balance (no project tokens are minted).
     /// @param projectId The ID of the project to add funds to.
-    /// @param token The token added.
-    /// @param amount The amount of tokens added.
+    /// @param token The terminal token being added.
+    /// @param amount The amount of terminal `token` being added.
     /// @param shouldReturnHeldFees Whether held fees should be returned based on the amount added.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the emitted event.
@@ -162,15 +162,15 @@ interface IJBTerminal is IERC165 {
     /// @return balance The amount of funds that were migrated.
     function migrateBalanceOf(uint256 projectId, address token, IJBTerminal to) external returns (uint256 balance);
 
-    /// @notice Pays a project in a specified token.
+    /// @notice Pay a project with a payment token in exchange for project tokens minted to a beneficiary.
     /// @param projectId The ID of the project to pay.
-    /// @param token The token to pay with.
-    /// @param amount The amount of tokens to pay.
+    /// @param token The payment token to pay with.
+    /// @param amount The amount of the payment `token` to pay.
     /// @param beneficiary The address to mint project tokens to.
-    /// @param minReturnedTokens The minimum number of project tokens expected in return.
+    /// @param minReturnedTokens The minimum number of project tokens the beneficiary must receive.
     /// @param memo A memo to pass along to the emitted event.
     /// @param metadata Extra data to pass along to the pay hooks.
-    /// @return beneficiaryTokenCount The number of tokens minted for the beneficiary.
+    /// @return beneficiaryTokenCount The number of project tokens minted to the beneficiary.
     function pay(
         uint256 projectId,
         address token,

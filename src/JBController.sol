@@ -238,12 +238,12 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice Burns a holder's project tokens (or credits), permanently removing them from supply. Used by terminals
-    /// during cash outs, or directly by holders who want to burn voluntarily.
+    /// @notice Burns a holder's project tokens (or unclaimed credits), permanently removing them from the project
+    /// token supply. Used by terminals during cash outs, or directly by holders who want to burn voluntarily.
     /// @dev Can only be called by the holder, an operator with `BURN_TOKENS` permission, or a project terminal.
-    /// @param holder The address to burn tokens for.
-    /// @param projectId The ID of the project to burn tokens for.
-    /// @param tokenCount The number of tokens to burn.
+    /// @param holder The address whose project tokens (or credits) are being burned.
+    /// @param projectId The ID of the project whose tokens are being burned.
+    /// @param tokenCount The number of project tokens (or credits) to burn, as a fixed point number with 18 decimals.
     /// @param memo A memo to pass along to the emitted event.
     function burnTokensOf(
         address holder,
@@ -273,13 +273,15 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         TOKENS.burnFrom({holder: holder, projectId: projectId, count: tokenCount});
     }
 
-    /// @notice Converts internal credits into the project's ERC-20 token, transferring them to the beneficiary's
-    /// wallet. Credits and ERC-20 tokens are interchangeable — this just makes them transferable/tradeable.
+    /// @notice Converts a holder's internal project token credits into the project's ERC-20 representation,
+    /// transferring them to the beneficiary's wallet. Credits and the ERC-20 are equivalent project tokens — this just
+    /// makes them transferable/tradeable.
     /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
-    /// @param holder The address to redeem credits from.
-    /// @param projectId The ID of the project to claim tokens for.
-    /// @param tokenCount The number of tokens to claim.
-    /// @param beneficiary The account the claimed tokens will go to.
+    /// @param holder The address whose project token credits are being redeemed.
+    /// @param projectId The ID of the project whose project tokens are being claimed.
+    /// @param tokenCount The number of project token credits to convert into ERC-20 project tokens, as a fixed point
+    /// number with 18 decimals.
+    /// @param beneficiary The account that receives the resulting ERC-20 project tokens.
     function claimTokensFor(
         address holder,
         uint256 projectId,
@@ -520,12 +522,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// reserved percent (which accumulates until `sendReservedTokensToSplitsOf` is called).
     /// @dev Can be called by the project owner, an operator with `MINT_TOKENS` permission, a project terminal, or the
     /// data hook. If `allowOwnerMinting` is false in the current ruleset, only terminals and the data hook can mint.
-    /// @param projectId The ID of the project to mint tokens for.
-    /// @param tokenCount The number of tokens to mint, including any reserved tokens.
-    /// @param beneficiary The address which will receive the (non-reserved) tokens.
+    /// @param projectId The ID of the project whose project tokens are being minted.
+    /// @param tokenCount The total number of project tokens to mint (the beneficiary's share plus the reserved share if
+    /// `useReservedPercent` is true), as a fixed point number with 18 decimals.
+    /// @param beneficiary The address that receives the non-reserved portion of the minted project tokens.
     /// @param memo A memo to pass along to the emitted event.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
-    /// @return beneficiaryTokenCount The number of tokens minted for the `beneficiary`.
+    /// @return beneficiaryTokenCount The number of project tokens minted to `beneficiary` (excluding the reserved
+    /// share), as a fixed point number with 18 decimals.
     function mintTokensOf(
         uint256 projectId,
         uint256 tokenCount,
