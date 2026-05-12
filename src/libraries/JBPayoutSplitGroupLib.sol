@@ -1,11 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 
+import {IJBSplitHook} from "../interfaces/IJBSplitHook.sol";
 import {IJBSplits} from "../interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBSplit} from "../structs/JBSplit.sol";
+import {JBSplitHookContext} from "../structs/JBSplitHookContext.sol";
 import {JBConstants} from "./JBConstants.sol";
 
 /// @notice Minimal callback surface used only by this library to call back into the terminal's `executePayout(...)`.
@@ -18,7 +22,11 @@ interface IJBPayoutSplitGroupExecutor {
     /// @param token The token being paid out.
     /// @param amount The amount assigned to the split.
     /// @param originalMessageSender The account that started the payout flow.
-    /// @return netPayoutAmount The amount that was actually paid after fees or hook behavior.
+    /// @return netPayoutAmount The amount the split recipient actually received (may be less than the
+    /// post-fee amount if a split hook accepted a partial pull).
+    /// @return feeEligibleAmount The gross-equivalent of `netPayoutAmount` that should accrue held fees.
+    /// Equals `amount` on a fully-consumed non-feeless payout, `0` on feeless or when the hook took nothing,
+    /// and a scaled value `amount * sent / netOffered` for a partial pull.
     function executePayout(
         JBSplit calldata split,
         uint256 projectId,
@@ -27,7 +35,7 @@ interface IJBPayoutSplitGroupExecutor {
         address originalMessageSender
     )
         external
-        returns (uint256 netPayoutAmount);
+        returns (uint256 netPayoutAmount, uint256 feeEligibleAmount);
 }
 
 /// @notice Handles distributing payouts to a project's split recipients. Iterates through each split, sends the
@@ -87,14 +95,23 @@ library JBPayoutSplitGroupLib {
             // The amount to send to the split.
             uint256 payoutAmount = mulDiv(leftoverAmount, split.percent, leftoverPercentage);
 
-            // The final payout amount after taking out any fees.
-            uint256 netPayoutAmount = _sendPayoutToSplit({
-                store: store, split: split, projectId: projectId, token: token, amount: payoutAmount, caller: caller
-            });
-
-            // If the split hook is a feeless address, this payout doesn't incur a fee.
-            if (netPayoutAmount != 0 && netPayoutAmount != payoutAmount) {
-                amountEligibleForFees += payoutAmount;
+            // Send the payout (inlined to keep stack pressure manageable with the tuple return).
+            // Returns (netPayoutAmount sent, feeEligible gross-equivalent). For non-hook splits and fully-consumed
+            // hook splits, `feeEligible` equals `payoutAmount` (non-feeless) or 0 (feeless). For a partial split-hook
+            // pull, `feeEligible` scales with consumed. Failed payouts consume the payout limit by design — the
+            // try/catch keeps a single bad split from DoS-ing the rest and restores balance.
+            uint256 netPayoutAmount;
+            try IJBPayoutSplitGroupExecutor(address(this))
+                .executePayout(split, projectId, token, payoutAmount, caller)
+                returns (uint256 sentAmount, uint256 feeEligible)
+            {
+                netPayoutAmount = sentAmount;
+                amountEligibleForFees += feeEligible;
+            } catch (bytes memory failureReason) {
+                emit PayoutReverted({
+                    projectId: projectId, split: split, amount: payoutAmount, reason: failureReason, caller: caller
+                });
+                store.recordAddedBalanceFor({projectId: projectId, token: token, amount: payoutAmount});
             }
 
             if (payoutAmount != 0) {
@@ -124,46 +141,66 @@ library JBPayoutSplitGroupLib {
         }
     }
 
-    /// @notice Sends a payout to a split.
-    /// @param store The terminal store used to restore balance when a payout fails.
-    /// @param split The split to pay.
-    /// @param projectId The ID of the project the split was specified by.
-    /// @param token The address of the token to pay out.
-    /// @param amount The total amount that the split is paid.
-    /// @param caller The original caller of the terminal payout flow.
-    /// @return netPayoutAmount The amount sent to the split after subtracting fees.
-    function _sendPayoutToSplit(
-        IJBTerminalStore store,
-        JBSplit memory split,
+    /// @notice Invokes a split hook with partial-pull-aware allowance handling.
+    /// @dev For ERC-20: grants the hook an allowance, calls `processSplitWith`, and revokes any unconsumed
+    /// allowance. For native ETH: pushes via `msg.value`. The hook may take less than offered (revert or
+    /// short-pull); the unsent portion is routed back to the project balance via `store.recordAddedBalanceFor`,
+    /// scaled to include the proportional fee allocation so the held fee is effectively charged only on the
+    /// consumed amount. Fee-eligibility is inferred from `netPayoutAmount < amount`.
+    /// @param split The split (must have a non-zero hook address).
+    /// @param projectId The originating project ID.
+    /// @param token The token being distributed. Use `JBConstants.NATIVE_TOKEN` for ETH.
+    /// @param amount The gross amount allocated to this split (pre-fee).
+    /// @param netPayoutAmount The amount the hook is offered (post-fee for non-feeless splits, == amount otherwise).
+    /// @param store The terminal store used to credit any refund back to the project and to look up decimals.
+    /// @return sent The amount the hook actually received.
+    /// @return feeEligibleAmount The gross-equivalent of `sent` (used for held-fee accounting). Zero for
+    /// feeless splits or when the hook consumed nothing.
+    function invokeSplitHookWithPartial(
+        JBSplit calldata split,
         uint256 projectId,
         address token,
         uint256 amount,
-        address caller
+        uint256 netPayoutAmount,
+        IJBTerminalStore store
     )
-        private
-        returns (uint256 netPayoutAmount)
+        external
+        returns (uint256 sent, uint256 feeEligibleAmount)
     {
-        // Failed split payouts consume the payout limit by design. The try-catch prevents a single
-        // split from DoS-ing the entire payout. Failed splits' amounts are returned to the project balance via
-        // `recordAddedBalanceFor`. Payout limit consumption is correct because the project authorized the
-        // distribution.
-        try IJBPayoutSplitGroupExecutor(address(this))
-            .executePayout({
-            split: split, projectId: projectId, token: token, amount: amount, originalMessageSender: caller
-        }) returns (
-            uint256 payoutAmount
-        ) {
-            return payoutAmount;
-        } catch (bytes memory failureReason) {
-            emit PayoutReverted({
-                projectId: projectId, split: split, amount: amount, reason: failureReason, caller: caller
-            });
+        bool isNative = token == JBConstants.NATIVE_TOKEN;
+        uint256 balanceBefore = isNative ? address(this).balance : IERC20(token).balanceOf(address(this));
 
-            // Add balance back to the project.
-            store.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
+        JBSplitHookContext memory context = JBSplitHookContext({
+            token: token,
+            amount: netPayoutAmount,
+            decimals: store.accountingContextOf({terminal: address(this), projectId: projectId, token: token}).decimals,
+            projectId: projectId,
+            groupId: uint256(uint160(token)),
+            split: split
+        });
 
-            // Since the payout failed the netPayoutAmount is zero.
-            return 0;
+        uint256 payValue;
+        if (isNative) {
+            payValue = netPayoutAmount;
+        } else {
+            SafeERC20.forceApprove({token: IERC20(token), spender: address(split.hook), value: netPayoutAmount});
+        }
+
+        try split.hook.processSplitWith{value: payValue}(context) {} catch {}
+
+        if (!isNative) SafeERC20.forceApprove({token: IERC20(token), spender: address(split.hook), value: 0});
+
+        sent = balanceBefore - (isNative ? address(this).balance : IERC20(token).balanceOf(address(this)));
+
+        if (sent < netPayoutAmount) {
+            // refund = amount * (netPayoutAmount - sent) / netPayoutAmount.
+            uint256 refund = mulDiv(amount, netPayoutAmount - sent, netPayoutAmount);
+            if (refund != 0) store.recordAddedBalanceFor({projectId: projectId, token: token, amount: refund});
+        }
+
+        // netPayoutAmount < amount iff a fee was applied (non-feeless split). Fee is owed only on consumed.
+        if (netPayoutAmount < amount && sent != 0) {
+            feeEligibleAmount = mulDiv(amount, sent, netPayoutAmount);
         }
     }
 }
