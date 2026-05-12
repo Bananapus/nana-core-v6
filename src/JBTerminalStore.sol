@@ -427,6 +427,13 @@ contract JBTerminalStore is IJBTerminalStore {
                 })
             });
 
+        // If cross-currency conversion rounded to zero, return without consuming any payout limit. Otherwise a
+        // permissionless caller could repeatedly request sub-unit payouts to drain the cycle's payout limit
+        // without moving any funds.
+        if (amountPaidOut == 0) {
+            return (ruleset, 0);
+        }
+
         // Cache the balance slot to avoid redundant storage reads.
         uint256 currentBalance = balanceOf[msg.sender][projectId][token];
 
