@@ -4,6 +4,25 @@ evm_version = 'cancun'
 optimizer_runs = 200
 libs = ["node_modules", "lib"]
 fs_permissions = [{ access = "read-write", path = "./"}]
+# Strip the CBOR metadata trailer from bytecode so deterministic CREATE2 addresses
+# for external libraries are stable across `libraries = [...]` config changes. Without
+# this, adding/changing a pinned library address mutates metadata.settings.libraries,
+# which changes the metadata hash, which changes every artifact's bytecode tail, which
+# shifts the deterministic CREATE2 address of every library, requiring another pin
+# update, and so on (the system never converges).
+bytecode_hash = "none"
+# Pre-link JBPayoutSplitGroupLib to its deterministic CREATE2 address.
+# Address derives from: factory=0x4e59…, salt=keccak256("_JBPayoutSplitGroupLibV6_"),
+# initcode=type(JBPayoutSplitGroupLib).creationCode (no constructor args).
+# The library itself is deployed first by deploy-all-v6/script/Deploy.s.sol before any
+# contract that depends on it (JBMultiTerminal). Linking at compile time means
+# vm.parseJsonBytes("artifacts/JBMultiTerminal.json", ".bytecode.object") returns valid
+# hex (no `__$...__$__` placeholder). Unit tests etch the runtime bytecode at this
+# address via `JBTest._etchPayoutSplitGroupLib()` since forge's auto-deploy only fires
+# when `libraries` is unset.
+libraries = [
+    "src/libraries/JBPayoutSplitGroupLib.sol:JBPayoutSplitGroupLib:0xE5767922e5f8d18c57C4685289Ef92D859eb980b"
+]
 
 [fuzz]
 runs = 4096
