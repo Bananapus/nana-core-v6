@@ -341,10 +341,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             // Delegate the partial-pull-aware hook invocation to the library so this branch stays compact.
-            // The library builds the hook context internally and infers fee-eligibility from `netPayoutAmount < amount`.
-            (netPayoutAmount, feeEligibleAmount) = JBPayoutSplitGroupLib.invokeSplitHookWithPartial(
-                split, projectId, token, amount, netPayoutAmount, STORE
-            );
+            // The library builds the hook context internally and infers fee-eligibility from
+            // `netPayoutAmount < amount` (`true` only when a fee was deducted above).
+            (netPayoutAmount, feeEligibleAmount) = JBPayoutSplitGroupLib.invokeSplitHookWithPartial({
+                split: split,
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                netPayoutAmount: netPayoutAmount,
+                store: STORE
+            });
 
             // Otherwise, if a project is specified, make a payment to it.
         } else if (split.projectId != 0) {
