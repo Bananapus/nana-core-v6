@@ -319,7 +319,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address originalMessageSender
     )
         external
-        returns (uint256 netPayoutAmount)
+        returns (uint256 netPayoutAmount, uint256 feeEligibleAmount)
     {
         // NOTICE: May only be called by this terminal itself.
         require(msg.sender == address(this));
@@ -334,35 +334,23 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 revert JBMultiTerminal_SplitHookInvalid({hook: split.hook});
             }
 
-            // This payout is eligible for a fee since the funds are leaving this contract and the split hook isn't a
-            // feeless address.
             if (!_isFeeless({addr: address(split.hook), projectId: projectId})) {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
             }
 
-            // Create the context to send to the split hook.
-            JBSplitHookContext memory context = JBSplitHookContext({
-                token: token,
-                amount: netPayoutAmount,
-                decimals: STORE.accountingContextOf({
-                    terminal: address(this), projectId: projectId, token: token
-                }).decimals,
+            // Delegate the partial-pull-aware hook invocation to the library so this branch stays compact.
+            // The library builds the hook context internally and infers fee-eligibility from
+            // `netPayoutAmount < amount` (`true` only when a fee was deducted above).
+            (netPayoutAmount, feeEligibleAmount) = JBPayoutSplitGroupLib.invokeSplitHookWithPartial({
+                split: split,
                 projectId: projectId,
-                groupId: uint256(uint160(token)),
-                split: split
+                token: token,
+                amount: amount,
+                netPayoutAmount: netPayoutAmount,
+                store: STORE
             });
-
-            // Trigger any inherited pre-transfer logic.
-            // Get a reference to the amount being paid in `msg.value`.
-            uint256 payValue = _beforeTransferTo({to: address(split.hook), token: token, amount: netPayoutAmount});
-
-            // If this terminal's token is the native token, send it in `msg.value`.
-            split.hook.processSplitWith{value: payValue}(context);
-
-            // Revoke the temporary pull allowance now that the hook call has finished.
-            _afterTransferTo({to: address(split.hook), token: token});
 
             // Otherwise, if a project is specified, make a payment to it.
         } else if (split.projectId != 0) {
@@ -383,6 +371,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
+                feeEligibleAmount = amount;
             }
 
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
@@ -446,6 +435,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
                 }
+                feeEligibleAmount = amount;
             }
 
             // If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to the

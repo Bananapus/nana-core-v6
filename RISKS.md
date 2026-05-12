@@ -191,6 +191,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 - Failed split payouts still consume payout limit.
 - Failed owner payouts also still consume payout limit.
+- **Split-hook payouts allow partial consumption.** `JBPayoutSplitGroupLib.invokeSplitHookWithPartial` grants the hook an ERC-20 allowance (or pushes ETH via `msg.value`), calls `processSplitWith` inside a try/catch, then revokes any unconsumed allowance. The hook keeps whatever it actually pulled; the unsent portion routes back to the project's balance via `recordAddedBalanceFor`, scaled to include the proportional fee allocation so the held fee is effectively charged only on what the hook consumed. Three outcomes: (1) full consumption — fee held on the full gross intent; (2) full failure (revert or zero pull) — entire gross refunded, no fee held; (3) partial pull — hook keeps `X`, project gets `amount × (net − X) / net` back, fee held on the gross-equivalent of `X`. Hooks observe `msg.sender == terminal` (the library is delegatecalled from `JBMultiTerminal`).
 - Reserved-token split hook reverts: for ERC-20 tokens, the controller uses an allowance model — it approves the hook, calls `processSplitWith`, and if the hook reverts or does not consume the full allowance the controller revokes the approval and burns the remainder. Tokens are not stranded at the hook. For credit-only projects (no ERC-20 deployed), credits are still transferred directly before the hook call, so a revert can strand credits at the hook.
 
 ### Terminal Migration Resets Used Payout Limits

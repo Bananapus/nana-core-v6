@@ -71,6 +71,9 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
 
+        // Plant `JBPayoutSplitGroupLib` at its pre-linked address so terminal delegatecalls resolve.
+        _etchPayoutSplitGroupLib();
+
         _terminal = new JBMultiTerminal(
             feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder
         );

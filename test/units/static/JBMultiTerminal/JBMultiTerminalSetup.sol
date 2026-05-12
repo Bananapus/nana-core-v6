@@ -40,6 +40,9 @@ contract JBMultiTerminalSetup is JBTest {
         // Constructor will call to find directory from the terminal store
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.DIRECTORY, ()), abi.encode(address(directory)));
 
+        // Plant `JBPayoutSplitGroupLib` at its pre-linked address so delegatecalls from the terminal resolve.
+        _etchPayoutSplitGroupLib();
+
         // Instantiate the contract being tested
         _terminal = new JBMultiTerminal(
             feelessAddresses, permissions, projects, splits, store, tokens, permit2, trustedForwarder
