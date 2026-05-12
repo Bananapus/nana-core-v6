@@ -48,6 +48,10 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **Stale weight cache can block a project.** Short-duration rulesets with nonzero `weightCutPercent` can hit `WeightCacheRequired` after 20,000 elapsed cycles (`_WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD`). Projects approaching this limit must call `updateRulesetWeightCache()` to pre-cache decayed weights.
 - **Weight-cache correctness matters more than overflow.** Overflow is already bounded at queue time. The real risk is stale or wrongly-updated cache state.
 
+### Ruleset Duration
+
+- **Durations greater than `block.timestamp` are not a supported configuration.** `JBRulesets._simulateCycledRulesetBasedOn` clamps `mustStartAtOrAfter` to `1` when `baseRuleset.duration >= block.timestamp`, which is the branch reached only for durations on the order of decades or longer (block.timestamp is Unix seconds). Project owners are expected to choose durations on human-meaningful scales (hours to years), so this edge case never triggers in practice.
+
 ### Surplus Manipulation
 
 - **Cross-terminal surplus is a trust boundary.** Cash outs always aggregate surplus across all registered terminals, so one terminal can price a cash out using value reported by other terminals.
@@ -210,6 +214,10 @@ If project `#1` cannot accept a fee payment, core prefers liveness over strict f
 ### 8.4 Fee routing starts fail-open until the wider deployment is wired
 
 Core can be deployed before project `#1` is fully ready. During that period, fee-bearing flows may forgive fees instead of trapping funds.
+
+### 8.5 Held fees can be returned even after the 28-day unlock has elapsed
+
+`_returnHeldFees` does not check `unlockTimestamp`. A project can erase a held fee that has matured past the 28-day holding window by calling `addToBalanceOf` (or any path that triggers a return) before someone calls `processHeldFeesOf`. This is intentional: the held fee is a contingent claim against funds that left the project, and the project can always rescind that claim by putting the funds back. Holding fee replenishment costs the project the full amount it withdrew, so the project must keep the funds in the protocol to avoid the fee — which is the same trade-off held fees were designed to express. The only difference between pre-maturity and post-maturity return is that anyone can call `processHeldFeesOf` after 28 days to force collection, so projects that want to keep delaying the fee must repeatedly front-run that processing.
 
 ## 9. Invariants To Verify
 
