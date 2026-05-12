@@ -189,12 +189,10 @@ library JBPayoutSplitGroupLib {
             uint256 netPayoutAmount;
             try IJBPayoutSplitGroupExecutor(address(this))
                 .executePayout({
-                split: split,
-                projectId: projectId,
-                token: token,
-                amount: payoutAmount,
-                originalMessageSender: caller
-            }) returns (uint256 sentAmount, uint256 feeEligible) {
+                split: split, projectId: projectId, token: token, amount: payoutAmount, originalMessageSender: caller
+            }) returns (
+                uint256 sentAmount, uint256 feeEligible
+            ) {
                 netPayoutAmount = sentAmount;
                 amountEligibleForFees += feeEligible;
             } catch (bytes memory failureReason) {
@@ -230,5 +228,4 @@ library JBPayoutSplitGroupLib {
             }
         }
     }
-
 }

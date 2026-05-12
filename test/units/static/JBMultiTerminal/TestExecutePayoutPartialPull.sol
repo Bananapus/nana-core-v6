@@ -129,9 +129,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
 
         assertEq(usdc.balanceOf(address(hook)), expectedConsumed, "hook keeps the consumed amount");
         assertEq(usdc.balanceOf(address(_terminal)), grossAmount - expectedConsumed, "unconsumed stays in terminal");
-        assertEq(
-            usdc.allowance(address(_terminal), address(hook)), 0, "allowance fully revoked after partial pull"
-        );
+        assertEq(usdc.allowance(address(_terminal), address(hook)), 0, "allowance fully revoked after partial pull");
         assertEq(sent, expectedConsumed, "sent reflects consumed amount");
         assertEq(feeEligible, expectedFeeEligible, "feeEligible scales with consumed");
 
@@ -228,11 +226,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
         });
 
         assertEq(usdc.balanceOf(address(hook)), 0, "reverting hook got nothing");
-        assertEq(
-            usdc.allowance(address(_terminal), address(hook)),
-            0,
-            "allowance revoked even after revert"
-        );
+        assertEq(usdc.allowance(address(_terminal), address(hook)), 0, "allowance revoked even after revert");
         assertEq(sent, 0, "sent = 0 on revert");
         assertEq(feeEligible, 0, "no fee held on revert");
     }
@@ -418,11 +412,13 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
         uint256 fee = JBFees.feeAmountFrom({amountBeforeFee: grossAmount, feePercent: _fee});
         uint256 netOffered = grossAmount - fee;
         uint256 expectedRefund = (grossAmount * (netOffered - 1)) / netOffered;
-        uint256 expectedFeeEligible = grossAmount / netOffered; // amount * 1 / netOffered, which floors to either 1 or 0
+        uint256 expectedFeeEligible = grossAmount / netOffered; // amount * 1 / netOffered, which floors to either 1 or
+        // 0
         if ((grossAmount * 1) % netOffered != 0) {
             // mulDiv floors, so the expected may be amount/netOffered which for 100e6 / 97.5e6 = 1
         }
-        // For our concrete numbers: grossAmount = 100e6, netOffered = 97.5e6, expectedFeeEligible = floor(100e6/97.5e6) = 1.
+        // For our concrete numbers: grossAmount = 100e6, netOffered = 97.5e6, expectedFeeEligible = floor(100e6/97.5e6)
+        // = 1.
         assertEq(expectedFeeEligible, 1, "sanity: feeEligible for 1 wei consumed");
 
         mockExpect(
@@ -452,9 +448,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
 
     function _wireMocks(address hook, bool feeless, address token, uint8 decimals) internal {
         // Hook claims to support IJBSplitHook.
-        vm.mockCall(
-            hook, abi.encodeCall(IERC165.supportsInterface, (type(IJBSplitHook).interfaceId)), abi.encode(true)
-        );
+        vm.mockCall(hook, abi.encodeCall(IERC165.supportsInterface, (type(IJBSplitHook).interfaceId)), abi.encode(true));
         // Feelessness lookup.
         vm.mockCall(
             address(feelessAddresses),
