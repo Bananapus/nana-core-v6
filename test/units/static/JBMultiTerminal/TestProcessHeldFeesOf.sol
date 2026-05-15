@@ -13,6 +13,7 @@ import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
+import {JBHeldFeesLib} from "../../../../src/libraries/JBHeldFeesLib.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBFee} from "../../../../src/structs/JBFee.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
@@ -160,7 +161,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Expect ProcessFee event
         vm.expectEmit();
-        emit IJBFeeTerminal.ProcessFee({
+        emit JBHeldFeesLib.ProcessFee({
             projectId: _projectId,
             token: _mockToken,
             amount: expectedFeeAmount,
@@ -206,7 +207,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Expect FeeReverted event
         vm.expectEmit(true, true, true, false);
-        emit IJBFeeTerminal.FeeReverted({
+        emit JBHeldFeesLib.FeeReverted({
             projectId: _projectId,
             token: _mockToken,
             feeProjectId: 1,

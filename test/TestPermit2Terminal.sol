@@ -79,7 +79,8 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         // Package up ruleset configuration.

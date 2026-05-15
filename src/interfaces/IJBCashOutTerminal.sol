@@ -5,6 +5,7 @@ import {IJBCashOutHook} from "./IJBCashOutHook.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
+import {JBCashOutToProjectContext} from "../structs/JBCashOutToProjectContext.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
 
 /// @notice A terminal that can be cashed out from.
@@ -96,4 +97,42 @@ interface IJBCashOutTerminal is IJBTerminal {
     )
         external
         returns (uint256 reclaimAmount);
+
+    /// @notice Burn a holder's project tokens and atomically route the reclaim into another project via a
+    /// declared destination terminal (which may itself be this terminal, a router, or a swap layer). Cashout-side
+    /// hooks (if specified by the data hook) execute additively; the beneficiary portion of the reclaim is sent
+    /// to `routing.destinationTerminal`.
+    /// @dev The source-side cashout fee is skipped. Round-trip fee preservation is enforced by measuring the
+    /// `STORE.balanceOf` delta on `(this, beneficiaryProjectId, routing.tokenForBeneficiaryProject)` across the
+    /// routing step and crediting `_feeFreeSurplusOf` by that delta — so B's next non-feeless cashout pays the
+    /// deferred fee. If less than `routing.minDeliveredToB` lands back on this terminal under B's name, the
+    /// entire call reverts (no fee leak: the cashout itself is unwound by the revert).
+    /// @param holder The address whose project tokens are being burned.
+    /// @param projectId The ID of the project whose project tokens are being burned.
+    /// @param cashOutCount The number of project tokens to burn.
+    /// @param tokenToReclaim The terminal token to reclaim from the source project.
+    /// @param beneficiaryProjectId The destination project.
+    /// @param beneficiary The address that receives the newly minted tokens of the destination project.
+    /// @param minTokensOut The minimum number of destination-project tokens that must be minted; reverts otherwise.
+    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specifications.
+    /// @param payMetadata Forwarded to the destination project's pay flow.
+    /// @param routing Where to send the reclaim, what token to expect back at B, and the minimum delivery floor.
+    /// @return reclaimAmount The gross reclaim amount returned by the store (before being sent to the destination terminal).
+    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return deliveredToB The actual `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
+    /// routing.tokenForBeneficiaryProject)` — i.e. how much landed back on this terminal under B's name.
+    function cashOutAsPaymentToProjectOf(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        uint256 minTokensOut,
+        bytes calldata cashOutMetadata,
+        bytes calldata payMetadata,
+        JBCashOutToProjectContext calldata routing
+    )
+        external
+        returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB);
 }

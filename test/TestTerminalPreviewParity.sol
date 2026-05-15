@@ -59,7 +59,8 @@ contract TestTerminalPreviewParity_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
         rulesetConfigurations[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigurations[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);

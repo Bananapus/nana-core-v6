@@ -58,7 +58,8 @@ contract TestCashOut_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);

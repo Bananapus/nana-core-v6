@@ -71,20 +71,25 @@ library JBRulesetMetadataResolver {
         return ((ruleset.metadata >> 79) & 1) == 1;
     }
 
-    function useDataHookForPay(JBRuleset memory ruleset) internal pure returns (bool) {
-        return (ruleset.metadata >> 80) & 1 == 1;
+    function allowCrossProjectFeeFreeInflows(JBRuleset memory ruleset) internal pure returns (bool) {
+        return ((ruleset.metadata >> 80) & 1) == 1;
     }
 
-    function useDataHookForCashOut(JBRuleset memory ruleset) internal pure returns (bool) {
+    function useDataHookForPay(JBRuleset memory ruleset) internal pure returns (bool) {
         return (ruleset.metadata >> 81) & 1 == 1;
     }
 
+    function useDataHookForCashOut(JBRuleset memory ruleset) internal pure returns (bool) {
+        return (ruleset.metadata >> 82) & 1 == 1;
+    }
+
     function dataHook(JBRuleset memory ruleset) internal pure returns (address) {
-        return address(uint160(ruleset.metadata >> 82));
+        return address(uint160(ruleset.metadata >> 83));
     }
 
     function metadata(JBRuleset memory ruleset) internal pure returns (uint16) {
-        return uint16(ruleset.metadata >> 242);
+        // 13-bit field at bits 243-255.
+        return uint16(ruleset.metadata >> 243);
     }
 
     /// @notice Pack the funding cycle metadata.
@@ -125,14 +130,16 @@ library JBRulesetMetadataResolver {
         if (rulesetMetadata.holdFees) packed |= 1 << 78;
         // scopeCashOutsToLocalBalances in bit 79.
         if (rulesetMetadata.scopeCashOutsToLocalBalances) packed |= 1 << 79;
-        // use pay data source in bit 80.
-        if (rulesetMetadata.useDataHookForPay) packed |= 1 << 80;
-        // use cash out data source in bit 81.
-        if (rulesetMetadata.useDataHookForCashOut) packed |= 1 << 81;
-        // data source address in bits 82-241.
-        packed |= uint256(uint160(address(rulesetMetadata.dataHook))) << 82;
-        // metadata in bits 242-255 (14 bits).
-        packed |= (uint256(rulesetMetadata.metadata) & 0x3FFF) << 242;
+        // allow cross-project fee-free inflows in bit 80.
+        if (rulesetMetadata.allowCrossProjectFeeFreeInflows) packed |= 1 << 80;
+        // use pay data source in bit 81.
+        if (rulesetMetadata.useDataHookForPay) packed |= 1 << 81;
+        // use cash out data source in bit 82.
+        if (rulesetMetadata.useDataHookForCashOut) packed |= 1 << 82;
+        // data source address in bits 83-242.
+        packed |= uint256(uint160(address(rulesetMetadata.dataHook))) << 83;
+        // metadata in bits 243-255 (13 bits).
+        packed |= (uint256(rulesetMetadata.metadata) & 0x1FFF) << 243;
     }
 
     /// @notice Expand the funding cycle metadata.
@@ -155,6 +162,7 @@ library JBRulesetMetadataResolver {
             ownerMustSendPayouts: ownerMustSendPayouts(ruleset),
             holdFees: holdFees(ruleset),
             scopeCashOutsToLocalBalances: scopeCashOutsToLocalBalances(ruleset),
+            allowCrossProjectFeeFreeInflows: allowCrossProjectFeeFreeInflows(ruleset),
             useDataHookForPay: useDataHookForPay(ruleset),
             useDataHookForCashOut: useDataHookForCashOut(ruleset),
             dataHook: dataHook(ruleset),

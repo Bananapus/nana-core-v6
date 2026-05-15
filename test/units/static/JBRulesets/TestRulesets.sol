@@ -96,7 +96,8 @@ contract TestJBRulesetsUnits_Local is JBTest {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         // Params for tests
@@ -119,7 +120,8 @@ contract TestJBRulesetsUnits_Local is JBTest {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

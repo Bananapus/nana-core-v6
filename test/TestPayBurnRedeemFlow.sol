@@ -58,7 +58,8 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         IJBTerminal[] memory _terminals = new IJBTerminal[](1);

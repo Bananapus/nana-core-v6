@@ -81,7 +81,8 @@ contract TestLaunchRulesetsFor_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         // Package up the limits for the given terminal.

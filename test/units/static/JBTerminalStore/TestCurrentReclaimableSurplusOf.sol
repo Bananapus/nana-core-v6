@@ -125,7 +125,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -187,7 +188,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -240,7 +242,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -292,7 +295,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -352,7 +356,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -400,7 +405,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -482,7 +488,8 @@ contract TestCurrentReclaimableSurplusOf_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            allowCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

@@ -18,7 +18,9 @@ If a change affects accounting, token supply, fees, terminal routing, or permiss
 - Data hooks run before settlement and may change economics. Pay and cash-out hooks run after settlement.
 - Reserved tokens and other pending supply affect supply-sensitive math before distribution.
 - Terminal balances, fee accounting, reclaim math, and surplus calculations must agree.
-- Fee logic taxes value leaving the system, not every internal rebalance.
+- Fee logic taxes value leaving the system, not every internal rebalance. Intra-protocol rebalancing
+  (same-terminal payouts, cross-project cashout-as-payment) defers the fee via `_feeFreeSurplusOf` rather
+  than charging it on outflow.
 - Rulesets are time-ordered and approval-aware, and downstream deployers depend on predictable ID progression.
 - Permission checks are protocol safety checks, not just UI hints.
 
@@ -82,6 +84,24 @@ authorized caller
   -> same-terminal project payouts stay inside terminal accounting and may add fee-free surplus
 ```
 
+### Cross-Project Cash Out (cash-out as payment to project)
+
+```text
+holder cashes out source project A
+  -> source-side cashout fee is skipped (beneficiaryIsFeeless=true)
+  -> A's tokens burn, cashout-side hooks run additively
+  -> reclaim is routed to caller-declared destinationTerminal (this terminal, a router, or any composition)
+  -> destination terminal mints B's tokens to the beneficiary
+  -> terminal measures the STORE.balanceOf delta on (this, B, tokenForBeneficiaryProject)
+  -> _feeFreeSurplusOf[B][tokenForBeneficiaryProject] += delta
+  -> entire call reverts if delta < minDeliveredToB (no fee leak — cashout itself is unwound)
+  -> B's next non-feeless cashout pays the deferred fee on the credited amount
+```
+
+`cashOutAsPaymentToProjectOf` requires B's current ruleset to have `allowCrossProjectFeeFreeInflows` set,
+protecting B's holders from having other projects' deferred fees attached to its `_feeFreeSurplusOf` without
+opt-in.
+
 ## Accounting Model
 
 This repo owns the canonical ledger for balances, fees, supply-sensitive reclaim math, payout limits, allowances, reserved tokens, and preview calculations. Other repos may wrap or influence these values, but they should not duplicate them.
@@ -115,6 +135,8 @@ If a duration-based ruleset auto-cycles without a new ruleset ID, payout-limit u
 
 - fee-free surplus and same-terminal payout behavior:
   `test/TestFeeFreeCashOutBypass.sol`
+- cross-project cash-out (`cashOutAsPaymentToProjectOf`) unit + fuzz coverage:
+  `test/units/static/JBMultiTerminal/TestCashOutAsPaymentToProjectOf.sol`
 - migration and terminal-accounting continuity:
   `test/TestTerminalMigration.sol`
 - ruleset ordering and transition behavior:

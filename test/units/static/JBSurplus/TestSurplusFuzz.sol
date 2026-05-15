@@ -5,6 +5,7 @@ import {IJBCashOutTerminal} from "../../../../src/interfaces/IJBCashOutTerminal.
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
+import {JBCashOutToProjectContext} from "../../../../src/structs/JBCashOutToProjectContext.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
@@ -111,6 +112,26 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         returns (uint256)
     {
         return 0;
+    }
+
+    function cashOutAsPaymentToProjectOf(
+        address,
+        uint256,
+        uint256,
+        address,
+        uint256,
+        address,
+        uint256,
+        bytes calldata,
+        bytes calldata,
+        JBCashOutToProjectContext calldata
+    )
+        external
+        pure
+        override
+        returns (uint256, uint256, uint256)
+    {
+        return (0, 0, 0);
     }
 }
 
