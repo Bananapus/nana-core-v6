@@ -120,9 +120,10 @@ library JBCashOutHookSpecsLib {
 
             // Get the fee for the specified amount.
             uint256 specificationAmountFee = feelessAddresses.isFeelessFor({
-                addr: address(specification.hook),
-                projectId: projectId
-            }) ? 0 : JBFees.feeAmountFrom({amountBeforeFee: specification.amount, feePercent: _FEE});
+                addr: address(specification.hook), projectId: projectId
+            })
+                ? 0
+                : JBFees.feeAmountFrom({amountBeforeFee: specification.amount, feePercent: _FEE});
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {
