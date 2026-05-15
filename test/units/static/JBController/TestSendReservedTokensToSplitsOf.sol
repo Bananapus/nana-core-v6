@@ -65,7 +65,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBFundAccessLimitGroup[] memory _fundAccessLimitGroup = new JBFundAccessLimitGroup[](0);
@@ -119,7 +119,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -247,7 +247,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -344,7 +344,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -443,7 +443,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -554,7 +554,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();

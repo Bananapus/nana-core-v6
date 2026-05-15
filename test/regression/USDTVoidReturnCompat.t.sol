@@ -101,7 +101,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         // No splits for the fee project.
         feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
@@ -407,7 +407,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         // No splits.
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
@@ -470,7 +470,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Create a split that sends 100% of payouts to splitBeneficiary.

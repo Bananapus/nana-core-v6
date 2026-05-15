@@ -367,7 +367,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_rulesMetadata);
@@ -492,7 +492,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_rulesMetadata);

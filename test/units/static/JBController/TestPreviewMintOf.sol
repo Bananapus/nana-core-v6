@@ -46,7 +46,7 @@ contract TestPreviewMintOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRuleset memory ruleset = JBRuleset({
@@ -93,7 +93,7 @@ contract TestPreviewMintOf_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRuleset memory ruleset = JBRuleset({

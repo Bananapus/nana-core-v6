@@ -62,7 +62,7 @@ contract TestTransferCreditsFrom_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -119,7 +119,7 @@ contract TestTransferCreditsFrom_Local is JBControllerSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();

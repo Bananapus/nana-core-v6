@@ -73,7 +73,7 @@ contract RulesetsHandler is Test {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory configs = new JBRulesetConfig[](1);

@@ -52,7 +52,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);
@@ -195,7 +195,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig2 = new JBRulesetConfig[](1);

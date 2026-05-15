@@ -106,7 +106,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Package up cycle config.

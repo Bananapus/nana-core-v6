@@ -69,7 +69,7 @@ contract JBTest is Test {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = _rulesMetadata.packRulesetMetadata();
@@ -108,7 +108,7 @@ contract JBTest is Test {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
     }
 
@@ -133,7 +133,7 @@ contract JBTest is Test {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = _rulesMetadata.packRulesetMetadata();

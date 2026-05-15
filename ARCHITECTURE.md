@@ -98,9 +98,9 @@ holder cashes out source project A
   -> B's next non-feeless cashout pays the deferred fee on the credited amount
 ```
 
-`cashOutAsPaymentToProjectOf` requires B's current ruleset to have `allowCrossProjectFeeFreeInflows` set,
-protecting B's holders from having other projects' deferred fees attached to its `_feeFreeSurplusOf` without
-opt-in.
+`cashOutAsPaymentToProjectOf` reverts if B's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
+default (`false`) allows the inflow, matching the existing intra-terminal payout semantic where receiving
+projects accumulate `_feeFreeSurplusOf` credits from other projects' outflows.
 
 ## Accounting Model
 

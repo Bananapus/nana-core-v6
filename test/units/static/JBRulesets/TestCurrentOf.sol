@@ -51,7 +51,7 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Params for tests
@@ -75,7 +75,7 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

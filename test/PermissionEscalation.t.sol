@@ -87,7 +87,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         feeRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -131,7 +131,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -459,7 +459,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
 

@@ -254,7 +254,7 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
     }
 

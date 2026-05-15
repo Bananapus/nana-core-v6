@@ -67,7 +67,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             useDataHookForCashOut: true,
             dataHook: _DATA_HOOK,
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);
@@ -397,7 +397,7 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: _DATA_HOOK,
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig2 = new JBRulesetConfig[](1);

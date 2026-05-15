@@ -81,7 +81,7 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         rulesetConfigurations[0] = JBRulesetConfig({
@@ -134,7 +134,7 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
                 useDataHookForCashOut: false,
                 dataHook: address(0),
                 metadata: 0,
-                allowCrossProjectFeeFreeInflows: false
+                pauseCrossProjectFeeFreeInflows: false
             }),
             splitGroups: new JBSplitGroup[](0),
             fundAccessLimitGroups: new JBFundAccessLimitGroup[](0)
@@ -245,7 +245,7 @@ contract TestWeightCacheStaleAfterRejection is TestBaseWorkflow {
                 useDataHookForCashOut: false,
                 dataHook: address(0),
                 metadata: 0,
-                allowCrossProjectFeeFreeInflows: false
+                pauseCrossProjectFeeFreeInflows: false
             }),
             splitGroups: new JBSplitGroup[](0),
             fundAccessLimitGroups: new JBFundAccessLimitGroup[](0)

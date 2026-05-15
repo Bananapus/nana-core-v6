@@ -56,7 +56,7 @@ contract TestMintTokensOf_Local is TestBaseWorkflow {
             useDataHookForCashOut: true,
             dataHook: _DATA_HOOK,
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Package up ruleset configuration.
@@ -109,7 +109,7 @@ contract TestMintTokensOf_Local is TestBaseWorkflow {
             useDataHookForCashOut: true,
             dataHook: _DATA_HOOK,
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Package up ruleset configuration that starts in the future.

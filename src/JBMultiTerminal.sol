@@ -66,7 +66,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows(uint256 projectId);
+    error JBMultiTerminal_BeneficiaryProjectFeeFreeInflowsPaused(uint256 projectId);
     error JBMultiTerminal_BeneficiaryProjectTokenNotSpecified();
     error JBMultiTerminal_FeeTerminalNotFound(address token);
     error JBMultiTerminal_MintNotAllowed(uint256 projectId, uint256 splitProjectId, address terminal);
@@ -268,7 +268,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// token on this terminal), or any composition that ends with B's `STORE.balanceOf` on this terminal
     /// increasing is supported. If less than `routing.minDeliveredToB` physically lands back, the entire call
     /// reverts — no fee leak vector exists because the cashout itself is unwound.
-    /// @dev `B`'s current ruleset must have `allowCrossProjectFeeFreeInflows` set, otherwise the call reverts.
+    /// @dev `B`'s current ruleset must have `pauseCrossProjectFeeFreeInflows` set, otherwise the call reverts.
     /// This protects B's holders from having other projects' deferred cashout fees attached to B's
     /// `_feeFreeSurplusOf` without explicit consent.
     /// @param holder The account whose project tokens are being burned.
@@ -311,14 +311,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             revert JBMultiTerminal_BeneficiaryProjectTokenNotSpecified();
         }
 
-        // Require B's current ruleset to opt in. Without this gate, any A token holder could attach A's
-        // deferred cashout fee to B's `_feeFreeSurplusOf`, externalizing the fee burden onto B's other
-        // holders at B's next zero-tax cashout.
+        // B's current ruleset can opt out of receiving deferred-fee credits by setting
+        // `pauseCrossProjectFeeFreeInflows`. Default (false) allows the inflow, matching the existing
+        // intra-terminal payout semantic where receiving projects accumulate `_feeFreeSurplusOf` credits.
         {
             (, JBRulesetMetadata memory bMetadata) =
                 _controllerOf(beneficiaryProjectId).currentRulesetOf(beneficiaryProjectId);
-            if (!bMetadata.allowCrossProjectFeeFreeInflows) {
-                revert JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows(beneficiaryProjectId);
+            if (bMetadata.pauseCrossProjectFeeFreeInflows) {
+                revert JBMultiTerminal_BeneficiaryProjectFeeFreeInflowsPaused(beneficiaryProjectId);
             }
         }
 

@@ -65,7 +65,7 @@ contract TestFees_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         _feeProjectMetadata = JBRulesetMetadata({
@@ -88,7 +88,7 @@ contract TestFees_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Package up the limits for the given terminal.

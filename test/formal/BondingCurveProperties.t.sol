@@ -329,7 +329,7 @@ contract BondingCurveProperties is Test {
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
             metadata: extraMetadata,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = JBRulesetMetadataResolver.packRulesetMetadata(original);
@@ -395,7 +395,7 @@ contract BondingCurveProperties is Test {
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
             metadata: extraMetadata,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = JBRulesetMetadataResolver.packRulesetMetadata(original);

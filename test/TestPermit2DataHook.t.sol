@@ -87,7 +87,7 @@ contract TestPermit2DataHook_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _feeRulesetConfig = new JBRulesetConfig[](1);
@@ -141,7 +141,7 @@ contract TestPermit2DataHook_Local is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: _DATA_HOOK,
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);

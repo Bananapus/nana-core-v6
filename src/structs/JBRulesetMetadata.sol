@@ -23,11 +23,8 @@ pragma solidity ^0.8.0;
 /// @custom:member holdFees If `true`, fees are accumulated but not processed until a future ruleset (or manually).
 /// @custom:member scopeCashOutsToLocalBalances If `true`, omnichain cash-out calculations use only the local chain's
 /// balances (not cross-chain aggregates).
-/// @custom:member allowCrossProjectFeeFreeInflows If `true`, this project consents to receiving deferred-fee
-/// credits via `cashOutAsPaymentToProjectOf` calls that target it. When false (default), the new cross-project
-/// cashout entrypoint reverts when this project is the destination, protecting the project's holders from
-/// having other projects' deferred cashout fees attached to its `_feeFreeSurplusOf`. Independent of `pausePay`
-/// (this only gates the new fee-free-inflow path, not regular pays).
+/// @custom:member pauseCrossProjectFeeFreeInflows If `true`, the project cannot be targeted by
+/// `cashOutAsPaymentToProjectOf` calls during this ruleset.
 /// @custom:member useDataHookForPay If `true`, the data hook is called before recording payments.
 /// @custom:member useDataHookForCashOut If `true`, the data hook is called before recording cash outs.
 /// @custom:member dataHook Contract called before pay/cash-out to potentially override token counts or add hooks.
@@ -48,7 +45,7 @@ struct JBRulesetMetadata {
     bool ownerMustSendPayouts;
     bool holdFees;
     bool scopeCashOutsToLocalBalances;
-    bool allowCrossProjectFeeFreeInflows;
+    bool pauseCrossProjectFeeFreeInflows;
     bool useDataHookForPay;
     bool useDataHookForCashOut;
     address dataHook;

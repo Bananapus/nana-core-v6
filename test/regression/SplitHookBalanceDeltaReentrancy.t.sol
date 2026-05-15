@@ -289,7 +289,7 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBSplitGroup[] memory splitGroups = new JBSplitGroup[](1);

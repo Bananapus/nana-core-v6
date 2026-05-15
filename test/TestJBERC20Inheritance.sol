@@ -50,7 +50,7 @@ contract JBERC20Inheritance_Local is JBERC20(IJBPermissions(address(1)), IJBProj
             useDataHookForCashOut: true,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
         address _projectOwner = multisig();
         address _recipient = address(200);

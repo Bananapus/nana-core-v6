@@ -78,7 +78,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -187,7 +187,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -279,7 +279,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -358,7 +358,7 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
             useDataHookForCashOut: false,
             dataHook: address(0),
             metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

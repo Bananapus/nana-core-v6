@@ -76,8 +76,9 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         });
     }
 
-    /// @notice Stub B's controller + current-ruleset response to express opt-in / opt-out via the new
-    /// `allowCrossProjectFeeFreeInflows` flag on `JBRulesetMetadata`.
+    /// @notice Stub B's controller + current-ruleset response. The boolean parameter expresses the test's
+    /// intent ("does B accept fee-free inflows?"); the helper inverts it into the underlying
+    /// `pauseCrossProjectFeeFreeInflows` flag so call sites stay readable.
     function _stubBController(bool allowFeeFreeInflows) internal {
         mockExpect(
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)), abi.encode(address(this))
@@ -99,7 +100,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
             ownerMustSendPayouts: false,
             holdFees: false,
             scopeCashOutsToLocalBalances: false,
-            allowCrossProjectFeeFreeInflows: allowFeeFreeInflows,
+            pauseCrossProjectFeeFreeInflows: !allowFeeFreeInflows,
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
@@ -262,13 +263,14 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         );
     }
 
-    function test_RevertWhen_BeneficiaryProjectDoesNotAllowFeeFreeInflows() external {
+    function test_RevertWhen_BeneficiaryProjectFeeFreeInflowsPaused() external {
+        // _stubBController(false) → not allowed → pause flag = true → revert.
         _stubPermission(true);
         _stubBController(false); // opt-out: flag is false → revert
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows.selector, _destProjectId
+                JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectFeeFreeInflowsPaused.selector, _destProjectId
             )
         );
 

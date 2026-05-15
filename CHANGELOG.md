@@ -38,10 +38,11 @@ This file describes the verified change from `nana-core-v5` to the current `nana
   reverting if less than `routing.minDeliveredToB` physically lands back on this terminal under B's name.
 - `JBCashOutToProjectContext` struct is new — packages the destination terminal, expected return token, and
   delivery floor for the new entrypoint.
-- `JBRulesetMetadata.allowCrossProjectFeeFreeInflows` is new (bit 80 in the packed metadata word). Required
-  opt-in on B's current ruleset before the new entrypoint will route a deferred-fee credit into B's
-  `_feeFreeSurplusOf` — protects B's holders from having other projects' cashout fees attached without
-  explicit consent. The trailing `metadata` field narrowed from 14 to 13 bits to make room.
+- `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` is new (bit 80 in the packed metadata word). Opt-out
+  flag on B's current ruleset; when set, `cashOutAsPaymentToProjectOf` calls targeting B revert. Default
+  `false` allows inflows — matching the existing intra-terminal payout semantic where receiving projects
+  accumulate `_feeFreeSurplusOf` credits from other projects' outflows. The trailing `metadata` field
+  narrowed from 14 to 13 bits to make room.
 
 ## Breaking ABI changes
 
@@ -53,7 +54,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `IJBCashOutTerminal.cashOutAsPaymentToProjectOf(...)` is new.
 - `IJBTerminalStore.previewPayFrom(...)` and `previewCashOutFrom(...)` are new.
 - `IJBTerminal.currentSurplusOf(...)` changed parameter shape.
-- `JBRulesetMetadata` adds `allowCrossProjectFeeFreeInflows` and narrows `metadata` from 14 to 13 bits.
+- `JBRulesetMetadata` adds `pauseCrossProjectFeeFreeInflows` and narrows `metadata` from 14 to 13 bits.
   Packed `JBRuleset.metadata` layout has shifted accordingly. Integrators that read the packed word directly
   must rebuild against the new layout.
 
@@ -82,7 +83,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - Added structs
   - `JBCashOutToProjectContext`
 - Added ruleset metadata flags
-  - `JBRulesetMetadata.allowCrossProjectFeeFreeInflows` (bit 80; narrowed `metadata` field from 14 to 13 bits)
+  - `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` (bit 80; narrowed `metadata` field from 14 to 13 bits)
 - Added libraries
   - `JBHeldFeesLib` (held-fee bookkeeping extracted from `JBMultiTerminal` to relieve bytecode budget;
     called via delegatecall, storage refs preserved)

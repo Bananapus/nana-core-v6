@@ -26,7 +26,7 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
         _fuzzReservedPercent = uint16(bound(_fuzzReservedPercent, 0, JBConstants.MAX_RESERVED_PERCENT));
         _fuzzCashOutTaxRate = uint16(bound(_fuzzCashOutTaxRate, 0, JBConstants.MAX_CASH_OUT_TAX_RATE));
         // Ensure the metadata fits in the trailing 13-bit field (narrowed from 14 to make room for the
-        // `allowCrossProjectFeeFreeInflows` flag at bit 80).
+        // `pauseCrossProjectFeeFreeInflows` flag at bit 80).
         _fuzzMetadata = uint16(bound(_fuzzMetadata, 0, 8191));
 
         JBRulesetMetadata memory _rulesMetadata = JBRulesetMetadata({
@@ -45,7 +45,7 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
             allowAddPriceFeed: true,
             holdFees: true,
             scopeCashOutsToLocalBalances: true,
-            allowCrossProjectFeeFreeInflows: true,
+            pauseCrossProjectFeeFreeInflows: true,
             useDataHookForPay: true,
             useDataHookForCashOut: true,
             dataHook: _hookAddress,

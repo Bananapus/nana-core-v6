@@ -71,7 +71,7 @@ library JBRulesetMetadataResolver {
         return ((ruleset.metadata >> 79) & 1) == 1;
     }
 
-    function allowCrossProjectFeeFreeInflows(JBRuleset memory ruleset) internal pure returns (bool) {
+    function pauseCrossProjectFeeFreeInflows(JBRuleset memory ruleset) internal pure returns (bool) {
         return ((ruleset.metadata >> 80) & 1) == 1;
     }
 
@@ -130,8 +130,8 @@ library JBRulesetMetadataResolver {
         if (rulesetMetadata.holdFees) packed |= 1 << 78;
         // scopeCashOutsToLocalBalances in bit 79.
         if (rulesetMetadata.scopeCashOutsToLocalBalances) packed |= 1 << 79;
-        // allow cross-project fee-free inflows in bit 80.
-        if (rulesetMetadata.allowCrossProjectFeeFreeInflows) packed |= 1 << 80;
+        // pause cross-project fee-free inflows in bit 80.
+        if (rulesetMetadata.pauseCrossProjectFeeFreeInflows) packed |= 1 << 80;
         // use pay data source in bit 81.
         if (rulesetMetadata.useDataHookForPay) packed |= 1 << 81;
         // use cash out data source in bit 82.
@@ -162,7 +162,7 @@ library JBRulesetMetadataResolver {
             ownerMustSendPayouts: ownerMustSendPayouts(ruleset),
             holdFees: holdFees(ruleset),
             scopeCashOutsToLocalBalances: scopeCashOutsToLocalBalances(ruleset),
-            allowCrossProjectFeeFreeInflows: allowCrossProjectFeeFreeInflows(ruleset),
+            pauseCrossProjectFeeFreeInflows: pauseCrossProjectFeeFreeInflows(ruleset),
             useDataHookForPay: useDataHookForPay(ruleset),
             useDataHookForCashOut: useDataHookForCashOut(ruleset),
             dataHook: dataHook(ruleset),
