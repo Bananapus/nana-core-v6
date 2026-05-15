@@ -30,16 +30,14 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `IJBController.addPriceFeed(...)` became `addPriceFeedFor(...)`.
 - `IJBTerminal.currentSurplusOf(...)` now takes `address[] calldata tokens` instead of the old accounting-context array input.
 - The interface surface adds explicit hook-spec return types to preview flows, which changes what off-chain callers can and should decode.
-- `IJBCashOutTerminal.cashOutAsPaymentToProjectOf(...)` is new. It burns source-project tokens, routes the
-  reclaim into another project via a caller-declared destination terminal (which may be this terminal, a router
-  with swap, or any composition that lands B's balance back on this terminal), and credits
-  `_feeFreeSurplusOf[B][tokenForBeneficiaryProject]` by the actual `STORE.balanceOf` delta. Source-side
-  cashout fee is skipped; the round-trip fee invariant is preserved by the delta credit, with the entire call
-  reverting if less than `routing.minDeliveredToB` physically lands back on this terminal under B's name.
-- `JBCashOutToProjectContext` struct is new — packages the destination terminal, expected return token, and
-  delivery floor for the new entrypoint.
+- `IJBCashOutTerminal.cashOutAsPaymentToProjectOf(...)` is new. It burns source-project tokens and pays the
+  reclaim into another project via that project's primary terminal for the reclaim token (which may itself
+  be a router that swaps before paying). Source-side cashout fee is skipped; the equivalent fee is bound on
+  the destination project's side by crediting `_feeFreeSurplusOf[beneficiaryProjectId][token]` on the first of the destination project's accounting contexts on this
+  terminal whose balance grows during the routing. Reverts if no delivery lands on this terminal under any
+  of the destination project's accounting contexts.
 - `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` is new (bit 80 in the packed metadata word). Opt-out
-  flag on B's current ruleset; when set, `cashOutAsPaymentToProjectOf` calls targeting B revert. Default
+  flag on the destination project's current ruleset; when set, `cashOutAsPaymentToProjectOf` calls targeting the destination project revert. Default
   `false` allows inflows — matching the existing intra-terminal payout semantic where receiving projects
   accumulate `_feeFreeSurplusOf` credits from other projects' outflows. The trailing `metadata` field
   narrowed from 14 to 13 bits to make room.
@@ -80,8 +78,6 @@ This file describes the verified change from `nana-core-v5` to the current `nana
   - `IJBTerminalStore.previewCashOutFrom(...)`
   - `IJBController.previewMintOf(...)`
   - `IJBController.setTokenMetadataOf(...)`
-- Added structs
-  - `JBCashOutToProjectContext`
 - Added ruleset metadata flags
   - `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` (bit 80; narrowed `metadata` field from 14 to 13 bits)
 - Added libraries

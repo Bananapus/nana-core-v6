@@ -87,18 +87,18 @@ authorized caller
 ### Cross-Project Cash Out (cash-out as payment to project)
 
 ```text
-holder cashes out source project A
+holder cashes out the source project
   -> source-side cashout fee is skipped (beneficiaryIsFeeless=true)
-  -> A's tokens burn, cashout-side hooks run additively
-  -> reclaim is routed to caller-declared destinationTerminal (this terminal, a router, or any composition)
-  -> destination terminal mints B's tokens to the beneficiary
-  -> terminal measures the STORE.balanceOf delta on (this, B, tokenForBeneficiaryProject)
-  -> _feeFreeSurplusOf[B][tokenForBeneficiaryProject] += delta
-  -> entire call reverts if delta < minDeliveredToB (no fee leak — cashout itself is unwound)
-  -> B's next non-feeless cashout pays the deferred fee on the credited amount
+  -> the source project's tokens burn, cashout-side hooks run additively
+  -> reclaim is paid to DIRECTORY.primaryTerminalOf(beneficiaryProjectId, tokenToReclaim) — this terminal or a router
+  -> destination terminal mints the destination project's tokens to the beneficiary
+  -> terminal iterates the destination project's accounting contexts on this terminal, credits _feeFreeSurplusOf[beneficiaryProjectId][token]
+     on the first context whose balance grew
+  -> reverts if no delivery to the destination project lands on this terminal under any of the destination project's accounting contexts
+  -> the destination project's next non-feeless cashout pays the deferred fee on the credited amount
 ```
 
-`cashOutAsPaymentToProjectOf` reverts if B's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
+`cashOutAsPaymentToProjectOf` reverts if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
 default (`false`) allows the inflow, matching the existing intra-terminal payout semantic where receiving
 projects accumulate `_feeFreeSurplusOf` credits from other projects' outflows.
 
