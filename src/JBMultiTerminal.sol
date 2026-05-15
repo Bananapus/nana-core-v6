@@ -302,31 +302,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB)
     {
-        // Enforce permissions — same gate as the default cashout. Only the holder or an operator with
-        // `CASH_OUT_TOKENS` permission from that holder can burn their tokens. The destination project
-        // does not need to grant permission; B opts in via its ruleset metadata flag below.
+        // Enforce permissions.
         _requirePermissionFrom({account: holder, projectId: projectId, permissionId: JBPermissionIds.CASH_OUT_TOKENS});
 
-        // The caller MUST declare which token they expect to land back at B on this terminal — this is the
-        // bucket we measure the delivery delta against, and the slot we credit `_feeFreeSurplusOf` into. We
-        // reject `address(0)` early because it almost certainly means a misconfigured caller (silently
-        // measuring against the zero-token bucket would happily report deliveredToB == 0 and revert with a
-        // confusing slippage error instead of a clear "token not specified").
+        // The caller must declare which token they expect to land back at B on this terminal — the bucket
+        // the delivery delta is measured against, and the slot `_feeFreeSurplusOf` is credited into.
         if (routing.tokenForBeneficiaryProject == address(0)) {
             revert JBMultiTerminal_BeneficiaryProjectTokenNotSpecified();
         }
 
-        // ----------- destination opt-in check -----------
-        // Read B's CURRENT ruleset and require the `allowCrossProjectFeeFreeInflows` flag. Why this gate
-        // matters: without it, any A token holder could route value into B via this entrypoint and attach
-        // A's deferred cashout fee to B's `_feeFreeSurplusOf`. That credit would be consumed (and the fee
-        // paid) by B's eventual zero-tax cashout — but the party paying that fee might be a different B
-        // holder than the one who triggered the inflow. The flag gives B's owner explicit control over
-        // whether their holders can be exposed to that externalized fee burden.
-        //
-        // The check is against the CURRENT ruleset (not queued) so B's owner can toggle exposure
-        // immediately by rolling a new ruleset, without waiting for queued cycles to elapse. Scoped block
-        // so `bMetadata` falls off the stack before we re-enter `_cashOutAsPaymentToProject`'s heavy frame.
+        // Require B's current ruleset to opt in. Without this gate, any A token holder could attach A's
+        // deferred cashout fee to B's `_feeFreeSurplusOf`, externalizing the fee burden onto B's other
+        // holders at B's next zero-tax cashout.
         {
             (, JBRulesetMetadata memory bMetadata) =
                 _controllerOf(beneficiaryProjectId).currentRulesetOf(beneficiaryProjectId);
@@ -335,8 +322,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
         }
 
-        // Hand off to the internal helper. It runs A's cashout (source-side), the additive hook flow, and
-        // then the destination-side routing + delivery measurement. The three returns are propagated up.
+        // Burn A's tokens, run cashout-side hooks, route the reclaim, and credit B's fee-free surplus.
         (reclaimAmount, beneficiaryTokenCount, deliveredToB) = _cashOutAsPaymentToProject({
             holder: holder,
             projectId: projectId,
@@ -349,22 +335,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             routing: routing
         });
 
-        // ----------- two slippage gates -----------
-        // These run AFTER the internal flow has fully settled state (burn + pay + credit). If either fails,
-        // the entire transaction reverts and unwinds the burn — there is no half-completed state where A's
-        // tokens are gone but B's haven't been minted.
-        //
-        // Gate 1: delivery floor. `deliveredToB` is the verified balance-delta on B's bucket. This is the
-        // single most important gate — it's what protects against a misrouting or stealing destination
-        // terminal. If less than `minDeliveredToB` physically landed back, revert. The caller picks a value
-        // they're willing to accept; setting it to the full reclaim amount means "no underdelivery
-        // tolerated"; setting it lower allows partial fills (e.g. a swap with acceptable slippage).
+        // Delivery floor: how much physically landed back at B on this terminal. Protects against a
+        // misrouting destination terminal — if this fails, the burn is also unwound.
         _checkMin({value: deliveredToB, min: routing.minDeliveredToB});
 
-        // Gate 2: mint floor. `beneficiaryTokenCount` is what the destination project minted in exchange
-        // for the inbound pay. This is the user-visible economic outcome — how many B tokens the caller
-        // ends up holding. Separate from delivery because B's data hook can affect the mint ratio
-        // independently of how much value landed in surplus. Both gates are needed.
+        // Mint floor: how many destination-project tokens were issued for the inbound pay. Independent
+        // from delivery because B's data hook can affect the mint ratio.
         _checkMin({value: beneficiaryTokenCount, min: minTokensOut});
     }
 
@@ -1185,6 +1161,133 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
+    /// @notice Cashout from project A and route the reclaim into project B via a declared destination
+    /// terminal, in a single atomic step.
+    /// @dev Source-side cashout fee is skipped. The equivalent fee is bound on B's side by crediting
+    /// `_feeFreeSurplusOf[B][routing.tokenForBeneficiaryProject]` with the `STORE.balanceOf` delta measured
+    /// after the routing — i.e. exactly what physically landed back on this terminal under B's name. The
+    /// external entrypoint reverts if delivery falls below `routing.minDeliveredToB`, so the skipped
+    /// source-side fee can never become a leak.
+    /// @dev Cashout-side hook specifications run additively. Hook fees on A's side are still collected via
+    /// `_takeFeeFrom`; only the beneficiary portion is feeless and routed.
+    /// @param holder The account whose source-project tokens are being burned.
+    /// @param projectId The ID of the source project being cashed out from.
+    /// @param cashOutCount The number of source-project tokens to burn.
+    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
+    /// @param beneficiaryProjectId The destination project receiving the reclaim.
+    /// @param beneficiary The address that receives the newly minted destination-project tokens.
+    /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specs.
+    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
+    /// @param routing Where to send the reclaim, what token to expect back at B, the minimum delivery floor.
+    /// @return reclaimAmount The gross reclaim amount returned by the store.
+    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return deliveredToB The `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
+    /// routing.tokenForBeneficiaryProject)` — what landed back on this terminal under B's name. Becomes the
+    /// `_feeFreeSurplusOf[B]` credit.
+    function _cashOutAsPaymentToProject(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        bytes memory cashOutMetadata,
+        bytes memory payMetadata,
+        JBCashOutToProjectContext memory routing
+    )
+        internal
+        returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB)
+    {
+        // Keep a reference to the ruleset the cash out is being made during.
+        JBRuleset memory ruleset;
+
+        // Keep a reference to the cash out tax rate being used.
+        uint256 cashOutTaxRate;
+
+        // Keep a reference to the cash out hook specifications.
+        JBCashOutHookSpecification[] memory hookSpecifications;
+
+        // Record the cash out and burn the project tokens.
+        // The store sees `beneficiaryIsFeeless: true` — the equivalent fee is bound on B's side via the
+        // `_feeFreeSurplusOf[B]` credit computed from the delivery delta below. The external entrypoint
+        // reverts the entire call if delivery falls short, so this can never become a leak.
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _recordAndBurnCashOut({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: true,
+            metadata: cashOutMetadata
+        });
+
+        emit CashOutTokens({
+            rulesetId: ruleset.id,
+            rulesetCycleNumber: ruleset.cycleNumber,
+            projectId: projectId,
+            holder: holder,
+            beneficiary: beneficiary,
+            cashOutCount: cashOutCount,
+            cashOutTaxRate: cashOutTaxRate,
+            reclaimAmount: reclaimAmount,
+            metadata: cashOutMetadata,
+            caller: _msgSender()
+        });
+
+        // Keep a reference to the amount being reclaimed that is subject to fees.
+        // Only hook-spec amounts are fee-eligible here; the beneficiary portion is intentionally feeless.
+        uint256 amountEligibleForFees;
+
+        // If the data hook returned cash out hook specifications, fulfill them.
+        // Hook fees still apply (those funds leave the protocol to external hooks). Hook context sees
+        // `address(this)` as the beneficiary since the terminal is custodying the reclaim mid-flow.
+        if (hookSpecifications.length != 0) {
+            amountEligibleForFees = _fulfillCashOutHookSpecificationsFor({
+                projectId: projectId,
+                beneficiaryReclaimAmount: _tokenAmountOf({
+                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
+                }),
+                holder: holder,
+                cashOutCount: cashOutCount,
+                metadata: cashOutMetadata,
+                ruleset: ruleset,
+                cashOutTaxRate: cashOutTaxRate,
+                beneficiary: payable(address(this)),
+                specifications: hookSpecifications
+            });
+        }
+
+        // Cap A's fee-free surplus at remaining balance after the outflow.
+        // Same invariant as `_cashOutTokensOf`: every cashout path keeps `_feeFreeSurplusOf[A]` consistent
+        // with the post-outflow balance so later zero-tax cashouts from A don't fee phantom amounts.
+        _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
+
+        // Take the fee on the hook amounts.
+        if (amountEligibleForFees != 0) {
+            _takeFeeFrom({
+                projectId: projectId,
+                token: tokenToReclaim,
+                amount: amountEligibleForFees,
+                beneficiary: beneficiary,
+                shouldHoldFees: false
+            });
+        }
+
+        // Nothing to route if the data hook returned zero reclaim — `deliveredToB` stays at zero, which the
+        // external entrypoint compares against `minDeliveredToB`.
+        if (reclaimAmount == 0) return (0, 0, 0);
+
+        // Route the reclaim into B and measure delivery. Split off into a helper to keep this function under
+        // the via-IR stack-too-deep ceiling.
+        (beneficiaryTokenCount, deliveredToB) = _routeReclaimToBeneficiaryProject({
+            tokenToReclaim: tokenToReclaim,
+            reclaimAmount: reclaimAmount,
+            beneficiaryProjectId: beneficiaryProjectId,
+            beneficiary: beneficiary,
+            payMetadata: payMetadata,
+            routing: routing
+        });
+    }
+
     /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
     /// by
     /// the project's current ruleset's data hook.
@@ -1223,25 +1326,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Cache whether the beneficiary is feeless.
         bool beneficiaryIsFeeless = _isFeeless({addr: beneficiary, projectId: projectId});
 
-        {
-            // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
-            IJBController controller = _controllerOf(projectId);
-
-            // Record the cash out.
-            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-                holder: holder,
-                projectId: projectId,
-                cashOutCount: cashOutCount,
-                tokenToReclaim: tokenToReclaim,
-                beneficiaryIsFeeless: beneficiaryIsFeeless,
-                metadata: metadata
-            });
-
-            // Burn the project tokens.
-            if (cashOutCount != 0) {
-                controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
-            }
-        }
+        // Record the cash out and burn the project tokens.
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _recordAndBurnCashOut({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            metadata: metadata
+        });
 
         // Keep a reference to the amount being reclaimed that is subject to fees.
         uint256 amountEligibleForFees;
@@ -1328,303 +1421,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             metadata: metadata,
             caller: _msgSender()
         });
-    }
-
-    /// @notice Cashout from A and atomically route the reclaim into B via a declared destination terminal.
-    /// @dev Source-side cashout fee is skipped (`beneficiaryIsFeeless: true`). Round-trip fee preservation is
-    /// enforced by the caller specifying `routing.tokenForBeneficiaryProject` and measuring the
-    /// `STORE.balanceOf` delta on `(this, beneficiaryProjectId, routing.tokenForBeneficiaryProject)` — the
-    /// `_feeFreeSurplusOf[B][tokenForBeneficiaryProject]` credit is exactly what physically landed back. The
-    /// external entrypoint enforces `deliveredToB >= routing.minDeliveredToB`, so any path that doesn't
-    /// actually return funds to B on this terminal (e.g. a router that steals or misroutes) reverts the entire
-    /// transaction — no fee leak is possible.
-    /// @dev Cashout-side hooks run additively: their specification amounts come out of the source project's
-    /// surplus as in the default cashout flow, and any hook fee owed is collected via `_takeFeeFrom`. Only the
-    /// beneficiary portion of the reclaim is the part that gets routed to the destination terminal.
-    /// @param holder The account whose source-project tokens are being burned.
-    /// @param projectId The ID of the source project being cashed out from.
-    /// @param cashOutCount The number of source-project tokens to burn.
-    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
-    /// @param beneficiaryProjectId The destination project receiving the reclaim.
-    /// @param beneficiary The address that receives the newly minted destination-project tokens (passed into the
-    /// destination's `pay` flow).
-    /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specifications.
-    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
-    /// @param routing Where to send the reclaim, what token to expect back at B, and the minimum delivery floor.
-    /// @return reclaimAmount The gross reclaim amount returned by the store before being sent to the destination
-    /// terminal. @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    /// @return deliveredToB The `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
-    /// routing.tokenForBeneficiaryProject)` after the routing — what physically landed back on this terminal
-    /// under B's name. Becomes the `_feeFreeSurplusOf[B]` credit.
-    function _cashOutAsPaymentToProject(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        uint256 beneficiaryProjectId,
-        address beneficiary,
-        bytes memory cashOutMetadata,
-        bytes memory payMetadata,
-        JBCashOutToProjectContext memory routing
-    )
-        internal
-        returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB)
-    {
-        JBRuleset memory ruleset;
-        uint256 cashOutTaxRate;
-        JBCashOutHookSpecification[] memory hookSpecifications;
-
-        // ----------- source-side: record + burn -----------
-        // Scoped to drop `controller` from the stack before the rest of the function — relieves via-IR
-        // stack pressure since the destination path also resolves a controller.
-        {
-            IJBController controller = _controllerOf(projectId);
-
-            // Pass `beneficiaryIsFeeless: true` to the store so the cashout context surfaced to A's data hook
-            // sees a feeless beneficiary. This is intentional and is the whole point of this entrypoint: A pays
-            // no exit fee here, because the equivalent fee is bound on B's side via the `_feeFreeSurplusOf[B]`
-            // credit computed from the verified delivery delta below. If delivery to B fails, the external
-            // entrypoint reverts the entire call — so the source-side fee skip can never become a leak.
-            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-                holder: holder,
-                projectId: projectId,
-                cashOutCount: cashOutCount,
-                tokenToReclaim: tokenToReclaim,
-                beneficiaryIsFeeless: true,
-                metadata: cashOutMetadata
-            });
-
-            // Burn the source-project tokens. The `cashOutCount == 0` branch exists because the data hook may
-            // produce a non-zero reclaim without burning (e.g. preview-style flows); mirrors `_cashOutTokensOf`.
-            if (cashOutCount != 0) {
-                controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
-            }
-        }
-
-        // Emit the standard cashout event so off-chain indexers see this just like a regular cashout. The
-        // pay-side emit (from `_pay`) on the destination project is emitted separately by the routing helper.
-        emit CashOutTokens({
-            rulesetId: ruleset.id,
-            rulesetCycleNumber: ruleset.cycleNumber,
-            projectId: projectId,
-            holder: holder,
-            beneficiary: beneficiary,
-            cashOutCount: cashOutCount,
-            cashOutTaxRate: cashOutTaxRate,
-            reclaimAmount: reclaimAmount,
-            metadata: cashOutMetadata,
-            caller: _msgSender()
-        });
-
-        // ----------- source-side: hooks (additive) -----------
-        // Cashout-side hook specifications, if any, are part of A's cashout — they pull their own amounts from
-        // A's surplus exactly as in the default `_cashOutTokensOf` flow. They are NOT part of the beneficiary
-        // portion that gets routed to B. `beneficiary: address(this)` is passed in the hook context so any hook
-        // that branches on the beneficiary identity sees this terminal (and not the eventual B-token recipient),
-        // matching the "funds are being held by the terminal mid-flow" semantic.
-        //
-        // Returned `amountEligibleForFees` is the sum of hook-spec amounts whose hook address is not on the
-        // feeless allowlist — those amounts genuinely leave the protocol (to external hook contracts) so the
-        // protocol fee applies. The beneficiary portion is excluded from this sum since it's routed internally.
-        uint256 amountEligibleForFees;
-        if (hookSpecifications.length != 0) {
-            amountEligibleForFees = _fulfillCashOutHookSpecificationsFor({
-                projectId: projectId,
-                beneficiaryReclaimAmount: _tokenAmountOf({
-                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
-                }),
-                holder: holder,
-                cashOutCount: cashOutCount,
-                metadata: cashOutMetadata,
-                ruleset: ruleset,
-                cashOutTaxRate: cashOutTaxRate,
-                beneficiary: payable(address(this)),
-                specifications: hookSpecifications
-            });
-        }
-
-        // ----------- source-side: cap A's fee-free surplus -----------
-        // The cashout reduced A's balance on this terminal. If A had a pre-existing `_feeFreeSurplusOf[A]`
-        // credit, it may now exceed A's remaining balance (e.g. all of A's surplus just went out via this
-        // call). Cap to the post-outflow balance so subsequent zero-tax cashouts from A don't fee-eligible
-        // amounts that no longer exist as surplus. Mirrors the `_cashOutTokensOf` invariant — every cashout
-        // path calls this to keep the credit consistent with remaining balance.
-        _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
-
-        // ----------- source-side: take fee on hook amounts -----------
-        // Only the hook amounts (computed above) are fee-eligible on A's side; the beneficiary portion is
-        // intentionally feeless because the equivalent fee will be collected from B's bucket via the
-        // `_feeFreeSurplusOf[B]` mechanism. `shouldHoldFees: false` because the hold-fee semantic only
-        // applies on the default cashout/payout path, not on this fused flow.
-        if (amountEligibleForFees != 0) {
-            _takeFeeFrom({
-                projectId: projectId,
-                token: tokenToReclaim,
-                amount: amountEligibleForFees,
-                beneficiary: beneficiary,
-                shouldHoldFees: false
-            });
-        }
-
-        // Short-circuit if the data hook decided there's nothing to route (e.g. a previewing flow that returns
-        // zero reclaim, or a hook-only cashout where the full surplus went to hook specs). No pay-side work is
-        // needed; `deliveredToB` stays at zero, which the external entrypoint will compare against
-        // `minDeliveredToB == 0` and accept.
-        if (reclaimAmount == 0) return (0, 0, 0);
-
-        // ----------- destination-side: routing + delivery proof -----------
-        // Extracted into its own helper to keep this function under the via-IR stack-too-deep ceiling. The
-        // helper handles destination resolution, the same- vs cross-terminal split, the balance-delta delivery
-        // proof, and the `_feeFreeSurplusOf[B]` credit.
-        (beneficiaryTokenCount, deliveredToB) = _routeReclaimToBeneficiaryProject({
-            tokenToReclaim: tokenToReclaim,
-            reclaimAmount: reclaimAmount,
-            beneficiaryProjectId: beneficiaryProjectId,
-            beneficiary: beneficiary,
-            payMetadata: payMetadata,
-            routing: routing
-        });
-    }
-
-    /// @notice Routes the cashout reclaim to the destination terminal and credits `_feeFreeSurplusOf` by the
-    /// `STORE.balanceOf` delta that actually landed back on this terminal under B's name.
-    /// @dev Extracted from `_cashOutAsPaymentToProject` to relieve via-IR stack pressure. The
-    /// destination-terminal call is `_pay` for the same-terminal case (returns minted count directly) and
-    /// `destinationTerminal.pay(...)` for the cross-terminal case. The delta is measured against B's bucket
-    /// for `routing.tokenForBeneficiaryProject`, which may differ from `tokenToReclaim` (e.g. swap-and-pay
-    /// through a router).
-    /// @param tokenToReclaim The token reclaimed from the source project — what the destination terminal receives.
-    /// @param reclaimAmount The amount of `tokenToReclaim` being routed.
-    /// @param beneficiaryProjectId The destination project.
-    /// @param beneficiary The address that receives the newly minted destination-project tokens.
-    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
-    /// @param routing Caller-declared routing: destination terminal, expected return token, delivery floor.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    /// @return deliveredToB The `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
-    /// routing.tokenForBeneficiaryProject)` — what physically landed back on this terminal under B's name.
-    function _routeReclaimToBeneficiaryProject(
-        address tokenToReclaim,
-        uint256 reclaimAmount,
-        uint256 beneficiaryProjectId,
-        address beneficiary,
-        bytes memory payMetadata,
-        JBCashOutToProjectContext memory routing
-    )
-        internal
-        returns (uint256 beneficiaryTokenCount, uint256 deliveredToB)
-    {
-        // ----------- resolve destination terminal -----------
-        // Caller can pin an explicit destination (e.g. a router that performs an on-the-fly swap and forwards
-        // the result to B on this terminal); otherwise default to whatever the protocol has registered as
-        // B's primary terminal for the reclaim token. The explicit override is the more flexible path — it's
-        // what enables the ETH→USDC swap-and-pay-through-a-router scenario without needing B's registered
-        // primary terminal to itself accept ETH.
-        IJBTerminal destinationTerminal = routing.destinationTerminal != IJBTerminal(address(0))
-            ? routing.destinationTerminal
-            : DIRECTORY.primaryTerminalOf({projectId: beneficiaryProjectId, token: tokenToReclaim});
-
-        // If neither was provided, there's nowhere to send the reclaim. Revert with the existing protocol
-        // error (rather than a new one) so callers and indexers can reuse the same error-handling path as the
-        // default cross-terminal flows.
-        if (address(destinationTerminal) == address(0)) {
-            revert JBMultiTerminal_RecipientProjectTerminalNotFound({
-                projectId: beneficiaryProjectId, token: tokenToReclaim
-            });
-        }
-
-        // ----------- delivery proof: before-snapshot -----------
-        // Snapshot B's `STORE.balanceOf` for the caller-declared `tokenForBeneficiaryProject` BEFORE the
-        // routing happens. The terminal will compute `balanceAfter - balanceBefore` after the routing call
-        // returns; that delta IS the proof of how much physically landed on this terminal under B's name.
-        //
-        // Why this is a safe oracle of delivery (not an attacker-controlled value):
-        // `STORE.balanceOf(this, B, X)` only increases via `recordPaymentFrom` or `recordAddedBalanceFor` for
-        // B specifically — i.e. via a real pay() or addToBalanceOf() flow that moved real funds. There is no
-        // way to "fake" an increase. An attacker who funds B from their own pocket during the call only
-        // inflates the credit on themselves (the credit means MORE fee paid later, not less).
-        uint256 balanceBefore = STORE.balanceOf({
-            terminal: address(this), projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject
-        });
-
-        // ----------- route the reclaim -----------
-        // Two paths: same-terminal (the funds are already in this terminal's custody, so call `_pay` directly
-        // and skip all the transferIn/transferOut + msg.value coordination) vs cross-terminal (call the
-        // destination's `pay()` entrypoint, with the appropriate pre/post transfer setup based on token type).
-        if (destinationTerminal == IJBTerminal(address(this))) {
-            // Same-terminal short-circuit. `_pay` returns the minted count directly (we modified it to
-            // return `newlyIssuedTokenCount` for exactly this use case). No transferIn — the reclaim is
-            // already on this contract's books for B's bucket once `recordPaymentFrom` is called inside
-            // `_pay`. `payer: _msgSender()` so the destination's data hook and Pay event attribute the
-            // payment to the actual caller (the original holder / their operator), not to this terminal.
-            beneficiaryTokenCount = _pay({
-                projectId: beneficiaryProjectId,
-                token: tokenToReclaim,
-                amount: reclaimAmount,
-                payer: _msgSender(),
-                beneficiary: beneficiary,
-                memo: "",
-                metadata: payMetadata
-            });
-        } else {
-            // Cross-terminal. The reclaim has to physically leave this terminal and go to the destination.
-            // `_beforeTransferTo` is the standard pre-transfer hook: for native token it returns the value
-            // to forward as `msg.value`; for ERC-20s it grants the destination a one-shot pull allowance
-            // (cleaned up by the `_afterTransferTo` below). This is the same machinery used by the existing
-            // cross-terminal payout path — no new transfer primitives.
-            uint256 payValue =
-                _beforeTransferTo({to: address(destinationTerminal), token: tokenToReclaim, amount: reclaimAmount});
-
-            // Call the destination's standard `pay()` entrypoint. We pass `minReturnedTokens: 0` to the
-            // destination's own slippage check because OUR slippage gate is the `_checkMin(deliveredToB,
-            // routing.minDeliveredToB)` in the external entrypoint — that's the gate that actually protects
-            // the caller. The destination's mint count is captured here so the external entrypoint can
-            // ALSO enforce a mint-side floor (`minTokensOut`).
-            //
-            // For a router destination, this is where the swap-and-pay-back happens: the router takes
-            // `tokenToReclaim`, performs whatever swap/composition it wants, and ultimately calls back into
-            // this terminal's `pay()` (or `addToBalanceOf()`) for B with the post-swap token. That callback
-            // is what makes B's bucket grow on this terminal — and what the delta below measures.
-            beneficiaryTokenCount = destinationTerminal.pay{value: payValue}({
-                projectId: beneficiaryProjectId,
-                token: tokenToReclaim,
-                amount: reclaimAmount,
-                beneficiary: beneficiary,
-                minReturnedTokens: 0,
-                memo: "",
-                metadata: payMetadata
-            });
-
-            // Revoke the temporary pull allowance (no-op for native token). Defense-in-depth so leftover
-            // allowance can't be drained later by a malicious destination that pulled less than offered.
-            _afterTransferTo({to: address(destinationTerminal), token: tokenToReclaim});
-        }
-
-        // ----------- delivery proof: after-snapshot + credit -----------
-        // Re-read B's bucket on this terminal. The delta is the only thing we trust to measure delivery —
-        // it survives delegatecall, reentrancy, hooks, and any router composition because it's a direct
-        // STORE read, not a return value from a potentially untrusted destination terminal.
-        uint256 balanceAfter = STORE.balanceOf({
-            terminal: address(this), projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject
-        });
-
-        // The credit equals exactly what physically landed. If the destination terminal stole the funds,
-        // diverted them elsewhere, or partially filled, this is what shows up here — and the external
-        // entrypoint's `_checkMin(deliveredToB, minDeliveredToB)` is what catches an underdelivery.
-        // `unchecked`: `balanceAfter >= balanceBefore` because B's bucket can only grow during this call
-        // (no outflow from B happens in this code path), so subtraction never underflows. Addition into
-        // `_feeFreeSurplusOf` is also safe — the credit is bounded by B's actual surplus, which is
-        // physical-token-bounded.
-        unchecked {
-            deliveredToB = balanceAfter - balanceBefore;
-            _feeFreeSurplusOf[beneficiaryProjectId][routing.tokenForBeneficiaryProject] += deliveredToB;
-        }
-
-        // Cap B's credit at B's remaining balance. Important because B's data hook or pay hooks during the
-        // routing step might have moved funds OUT of B's bucket before we measure (e.g. a fee hook on the
-        // destination side). The credit must never claim more surplus than B actually holds, otherwise B's
-        // next zero-tax cashout would charge fees on phantom amounts. Mirrors the cap call in
-        // `_cashOutTokensOf` — same invariant, same enforcement.
-        _capFeeFreeSurplus({projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject});
     }
 
     /// @notice Revert if a value is less than the specified minimum.
@@ -2053,6 +1849,56 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
+    /// @notice Records a cash out in the terminal store and burns the holder's project tokens.
+    /// @dev Shared between `_cashOutTokensOf` and `_cashOutAsPaymentToProject`. The two flows differ in what
+    /// happens AFTER the burn (where the reclaim goes, how fees are taken), but the record-and-burn step is
+    /// identical.
+    /// @param holder The account whose project tokens are being burned.
+    /// @param projectId The ID of the project the project tokens belong to.
+    /// @param cashOutCount The number of project tokens to burn.
+    /// @param tokenToReclaim The terminal token to reclaim from the project's surplus.
+    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address (passed through
+    /// to the data hook context via the store).
+    /// @param metadata Bytes to send along to the data hook.
+    /// @return ruleset The ruleset the cash out is being made during.
+    /// @return reclaimAmount The amount of terminal tokens to be reclaimed.
+    /// @return cashOutTaxRate The cash out tax rate being used.
+    /// @return hookSpecifications The cash out hook specifications returned by the data hook.
+    function _recordAndBurnCashOut(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        bool beneficiaryIsFeeless,
+        bytes memory metadata
+    )
+        internal
+        returns (
+            JBRuleset memory ruleset,
+            uint256 reclaimAmount,
+            uint256 cashOutTaxRate,
+            JBCashOutHookSpecification[] memory hookSpecifications
+        )
+    {
+        // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
+        IJBController controller = _controllerOf(projectId);
+
+        // Record the cash out.
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            metadata: metadata
+        });
+
+        // Burn the project tokens.
+        if (cashOutCount != 0) {
+            controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
+        }
+    }
+
     /// @notice Returns held fees to the project who paid them based on the specified amount.
     /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee.
@@ -2070,6 +1916,99 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             token: token,
             amount: amount
         });
+    }
+
+    /// @notice Routes the cashout reclaim to the destination terminal and credits `_feeFreeSurplusOf[B]` by
+    /// the `STORE.balanceOf` delta that lands back on this terminal under B's name.
+    /// @dev Same-terminal short-circuits to `_pay` (no transfer needed since the funds are already custodied
+    /// here). Cross-terminal goes through the destination's `pay()` entrypoint with the standard
+    /// `_beforeTransferTo`/`_afterTransferTo` plumbing. The delta is measured against B's bucket for
+    /// `routing.tokenForBeneficiaryProject`, which may differ from `tokenToReclaim` (e.g. a router that swaps
+    /// before paying B).
+    /// @param tokenToReclaim The token reclaimed from the source project.
+    /// @param reclaimAmount The amount of `tokenToReclaim` being routed.
+    /// @param beneficiaryProjectId The destination project.
+    /// @param beneficiary The address that receives the newly minted destination-project tokens.
+    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
+    /// @param routing Caller-declared routing: destination terminal, expected return token, delivery floor.
+    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return deliveredToB The `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
+    /// routing.tokenForBeneficiaryProject)`.
+    function _routeReclaimToBeneficiaryProject(
+        address tokenToReclaim,
+        uint256 reclaimAmount,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        bytes memory payMetadata,
+        JBCashOutToProjectContext memory routing
+    )
+        internal
+        returns (uint256 beneficiaryTokenCount, uint256 deliveredToB)
+    {
+        // Resolve the destination terminal. Caller's explicit override wins; otherwise default to B's primary
+        // terminal for the reclaim token.
+        IJBTerminal destinationTerminal = routing.destinationTerminal != IJBTerminal(address(0))
+            ? routing.destinationTerminal
+            : DIRECTORY.primaryTerminalOf({projectId: beneficiaryProjectId, token: tokenToReclaim});
+
+        if (address(destinationTerminal) == address(0)) {
+            revert JBMultiTerminal_RecipientProjectTerminalNotFound({
+                projectId: beneficiaryProjectId, token: tokenToReclaim
+            });
+        }
+
+        // Snapshot B's balance before the routing. The delta measured after the call is the delivery proof.
+        // Why this is a safe oracle: `STORE.balanceOf(this, B, X)` only increases via real `recordPaymentFrom`
+        // or `recordAddedBalanceFor` for B — funds can't be faked in.
+        uint256 balanceBefore = STORE.balanceOf({
+            terminal: address(this), projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject
+        });
+
+        // Pay project B. Same-terminal: internal `_pay` (no transferIn — funds already custodied here).
+        if (destinationTerminal == IJBTerminal(address(this))) {
+            beneficiaryTokenCount = _pay({
+                projectId: beneficiaryProjectId,
+                token: tokenToReclaim,
+                amount: reclaimAmount,
+                payer: _msgSender(),
+                beneficiary: beneficiary,
+                memo: "",
+                metadata: payMetadata
+            });
+        } else {
+            // Cross-terminal: standard pre/post transfer + external `pay()`. We pass `minReturnedTokens: 0`
+            // because OUR slippage gate is on the delivered-back delta in the external entrypoint, not on
+            // the destination's mint count.
+            uint256 payValue =
+                _beforeTransferTo({to: address(destinationTerminal), token: tokenToReclaim, amount: reclaimAmount});
+
+            beneficiaryTokenCount = destinationTerminal.pay{value: payValue}({
+                projectId: beneficiaryProjectId,
+                token: tokenToReclaim,
+                amount: reclaimAmount,
+                beneficiary: beneficiary,
+                minReturnedTokens: 0,
+                memo: "",
+                metadata: payMetadata
+            });
+
+            _afterTransferTo({to: address(destinationTerminal), token: tokenToReclaim});
+        }
+
+        // Measure delivery and credit fee-free surplus on B.
+        uint256 balanceAfter = STORE.balanceOf({
+            terminal: address(this), projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject
+        });
+
+        unchecked {
+            deliveredToB = balanceAfter - balanceBefore;
+            _feeFreeSurplusOf[beneficiaryProjectId][routing.tokenForBeneficiaryProject] += deliveredToB;
+        }
+
+        // Cap B's credit at remaining balance. Mirrors the same invariant as in `_cashOutTokensOf` — B's data
+        // hook or pay hooks during the routing step might have moved funds out of B's bucket before we
+        // measure, so the credit must never claim more than B actually holds.
+        _capFeeFreeSurplus({projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject});
     }
 
     /// @notice Sends payouts to a project's payout split group using the specified ruleset.
