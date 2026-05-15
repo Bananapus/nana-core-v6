@@ -80,9 +80,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
     /// `allowCrossProjectFeeFreeInflows` flag on `JBRulesetMetadata`.
     function _stubBController(bool allowFeeFreeInflows) internal {
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)), abi.encode(address(this))
         );
 
         JBRulesetMetadata memory md = JBRulesetMetadata({
@@ -132,14 +130,14 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
                 IJBTerminalStore.recordCashOutFor,
                 (_holder, _sourceProjectId, _defaultCashOutCount, _mockToken, true, "")
             ),
-            abi.encode(_emptyRuleset(), reclaimAmount, JBConstants.MAX_CASH_OUT_TAX_RATE, new JBCashOutHookSpecification[](0))
+            abi.encode(
+                _emptyRuleset(), reclaimAmount, JBConstants.MAX_CASH_OUT_TAX_RATE, new JBCashOutHookSpecification[](0)
+            )
         );
 
         // Source-project controller resolution + burn.
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)), abi.encode(address(this))
         );
         mockExpect(
             address(this),
@@ -187,9 +185,8 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
             abi.encode(address(_terminal))
         );
 
-        JBAccountingContext memory ctx = JBAccountingContext({
-            token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))
-        });
+        JBAccountingContext memory ctx =
+            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         vm.mockCall(
             address(store),
             abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _destProjectId, _mockToken)),
@@ -209,9 +206,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
 
         // _pay -> controllerOf(B) + mintTokensOf.
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)), abi.encode(address(this))
         );
         mockExpect(
             address(this),
@@ -256,25 +251,14 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         _stubPermission(true);
 
         JBCashOutToProjectContext memory routing = JBCashOutToProjectContext({
-            destinationTerminal: IJBTerminal(address(0)),
-            tokenForBeneficiaryProject: address(0),
-            minDeliveredToB: 0
+            destinationTerminal: IJBTerminal(address(0)), tokenForBeneficiaryProject: address(0), minDeliveredToB: 0
         });
 
         vm.expectRevert(JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectTokenNotSpecified.selector);
 
         vm.prank(_bene);
         _terminal.cashOutAsPaymentToProjectOf(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            routing
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", "", routing
         );
     }
 
@@ -284,8 +268,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows.selector,
-                _destProjectId
+                JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows.selector, _destProjectId
             )
         );
 
@@ -326,9 +309,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_RecipientProjectTerminalNotFound.selector,
-                _destProjectId,
-                _mockToken
+                JBMultiTerminal.JBMultiTerminal_RecipientProjectTerminalNotFound.selector, _destProjectId, _mockToken
             )
         );
 
@@ -362,22 +343,11 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
             minDeliveredToB: _defaultReclaim // require full delivery — but delta is 0
         });
 
-        vm.expectRevert(
-            abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, _defaultReclaim)
-        );
+        vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, _defaultReclaim));
 
         vm.prank(_bene);
         _terminal.cashOutAsPaymentToProjectOf(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            routing
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", "", routing
         );
     }
 
@@ -393,9 +363,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         uint256 unrealisticMin = _defaultMintCount * 10;
 
         vm.expectRevert(
-            abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_UnderMin.selector, _defaultMintCount, unrealisticMin
-            )
+            abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, _defaultMintCount, unrealisticMin)
         );
 
         vm.prank(_bene);
@@ -427,8 +395,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalPay(_defaultReclaim, _defaultMintCount);
 
         vm.prank(_bene);
-        (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB) = _terminal
-            .cashOutAsPaymentToProjectOf(
+        (uint256 reclaimAmount, uint256 beneficiaryTokenCount, uint256 deliveredToB) = _terminal.cashOutAsPaymentToProjectOf(
             _holder,
             _sourceProjectId,
             _defaultCashOutCount,
@@ -454,9 +421,8 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
         _stubBBalanceSequence({balanceBefore: 0, balanceAfter: _defaultReclaim});
 
         // Same as same-terminal pay but no `primaryTerminalOf` lookup — explicit override skips it.
-        JBAccountingContext memory ctx = JBAccountingContext({
-            token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))
-        });
+        JBAccountingContext memory ctx =
+            JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
         vm.mockCall(
             address(store),
             abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), _destProjectId, _mockToken)),
@@ -471,9 +437,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
             abi.encode(_emptyRuleset(), _defaultMintCount, new bytes(0))
         );
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_destProjectId)), abi.encode(address(this))
         );
         mockExpect(
             address(this),
@@ -489,16 +453,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
 
         vm.prank(_bene);
         (, uint256 mintCount, uint256 delivered) = _terminal.cashOutAsPaymentToProjectOf(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            routing
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", "", routing
         );
 
         assertEq(mintCount, _defaultMintCount);
@@ -516,12 +471,12 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
                 IJBTerminalStore.recordCashOutFor,
                 (_holder, _sourceProjectId, _defaultCashOutCount, _mockToken, true, "")
             ),
-            abi.encode(_emptyRuleset(), uint256(0), JBConstants.MAX_CASH_OUT_TAX_RATE, new JBCashOutHookSpecification[](0))
+            abi.encode(
+                _emptyRuleset(), uint256(0), JBConstants.MAX_CASH_OUT_TAX_RATE, new JBCashOutHookSpecification[](0)
+            )
         );
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)), abi.encode(address(this))
         );
         mockExpect(
             address(this),
@@ -570,12 +525,15 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
                 IJBTerminalStore.recordCashOutFor,
                 (_holder, _sourceProjectId, _defaultCashOutCount, _mockToken, true, "")
             ),
-            abi.encode(_emptyRuleset(), uint256(reclaimAmount), JBConstants.MAX_CASH_OUT_TAX_RATE, new JBCashOutHookSpecification[](0))
+            abi.encode(
+                _emptyRuleset(),
+                uint256(reclaimAmount),
+                JBConstants.MAX_CASH_OUT_TAX_RATE,
+                new JBCashOutHookSpecification[](0)
+            )
         );
         mockExpect(
-            address(directory),
-            abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)),
-            abi.encode(address(this))
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_sourceProjectId)), abi.encode(address(this))
         );
         mockExpect(
             address(this),
@@ -659,16 +617,7 @@ contract TestCashOutAsPaymentToProjectOf_Local is JBMultiTerminalSetup {
 
         vm.prank(_bene);
         _terminal.cashOutAsPaymentToProjectOf(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            routing
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", "", routing
         );
     }
 }

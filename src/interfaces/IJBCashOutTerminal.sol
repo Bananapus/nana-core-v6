@@ -117,8 +117,8 @@ interface IJBCashOutTerminal is IJBTerminal {
     /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specifications.
     /// @param payMetadata Forwarded to the destination project's pay flow.
     /// @param routing Where to send the reclaim, what token to expect back at B, and the minimum delivery floor.
-    /// @return reclaimAmount The gross reclaim amount returned by the store (before being sent to the destination terminal).
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return reclaimAmount The gross reclaim amount returned by the store (before being sent to the destination
+    /// terminal). @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
     /// @return deliveredToB The actual `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
     /// routing.tokenForBeneficiaryProject)` — i.e. how much landed back on this terminal under B's name.
     function cashOutAsPaymentToProjectOf(

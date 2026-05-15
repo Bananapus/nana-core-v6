@@ -64,7 +64,7 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
                 useDataHookForCashOut: false,
                 dataHook: address(0),
                 metadata: 0,
-            allowCrossProjectFeeFreeInflows: false
+                allowCrossProjectFeeFreeInflows: false
             });
             emptyRuleset[0].splitGroups = new JBSplitGroup[](0);
             emptyRuleset[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);

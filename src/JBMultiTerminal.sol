@@ -281,8 +281,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specifications.
     /// @param payMetadata Bytes forwarded to the destination project's pay flow.
     /// @param routing Where to send the reclaim, what token to expect back at B, and the minimum delivery floor.
-    /// @return reclaimAmount The gross reclaim amount returned by the store before being sent to the destination terminal.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return reclaimAmount The gross reclaim amount returned by the store before being sent to the destination
+    /// terminal. @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
     /// @return deliveredToB The actual `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
     /// routing.tokenForBeneficiaryProject)` after the routing — i.e. how much landed back on this terminal
     /// under B's name.
@@ -328,7 +328,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // immediately by rolling a new ruleset, without waiting for queued cycles to elapse. Scoped block
         // so `bMetadata` falls off the stack before we re-enter `_cashOutAsPaymentToProject`'s heavy frame.
         {
-            (, JBRulesetMetadata memory bMetadata) = _controllerOf(beneficiaryProjectId).currentRulesetOf(beneficiaryProjectId);
+            (, JBRulesetMetadata memory bMetadata) =
+                _controllerOf(beneficiaryProjectId).currentRulesetOf(beneficiaryProjectId);
             if (!bMetadata.allowCrossProjectFeeFreeInflows) {
                 revert JBMultiTerminal_BeneficiaryProjectDoesNotAllowFeeFreeInflows(beneficiaryProjectId);
             }
@@ -1350,8 +1351,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specifications.
     /// @param payMetadata Bytes forwarded to the destination project's pay flow.
     /// @param routing Where to send the reclaim, what token to expect back at B, and the minimum delivery floor.
-    /// @return reclaimAmount The gross reclaim amount returned by the store before being sent to the destination terminal.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    /// @return reclaimAmount The gross reclaim amount returned by the store before being sent to the destination
+    /// terminal. @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
     /// @return deliveredToB The `STORE.balanceOf` delta on `(this, beneficiaryProjectId,
     /// routing.tokenForBeneficiaryProject)` after the routing — what physically landed back on this terminal
     /// under B's name. Becomes the `_feeFreeSurplusOf[B]` credit.
@@ -1429,7 +1430,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         if (hookSpecifications.length != 0) {
             amountEligibleForFees = _fulfillCashOutHookSpecificationsFor({
                 projectId: projectId,
-                beneficiaryReclaimAmount: _tokenAmountOf({projectId: projectId, token: tokenToReclaim, value: reclaimAmount}),
+                beneficiaryReclaimAmount: _tokenAmountOf({
+                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
+                }),
                 holder: holder,
                 cashOutCount: cashOutCount,
                 metadata: cashOutMetadata,
@@ -1621,9 +1624,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // destination side). The credit must never claim more surplus than B actually holds, otherwise B's
         // next zero-tax cashout would charge fees on phantom amounts. Mirrors the cap call in
         // `_cashOutTokensOf` — same invariant, same enforcement.
-        _capFeeFreeSurplus({
-            projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject
-        });
+        _capFeeFreeSurplus({projectId: beneficiaryProjectId, token: routing.tokenForBeneficiaryProject});
     }
 
     /// @notice Revert if a value is less than the specified minimum.

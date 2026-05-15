@@ -190,12 +190,9 @@ library JBHeldFeesLib {
     )
         public
     {
-        try IJBHeldFeesExecutor(address(this)).executeProcessFee({
-            projectId: projectId,
-            token: token,
-            amount: amount,
-            beneficiary: beneficiary,
-            feeTerminal: feeTerminal
+        try IJBHeldFeesExecutor(address(this))
+            .executeProcessFee({
+            projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
             emit ProcessFee({
                 projectId: projectId,
