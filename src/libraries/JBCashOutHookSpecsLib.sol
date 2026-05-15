@@ -50,13 +50,6 @@ library JBCashOutHookSpecsLib {
     error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
 
     //*********************************************************************//
-    // ----------------------- internal constants ------------------------ //
-    //*********************************************************************//
-
-    /// @notice Protocol fee numerator (denominator is `JBConstants.MAX_FEE` = 1,000). 25 = 2.5%.
-    uint256 internal constant _FEE = 25;
-
-    //*********************************************************************//
     // ----------------------- external functions ------------------------ //
     //*********************************************************************//
 
@@ -123,7 +116,7 @@ library JBCashOutHookSpecsLib {
                 addr: address(specification.hook), projectId: projectId
             })
                 ? 0
-                : JBFees.feeAmountFrom({amountBeforeFee: specification.amount, feePercent: _FEE});
+                : JBFees.standardFeeAmountFrom({amountBeforeFee: specification.amount});
 
             // Add the specification's amount to the amount eligible for fees.
             if (specificationAmountFee != 0) {

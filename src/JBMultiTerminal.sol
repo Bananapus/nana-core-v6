@@ -87,15 +87,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice This terminal's fee (as a fraction out of `JBConstants.MAX_FEE`).
     /// @dev Fees are charged on payouts to addresses and surplus allowance usage, as well as cash outs while the
-    /// cash out tax rate is less than 100%.
-    uint256 public constant override FEE = 25; // 2.5%
+    /// cash out tax rate is less than 100%. Re-exports `JBConstants.FEE` so external callers can read it through
+    /// the `IJBFeeTerminal` interface.
+    uint256 public constant override FEE = JBConstants.FEE;
 
     //*********************************************************************//
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
-
-    /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
-    uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
     /// @notice The number of seconds fees can be held for.
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
@@ -551,7 +549,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         _efficientPay({
             terminal: feeTerminal,
-            projectId: _FEE_BENEFICIARY_PROJECT_ID,
+            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
             token: token,
             amount: amount,
             payer: address(this),
@@ -617,7 +615,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
             // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
             uint256 feeAmount;
-            if (!_isFeeless({addr: address(to), projectId: projectId}) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
+            if (
+                !_isFeeless({addr: address(to), projectId: projectId})
+                    && projectId != JBConstants.FEE_BENEFICIARY_PROJECT_ID
+            ) {
                 feeAmount = _takeFeeFrom({
                     projectId: projectId,
                     token: token,
@@ -751,23 +752,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Nothing to route if the data hook returned zero reclaim.
         if (reclaimAmount != 0) {
-            // Route the reclaim to B's primary terminal as a pay (via `_efficientPay` — handles same-terminal
-            // vs cross-terminal), then credit B's fee-free surplus by the delivery delta.
-            IJBTerminal destinationTerminal = _resolveBeneficiaryTerminal(beneficiaryProjectId, tokenToReclaim);
-            (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
-                _snapshotBeneficiaryContextBalances(beneficiaryProjectId);
-
-            beneficiaryTokenCount = _efficientPay({
-                terminal: destinationTerminal,
-                projectId: beneficiaryProjectId,
-                token: tokenToReclaim,
-                amount: reclaimAmount,
-                payer: _msgSender(),
+            beneficiaryTokenCount = _routeReclaimToBeneficiaryProject({
+                tokenToReclaim: tokenToReclaim,
+                reclaimAmount: reclaimAmount,
+                beneficiaryProjectId: beneficiaryProjectId,
                 beneficiary: beneficiary,
-                metadata: payMetadata
+                payMetadata: payMetadata
             });
-
-            _creditFirstGrowingBeneficiaryContext(beneficiaryProjectId, contexts, balancesBefore);
         }
 
         // Mint floor: how many destination-project tokens were issued for the inbound pay.
@@ -1907,6 +1898,45 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Routes the cashout reclaim to B's primary terminal as a `pay` and credits B's fee-free
+    /// surplus by the delivery delta on the first of B's accounting contexts that grew.
+    /// @dev Extracted from the external `payAfterCashOutTokensOf` to keep that function under the
+    /// via-IR-free stack ceiling. Uses `_efficientPay` (handles same-terminal vs cross-terminal with
+    /// `_beforeTransferTo`/`_afterTransferTo`). `minReturnedTokens: 0` is enforced inside `_efficientPay`;
+    /// the user-facing mint floor is `_checkMin(beneficiaryTokenCount, minTokensOut)` in the caller.
+    /// @param tokenToReclaim The token reclaimed from the source project.
+    /// @param reclaimAmount The amount of `tokenToReclaim` being routed.
+    /// @param beneficiaryProjectId The destination project.
+    /// @param beneficiary The address that receives the newly minted destination-project tokens.
+    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
+    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
+    function _routeReclaimToBeneficiaryProject(
+        address tokenToReclaim,
+        uint256 reclaimAmount,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        bytes memory payMetadata
+    )
+        internal
+        returns (uint256 beneficiaryTokenCount)
+    {
+        IJBTerminal destinationTerminal = _resolveBeneficiaryTerminal(beneficiaryProjectId, tokenToReclaim);
+        (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
+            _snapshotBeneficiaryContextBalances(beneficiaryProjectId);
+
+        beneficiaryTokenCount = _efficientPay({
+            terminal: destinationTerminal,
+            projectId: beneficiaryProjectId,
+            token: tokenToReclaim,
+            amount: reclaimAmount,
+            payer: _msgSender(),
+            beneficiary: beneficiary,
+            metadata: payMetadata
+        });
+
+        _creditFirstGrowingBeneficiaryContext(beneficiaryProjectId, contexts, balancesBefore);
+    }
+
     /// @notice Sends payouts to a project's payout split group using the specified ruleset.
     /// @param projectId The ID of the project to send the payouts of.
     /// @param token The token to pay out.
@@ -2047,7 +2077,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
+    /// @notice Takes a fee into the platform's project (with the `JBConstants.FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
     /// @param token The address of the token that the fee is paid in.
     /// @param amount The fee's token amount, as a fixed point number with 18 decimals.
@@ -2088,7 +2118,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         } else {
             // Get the terminal that'll receive the fee if one wasn't provided.
-            IJBTerminal feeTerminal = _primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
+            IJBTerminal feeTerminal =
+                _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
             // Process the fee.
             _processFee({
@@ -2341,6 +2372,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The amount before the fee is applied.
     /// @return The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
-        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+        return JBFees.standardFeeAmountFrom(amount);
     }
 }

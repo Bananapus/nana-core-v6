@@ -5,6 +5,7 @@ import {IJBDirectory} from "../interfaces/IJBDirectory.sol";
 import {IJBTerminal} from "../interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../interfaces/IJBTerminalStore.sol";
 import {JBFee} from "../structs/JBFee.sol";
+import {JBConstants} from "./JBConstants.sol";
 import {JBFees} from "./JBFees.sol";
 
 /// @notice Local callback into the terminal's `executeProcessFee(...)`. Kept here because the function is an
@@ -85,16 +86,6 @@ library JBHeldFeesLib {
     );
 
     //*********************************************************************//
-    // ----------------------- internal constants ------------------------ //
-    //*********************************************************************//
-
-    /// @notice Protocol fee numerator (denominator is `MAX_FEE` = 1,000). 25 = 2.5%.
-    uint256 internal constant _FEE = 25;
-
-    /// @notice Project ID of the protocol fee beneficiary.
-    uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
-
-    //*********************************************************************//
     // ----------------------- internal functions ------------------------ //
     //*********************************************************************//
 
@@ -122,7 +113,8 @@ library JBHeldFeesLib {
         external
     {
         // Resolve the fee-receiving terminal once outside the loop.
-        IJBTerminal feeTerminal = directory.primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
+        IJBTerminal feeTerminal =
+            directory.primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
         for (uint256 i; i < count;) {
             uint256 currentIndex = nextHeldFeeIndexOf[projectId][token];
@@ -145,7 +137,7 @@ library JBHeldFeesLib {
                 store: store,
                 projectId: projectId,
                 token: token,
-                amount: JBFees.feeAmountFrom({amountBeforeFee: heldFee.amount, feePercent: _FEE}),
+                amount: JBFees.standardFeeAmountFrom({amountBeforeFee: heldFee.amount}),
                 beneficiary: heldFee.beneficiary,
                 feeTerminal: feeTerminal,
                 wasHeld: true
@@ -207,7 +199,7 @@ library JBHeldFeesLib {
             emit FeeReverted({
                 projectId: projectId,
                 token: token,
-                feeProjectId: _FEE_BENEFICIARY_PROJECT_ID,
+                feeProjectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
                 amount: amount,
                 reason: reason,
                 caller: msg.sender
@@ -256,7 +248,7 @@ library JBHeldFeesLib {
                 break;
             } else {
                 // Recompute the fee charged on the stored gross amount so partial returns stay aligned.
-                uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldFee.amount, feePercent: _FEE});
+                uint256 feeAmount = JBFees.standardFeeAmountFrom({amountBeforeFee: heldFee.amount});
                 uint256 amountPaidOut = heldFee.amount - feeAmount;
 
                 if (leftoverAmount >= amountPaidOut) {
@@ -268,7 +260,7 @@ library JBHeldFeesLib {
                     newStartIndex = startIndex + i + 1;
                 } else {
                     // Partial entry: shrink the stored entry by what we consumed (incl. its own fee).
-                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: _FEE});
+                    feeAmount = JBFees.standardFeeAmountResultingIn({amountAfterFee: leftoverAmount});
                     unchecked {
                         heldFeesOf[projectId][token][startIndex + i].amount -= (leftoverAmount + feeAmount);
                         returnedFees += feeAmount;
