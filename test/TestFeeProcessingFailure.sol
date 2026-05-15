@@ -183,7 +183,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
 
         // Fee was deducted from the payout — project balance is now only the surplus (if any).
         // The fee was 2.5% of the payout amount.
-        uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: _terminal.FEE()});
+        uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: JBConstants.FEE});
         assertGt(feeAmount, 0, "Fee should be non-zero");
     }
 
@@ -206,7 +206,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
         // already cover this with mocks.
 
         // Here we verify the fee calculation is correct.
-        uint256 fee = _terminal.FEE(); // 25 (2.5%)
+        uint256 fee = JBConstants.FEE; // 25 (2.5%)
         uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: fee});
 
         // Fee of 10 ETH at 2.5%: 10 * 25 / 1000 = 0.25 ETH
