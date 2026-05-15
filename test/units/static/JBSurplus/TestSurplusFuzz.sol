@@ -131,6 +131,23 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
     {
         return (0, 0);
     }
+
+    function addToBalanceAfterCashOutTokensOf(
+        address,
+        uint256,
+        uint256,
+        address,
+        uint256,
+        bytes calldata,
+        bytes calldata
+    )
+        external
+        pure
+        override
+        returns (uint256)
+    {
+        return 0;
+    }
 }
 
 /// @notice Fuzz tests for the JBSurplus library.

@@ -36,8 +36,14 @@ This file describes the verified change from `nana-core-v5` to the current `nana
   the destination project's side by crediting `_feeFreeSurplusOf[beneficiaryProjectId][token]` on the first of the destination project's accounting contexts on this
   terminal whose balance grows during the routing. Reverts if no delivery lands on this terminal under any
   of the destination project's accounting contexts.
+- `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)` is new. Sibling of
+  `payAfterCashOutTokensOf` that adds the reclaim to the destination project's balance instead of paying
+  (no destination tokens minted). Same source-side fee-skip + destination-side `_feeFreeSurplusOf` credit
+  semantics, same opt-out via `pauseCrossProjectFeeFreeInflows`. Held-fee return on the destination side
+  is hardcoded to `false` so this entrypoint cannot unlock B's held fees.
 - `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` is new (bit 80 in the packed metadata word). Opt-out
-  flag on the destination project's current ruleset; when set, `payAfterCashOutTokensOf` calls targeting the destination project revert. Default
+  flag on the destination project's current ruleset; when set, `payAfterCashOutTokensOf` and
+  `addToBalanceAfterCashOutTokensOf` calls targeting the destination project revert. Default
   `false` allows inflows — matching the existing intra-terminal payout semantic where receiving projects
   accumulate `_feeFreeSurplusOf` credits from other projects' outflows. The trailing `metadata` field
   narrowed from 14 to 13 bits to make room.
@@ -50,6 +56,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `IJBTerminal.previewPayFor(...)` is new.
 - `IJBCashOutTerminal.previewCashOutFrom(...)` is new.
 - `IJBCashOutTerminal.payAfterCashOutTokensOf(...)` is new.
+- `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)` is new.
 - `IJBTerminalStore.previewPayFrom(...)` and `previewCashOutFrom(...)` are new.
 - `IJBTerminal.currentSurplusOf(...)` changed parameter shape.
 - `JBRulesetMetadata` adds `pauseCrossProjectFeeFreeInflows` and narrows `metadata` from 14 to 13 bits.
@@ -74,6 +81,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
   - `IJBTerminal.previewPayFor(...)`
   - `IJBCashOutTerminal.previewCashOutFrom(...)`
   - `IJBCashOutTerminal.payAfterCashOutTokensOf(...)`
+  - `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)`
   - `IJBTerminalStore.previewPayFrom(...)`
   - `IJBTerminalStore.previewCashOutFrom(...)`
   - `IJBController.previewMintOf(...)`
@@ -83,6 +91,9 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - Added libraries
   - `JBHeldFeesLib` (held-fee bookkeeping extracted from `JBMultiTerminal` to relieve bytecode budget;
     called via delegatecall, storage refs preserved)
+  - `JBCashOutHookSpecsLib` (cash-out hook specification fulfillment extracted from `JBMultiTerminal` to
+    relieve bytecode budget after adding `addToBalanceAfterCashOutTokensOf`; called via delegatecall, emits
+    `HookAfterRecordCashOut` from the terminal address)
 - Renamed functions
   - `IJBController.addPriceFeed(...)` -> `addPriceFeedFor(...)`
 - Changed function shapes
