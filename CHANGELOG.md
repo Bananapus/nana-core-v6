@@ -13,6 +13,17 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `JBTokens`
 - the shared core interfaces, structs, and libraries under `src/`
 
+## 0.0.53 — Drop the `via_ir` requirement
+
+`JBCashOutHookSpecsLib.fulfill` originally took 10 named arguments. When `JBMultiTerminal._cashOutTokensOf` and `_payAfterCashOutTokensOf` called it, the call site ran past solc 0.8.28's 16-slot Yul stack ceiling, which forced every consumer of `@bananapus/core-v6` to enable `via_ir = true` in their own `foundry.toml` profile. That cascaded into stack-too-deep failures in downstream packages whose own functions couldn't tolerate `via_ir` (notably `nana-721-hook-v6`'s `JB721TiersHookStore.tiersOf`).
+
+This release reshapes `fulfill` to accept the existing `JBAfterCashOutRecordedContext` directly — the same struct the hook receives — so no parallel arg bundle is needed. The new signature is `fulfill(IJBFeelessAddresses, JBAfterCashOutRecordedContext, JBCashOutHookSpecification[])`. The per-iteration loop body is extracted into a private `_fulfillOne` helper so its locals don't share `fulfill`'s stack frame. Both call sites in `JBMultiTerminal` build the context field-by-field (one stack slot per assignment) instead of via a struct literal (which would push all ten fields onto the stack at once and trip the same ceiling at the caller).
+
+Integrator impact:
+- `JBCashOutHookSpecsLib.fulfill(IJBFeelessAddresses, uint256, JBTokenAmount, address, uint256, bytes, JBRuleset, uint256, address payable, JBCashOutHookSpecification[])` → `fulfill(IJBFeelessAddresses, JBAfterCashOutRecordedContext, JBCashOutHookSpecification[])`. The only on-chain caller is `JBMultiTerminal` (this PR updates both call sites), so the public ABI surface of `JBMultiTerminal` is unchanged.
+- Consumers of `@bananapus/core-v6@^0.0.53` can drop `via_ir = true` from their `foundry.toml` profiles if they only enabled it because of `JBCashOutHookSpecsLib`. `nana-core-v6`'s own profile flips `via_ir` to `false` to lock in the property.
+- All 997 unit/non-fork tests pass on the refactored library + call sites.
+
 ## Summary
 
 - v6 adds explicit preview APIs for pay and cash-out flows. Integrations can simulate more of the terminal path directly from the core contracts.

@@ -1313,23 +1313,24 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
         }
 
-        // If the data hook returned cash out hook specifications, fulfill them.
+        // If the data hook returned cash out hook specifications, fulfill them. The context is built
+        // field-by-field rather than as a struct literal so each assignment uses only one stack slot at a
+        // time, keeping the call site under solc 0.8.28's non-via-ir Yul stack ceiling (a 10-field struct
+        // literal would otherwise trip it from inside `_cashOutTokensOf`).
         if (hookSpecifications.length != 0) {
-            // Fulfill the cash out hook specifications.
-            amountEligibleForFees += JBCashOutHookSpecsLib.fulfill({
-                feelessAddresses: FEELESS_ADDRESSES,
-                projectId: projectId,
-                holder: holder,
-                cashOutCount: cashOutCount,
-                ruleset: ruleset,
-                cashOutTaxRate: cashOutTaxRate,
-                beneficiary: beneficiary,
-                beneficiaryReclaimAmount: _tokenAmountOf({
-                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
-                }),
-                specifications: hookSpecifications,
-                metadata: metadata
-            });
+            JBTokenAmount memory reclaimTokenAmount =
+                _tokenAmountOf({projectId: projectId, token: tokenToReclaim, value: reclaimAmount});
+            JBAfterCashOutRecordedContext memory ctx;
+            ctx.holder = holder;
+            ctx.projectId = projectId;
+            ctx.rulesetId = ruleset.id;
+            ctx.cashOutCount = cashOutCount;
+            ctx.reclaimedAmount = reclaimTokenAmount;
+            ctx.forwardedAmount = reclaimTokenAmount;
+            ctx.cashOutTaxRate = cashOutTaxRate;
+            ctx.beneficiary = beneficiary;
+            ctx.cashOutMetadata = metadata;
+            amountEligibleForFees += JBCashOutHookSpecsLib.fulfill(FEELESS_ADDRESSES, ctx, hookSpecifications);
         }
 
         // Cap fee-free surplus at remaining balance.
@@ -1577,20 +1578,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Hook fees still apply (those funds leave the protocol to external hooks). Hook context sees
         // `address(this)` as the beneficiary since the terminal is custodying the reclaim mid-flow.
         if (hookSpecifications.length != 0) {
-            amountEligibleForFees = JBCashOutHookSpecsLib.fulfill({
-                feelessAddresses: FEELESS_ADDRESSES,
-                projectId: projectId,
-                beneficiaryReclaimAmount: _tokenAmountOf({
-                    projectId: projectId, token: tokenToReclaim, value: reclaimAmount
-                }),
-                holder: holder,
-                cashOutCount: cashOutCount,
-                metadata: cashOutMetadata,
-                ruleset: ruleset,
-                cashOutTaxRate: cashOutTaxRate,
-                beneficiary: payable(address(this)),
-                specifications: hookSpecifications
-            });
+            JBTokenAmount memory reclaimTokenAmount =
+                _tokenAmountOf({projectId: projectId, token: tokenToReclaim, value: reclaimAmount});
+            JBAfterCashOutRecordedContext memory ctx;
+            ctx.holder = holder;
+            ctx.projectId = projectId;
+            ctx.rulesetId = ruleset.id;
+            ctx.cashOutCount = cashOutCount;
+            ctx.reclaimedAmount = reclaimTokenAmount;
+            ctx.forwardedAmount = reclaimTokenAmount;
+            ctx.cashOutTaxRate = cashOutTaxRate;
+            ctx.beneficiary = payable(address(this));
+            ctx.cashOutMetadata = cashOutMetadata;
+            amountEligibleForFees = JBCashOutHookSpecsLib.fulfill(FEELESS_ADDRESSES, ctx, hookSpecifications);
         }
 
         // Cap the source project's fee-free surplus at remaining balance after the outflow. Same invariant as
