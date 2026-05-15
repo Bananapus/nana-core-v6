@@ -98,7 +98,7 @@ holder cashes out the source project
   -> the destination project's next non-feeless cashout pays the deferred fee on the credited amount
 ```
 
-`cashOutAsPaymentToProjectOf` reverts if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
+`payAfterCashOutTokensOf` reverts if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
 default (`false`) allows the inflow, matching the existing intra-terminal payout semantic where receiving
 projects accumulate `_feeFreeSurplusOf` credits from other projects' outflows.
 
@@ -135,8 +135,8 @@ If a duration-based ruleset auto-cycles without a new ruleset ID, payout-limit u
 
 - fee-free surplus and same-terminal payout behavior:
   `test/TestFeeFreeCashOutBypass.sol`
-- cross-project cash-out (`cashOutAsPaymentToProjectOf`) unit + fuzz coverage:
-  `test/units/static/JBMultiTerminal/TestCashOutAsPaymentToProjectOf.sol`
+- cross-project cash-out (`payAfterCashOutTokensOf`) unit + fuzz coverage:
+  `test/units/static/JBMultiTerminal/TestPayAfterCashOutTokensOf.sol`
 - migration and terminal-accounting continuity:
   `test/TestTerminalMigration.sol`
 - ruleset ordering and transition behavior:

@@ -24,7 +24,7 @@ pragma solidity ^0.8.0;
 /// @custom:member scopeCashOutsToLocalBalances If `true`, omnichain cash-out calculations use only the local chain's
 /// balances (not cross-chain aggregates).
 /// @custom:member pauseCrossProjectFeeFreeInflows If `true`, the project cannot be targeted by
-/// `cashOutAsPaymentToProjectOf` calls during this ruleset.
+/// `payAfterCashOutTokensOf` calls during this ruleset.
 /// @custom:member useDataHookForPay If `true`, the data hook is called before recording payments.
 /// @custom:member useDataHookForCashOut If `true`, the data hook is called before recording cash outs.
 /// @custom:member dataHook Contract called before pay/cash-out to potentially override token counts or add hooks.

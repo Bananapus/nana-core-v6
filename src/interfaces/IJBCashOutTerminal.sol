@@ -97,14 +97,16 @@ interface IJBCashOutTerminal is IJBTerminal {
         external
         returns (uint256 reclaimAmount);
 
-    /// @notice Burn a holder's project tokens and atomically pay the reclaim into another project. The
-    /// destination terminal is whichever terminal the directory has registered as the beneficiary project's
-    /// primary terminal for `tokenToReclaim` (which may itself be a router that swaps before paying).
-    /// Cashout-side hooks (if specified by the data hook) execute additively.
-    /// @dev The source-side cashout fee is skipped. Round-trip fee preservation is enforced by snapshotting
-    /// the beneficiary project's accounting-context balances on this terminal before and after the routing,
-    /// and crediting `_feeFreeSurplusOf` by the per-token delta on each context that grew. The beneficiary
-    /// project's current ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out.
+    /// @notice Atomically cash out a holder's tokens of one project and pay the reclaim into another. Equivalent
+    /// to calling `cashOutTokensOf` followed by `pay` on the destination project, except the source-side cash out
+    /// fee is skipped (the equivalent fee is bound on the destination project's side instead).
+    /// @dev The destination terminal is whichever terminal the directory has registered as the beneficiary project's
+    /// primary terminal for `tokenToReclaim` (which may itself be a router that swaps before paying). Cashout-side
+    /// hooks (if specified by the data hook) execute additively.
+    /// @dev Round-trip fee preservation is enforced by snapshotting the beneficiary project's accounting-context
+    /// balances on this terminal before and after the routing, and crediting `_feeFreeSurplusOf` by the per-token
+    /// delta on each context that grew. The beneficiary project's current ruleset can set
+    /// `pauseCrossProjectFeeFreeInflows` to opt out.
     /// @param holder The address whose project tokens are being burned.
     /// @param projectId The ID of the project whose project tokens are being burned.
     /// @param cashOutCount The number of project tokens to burn.
@@ -116,7 +118,7 @@ interface IJBCashOutTerminal is IJBTerminal {
     /// @param payMetadata Forwarded to the destination project's pay flow.
     /// @return reclaimAmount The gross reclaim amount returned by the store.
     /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    function cashOutAsPaymentToProjectOf(
+    function payAfterCashOutTokensOf(
         address holder,
         uint256 projectId,
         uint256 cashOutCount,

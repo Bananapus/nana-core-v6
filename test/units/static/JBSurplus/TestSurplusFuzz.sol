@@ -113,7 +113,7 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         return 0;
     }
 
-    function cashOutAsPaymentToProjectOf(
+    function payAfterCashOutTokensOf(
         address,
         uint256,
         uint256,
