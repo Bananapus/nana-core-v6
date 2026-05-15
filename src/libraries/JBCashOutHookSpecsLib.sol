@@ -8,7 +8,6 @@ import {IJBCashOutHook} from "../interfaces/IJBCashOutHook.sol";
 import {IJBFeelessAddresses} from "../interfaces/IJBFeelessAddresses.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
-import {JBRuleset} from "../structs/JBRuleset.sol";
 import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 import {JBConstants} from "./JBConstants.sol";
 import {JBFees} from "./JBFees.sol";
@@ -58,106 +57,102 @@ library JBCashOutHookSpecsLib {
     /// @dev For each spec: if the hook is feeless, it gets the full spec amount; otherwise the hook gets
     /// `amount - feeAmountFrom(amount)` and the gross spec amount is added to the eligible-for-fees total
     /// (the caller takes the fee separately via `_takeFeeFrom`). Cross-token semantics: the hook context's
-    /// `forwardedAmount` carries the post-fee amount in the same token as `beneficiaryReclaimAmount`.
+    /// `forwardedAmount` carries the post-fee amount in the same token as `context.reclaimedAmount`.
+    /// @dev The caller builds `context` once (`JBAfterCashOutRecordedContext`) and passes it in; the
+    /// library mutates `context.forwardedAmount` and `context.hookMetadata` per spec. Bundling the
+    /// caller-side state into the existing hook-context struct keeps the call site under solc 0.8.28's
+    /// non-via-ir 16-slot Yul stack ceiling (the prior 10-arg shape tripped it from
+    /// `JBMultiTerminal._cashOutTokensOf`).
     /// @param feelessAddresses Registry of fee-exempt addresses (consulted per-hook).
-    /// @param projectId The project being cashed out from.
-    /// @param beneficiaryReclaimAmount The token amount reference (token, decimals, currency, gross value).
-    /// @param holder The account whose project tokens were burned.
-    /// @param cashOutCount The number of project tokens burned.
-    /// @param metadata Bytes forwarded to each hook as `cashOutMetadata`.
-    /// @param ruleset The ruleset active during the cash out.
-    /// @param cashOutTaxRate The cash out tax rate applied.
-    /// @param beneficiary The address forwarded as the hook context's `beneficiary` (typically the user-supplied
-    /// recipient or `address(this)` for cross-project flows where the terminal custodies the reclaim mid-flow).
+    /// @param context Cash-out context to forward into each hook. `context.reclaimedAmount` doubles as the
+    /// token-amount reference for per-spec transfers; `context.forwardedAmount` / `context.hookMetadata`
+    /// are rewritten per iteration.
     /// @param specifications The hook specifications returned by the data hook.
     /// @return amountEligibleForFees Total spec amounts (gross) from non-feeless hooks, used by the caller to
     /// charge fees in a single pass.
     function fulfill(
         IJBFeelessAddresses feelessAddresses,
-        uint256 projectId,
-        JBTokenAmount memory beneficiaryReclaimAmount,
-        address holder,
-        uint256 cashOutCount,
-        bytes memory metadata,
-        JBRuleset memory ruleset,
-        uint256 cashOutTaxRate,
-        address payable beneficiary,
+        JBAfterCashOutRecordedContext memory context,
         JBCashOutHookSpecification[] memory specifications
     )
         external
         returns (uint256 amountEligibleForFees)
     {
-        JBAfterCashOutRecordedContext memory context = JBAfterCashOutRecordedContext({
-            holder: holder,
-            projectId: projectId,
-            rulesetId: ruleset.id,
-            cashOutCount: cashOutCount,
-            reclaimedAmount: beneficiaryReclaimAmount,
-            forwardedAmount: beneficiaryReclaimAmount,
-            cashOutTaxRate: cashOutTaxRate,
-            beneficiary: beneficiary,
-            hookMetadata: "",
-            cashOutMetadata: metadata
-        });
-
+        // Loop body is extracted into a helper to keep `fulfill`'s stack frame shallow enough for solc 0.8.28
+        // to compile *without* `via_ir`.
         for (uint256 i; i < specifications.length;) {
-            JBCashOutHookSpecification memory specification = specifications[i];
-
-            // A noop specification is informational only and doesn't trigger the hook.
-            if (specification.noop) {
-                unchecked {
-                    ++i;
-                }
-                continue;
-            }
-
-            // Get the fee for the specified amount.
-            uint256 specificationAmountFee = feelessAddresses.isFeelessFor({
-                addr: address(specification.hook), projectId: projectId
-            })
-                ? 0
-                : JBFees.standardFeeAmountFrom({amountBeforeFee: specification.amount});
-
-            // Add the specification's amount to the amount eligible for fees.
-            if (specificationAmountFee != 0) {
-                amountEligibleForFees += specification.amount;
-                specification.amount -= specificationAmountFee;
-            }
-
-            // Pass the correct token `forwardedAmount` to the hook.
-            context.forwardedAmount = JBTokenAmount({
-                value: specification.amount,
-                token: beneficiaryReclaimAmount.token,
-                decimals: beneficiaryReclaimAmount.decimals,
-                currency: beneficiaryReclaimAmount.currency
-            });
-
-            // Pass the correct metadata from the data hook's specification.
-            context.hookMetadata = specification.metadata;
-
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            uint256 payValue = _beforeTransferTo({
-                to: address(specification.hook), token: beneficiaryReclaimAmount.token, amount: specification.amount
-            });
-
-            // Fulfill the specification.
-            specification.hook.afterCashOutRecordedWith{value: payValue}(context);
-
-            // Revoke the temporary pull allowance now that the hook call has finished.
-            _afterTransferTo({to: address(specification.hook), token: beneficiaryReclaimAmount.token});
-
-            emit HookAfterRecordCashOut({
-                hook: specification.hook,
-                context: context,
-                specificationAmount: specification.amount,
-                fee: specificationAmountFee,
-                caller: msg.sender
-            });
+            amountEligibleForFees += _fulfillOne(feelessAddresses, context, specifications[i]);
             unchecked {
                 ++i;
             }
         }
+    }
+
+    /// @notice Fulfill a single hook specification: charge the protocol fee (if non-feeless), set up the hook
+    /// call context, transfer the post-fee amount to the hook, and emit the after-cash-out event.
+    /// @dev Returns the gross spec amount when the hook is non-feeless (so the caller can accumulate it into
+    /// `amountEligibleForFees`), or `0` when the hook is feeless / noop. Mutates `context.forwardedAmount`
+    /// and `context.hookMetadata` so the caller's next iteration can overwrite them.
+    /// @param feelessAddresses Registry of fee-exempt addresses (consulted to skip the per-hook fee).
+    /// @param context Cash-out context forwarded into the hook. `context.reclaimedAmount` is used as the
+    /// token-amount reference for the per-spec transfer; `context.forwardedAmount` and
+    /// `context.hookMetadata` are overwritten by this call.
+    /// @param specification The hook specification to fulfill (hook address, amount, metadata, noop flag).
+    /// @return grossSpecAmount The gross spec amount when the hook is non-feeless (for caller accumulation
+    /// into `amountEligibleForFees`); `0` for feeless or noop specifications.
+    function _fulfillOne(
+        IJBFeelessAddresses feelessAddresses,
+        JBAfterCashOutRecordedContext memory context,
+        JBCashOutHookSpecification memory specification
+    )
+        private
+        returns (uint256 grossSpecAmount)
+    {
+        // A noop specification is informational only and doesn't trigger the hook.
+        if (specification.noop) return 0;
+
+        // Get the fee for the specified amount.
+        uint256 specificationAmountFee = feelessAddresses.isFeelessFor({
+            addr: address(specification.hook), projectId: context.projectId
+        })
+            ? 0
+            : JBFees.standardFeeAmountFrom({amountBeforeFee: specification.amount});
+
+        // Surface the gross spec amount to the caller so it can be accumulated into `amountEligibleForFees`.
+        if (specificationAmountFee != 0) {
+            grossSpecAmount = specification.amount;
+            specification.amount -= specificationAmountFee;
+        }
+
+        // Pass the correct token `forwardedAmount` to the hook.
+        context.forwardedAmount = JBTokenAmount({
+            value: specification.amount,
+            token: context.reclaimedAmount.token,
+            decimals: context.reclaimedAmount.decimals,
+            currency: context.reclaimedAmount.currency
+        });
+
+        // Pass the correct metadata from the data hook's specification.
+        context.hookMetadata = specification.metadata;
+
+        // Trigger any inherited pre-transfer logic. Keep a reference to the amount that'll be paid as a `msg.value`.
+        uint256 payValue = _beforeTransferTo({
+            to: address(specification.hook), token: context.reclaimedAmount.token, amount: specification.amount
+        });
+
+        // Fulfill the specification.
+        specification.hook.afterCashOutRecordedWith{value: payValue}(context);
+
+        // Revoke the temporary pull allowance now that the hook call has finished.
+        _afterTransferTo({to: address(specification.hook), token: context.reclaimedAmount.token});
+
+        emit HookAfterRecordCashOut({
+            hook: specification.hook,
+            context: context,
+            specificationAmount: specification.amount,
+            fee: specificationAmountFee,
+            caller: msg.sender
+        });
     }
 
     //*********************************************************************//
