@@ -105,7 +105,7 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
 
     function test_migrationFeeFailure_strandsForgivenFeeAndChargesItAgainOnCleanup() external {
         uint256 payAmount = 10 ether;
-        uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: payAmount, feePercent: _terminalA.FEE()});
+        uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: payAmount, feePercent: JBConstants.FEE});
 
         vm.deal(_payer, payAmount);
         vm.prank(_payer);
@@ -144,7 +144,7 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
-        uint256 secondFee = JBFees.feeAmountFrom({amountBeforeFee: expectedFee, feePercent: _terminalA.FEE()});
+        uint256 secondFee = JBFees.feeAmountFrom({amountBeforeFee: expectedFee, feePercent: JBConstants.FEE});
         assertEq(
             _store.balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN),
             0,

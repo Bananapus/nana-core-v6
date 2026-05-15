@@ -186,7 +186,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         assertEq(
             address(__terminal).balance,
             initTerminalBalance - _payoutLimits[0].amount
-                + mulDiv(_payoutLimits[0].amount, __terminal.FEE(), JBConstants.MAX_FEE)
+                + mulDiv(_payoutLimits[0].amount, JBConstants.FEE, JBConstants.MAX_FEE)
         );
 
         // Price for the amount (in USD) that can be paid out based on the terminal's current balance.
@@ -616,13 +616,13 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
 
         assertEq(
             _projectOwner.balance,
-            ownerBalanceBeforeFirst + _amountPaidOut - mulDiv(_amountPaidOut, __terminal.FEE(), JBConstants.MAX_FEE)
+            ownerBalanceBeforeFirst + _amountPaidOut - mulDiv(_amountPaidOut, JBConstants.FEE, JBConstants.MAX_FEE)
         );
 
         // Funds leaving the ecosystem -> fee taken.
         assertEq(
             address(__terminal).balance,
-            initTerminalBalance - _amountPaidOut + mulDiv(_amountPaidOut, __terminal.FEE(), JBConstants.MAX_FEE)
+            initTerminalBalance - _amountPaidOut + mulDiv(_amountPaidOut, JBConstants.FEE, JBConstants.MAX_FEE)
         );
 
         uint256 _balanceBeforeNativeDist = address(__terminal).balance;
@@ -639,12 +639,12 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
         // Funds leaving the ecosystem -> fee taken.
         assertEq(
             _projectOwner.balance,
-            _ownerBalanceBeforeNativeDist + 1 ether - mulDiv(1 ether, __terminal.FEE(), JBConstants.MAX_FEE)
+            _ownerBalanceBeforeNativeDist + 1 ether - mulDiv(1 ether, JBConstants.FEE, JBConstants.MAX_FEE)
         );
 
         assertEq(
             address(__terminal).balance,
-            _balanceBeforeNativeDist - 1 ether + mulDiv(1 ether, __terminal.FEE(), JBConstants.MAX_FEE)
+            _balanceBeforeNativeDist - 1 ether + mulDiv(1 ether, JBConstants.FEE, JBConstants.MAX_FEE)
         );
     }
 }

@@ -82,16 +82,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
 
     //*********************************************************************//
-    // ------------------------- public constants ------------------------ //
-    //*********************************************************************//
-
-    /// @notice This terminal's fee (as a fraction out of `JBConstants.MAX_FEE`).
-    /// @dev Fees are charged on payouts to addresses and surplus allowance usage, as well as cash outs while the
-    /// cash out tax rate is less than 100%. Re-exports `JBConstants.FEE` so external callers can read it through
-    /// the `IJBFeeTerminal` interface.
-    uint256 public constant override FEE = JBConstants.FEE;
-
-    //*********************************************************************//
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
@@ -260,7 +250,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256 reclaimAmount)
     {
+        // Caller must hold (or be operator with) `CASH_OUT_TOKENS` permission on the source `holder`/`projectId`.
+        // Burning A's tokens is the load-bearing side effect — gating it stays at the same authority bar as the
+        // direct `cashOutTokensOf` entrypoint.
         _requireCashOutPermissionFrom({holder: holder, projectId: projectId});
+
+        // Destination opt-out check: B's current ruleset can set `pauseCrossProjectFeeFreeInflows = true` to
+        // refuse cross-project fee-free credits. Without this gate, anyone holding A's tokens could push a
+        // deferred-fee credit onto `_feeFreeSurplusOf[B]` without B consenting.
         _requireBeneficiaryAcceptsFeeFreeInflows(beneficiaryProjectId);
 
         // Burn source-project tokens, run cashout-side hooks, take any hook fees, and cap source fee-free.
@@ -278,13 +275,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Nothing to route if the data hook returned zero reclaim.
         if (reclaimAmount == 0) return 0;
 
-        // Route the reclaim to B's primary terminal as an `addToBalanceOf`, then credit B's fee-free surplus
-        // by the delivery delta. `_efficientAddToBalance` handles same-terminal vs cross-terminal and
-        // hardcodes `shouldReturnHeldFees: false` — this entrypoint cannot unlock B's held fees.
+        // Resolve B's primary terminal for the reclaim token. Could be this terminal (same-terminal short-
+        // circuit) or a router that swaps before depositing. Reverts if no primary terminal is registered.
         IJBTerminal destinationTerminal = _resolveBeneficiaryTerminal(beneficiaryProjectId, tokenToReclaim);
+
+        // Snapshot B's per-context balances on this terminal BEFORE routing. The post-routing comparison
+        // identifies the bucket the reclaim actually landed in (matters for cross-token routes where a router
+        // swaps to a different token in B's accounting-context list).
         (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
             _snapshotBeneficiaryContextBalances(beneficiaryProjectId);
 
+        // Route via `_efficientAddToBalance` — handles same-terminal vs cross-terminal (with the standard
+        // `_beforeTransferTo`/`_afterTransferTo` allowance dance) and hardcodes `shouldReturnHeldFees: false`,
+        // so this entrypoint cannot be used to unlock B's held fees on top of the source-side fee skip.
         _efficientAddToBalance({
             terminal: destinationTerminal,
             projectId: beneficiaryProjectId,
@@ -293,6 +296,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             metadata: addToBalanceMetadata
         });
 
+        // Credit `_feeFreeSurplusOf[B]` on the first of B's contexts whose balance grew. This binds the
+        // skipped source-side fee on the destination side: B's next non-feeless cashout pays it. Reverts if
+        // no context grew (no delivery landed) — without delivery, the fee skip would leak.
         _creditFirstGrowingBeneficiaryContext(beneficiaryProjectId, contexts, balancesBefore);
     }
 
@@ -737,7 +743,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount)
     {
+        // Caller must hold (or be operator with) `CASH_OUT_TOKENS` permission on the source `holder`/`projectId`.
+        // Burning A's tokens is the load-bearing side effect — gating it stays at the same authority bar as the
+        // direct `cashOutTokensOf` entrypoint.
         _requireCashOutPermissionFrom({holder: holder, projectId: projectId});
+
+        // Destination opt-out check: B's current ruleset can set `pauseCrossProjectFeeFreeInflows = true` to
+        // refuse cross-project fee-free credits. Without this gate, anyone holding A's tokens could push a
+        // deferred-fee credit onto `_feeFreeSurplusOf[B]` without B consenting.
         _requireBeneficiaryAcceptsFeeFreeInflows(beneficiaryProjectId);
 
         // Burn source-project tokens, run cashout-side hooks, take any hook fees, and cap source fee-free.
@@ -1377,14 +1390,30 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
+        // Walk B's accounting contexts in declared order. The first context whose balance grew is treated as
+        // the bucket the router chose to deposit into (typically the post-swap token in a cross-token route).
+        // We bind the deferred source-side fee to that bucket and stop — subsequent grown contexts are ignored
+        // by design, capping the credit at one delivery delta even if a misbehaving router somehow split the
+        // deposit across multiple buckets.
         for (uint256 i; i < contexts.length;) {
+            // Read B's post-routing balance for this context's token. Compared against the pre-routing snapshot
+            // captured by `_snapshotBeneficiaryContextBalances` to detect the delivery delta.
             uint256 balanceAfter =
                 STORE.balanceOf({terminal: address(this), projectId: beneficiaryProjectId, token: contexts[i].token});
 
             if (balanceAfter > balancesBefore[i]) {
+                // Credit the delivery delta into B's fee-free counter for this token. `unchecked` is safe:
+                // `balanceAfter > balancesBefore[i]` is the loop condition, so the subtraction can't underflow,
+                // and the addition can't overflow before the underlying balance does (terminal balance is the
+                // upper bound on any cumulative credit — see the cap call below).
                 unchecked {
                     _feeFreeSurplusOf[beneficiaryProjectId][contexts[i].token] += balanceAfter - balancesBefore[i];
                 }
+
+                // Cap the credit at B's current balance for this token. If pay/addToBalance hooks pulled funds
+                // back out during routing, the post-balance read inside `_capFeeFreeSurplus` clamps the
+                // counter so it never exceeds what's actually sitting in B's bucket. Without this, B's later
+                // zero-tax cashouts would over-fee phantom amounts.
                 _capFeeFreeSurplus({projectId: beneficiaryProjectId, token: contexts[i].token});
                 return;
             }
@@ -1394,6 +1423,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
         }
 
+        // No context grew. Either the destination terminal silently dropped the funds or routed them
+        // elsewhere (e.g. to a different terminal not registered as B's primary). Revert the entire
+        // cross-project flow so the source-side fee skip never becomes a leak — A's burn is undone too.
         revert JBMultiTerminal_BeneficiaryProjectNotPaid(beneficiaryProjectId);
     }
 
@@ -2112,7 +2144,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 projectId: projectId,
                 token: token,
                 amount: amount,
-                fee: FEE,
+                fee: JBConstants.FEE,
                 beneficiary: beneficiary,
                 caller: _msgSender()
             });

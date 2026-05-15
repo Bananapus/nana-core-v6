@@ -57,6 +57,9 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `IJBCashOutTerminal.previewCashOutFrom(...)` is new.
 - `IJBCashOutTerminal.payAfterCashOutTokensOf(...)` is new.
 - `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)` is new.
+- `IJBFeeTerminal.FEE()` is REMOVED. The terminal no longer re-exports the protocol fee constant; read
+  `JBConstants.FEE` directly. Off-chain integrators that previously called `terminal.FEE()` must switch to
+  reading the constant from `JBConstants`.
 - `IJBTerminalStore.previewPayFrom(...)` and `previewCashOutFrom(...)` are new.
 - `IJBTerminal.currentSurplusOf(...)` changed parameter shape.
 - `JBRulesetMetadata` adds `pauseCrossProjectFeeFreeInflows` and narrows `metadata` from 14 to 13 bits.
@@ -96,6 +99,8 @@ This file describes the verified change from `nana-core-v5` to the current `nana
     `HookAfterRecordCashOut` from the terminal address)
 - Renamed functions
   - `IJBController.addPriceFeed(...)` -> `addPriceFeedFor(...)`
+- Removed functions
+  - `IJBFeeTerminal.FEE()` (read `JBConstants.FEE` directly)
 - Changed function shapes
   - `IJBTerminal.currentSurplusOf(...)`
 - Added events

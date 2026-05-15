@@ -90,7 +90,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
     }
 
     function _feeAmountFrom(uint256 amount) private view returns (uint256) {
-        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: _terminal.FEE()});
+        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: JBConstants.FEE});
     }
 
     // Tests that basic payout limit and surplus allowance limits work as intended.

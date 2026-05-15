@@ -191,7 +191,7 @@ contract TestSplits_Local is TestBaseWorkflow {
 
         // Calculate the amount returned after fees are processed.
         uint256 _beneficiaryNativeBalance =
-            _nativePayoutLimit - mulDiv(_nativePayoutLimit, _terminal.FEE(), JBConstants.MAX_FEE);
+            _nativePayoutLimit - mulDiv(_nativePayoutLimit, JBConstants.FEE, JBConstants.MAX_FEE);
 
         assertEq(_splitsGuy.balance, _beneficiaryNativeBalance);
 
