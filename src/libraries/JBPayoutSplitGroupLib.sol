@@ -88,10 +88,6 @@ library JBPayoutSplitGroupLib {
         // Native vs ERC-20 governs the transfer mechanism (push via msg.value vs allowance pull).
         bool isNative = token == JBConstants.NATIVE_TOKEN;
 
-        // Snapshot the relevant balance before the hook call. The post-call delta tells us how much the hook
-        // actually took, regardless of whether it pulled the full allowance, partially pulled, or reverted.
-        uint256 balanceBefore = isNative ? address(this).balance : IERC20(token).balanceOf(address(this));
-
         // Build the hook context inline so the terminal call site doesn't have to. `decimals` is looked up from
         // the terminal store's recorded accounting context for this (projectId, token) pair.
         JBSplitHookContext memory context = JBSplitHookContext({
@@ -113,16 +109,33 @@ library JBPayoutSplitGroupLib {
         }
 
         // Wrap the hook call in try/catch so a reverting hook does not bubble out. On revert no tokens leave
-        // this contract (transferFrom inside the hook is rolled back; pushed ETH is returned), so `sent` will
-        // resolve to 0 via balance-delta below.
-        try split.hook.processSplitWith{value: payValue}(context) {} catch {}
+        // this contract (transferFrom inside the hook is rolled back; pushed ETH is returned). The success
+        // flag drives the native-ETH `sent` computation below — we cannot use a balance delta because the
+        // hook may reenter into this terminal (pay/cashOut/etc.) and shift our balance independently of its
+        // own consumption.
+        bool hookOk;
+        try split.hook.processSplitWith{value: payValue}(context) {
+            hookOk = true;
+        } catch {}
 
-        // Revoke any unconsumed ERC-20 allowance immediately after the call so the hook can never pull later.
-        // ETH path has no allowance to revoke.
-        if (!isNative) SafeERC20.forceApprove({token: IERC20(token), spender: address(split.hook), value: 0});
+        if (isNative) {
+            // Native ETH is pushed via `value:`. There is no on-the-fly "give some back" mechanism — a
+            // successful hook consumed exactly `netPayoutAmount`; a reverting hook consumed 0 (the EVM
+            // refunds the value on revert). Any side-effects the hook produced via reentrant terminal
+            // calls (pay/addToBalance/cashOut) are recorded through those calls' own bookkeeping and must
+            // not bleed into this split's consumption accounting.
+            sent = hookOk ? netPayoutAmount : 0;
+        } else {
+            // ERC-20 hooks pull via `transferFrom` against the allowance we granted. The allowance delta
+            // is the only consumption measure that is robust against reentrant balance manipulation: the
+            // hook cannot raise its own allowance, and any pull on this allowance reduces it 1:1 with
+            // what the hook actually received. Reentrant flows through other paths use independent
+            // allowances/values and so cannot inflate this measurement.
+            sent = netPayoutAmount - IERC20(token).allowance({owner: address(this), spender: address(split.hook)});
 
-        // The hook's actual consumption is the drop in this contract's balance for the token.
-        sent = balanceBefore - (isNative ? address(this).balance : IERC20(token).balanceOf(address(this)));
+            // Revoke any unconsumed ERC-20 allowance immediately after the call so the hook can never pull later.
+            SafeERC20.forceApprove({token: IERC20(token), spender: address(split.hook), value: 0});
+        }
 
         // If the hook took less than offered, refund the proportional gross portion to the project's balance.
         // refund = amount * (netPayoutAmount - sent) / netPayoutAmount. For full consumption this branch is
