@@ -44,7 +44,8 @@ contract TestUpdateRulesetWeightCache_Local is JBRulesetsSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

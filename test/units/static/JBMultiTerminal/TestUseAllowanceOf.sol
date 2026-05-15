@@ -15,6 +15,7 @@ import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
 import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMetadataResolver.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBHeldFeesLib} from "../../../../src/libraries/JBHeldFeesLib.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -365,7 +366,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_rulesMetadata);
@@ -489,7 +491,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_rulesMetadata);
@@ -585,7 +588,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
 
         // Expect ProcessFee event (fee is processed immediately, not held)
         vm.expectEmit(true, true, true, true);
-        emit IJBFeeTerminal.ProcessFee({
+        emit JBHeldFeesLib.ProcessFee({
             projectId: _projectId,
             token: mockToken,
             amount: 2,

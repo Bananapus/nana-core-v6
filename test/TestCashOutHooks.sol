@@ -68,7 +68,8 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: true,
             dataHook: _DATA_HOOK,
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Package up ruleset configuration.

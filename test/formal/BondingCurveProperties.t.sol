@@ -307,7 +307,7 @@ contract BondingCurveProperties is Test {
     {
         vm.assume(reservedPercent <= 10_000);
         vm.assume(cashOutTaxRate <= 10_000);
-        vm.assume(extraMetadata <= 0x3FFF);
+        vm.assume(extraMetadata <= 0x1FFF);
 
         JBRulesetMetadata memory original = JBRulesetMetadata({
             reservedPercent: reservedPercent,
@@ -328,7 +328,8 @@ contract BondingCurveProperties is Test {
             useDataHookForPay: boolFlags & 4096 != 0,
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
-            metadata: extraMetadata
+            metadata: extraMetadata,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = JBRulesetMetadataResolver.packRulesetMetadata(original);
@@ -372,7 +373,7 @@ contract BondingCurveProperties is Test {
     {
         vm.assume(reservedPercent <= 10_000);
         vm.assume(cashOutTaxRate <= 10_000);
-        vm.assume(extraMetadata <= 0x3FFF);
+        vm.assume(extraMetadata <= 0x1FFF);
 
         JBRulesetMetadata memory original = JBRulesetMetadata({
             reservedPercent: reservedPercent,
@@ -393,7 +394,8 @@ contract BondingCurveProperties is Test {
             useDataHookForPay: boolFlags & 4096 != 0,
             useDataHookForCashOut: boolFlags & 8192 != 0,
             dataHook: dataHook,
-            metadata: extraMetadata
+            metadata: extraMetadata,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         uint256 packed = JBRulesetMetadataResolver.packRulesetMetadata(original);

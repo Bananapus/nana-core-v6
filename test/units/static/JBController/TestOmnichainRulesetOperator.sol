@@ -89,7 +89,8 @@ contract TestOmnichainRulesetOperator_Local is JBTest {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBFundAccessLimitGroup[] memory limitGroups = new JBFundAccessLimitGroup[](1);

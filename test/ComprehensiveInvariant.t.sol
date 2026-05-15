@@ -64,7 +64,8 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
         feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         feeRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -112,7 +113,8 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Splits: 50% to splitBeneficiary, 50% to fee project (via projectId=1)

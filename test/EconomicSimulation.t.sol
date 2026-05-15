@@ -63,7 +63,8 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
                 useDataHookForPay: false,
                 useDataHookForCashOut: false,
                 dataHook: address(0),
-                metadata: 0
+                metadata: 0,
+                pauseCrossProjectFeeFreeInflows: false
             });
             emptyRuleset[0].splitGroups = new JBSplitGroup[](0);
             emptyRuleset[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -115,7 +116,8 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
         rulesetConfigA[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigA[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -165,7 +167,8 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
         rulesetConfigB[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigB[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -207,7 +210,8 @@ contract EconomicSimulation_Local is StdInvariant, TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
         rulesetConfigC[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfigC[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);

@@ -49,7 +49,8 @@ contract RegressionHeldFeeRoundingTest is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);

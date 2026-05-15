@@ -166,7 +166,8 @@ contract CashOutReenterPay is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: true, // Enable data hook for cashouts.
             dataHook: DATA_HOOK,
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
 
         // Build a single ruleset configuration with the above metadata.

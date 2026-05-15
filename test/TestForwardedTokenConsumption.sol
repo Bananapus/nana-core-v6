@@ -345,7 +345,8 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             useDataHookForPay: useDataHookForPay,
             useDataHookForCashOut: useDataHookForCashOut,
             dataHook: dataHook,
-            metadata: 0
+            metadata: 0,
+            pauseCrossProjectFeeFreeInflows: false
         });
     }
 
