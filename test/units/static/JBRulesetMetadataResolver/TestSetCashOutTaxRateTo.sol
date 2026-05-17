@@ -25,9 +25,8 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
 
         _fuzzReservedPercent = uint16(bound(_fuzzReservedPercent, 0, JBConstants.MAX_RESERVED_PERCENT));
         _fuzzCashOutTaxRate = uint16(bound(_fuzzCashOutTaxRate, 0, JBConstants.MAX_CASH_OUT_TAX_RATE));
-        // Ensure the metadata fits in the trailing 13-bit field (narrowed from 14 to make room for the
-        // `pauseCrossProjectFeeFreeInflows` flag at bit 80).
-        _fuzzMetadata = uint16(bound(_fuzzMetadata, 0, 8191));
+        // Ensure the metadata is a max of 14 bits.
+        _fuzzMetadata = uint16(bound(_fuzzCashOutTaxRate, 0, 16_383));
 
         JBRulesetMetadata memory _rulesMetadata = JBRulesetMetadata({
             reservedPercent: _fuzzReservedPercent,
@@ -45,7 +44,6 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
             allowAddPriceFeed: true,
             holdFees: true,
             scopeCashOutsToLocalBalances: true,
-            pauseCrossProjectFeeFreeInflows: true,
             useDataHookForPay: true,
             useDataHookForCashOut: true,
             dataHook: _hookAddress,
@@ -65,21 +63,20 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
         assertEq(_reservedPercent, _fuzzReservedPercent);
         assertEq(_cashOutTaxRate, _fuzzCashOutTaxRate);
 
-        // 15 boolean flags now occupy bits 68 through 82 (was 14 flags at 68-81). All set to true above.
-        for (uint256 _i = 68; _i <= 82; _i++) {
+        for (uint256 _i = 68; _i < 81; _i++) {
             // forge-lint: disable-next-line(unsafe-typecast)
             uint256 _flag = uint256(uint16(_packed >> _i) & 1);
             assertEq(_flag, 1);
         }
 
-        // Data hook address shifted by one bit to accommodate the new flag.
+        // Data source address
         // forge-lint: disable-next-line(unsafe-typecast)
-        address _packedDataHook = address(uint160(_packed >> 83));
+        address _packedDataHook = address(uint160(_packed >> 82));
         assertEq(_packedDataHook, _hookAddress);
 
-        // Trailing metadata field shifted by one bit.
+        // Metadata
         // forge-lint: disable-next-line(unsafe-typecast)
-        uint256 _packedMetadata = uint256(uint16(_packed >> 243));
+        uint256 _packedMetadata = uint256(uint16(_packed >> 242));
         assertEq(_packedMetadata, uint256(_fuzzMetadata));
     }
 
@@ -89,8 +86,8 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
     {
         // Handle the unique constraints of the JBRulesetMetadata.
         {
-            // The trailing `metadata` field is now 13 bits (was 14); top 3 bits of the uint16 are ignored.
-            _rulesMetadata.metadata = _rulesMetadata.metadata % 8192;
+            // First 2 bits of `metadata.metadata` are ignored
+            _rulesMetadata.metadata = _rulesMetadata.metadata % 16_383;
         }
 
         // Get the keccak from before.

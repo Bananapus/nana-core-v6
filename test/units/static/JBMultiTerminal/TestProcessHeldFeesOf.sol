@@ -12,9 +12,7 @@ import {IJBRulesets} from "../../../../src/interfaces/IJBRulesets.sol";
 import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "../../../../src/interfaces/IJBTokens.sol";
-import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBFees} from "../../../../src/libraries/JBFees.sol";
-import {JBHeldFeesLib} from "../../../../src/libraries/JBHeldFeesLib.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBFee} from "../../../../src/structs/JBFee.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
@@ -124,7 +122,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         );
 
         // The fee amount that will be calculated from the held amount
-        uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: JBConstants.FEE});
+        uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: _terminal.FEE()});
 
         // Set up accounting context for the fee beneficiary project (project 1) so _pay can build the token amount.
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -162,7 +160,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Expect ProcessFee event
         vm.expectEmit();
-        emit JBHeldFeesLib.ProcessFee({
+        emit IJBFeeTerminal.ProcessFee({
             projectId: _projectId,
             token: _mockToken,
             amount: expectedFeeAmount,
@@ -191,7 +189,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         );
 
         // The fee amount that will be calculated from the held amount
-        uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: JBConstants.FEE});
+        uint256 expectedFeeAmount = JBFees.feeAmountFrom({amountBeforeFee: heldAmount, feePercent: _terminal.FEE()});
 
         // Mock the directory call to find the fee terminal - return address(0) which will cause
         // executeProcessFee to revert with FeeTerminalNotFound
@@ -208,7 +206,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
 
         // Expect FeeReverted event
         vm.expectEmit(true, true, true, false);
-        emit JBHeldFeesLib.FeeReverted({
+        emit IJBFeeTerminal.FeeReverted({
             projectId: _projectId,
             token: _mockToken,
             feeProjectId: 1,

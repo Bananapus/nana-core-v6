@@ -188,7 +188,6 @@ contract Phase3Handler is Test {
         if (actorBalance == 0) return;
 
         uint256 cashOutAmount = bound(seed, 1, actorBalance);
-        uint256 balanceBefore = store.balanceOf(address(terminal), projectId2, JBConstants.NATIVE_TOKEN);
 
         vm.prank(actor);
         try terminal.cashOutTokensOf({
@@ -202,14 +201,11 @@ contract Phase3Handler is Test {
         }) returns (
             uint256 reclaimAmount
         ) {
-            uint256 balanceAfter = store.balanceOf(address(terminal), projectId2, JBConstants.NATIVE_TOKEN);
-            uint256 grossReclaim = balanceBefore - balanceAfter;
-
-            ghost_totalCashedOut[projectId2] += grossReclaim;
+            ghost_totalCashedOut[projectId2] += reclaimAmount;
             ghost_actorExtracted[actor][projectId2] += reclaimAmount;
             ghost_globalOutflows += reclaimAmount;
             // Cash out fee is deducted from reclaim when cashOutTaxRate < MAX
-            uint256 feeAmount = grossReclaim - reclaimAmount;
+            uint256 feeAmount = _feeFrom(reclaimAmount);
             ghost_totalFeesDeducted[projectId2] += feeAmount;
             callCount_cashOut2++;
         } catch {}
@@ -222,7 +218,6 @@ contract Phase3Handler is Test {
         if (actorBalance == 0) return;
 
         uint256 cashOutAmount = bound(seed, 1, actorBalance);
-        uint256 balanceBefore = store.balanceOf(address(terminal), projectId3, JBConstants.NATIVE_TOKEN);
 
         vm.prank(actor);
         try terminal.cashOutTokensOf({
@@ -236,10 +231,7 @@ contract Phase3Handler is Test {
         }) returns (
             uint256 reclaimAmount
         ) {
-            uint256 balanceAfter = store.balanceOf(address(terminal), projectId3, JBConstants.NATIVE_TOKEN);
-            uint256 grossReclaim = balanceBefore - balanceAfter;
-
-            ghost_totalCashedOut[projectId3] += grossReclaim;
+            ghost_totalCashedOut[projectId3] += reclaimAmount;
             ghost_actorExtracted[actor][projectId3] += reclaimAmount;
             ghost_globalOutflows += reclaimAmount;
             callCount_cashOut3++;
@@ -279,7 +271,6 @@ contract Phase3Handler is Test {
         if (balance == 0) return;
 
         uint256 amount = bound(seed, 1, balance > 3 ether ? 3 ether : balance);
-        uint256 balanceBefore = store.balanceOf(address(terminal), projectId2, JBConstants.NATIVE_TOKEN);
 
         vm.prank(projectOwner);
         try terminal.useAllowanceOf({
@@ -294,8 +285,7 @@ contract Phase3Handler is Test {
         }) returns (
             uint256 netAmountPaidOut
         ) {
-            uint256 balanceAfter = store.balanceOf(address(terminal), projectId2, JBConstants.NATIVE_TOKEN);
-            ghost_totalAllowanceUsed[projectId2] += balanceBefore - balanceAfter;
+            ghost_totalAllowanceUsed[projectId2] += netAmountPaidOut;
             ghost_globalOutflows += netAmountPaidOut;
             callCount_useAllowance2++;
         } catch {}

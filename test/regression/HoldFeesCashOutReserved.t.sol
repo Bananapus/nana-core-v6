@@ -65,8 +65,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         // Payout limit of 2 ETH.
@@ -128,8 +127,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
         feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         feeRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
@@ -202,7 +200,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         });
 
         {
-            uint256 feeOnPayout = JBFees.feeAmountFrom({amountBeforeFee: PAYOUT_LIMIT, feePercent: JBConstants.FEE});
+            uint256 feeOnPayout = JBFees.feeAmountFrom({amountBeforeFee: PAYOUT_LIMIT, feePercent: _terminal.FEE()});
 
             assertEq(
                 _store.balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN),
@@ -234,7 +232,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
 
             // Cashout fees are NOT held — processed immediately (shouldHoldFees: false in _cashOutTokensOf).
             uint256 expectedNetReclaim =
-                grossReclaim - JBFees.feeAmountFrom({amountBeforeFee: grossReclaim, feePercent: JBConstants.FEE});
+                grossReclaim - JBFees.feeAmountFrom({amountBeforeFee: grossReclaim, feePercent: _terminal.FEE()});
             uint256 payerBalanceBefore = _payer.balance;
 
             vm.prank(_payer);
@@ -290,7 +288,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             uint256 totalHeldFeeValue;
             for (uint256 i; i < remainingHeldFees.length; i++) {
                 totalHeldFeeValue += JBFees.feeAmountFrom({
-                    amountBeforeFee: remainingHeldFees[i].amount, feePercent: JBConstants.FEE
+                    amountBeforeFee: remainingHeldFees[i].amount, feePercent: _terminal.FEE()
                 });
             }
             assertGe(
@@ -336,7 +334,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
         JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 10);
         uint256 heldFeeValue;
         for (uint256 i; i < heldFees.length; i++) {
-            heldFeeValue += JBFees.feeAmountFrom({amountBeforeFee: heldFees[i].amount, feePercent: JBConstants.FEE});
+            heldFeeValue += JBFees.feeAmountFrom({amountBeforeFee: heldFees[i].amount, feePercent: _terminal.FEE()});
         }
 
         assertEq(
@@ -394,7 +392,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
 
         // Actually perform the cashout and confirm it matches the with-reserves calculation (net of fee).
         // cashOutTokensOf returns the NET reclaim after the 2.5% fee is deducted.
-        uint256 feeOnReclaim = JBFees.feeAmountFrom({amountBeforeFee: reclaimWithReserves, feePercent: JBConstants.FEE});
+        uint256 feeOnReclaim = JBFees.feeAmountFrom({amountBeforeFee: reclaimWithReserves, feePercent: _terminal.FEE()});
         uint256 expectedNetReclaim = reclaimWithReserves - feeOnReclaim;
 
         vm.prank(_payer);

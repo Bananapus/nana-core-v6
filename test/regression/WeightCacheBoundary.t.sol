@@ -66,8 +66,7 @@ contract WeightCacheBoundary_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
     }
 

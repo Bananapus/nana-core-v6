@@ -18,9 +18,7 @@ If a change affects accounting, token supply, fees, terminal routing, or permiss
 - Data hooks run before settlement and may change economics. Pay and cash-out hooks run after settlement.
 - Reserved tokens and other pending supply affect supply-sensitive math before distribution.
 - Terminal balances, fee accounting, reclaim math, and surplus calculations must agree.
-- Fee logic taxes value leaving the system, not every internal rebalance. Intra-protocol rebalancing
-  (same-terminal payouts, cross-project cashout-as-payment) defers the fee via `_feeFreeSurplusOf` rather
-  than charging it on outflow.
+- Fee logic taxes value leaving the system, not every internal rebalance.
 - Rulesets are time-ordered and approval-aware, and downstream deployers depend on predictable ID progression.
 - Permission checks are protocol safety checks, not just UI hints.
 
@@ -84,26 +82,6 @@ authorized caller
   -> same-terminal project payouts stay inside terminal accounting and may add fee-free surplus
 ```
 
-### Cross-Project Cash Out (cash-out as payment to project)
-
-```text
-holder cashes out the source project
-  -> source-side cashout fee is skipped (beneficiaryIsFeeless=true)
-  -> the source project's tokens burn, cashout-side hooks run additively
-  -> reclaim is paid to DIRECTORY.primaryTerminalOf(beneficiaryProjectId, tokenToReclaim) — this terminal or a router
-  -> destination terminal mints the destination project's tokens to the beneficiary
-  -> same-terminal retained balance deltas are credited to _feeFreeSurplusOf[beneficiaryProjectId][token]
-  -> same-terminal pay-hook egress is source-fee-bound per hook
-  -> external/router routes can skip the source fee only when no pay-hook forwarding is previewed, every beneficiary context on this terminal uses the source token, and the full source-token reclaim is retained here
-  -> external/router routes with previewed forwarding or mixed/cross-token output pay the source fee up front and route net
-  -> reverts if no same-terminal delivery is fee-bound or retained
-  -> the destination project's next non-feeless cashout pays the deferred fee on the credited amount
-```
-
-`cashOutAndPay` and `cashOutAndAddToBalance` revert if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
-default (`false`) allows the inflow, matching the existing intra-terminal payout semantic where receiving
-projects accumulate `_feeFreeSurplusOf` credits from other projects' outflows.
-
 ## Accounting Model
 
 This repo owns the canonical ledger for balances, fees, supply-sensitive reclaim math, payout limits, allowances, reserved tokens, and preview calculations. Other repos may wrap or influence these values, but they should not duplicate them.
@@ -137,9 +115,6 @@ If a duration-based ruleset auto-cycles without a new ruleset ID, payout-limit u
 
 - fee-free surplus and same-terminal payout behavior:
   `test/TestFeeFreeCashOutBypass.sol`
-- cross-project cash-out (`cashOutAndPay` / `cashOutAndAddToBalance`) unit coverage:
-  `test/units/static/JBMultiTerminal/TestCashOutAndPay.sol` and
-  `test/units/static/JBMultiTerminal/TestCashOutAndAddToBalance.sol`
 - migration and terminal-accounting continuity:
   `test/TestTerminalMigration.sol`
 - ruleset ordering and transition behavior:

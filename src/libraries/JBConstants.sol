@@ -20,10 +20,4 @@ library JBConstants {
 
     /// @notice The fee denominator. The protocol fee is `FEE / MAX_FEE` (currently 25/1000 = 2.5%).
     uint16 public constant MAX_FEE = 1000;
-
-    /// @notice The fee numerator. The protocol fee is `FEE / MAX_FEE` = 25/1000 = 2.5%, charged on outflows.
-    uint16 public constant FEE = 25;
-
-    /// @notice The project ID that receives protocol fees. Should be the first project launched at deployment.
-    uint256 public constant FEE_BENEFICIARY_PROJECT_ID = 1;
 }

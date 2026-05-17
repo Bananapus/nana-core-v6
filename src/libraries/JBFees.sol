@@ -27,29 +27,4 @@ library JBFees {
     function feeAmountFrom(uint256 amountBeforeFee, uint256 feePercent) internal pure returns (uint256) {
         return mulDiv(amountBeforeFee, feePercent, JBConstants.MAX_FEE);
     }
-
-    /// @notice Specialization of `feeAmountFrom` that hardcodes the standard protocol fee
-    /// (`JBConstants.FEE / JBConstants.MAX_FEE` = 25 / 1000 = 1 / 40). Both numerator and denominator are
-    /// compile-time constants so callers don't need to pass them every call.
-    /// @dev Pre-reduced: `mulDiv(amount, 25, 1000)` ≡ `amount / 40` (gcd(25, 1000) = 25). Plain integer
-    /// division is exact (rounds down) and shaves the entire `mulDiv` 512-bit pipeline at every fee site.
-    /// If `JBConstants.FEE` or `JBConstants.MAX_FEE` changes, the constant `40` here MUST be reduced again.
-    /// @param amountBeforeFee The amount before the fee is applied, as a fixed point number.
-    /// @return The fee amount, as a fixed point number with the same number of decimals as `amountBeforeFee`.
-    function standardFeeAmountFrom(uint256 amountBeforeFee) internal pure returns (uint256) {
-        return amountBeforeFee / 40;
-    }
-
-    /// @notice Specialization of `feeAmountResultingIn` that hardcodes the standard protocol fee
-    /// (`JBConstants.FEE / JBConstants.MAX_FEE`). Use to back-calculate the standard fee from a known
-    /// post-fee payout.
-    /// @dev Pre-reduced: `mulDiv(amount, 1000, 1000 - 25) - amount` ≡ `mulDiv(amount, 40, 39) - amount`
-    /// (gcd(1000, 975) = 25). `mulDiv` (not raw `*`) preserves overflow-safety for the rare wildly-large
-    /// inputs and matches the rounding behavior of `feeAmountResultingIn` exactly. If `JBConstants.FEE` or
-    /// `JBConstants.MAX_FEE` changes, the constants `40` and `39` here MUST be reduced again.
-    /// @param amountAfterFee The desired post-fee amount, as a fixed point number.
-    /// @return The fee amount that, when added to `amountAfterFee`, yields the gross pre-fee amount.
-    function standardFeeAmountResultingIn(uint256 amountAfterFee) internal pure returns (uint256) {
-        return mulDiv(amountAfterFee, 40, 39) - amountAfterFee;
-    }
 }

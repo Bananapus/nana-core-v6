@@ -60,8 +60,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         JBRulesetConfig[] memory rulesetConfig = new JBRulesetConfig[](1);
@@ -183,13 +182,13 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
 
         // Fee was deducted from the payout — project balance is now only the surplus (if any).
         // The fee was 2.5% of the payout amount.
-        uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: JBConstants.FEE});
+        uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: _terminal.FEE()});
         assertGt(feeAmount, 0, "Fee should be non-zero");
     }
 
     /// @notice Held fee processing: when fee payment reverts, the FeeReverted event is emitted
     /// and the fee amount is credited back to the project balance via _recordAddedBalanceFor.
-    function test_heldFeeProcessing_revert_refundsToProject() external pure {
+    function test_heldFeeProcessing_revert_refundsToProject() external view {
         // This test requires holdFees=true ruleset — we test the principle:
         // When _processFee's try block reverts, the catch block calls _recordAddedBalanceFor.
         // This returns the fee amount to the project's terminal store balance.
@@ -206,7 +205,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
         // already cover this with mocks.
 
         // Here we verify the fee calculation is correct.
-        uint256 fee = JBConstants.FEE; // 25 (2.5%)
+        uint256 fee = _terminal.FEE(); // 25 (2.5%)
         uint256 feeAmount = JBFees.feeAmountFrom({amountBeforeFee: PAY_AMOUNT, feePercent: fee});
 
         // Fee of 10 ETH at 2.5%: 10 * 25 / 1000 = 0.25 ETH

@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {IJBFeeTerminal} from "../../../../src/interfaces/IJBFeeTerminal.sol";
-import {JBHeldFeesLib} from "../../../../src/libraries/JBHeldFeesLib.sol";
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
@@ -147,8 +146,8 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
             ""
         );
 
-        vm.expectEmit(true, true, true, false);
-        emit JBHeldFeesLib.ReturnHeldFees(_projectId, _native, payAmount, feeAmountFrom, leftOverAmount, address(this));
+        vm.expectEmit();
+        emit IJBFeeTerminal.ReturnHeldFees(_projectId, _native, payAmount, feeAmountFrom, leftOverAmount, address(this));
 
         _terminal.addToBalanceOf{value: payAmount}({
             projectId: _projectId,
@@ -179,8 +178,8 @@ contract TestAddToBalanceOf_Local is JBMultiTerminalSetup {
             ""
         );
 
-        vm.expectEmit(true, true, true, false);
-        emit JBHeldFeesLib.ReturnHeldFees(_projectId, _native, lowerPayAmount, returnedFee, 0, address(this));
+        vm.expectEmit();
+        emit IJBFeeTerminal.ReturnHeldFees(_projectId, _native, lowerPayAmount, returnedFee, 0, address(this));
 
         _terminal.addToBalanceOf{value: lowerPayAmount}({
             projectId: _projectId,

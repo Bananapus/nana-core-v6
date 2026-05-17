@@ -71,8 +71,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         JBRulesetConfig[] memory _rulesetConfig = new JBRulesetConfig[](1);
