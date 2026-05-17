@@ -26,7 +26,7 @@ contract Phase3Handler is Test {
     uint256 public projectId4;
     address public projectOwner;
 
-    uint256 public constant FEE_PERCENT = 25; // 2.5% — matches JBMultiTerminal.FEE
+    uint256 public constant FEE_PERCENT = 25; // 2.5% — matches JBConstants.STANDARD_FEE
 
     // =========================================================================
     // Actors

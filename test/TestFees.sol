@@ -211,7 +211,7 @@ contract TestFees_Local is TestBaseWorkflow {
         JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
         assertEq(heldFees.length, 1);
         assertEq(heldFees[0].amount, 0);
-        assertEq(JBFees.feeAmountFrom({amountBeforeFee: 1, feePercent: _terminal.FEE()}), 0);
+        assertEq(JBFees.feeAmountFrom({amountBeforeFee: 1, feePercent: JBConstants.STANDARD_FEE}), 0);
     }
 
     function testHeldFeeIsProcessedOnMigrate() public {
@@ -240,7 +240,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _nativeDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = _nativeDistLimit - _feeAmount;
 
@@ -252,7 +252,7 @@ contract TestFees_Local is TestBaseWorkflow {
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminal2);
 
         // Check: Held fee remains in terminal, plus migration fee paid to fee project (on same terminal)
-        uint256 _migrationFee = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _migrationFee = _nativeDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
         assertEq(address(_terminal).balance, _feeAmount + _migrationFee);
 
         vm.stopPrank();
@@ -284,7 +284,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _nativeDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = _nativeDistLimit - _feeAmount;
 
@@ -302,7 +302,7 @@ contract TestFees_Local is TestBaseWorkflow {
         _terminal.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminal2);
 
         // Check: Held fee has been repaid. Migration fee paid to fee project remains on this terminal.
-        uint256 _migrationFee = _nativePayAmount * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _migrationFee = _nativePayAmount * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
         assertEq(address(_terminal).balance, _migrationFee);
 
         vm.stopPrank();
@@ -334,7 +334,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _nativeDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = _nativeDistLimit - _feeAmount;
 
@@ -394,7 +394,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _halfDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _halfDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = (_halfDistLimit - _feeAmount) * 2;
 
@@ -454,7 +454,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _halfDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _halfDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = (_halfDistLimit - _feeAmount) * 2;
 
@@ -506,7 +506,7 @@ contract TestFees_Local is TestBaseWorkflow {
         });
 
         // Calculate the fee from the allowance use.
-        uint256 _feeAmount = _nativeDistLimit * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 _feeAmount = _nativeDistLimit * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
 
         uint256 _afterFee = _nativeDistLimit - _feeAmount;
 
@@ -572,8 +572,8 @@ contract TestFees_Local is TestBaseWorkflow {
         );
 
         // Ensure the payout was successful
-        uint256 _feeAmount =
-            _nativeDistLimit - _nativeDistLimit * JBConstants.MAX_FEE / (_terminal.FEE() + JBConstants.MAX_FEE);
+        uint256 _feeAmount = _nativeDistLimit - _nativeDistLimit * JBConstants.MAX_FEE
+            / (JBConstants.STANDARD_FEE + JBConstants.MAX_FEE);
         uint256 _afterFee = _nativeDistLimit - _feeAmount;
         assertEq(_projectOwner.balance, _afterFee);
 
@@ -640,7 +640,7 @@ contract TestFees_Local is TestBaseWorkflow {
 
         // Calculate the fee from the allowance use.
         uint256 _feeAmount2 = paidOutFromProjectOne - paidOutFromProjectOne * JBConstants.MAX_FEE
-            / (_terminal.FEE() + JBConstants.MAX_FEE);
+            / (JBConstants.STANDARD_FEE + JBConstants.MAX_FEE);
 
         // The payout happens as described in the example.
         uint256 _afterFee2 = paidOutFromProjectOne - _feeAmount2;

@@ -210,7 +210,7 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             metadata: ""
         });
 
-        uint256 fee = _PAYOUT_AMOUNT * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 fee = _PAYOUT_AMOUNT * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
         uint256 expectedNetPayout = _PAYOUT_AMOUNT - fee;
 
         _terminal.sendPayoutsOf({
@@ -264,7 +264,7 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             metadata: ""
         });
 
-        uint256 fee = _PAYOUT_AMOUNT * _terminal.FEE() / JBConstants.MAX_FEE;
+        uint256 fee = _PAYOUT_AMOUNT * JBConstants.STANDARD_FEE / JBConstants.MAX_FEE;
         uint256 expectedNetPayout = _PAYOUT_AMOUNT - fee;
 
         _terminal.sendPayoutsOf({

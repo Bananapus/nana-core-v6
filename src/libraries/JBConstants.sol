@@ -18,6 +18,9 @@ library JBConstants {
     /// @notice The denominator for split percentages (9-decimal precision). A split of 1,000,000,000 = 100%.
     uint32 public constant SPLITS_TOTAL_PERCENT = 1_000_000_000;
 
-    /// @notice The fee denominator. The protocol fee is `FEE / MAX_FEE` (currently 25/1000 = 2.5%).
+    /// @notice The fee denominator. The protocol fee is `STANDARD_FEE / MAX_FEE`.
     uint16 public constant MAX_FEE = 1000;
+
+    /// @notice The standard protocol fee numerator: `25 / MAX_FEE` = 2.5%.
+    uint16 public constant STANDARD_FEE = 25;
 }

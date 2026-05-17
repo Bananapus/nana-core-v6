@@ -76,15 +76,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
 
     //*********************************************************************//
-    // ------------------------- public constants ------------------------ //
-    //*********************************************************************//
-
-    /// @notice This terminal's fee (as a fraction out of `JBConstants.MAX_FEE`).
-    /// @dev Fees are charged on payouts to addresses and surplus allowance usage, as well as cash outs while the
-    /// cash out tax rate is less than 100%.
-    uint256 public constant override FEE = 25; // 2.5%
-
-    //*********************************************************************//
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
@@ -1757,7 +1748,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     // Move the start index forward to the held fee after the current one.
                     newStartIndex = startIndex + i + 1;
                 } else {
-                    feeAmount = JBFees.feeAmountResultingIn({amountAfterFee: leftoverAmount, feePercent: FEE});
+                    feeAmount = JBFees.standardFeeAmountResultingIn({amountAfterFee: leftoverAmount});
 
                     // Get fee from `leftoverAmount`.
                     unchecked {
@@ -1936,7 +1927,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 projectId: projectId,
                 token: token,
                 amount: amount,
-                fee: FEE,
+                fee: JBConstants.STANDARD_FEE,
                 beneficiary: beneficiary,
                 caller: _msgSender()
             });
@@ -2178,6 +2169,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The amount before the fee is applied.
     /// @return The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
-        return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: FEE});
+        return JBFees.standardFeeAmountFrom({amountBeforeFee: amount});
     }
 }

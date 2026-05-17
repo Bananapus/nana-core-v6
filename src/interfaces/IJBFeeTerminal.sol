@@ -71,9 +71,6 @@ interface IJBFeeTerminal is IJBTerminal {
         address caller
     );
 
-    /// @notice The terminal's fee as a fraction of `JBConstants.MAX_FEE`.
-    function FEE() external view returns (uint256);
-
     /// @notice The contract that tracks feeless addresses.
     function FEELESS_ADDRESSES() external view returns (IJBFeelessAddresses);
 

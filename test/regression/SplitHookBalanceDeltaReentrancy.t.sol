@@ -140,7 +140,7 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
         });
 
         uint256 expectedFee =
-            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: jbMultiTerminal().FEE()});
+            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.STANDARD_FEE});
         uint256 feeProjectBalanceAfter =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), FEE_PROJECT_ID, JBConstants.NATIVE_TOKEN);
         uint256 ownerFeeTokensAfter = jbTokens().totalBalanceOf(_projectOwner, FEE_PROJECT_ID);
@@ -184,7 +184,7 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
 
         uint256 terminalBalanceBefore = address(jbMultiTerminal()).balance;
         uint256 expectedFee =
-            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: jbMultiTerminal().FEE()});
+            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.STANDARD_FEE});
         uint256 expectedNetPayout = ORIGIN_PAYOUT - expectedFee;
 
         vm.prank(_projectOwner);
