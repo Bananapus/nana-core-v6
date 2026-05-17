@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {MockERC20} from "../../../mock/MockERC20.sol";
+import {JBPayType} from "../../../../src/enums/JBPayType.sol";
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
 import {IJBController} from "../../../../src/interfaces/IJBController.sol";
@@ -11,6 +12,7 @@ import {IJBRulesetApprovalHook} from "../../../../src/interfaces/IJBRulesetAppro
 import {IJBTerminal} from "../../../../src/interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
+import {JBFees} from "../../../../src/libraries/JBFees.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
@@ -19,10 +21,11 @@ import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
-/// @notice Unit tests for `JBMultiTerminal.addToBalanceAfterCashOutTokensOf`. Sibling of
-/// `TestPayAfterCashOutTokensOf` — same source-side cash-out flow with the source-side fee skipped, but the
-/// reclaim is added to B's balance via `addToBalanceOf` (no destination tokens minted). Held-fee return on
-/// the destination side is hardcoded to `false` so this entrypoint cannot unlock B's held fees.
+/// @notice Unit tests for `JBMultiTerminal.cashOutAndDeliver(..., JBPayType.DonationOnly)`. Sibling of
+/// `TestPayAfterCashOutTokensOf` — same source-side cash-out flow, but the reclaim is added to B's balance via
+/// `addToBalanceOf` (no destination tokens minted). Same-terminal retained balances are fee-free credited;
+/// external/router routes pay the source fee up front and route net. Held-fee return on the destination side is
+/// unavailable so this entrypoint cannot unlock B's held fees.
 /// @dev Storage of internal `_feeFreeSurplusOf` is read via `vm.load` (slot 0 — confirmed via
 /// `forge inspect`) so tests can directly verify the fee-free credit lands on the right (project, token)
 /// bucket. Same `mockExpectSubsequent` pattern as the pay variant for the `STORE.balanceOf` before/after
@@ -237,6 +240,20 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
     }
 
+    function _stubImmediateSourceFeeForgiven(address token, uint256 grossAmount) internal returns (uint256 feeAmount) {
+        feeAmount = JBFees.standardFeeAmountFrom(grossAmount);
+        mockExpect(
+            address(directory),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (JBConstants.FEE_BENEFICIARY_PROJECT_ID, token)),
+            abi.encode(address(0))
+        );
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAddedBalanceFor, (_sourceProjectId, token, feeAmount)),
+            ""
+        );
+    }
+
     /// @notice Storage slot for `_feeFreeSurplusOf[projectId][token]` (slot 0 per `forge inspect`).
     function _feeFreeSurplusSlot(uint256 projectId, address token) internal pure returns (bytes32) {
         bytes32 outerSlot = keccak256(abi.encode(projectId, uint256(0)));
@@ -269,8 +286,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
     }
 
@@ -285,8 +311,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
     }
 
@@ -306,8 +341,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
     }
 
@@ -327,8 +371,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalAddToBalance({token: _mockToken, reclaimAmount: _defaultReclaim});
 
         vm.prank(_caller);
-        uint256 reclaim = _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        (uint256 reclaim,) = _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         assertEq(reclaim, _defaultReclaim, "reclaim equals the store's returned amount");
@@ -348,22 +401,26 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubABalanceRead(_mockToken, 0);
 
         vm.prank(_caller);
-        uint256 reclaim = _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        (uint256 reclaim,) = _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         assertEq(reclaim, 0);
     }
 
-    /// @notice Cross-token routing — destination is the same terminal but B's accounting contexts include
-    /// a swap-target token that's different from `tokenToReclaim`. Routing-side router (modeled here as a
-    /// same-terminal addToBalance to a different token bucket via the directory's `primaryTerminalOf`
-    /// returning `_terminal` for the swap-target) deposits into the right bucket. The fee-free credit MUST
-    /// land on the bucket that grew (the swap-target token), not the input token.
-    /// @dev This stubs `primaryTerminalOf(_destProjectId, _mockToken)` to return _terminal — i.e. the
-    /// "router" is just this terminal accepting the deposit in its own bucket. The bucket scan iterates
-    /// B's accounting contexts (which include _otherTokenAddr) and finds growth there.
-    function test_HappyPath_MultiContext_CreditLandsOnBucketThatGrew() external {
+    /// @notice Cross-token-only growth no longer proves that the source-token reclaim was retained in the
+    /// same value basis. The other-token bucket may be credited internally during the scan, but the route
+    /// reverts unless enough `tokenToReclaim` was also retained or the unretained source amount was fee-bound.
+    function test_RevertWhen_MultiContext_OnlyNonSourceTokenGrows() external {
         _stubPermission(true);
         _stubBController(true);
         _stubCashoutSide({token: _mockToken, cashOutCount: _defaultCashOutCount, reclaimAmount: _defaultReclaim});
@@ -401,17 +458,83 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         _stubSameTerminalAddToBalance({token: _mockToken, reclaimAmount: _defaultReclaim});
 
+        vm.expectRevert(
+            abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectNotPaid.selector, _destProjectId)
+        );
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), 0, "no credit on input token");
-        assertEq(
-            _readFeeFreeSurplus(_destProjectId, _otherTokenAddr),
-            _defaultReclaim,
-            "credit lands on the bucket that grew"
+        assertEq(_readFeeFreeSurplus(_destProjectId, _otherTokenAddr), 0, "revert rolls back other-token credit");
+    }
+
+    /// @notice If the source-token bucket fully covers the reclaim, every positive destination-context
+    /// delta is credited to its own fee-free surplus bucket.
+    function test_HappyPath_MultiContext_CreditsAllGrowingBucketsWhenSourceTokenCovered() external {
+        _stubPermission(true);
+        _stubBController(true);
+        _stubCashoutSide({token: _mockToken, cashOutCount: _defaultCashOutCount, reclaimAmount: _defaultReclaim});
+        _stubABalanceRead(_mockToken, type(uint128).max);
+
+        JBAccountingContext[] memory contexts = new JBAccountingContext[](2);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        contexts[0] = JBAccountingContext({token: _mockToken, decimals: 18, currency: uint32(uint160(_mockToken))});
+        // forge-lint: disable-next-line(unsafe-typecast)
+        contexts[1] =
+            JBAccountingContext({token: _otherTokenAddr, decimals: 18, currency: uint32(uint160(_otherTokenAddr))});
+        _stubBAccountingContexts(contexts);
+
+        uint256 otherDelta = 123;
+
+        bytes[] memory aReturns = new bytes[](3);
+        aReturns[0] = abi.encode(uint256(0));
+        aReturns[1] = abi.encode(_defaultReclaim);
+        aReturns[2] = abi.encode(_defaultReclaim);
+        mockExpectSubsequent(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.balanceOf, (address(_terminal), _destProjectId, _mockToken)),
+            aReturns
         );
+
+        bytes[] memory bReturns = new bytes[](3);
+        bReturns[0] = abi.encode(uint256(50));
+        bReturns[1] = abi.encode(uint256(50 + otherDelta));
+        bReturns[2] = abi.encode(uint256(50 + otherDelta));
+        mockExpectSubsequent(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.balanceOf, (address(_terminal), _destProjectId, _otherTokenAddr)),
+            bReturns
+        );
+
+        _stubSameTerminalAddToBalance({token: _mockToken, reclaimAmount: _defaultReclaim});
+
+        vm.prank(_caller);
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
+        );
+
+        assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), _defaultReclaim, "source token credited");
+        assertEq(_readFeeFreeSurplus(_destProjectId, _otherTokenAddr), otherDelta, "other token credited");
     }
 
     /// @notice Cross-terminal happy path with ERC20. Routing uses `_externalAddToBalance` which forceApproves
@@ -422,12 +545,11 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubBController(true);
         _stubCashoutSide({token: address(_erc20), cashOutCount: _defaultCashOutCount, reclaimAmount: _defaultReclaim});
         _stubABalanceRead(address(_erc20), type(uint128).max);
-        _stubBAccountingContexts(_singleTokenContext(address(_erc20)));
-        _stubBBalanceSequence({token: address(_erc20), balanceBefore: 0, balanceAfter: _defaultReclaim});
+        uint256 sourceFee = _stubImmediateSourceFeeForgiven(address(_erc20), _defaultReclaim);
 
         bytes memory atbMeta = hex"deadbeef";
         _stubCrossTerminalAddToBalance({
-            token: address(_erc20), reclaimAmount: _defaultReclaim, addToBalanceMetadata: atbMeta
+            token: address(_erc20), reclaimAmount: _defaultReclaim - sourceFee, addToBalanceMetadata: atbMeta
         });
 
         // Mock the post-call allowance read (consumed by `_afterTransferTo`).
@@ -438,16 +560,21 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_caller);
-        uint256 reclaim = _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, address(_erc20), _destProjectId, "", atbMeta
+        (uint256 reclaim,) = _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            address(_erc20),
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            atbMeta,
+            JBPayType.DonationOnly
         );
 
         assertEq(reclaim, _defaultReclaim);
-        assertEq(
-            _readFeeFreeSurplus(_destProjectId, address(_erc20)),
-            _defaultReclaim,
-            "fee-free credit lands after cross-terminal addToBalance"
-        );
+        assertEq(_readFeeFreeSurplus(_destProjectId, address(_erc20)), 0, "external route is fee-paid, not credited");
     }
 
     /// @notice Cross-terminal happy path with the native token. The terminal's ETH balance is forwarded as
@@ -461,23 +588,27 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
             token: JBConstants.NATIVE_TOKEN, cashOutCount: _defaultCashOutCount, reclaimAmount: _defaultReclaim
         });
         _stubABalanceRead(JBConstants.NATIVE_TOKEN, type(uint128).max);
-        _stubBAccountingContexts(_singleTokenContext(JBConstants.NATIVE_TOKEN));
-        _stubBBalanceSequence({token: JBConstants.NATIVE_TOKEN, balanceBefore: 0, balanceAfter: _defaultReclaim});
+        uint256 sourceFee = _stubImmediateSourceFeeForgiven(JBConstants.NATIVE_TOKEN, _defaultReclaim);
         _stubCrossTerminalAddToBalance({
-            token: JBConstants.NATIVE_TOKEN, reclaimAmount: _defaultReclaim, addToBalanceMetadata: ""
+            token: JBConstants.NATIVE_TOKEN, reclaimAmount: _defaultReclaim - sourceFee, addToBalanceMetadata: ""
         });
 
         vm.prank(_caller);
-        uint256 reclaim = _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, JBConstants.NATIVE_TOKEN, _destProjectId, "", ""
+        (uint256 reclaim,) = _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            JBConstants.NATIVE_TOKEN,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         assertEq(reclaim, _defaultReclaim);
-        assertEq(
-            _readFeeFreeSurplus(_destProjectId, JBConstants.NATIVE_TOKEN),
-            _defaultReclaim,
-            "fee-free credit lands after native cross-terminal addToBalance"
-        );
+        assertEq(_readFeeFreeSurplus(_destProjectId, JBConstants.NATIVE_TOKEN), 0, "external route is fee-paid");
     }
 
     //*********************************************************************//
@@ -497,12 +628,11 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubBController(true);
         _stubCashoutSide({token: address(_erc20), cashOutCount: _defaultCashOutCount, reclaimAmount: _defaultReclaim});
         _stubABalanceRead(address(_erc20), type(uint128).max);
-        _stubBAccountingContexts(_singleTokenContext(address(_erc20)));
-        _stubBBalanceSequence({token: address(_erc20), balanceBefore: 0, balanceAfter: _defaultReclaim});
+        uint256 sourceFee = _stubImmediateSourceFeeForgiven(address(_erc20), _defaultReclaim);
 
         // Stub asserts shouldReturnHeldFees == false in the encoded calldata.
         _stubCrossTerminalAddToBalance({
-            token: address(_erc20), reclaimAmount: _defaultReclaim, addToBalanceMetadata: ""
+            token: address(_erc20), reclaimAmount: _defaultReclaim - sourceFee, addToBalanceMetadata: ""
         });
 
         vm.mockCall(
@@ -512,8 +642,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, address(_erc20), _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            address(_erc20),
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         // The cross-terminal stub's expectCall fails with "expected call but not made" if the implementation
@@ -540,8 +679,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_destProjectId, _mockToken, preExisting);
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         assertEq(
@@ -579,8 +727,17 @@ contract TestAddToBalanceAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_destProjectId, _mockToken, preExistingCredit);
 
         vm.prank(_caller);
-        _terminal.addToBalanceAfterCashOutTokensOf(
-            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, "", ""
+        _terminal.cashOutAndDeliver(
+            _holder,
+            _sourceProjectId,
+            _defaultCashOutCount,
+            _mockToken,
+            _destProjectId,
+            address(0),
+            0,
+            "",
+            "",
+            JBPayType.DonationOnly
         );
 
         uint256 expected = uint256(preExistingCredit) + uint256(deliveryDelta);

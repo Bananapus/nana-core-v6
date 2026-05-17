@@ -28,16 +28,17 @@ import {IJBSplits} from "./interfaces/IJBSplits.sol";
 import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
-import {JBCashOutHookSpecsLib} from "./libraries/JBCashOutHookSpecsLib.sol";
+import {JBPayType} from "./enums/JBPayType.sol";
+import {JBCashOutOpsLib} from "./libraries/JBCashOutOpsLib.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFees} from "./libraries/JBFees.sol";
 import {JBHeldFeesLib} from "./libraries/JBHeldFeesLib.sol";
 import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
+import {JBPayHookSpecsLib} from "./libraries/JBPayHookSpecsLib.sol";
 import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBAccountingContext} from "./structs/JBAccountingContext.sol";
 import {JBAfterPayRecordedContext} from "./structs/JBAfterPayRecordedContext.sol";
-import {JBAfterCashOutRecordedContext} from "./structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "./structs/JBCashOutHookSpecification.sol";
 import {JBFee} from "./structs/JBFee.sol";
 import {JBPayHookSpecification} from "./structs/JBPayHookSpecification.sol";
@@ -87,6 +88,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice The number of seconds fees can be held for.
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
+
+    //*********************************************************************//
+    // ----------------------------- structs ----------------------------- //
+    //*********************************************************************//
+
+    struct PayHookForwarding {
+        uint256 feeEligible;
+        uint256 feeExempt;
+    }
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -214,94 +224,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Atomically cash out `holder`'s tokens of `projectId` and add the reclaim to
-    /// `beneficiaryProjectId`'s balance (no project tokens minted on the destination side).
-    /// @dev Equivalent to calling `cashOutTokensOf` followed by `addToBalanceOf` on the destination project,
-    /// except the source-side cash out fee is skipped. The equivalent fee is bound on the destination project's
-    /// side instead: `_feeFreeSurplusOf[beneficiaryProjectId]` is credited by the first of the destination
-    /// project's accounting contexts on this terminal whose balance grows during the routing.
-    /// @dev The destination terminal is `DIRECTORY.primaryTerminalOf(beneficiaryProjectId, tokenToReclaim)` —
-    /// which may itself be a router that swaps before adding to balance.
-    /// @dev Held-fee return on the destination side is hardcoded to `false`. This entrypoint is for cross-project
-    /// balance top-ups only, not for unlocking the destination's held fees. Callers that want to combine
-    /// cash-out → add-to-balance with `shouldReturnHeldFees: true` must do it explicitly via two separate calls.
-    /// @dev The destination project's current ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out — the
-    /// call then reverts. If no delivery to the destination project lands on this terminal under any of the
-    /// destination project's accounting contexts, the call also reverts so the source-side fee skip never
-    /// becomes a leak.
-    /// @param holder The account whose project tokens are being burned.
-    /// @param projectId The ID of the source project being cashed out from.
-    /// @param cashOutCount The number of source-project tokens to burn, as a fixed point number with 18 decimals.
-    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
-    /// @param beneficiaryProjectId The destination project receiving the reclaim.
-    /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specifications.
-    /// @param addToBalanceMetadata Bytes forwarded to the destination project's `addToBalanceOf` event.
-    /// @return reclaimAmount The gross reclaim amount returned by the store.
-    function addToBalanceAfterCashOutTokensOf(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        uint256 beneficiaryProjectId,
-        bytes calldata cashOutMetadata,
-        bytes calldata addToBalanceMetadata
-    )
-        external
-        override
-        returns (uint256 reclaimAmount)
-    {
-        // Caller must hold (or be operator with) `CASH_OUT_TOKENS` permission on the source `holder`/`projectId`.
-        // Burning A's tokens is the load-bearing side effect — gating it stays at the same authority bar as the
-        // direct `cashOutTokensOf` entrypoint.
-        _requireCashOutPermissionFrom({holder: holder, projectId: projectId});
-
-        // Destination opt-out check: B's current ruleset can set `pauseCrossProjectFeeFreeInflows = true` to
-        // refuse cross-project fee-free credits. Without this gate, anyone holding A's tokens could push a
-        // deferred-fee credit onto `_feeFreeSurplusOf[B]` without B consenting.
-        _requireBeneficiaryAcceptsFeeFreeInflows(beneficiaryProjectId);
-
-        // Burn source-project tokens, run cashout-side hooks, take any hook fees, and cap source fee-free.
-        // No separate destination beneficiary exists — the caller is the only address attached to this flow,
-        // used as the `CashOutTokens` event slot and credited any hook-fee project tokens.
-        reclaimAmount = _executeCrossProjectCashOut({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiary: _msgSender(),
-            cashOutMetadata: cashOutMetadata
-        });
-
-        // Nothing to route if the data hook returned zero reclaim.
-        if (reclaimAmount == 0) return 0;
-
-        // Resolve B's primary terminal for the reclaim token. Could be this terminal (same-terminal short-
-        // circuit) or a router that swaps before depositing. Reverts if no primary terminal is registered.
-        IJBTerminal destinationTerminal = _resolveBeneficiaryTerminal(beneficiaryProjectId, tokenToReclaim);
-
-        // Snapshot B's per-context balances on this terminal BEFORE routing. The post-routing comparison
-        // identifies the bucket the reclaim actually landed in (matters for cross-token routes where a router
-        // swaps to a different token in B's accounting-context list).
-        (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
-            _snapshotBeneficiaryContextBalances(beneficiaryProjectId);
-
-        // Route via `_efficientAddToBalance` — handles same-terminal vs cross-terminal (with the standard
-        // `_beforeTransferTo`/`_afterTransferTo` allowance dance) and hardcodes `shouldReturnHeldFees: false`,
-        // so this entrypoint cannot be used to unlock B's held fees on top of the source-side fee skip.
-        _efficientAddToBalance({
-            terminal: destinationTerminal,
-            projectId: beneficiaryProjectId,
-            token: tokenToReclaim,
-            amount: reclaimAmount,
-            metadata: addToBalanceMetadata
-        });
-
-        // Credit `_feeFreeSurplusOf[B]` on the first of B's contexts whose balance grew. This binds the
-        // skipped source-side fee on the destination side: B's next non-feeless cashout pays it. Reverts if
-        // no context grew (no delivery landed) — without delivery, the fee skip would leak.
-        _creditFirstGrowingBeneficiaryContext(beneficiaryProjectId, contexts, balancesBefore);
-    }
-
     /// @notice Adds funds (terminal tokens) to a project's balance without minting project tokens. Useful for topping
     /// up a project or returning funds. Can also unlock previously held fees by returning them to the project's
     /// balance.
@@ -371,13 +293,20 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     {
         _requireCashOutPermissionFrom({holder: holder, projectId: projectId});
 
-        reclaimAmount = _cashOutTokensOf({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiary: beneficiary,
-            metadata: metadata
+        // Build the lib's arg structs field-by-field so the call site stays under solc 0.8.28's non-via-ir
+        // Yul stack ceiling (the equivalent nested struct literals overflow it).
+        JBCashOutOpsLib.Deps memory deps = _libDeps();
+
+        JBCashOutOpsLib.CashOutArgs memory args;
+        args.holder = holder;
+        args.projectId = projectId;
+        args.cashOutCount = cashOutCount;
+        args.tokenToReclaim = tokenToReclaim;
+        args.beneficiary = beneficiary;
+        args.metadata = metadata;
+
+        reclaimAmount = JBCashOutOpsLib.cashOutTokensOf({
+            deps: deps, feeFreeSurplusOf: _feeFreeSurplusOf, heldFeesOf: _heldFeesOf, args: args
         });
 
         // The amount being reclaimed must be at least as much as was expected.
@@ -443,11 +372,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 revert JBMultiTerminal_RecipientProjectTerminalNotFound({projectId: split.projectId, token: token});
             }
 
-            // Fees apply to fund egress, not intra-terminal accounting. When both projects share this terminal,
-            // funds stay within the contract (addToBalance or pay) so no fee is charged. This is intentional:
-            // the fee model taxes value leaving the protocol ecosystem, not internal rebalancing.
-            // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
-            // a feeless address.
+            // Fees apply to fund egress, not intra-terminal accounting. When both projects share this
+            // terminal, funds stay within the contract (`addToBalance` or `pay`) so no fee is charged on
+            // the retained portion. Cross-terminal pays incur the standard 2.5% fee here. For the
+            // same-terminal pay path, the destination's data hook can still divert a subset of the inbound
+            // pay to external pay hooks — that's protocol egress and pays a source fee inline (see
+            // `_payProjectSplitWithSourceFeeBinding`), but it's bound INSIDE the pay sub-branch so the
+            // self-pay revert (`MintNotAllowed`) below fires first when `split.projectId == projectId`.
             if (terminal != this && !_isFeeless({addr: address(terminal), projectId: projectId})) {
                 unchecked {
                     netPayoutAmount -= _feeAmountFrom(amount);
@@ -455,17 +386,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 feeEligibleAmount = amount;
             }
 
-            // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
-            // only up to this accumulated amount, preventing round-trip fee bypass.
-            if (terminal == this) {
-                _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
-            }
-
             // Send the `projectId` in the metadata as a referral.
             bytes memory metadata = bytes(abi.encodePacked(projectId));
 
             // Add to balance if preferred.
             if (split.preferAddToBalance) {
+                // Same-terminal addToBalance has no data-hook / pay-hook route, so the full `netPayoutAmount`
+                // is retained as fee-free surplus on the destination. Cross-terminal addToBalance is not
+                // credited (deferred-fee mechanism is scoped to this terminal).
+                if (terminal == this) {
+                    _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
+                }
                 _efficientAddToBalance({
                     terminal: terminal,
                     projectId: split.projectId,
@@ -485,25 +416,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     });
                 }
 
-                // Keep a reference to the beneficiary of the payment.
-                address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
-
-                _efficientPay({
+                feeEligibleAmount = _payProjectSplitWithSourceFeeBinding({
                     terminal: terminal,
-                    projectId: split.projectId,
+                    sourceProjectId: projectId,
+                    split: split,
                     token: token,
-                    amount: netPayoutAmount,
-                    payer: address(this),
-                    beneficiary: beneficiary,
+                    grossAmount: amount,
+                    netAmount: netPayoutAmount,
+                    originalMessageSender: originalMessageSender,
                     metadata: metadata
                 });
-
-                // Cap fee-free surplus at remaining balance.
-                // Why: _feeFreeSurplusOf was incremented by the full netPayoutAmount above, but if the
-                // destination project's data hook forwarded part of the payment to pay hooks, the store
-                // only recorded a partial balance increase. Without this cap, _feeFreeSurplusOf can exceed
-                // STORE.balanceOf, causing users to be overcharged fees on zero-tax cashouts.
-                _capFeeFreeSurplus({projectId: split.projectId, token: token});
             }
         } else {
             // If there's a beneficiary, send the funds directly to the beneficiary.
@@ -560,7 +482,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             amount: amount,
             payer: address(this),
             beneficiary: beneficiary,
-            metadata: metadata
+            metadata: metadata,
+            withholdFeeForSourceProjectId: 0
         });
     }
 
@@ -574,6 +497,53 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         require(msg.sender == address(this));
 
         _transferFrom({from: address(this), to: addr, token: token, amount: amount});
+    }
+
+    /// @notice Callback wrapper around the internal `_efficientPay`. Called by `JBCashOutOpsLib`'s routing
+    /// functions to dispatch the same-terminal-internal vs cross-terminal-external pay path while staying
+    /// inside the library's DELEGATECALL context.
+    /// @dev Auth: only callable by this terminal itself. The library calls
+    /// `IJBCashOutOpsExecutor(address(this)).executeEfficientPay(...)`; under DELEGATECALL `address(this)`
+    /// is the terminal, so the external call produces `msg.sender == address(terminal)` and passes the
+    /// check. Same auth pattern as `executePayout` / `executeProcessFee`.
+    /// @param terminal The destination terminal (same as `address(this)` or a cross-terminal).
+    /// @param projectId Destination project being paid.
+    /// @param token Terminal token being paid.
+    /// @param amount Amount being paid.
+    /// @param payer The payer to record on the destination's data-hook context (carried through from the
+    /// original caller so `_msgSender()` semantics survive the DELEGATECALL).
+    /// @param beneficiary Beneficiary of the resulting project-token mint.
+    /// @param metadata Bytes forwarded to the destination's data hook.
+    /// @param withholdFeeForSourceProjectId Source project ID for per-spec source-fee withholding (`0` =
+    /// no withholding; only effective for same-terminal pays).
+    /// @return newlyIssuedTokenCount Destination-project tokens minted to `beneficiary`.
+    /// @return hookForwardGrossFeeEligible Sum of non-feeless non-noop pay-hook spec amounts whose source
+    /// fee was withheld (always `0` for cross-terminal pays).
+    /// @return hookForwardGrossFeeExempt Sum of feeless pay-hook spec amounts while source-fee binding is on.
+    function executeEfficientPay(
+        IJBTerminal terminal,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address payer,
+        address beneficiary,
+        bytes calldata metadata,
+        uint256 withholdFeeForSourceProjectId
+    )
+        external
+        returns (uint256 newlyIssuedTokenCount, uint256 hookForwardGrossFeeEligible, uint256 hookForwardGrossFeeExempt)
+    {
+        require(msg.sender == address(this));
+        return _efficientPay({
+            terminal: terminal,
+            projectId: projectId,
+            token: token,
+            amount: amount,
+            payer: payer,
+            beneficiary: beneficiary,
+            metadata: metadata,
+            withholdFeeForSourceProjectId: withholdFeeForSourceProjectId
+        });
     }
 
     /// @notice Migrate a project's funds and operations to a new terminal that accepts the same token type.
@@ -598,49 +568,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.MIGRATE_TERMINAL
         });
 
-        // The terminal being migrated to must accept the same token as this terminal.
-        if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
-            revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
-        }
+        JBCashOutOpsLib.Deps memory deps = _libDeps();
 
-        // Clear fee-free surplus tracking — the fee-free liability is settled by the migration fee below.
-        delete _feeFreeSurplusOf[projectId][token];
-
-        // Terminal migration intentionally does not transfer held fees. Held fees belong to the
-        // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
-        // After migration, `processHeldFeesOf()` on this terminal still works — it reads from `_heldFeesOf` and
-        // sends fees to the fee project terminal. The migrated project's balance on this terminal is zero, but held
-        // fees are backed by the terminal's own token balance (not the project's recorded balance).
-        // Record the migration in the store.
-        balance = STORE.recordTerminalMigration({projectId: projectId, token: token});
-
-        emit MigrateTerminal({projectId: projectId, token: token, to: to, amount: balance, caller: _msgSender()});
-
-        // Transfer the balance if needed.
-        if (balance != 0) {
-            // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
-            // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
-            uint256 feeAmount;
-            if (
-                !_isFeeless({addr: address(to), projectId: projectId})
-                    && projectId != JBConstants.FEE_BENEFICIARY_PROJECT_ID
-            ) {
-                feeAmount = _takeFeeFrom({
-                    projectId: projectId,
-                    token: token,
-                    amount: balance,
-                    beneficiary: payable(_ownerOf(projectId)),
-                    shouldHoldFees: false
-                });
-            }
-
-            // Transfer the balance minus the fee to the new terminal.
-            uint256 migrationAmount = balance - feeAmount;
-
-            _externalAddToBalance({
-                terminal: to, projectId: projectId, token: token, amount: migrationAmount, metadata: bytes("")
-            });
-        }
+        balance = JBCashOutOpsLib.migrateBalanceOf({
+            deps: deps,
+            feeFreeSurplusOf: _feeFreeSurplusOf,
+            heldFeesOf: _heldFeesOf,
+            projectId: projectId,
+            token: token,
+            to: to
+        });
     }
 
     /// @notice Pay a project with a payment token. The project's ruleset determines how many project tokens the
@@ -683,7 +620,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 acceptedAmount =
             _acceptFundsFor({projectId: projectId, token: token, amount: amount, metadata: metadata});
 
-        // Pay the project.
+        // Pay the project. Public-pay path: no source-fee withholding (payer is the user, not an
+        // internal protocol transfer with a skipped source-side fee to bind).
         _pay({
             projectId: projectId,
             token: token,
@@ -691,7 +629,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             payer: _msgSender(),
             beneficiary: beneficiary,
             memo: memo,
-            metadata: metadata
+            metadata: metadata,
+            withholdFeeForSourceProjectId: 0
         });
 
         // Get a reference to the beneficiary's balance after the payment.
@@ -706,29 +645,39 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _checkMin({value: beneficiaryTokenCount, min: minReturnedTokens});
     }
 
-    /// @notice Atomically cash out `holder`'s tokens of `projectId` and pay the reclaim into `beneficiaryProjectId`.
-    /// @dev Equivalent to calling `cashOutTokensOf` followed by `pay` on the destination project, except the
-    /// source-side cash out fee is skipped. The equivalent fee is bound on the destination project's side instead:
-    /// `_feeFreeSurplusOf[beneficiaryProjectId]` is credited by the first of the destination project's accounting
-    /// contexts on this terminal whose balance grows during the routing.
-    /// @dev The destination terminal is `DIRECTORY.primaryTerminalOf(beneficiaryProjectId, tokenToReclaim)` —
-    /// which may itself be a router that swaps before paying the destination.
-    /// @dev The destination project's current ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out — the
-    /// call then reverts. If no delivery to the destination project lands on this terminal under any of the
-    /// destination project's accounting contexts, the call also reverts so the source-side fee skip never becomes
-    /// a leak.
-    /// @param holder The account whose project tokens are being burned.
+    /// @notice Atomically cash out `holder`'s tokens of `projectId` and deliver the reclaim into
+    /// `beneficiaryProjectId`. Replaces the prior `payAfterCashOutTokensOf` / `addToBalanceAfterCashOutTokensOf`
+    /// pair; the `payType` flag selects between mint-on-delivery (`Full`) and credit-only-delivery
+    /// (`DonationOnly`).
+    /// @dev Same-terminal retained delivery is credited as destination fee-free surplus. External/router
+    /// delivery cannot prove source-token retained backing here, so it pays the source cashout fee up
+    /// front and routes only the net amount. For the `Full` variant, if the destination's ruleset routes
+    /// pays through a data hook AND the destination terminal is THIS terminal, any pay-hook divert pays
+    /// its source fee inline via `JBPayHookSpecsLib.fulfill` per-spec withholding (see
+    /// `_routeReclaimAsPayViaLib`).
+    /// @dev Held-fee return on the destination side is NOT available through this entry — callers wanting
+    /// held-fee unlock must use the direct `addToBalanceOf` with `shouldReturnHeldFees: true`.
+    /// @dev The destination's current ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out
+    /// (reverts). Same-terminal routes revert if no delivery is fee-bound or retained; external routes
+    /// avoid that leak by charging the source fee before the router hop.
+    /// @param holder The account whose source-project tokens are being burned.
     /// @param projectId The ID of the source project being cashed out from.
-    /// @param cashOutCount The number of source-project tokens to burn, as a fixed point number with 18 decimals.
+    /// @param cashOutCount The number of source-project tokens to burn.
     /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
     /// @param beneficiaryProjectId The destination project receiving the reclaim.
-    /// @param beneficiary The address that receives the newly minted destination-project tokens.
-    /// @param minTokensOut The minimum number of destination-project tokens that must be minted, otherwise revert.
-    /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specifications.
-    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
-    /// @return reclaimAmount The gross reclaim amount returned by the store.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    function payAfterCashOutTokensOf(
+    /// @param beneficiary For `Full`, the address that receives newly-minted destination-project tokens;
+    /// for `DonationOnly`, ignored (the caller `_msgSender()` is recorded in the `CashOutTokens` event
+    /// slot to keep an audit trail).
+    /// @param minTokensOut For `Full`, the minimum destination-token mint required; reverts if unmet.
+    /// Ignored for `DonationOnly` (no mint to slippage-check).
+    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specs.
+    /// @param deliveryMetadata Forwarded to the destination project's pay flow (`Full`) or the emitted
+    /// `AddToBalance` event (`DonationOnly`).
+    /// @param payType Variant selector (`Full` mints destination tokens, `DonationOnly` adds to balance).
+    /// @return reclaimAmount The gross reclaim amount returned by the source store (pre-routing).
+    /// @return beneficiaryTokenCount Destination-project tokens minted to `beneficiary` (always `0` for
+    /// `DonationOnly`).
+    function cashOutAndDeliver(
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
@@ -737,45 +686,114 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address beneficiary,
         uint256 minTokensOut,
         bytes calldata cashOutMetadata,
-        bytes calldata payMetadata
+        bytes calldata deliveryMetadata,
+        JBPayType payType
     )
         external
         override
         returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount)
     {
-        // Caller must hold (or be operator with) `CASH_OUT_TOKENS` permission on the source `holder`/`projectId`.
-        // Burning A's tokens is the load-bearing side effect — gating it stays at the same authority bar as the
-        // direct `cashOutTokensOf` entrypoint.
         _requireCashOutPermissionFrom({holder: holder, projectId: projectId});
-
-        // Destination opt-out check: B's current ruleset can set `pauseCrossProjectFeeFreeInflows = true` to
-        // refuse cross-project fee-free credits. Without this gate, anyone holding A's tokens could push a
-        // deferred-fee credit onto `_feeFreeSurplusOf[B]` without B consenting.
         _requireBeneficiaryAcceptsFeeFreeInflows(beneficiaryProjectId);
 
-        // Burn source-project tokens, run cashout-side hooks, take any hook fees, and cap source fee-free.
-        reclaimAmount = _executeCrossProjectCashOut({
+        // Burn source-project tokens, run cashout-side hooks, take hook fees, cap source fee-free surplus
+        // via the library. Helper-wrapped to keep `cashOutAndDeliver`'s stack frame under solc 0.8.28's
+        // non-via-ir Yul ceiling (the struct construction + 10 user-facing params would otherwise overflow).
+        reclaimAmount = _executeCrossProjectCashOutViaLib({
             holder: holder,
             projectId: projectId,
             cashOutCount: cashOutCount,
             tokenToReclaim: tokenToReclaim,
-            beneficiary: beneficiary,
+            eventBeneficiary: payType == JBPayType.Full ? beneficiary : _msgSender(),
             cashOutMetadata: cashOutMetadata
         });
 
-        // Nothing to route if the data hook returned zero reclaim.
-        if (reclaimAmount != 0) {
-            beneficiaryTokenCount = _routeReclaimToBeneficiaryProject({
+        if (reclaimAmount == 0) return (0, 0);
+
+        if (payType == JBPayType.Full) {
+            beneficiaryTokenCount = _routeReclaimAsPayViaLib({
                 tokenToReclaim: tokenToReclaim,
                 reclaimAmount: reclaimAmount,
+                sourceProjectId: projectId,
                 beneficiaryProjectId: beneficiaryProjectId,
                 beneficiary: beneficiary,
-                payMetadata: payMetadata
+                payMetadata: deliveryMetadata
+            });
+            _checkMin({value: beneficiaryTokenCount, min: minTokensOut});
+        } else {
+            _routeReclaimAsAddToBalanceViaLib({
+                tokenToReclaim: tokenToReclaim,
+                reclaimAmount: reclaimAmount,
+                sourceProjectId: projectId,
+                beneficiaryProjectId: beneficiaryProjectId,
+                addToBalanceMetadata: deliveryMetadata
             });
         }
+    }
 
-        // Mint floor: how many destination-project tokens were issued for the inbound pay.
-        _checkMin({value: beneficiaryTokenCount, min: minTokensOut});
+    /// @notice Build the `JBCashOutOpsLib.RouteAsPayArgs` struct and delegate to the library's pay-routing
+    /// function. Extracted from `cashOutAndDeliver` to keep that entry under solc 0.8.28's non-via-ir Yul
+    /// stack ceiling.
+    /// @param tokenToReclaim Source token being routed.
+    /// @param reclaimAmount Gross reclaim from the source store.
+    /// @param sourceProjectId Source project (used for per-spec source-fee withholding inside the lib).
+    /// @param beneficiaryProjectId Destination project.
+    /// @param beneficiary Destination-project beneficiary for the mint.
+    /// @param payMetadata Bytes forwarded to the destination's pay flow.
+    /// @return beneficiaryTokenCount Destination tokens minted to `beneficiary`.
+    function _routeReclaimAsPayViaLib(
+        address tokenToReclaim,
+        uint256 reclaimAmount,
+        uint256 sourceProjectId,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        bytes calldata payMetadata
+    )
+        private
+        returns (uint256 beneficiaryTokenCount)
+    {
+        JBCashOutOpsLib.RouteAsPayArgs memory rArgs;
+        rArgs.tokenToReclaim = tokenToReclaim;
+        rArgs.reclaimAmount = reclaimAmount;
+        rArgs.sourceProjectId = sourceProjectId;
+        rArgs.beneficiaryProjectId = beneficiaryProjectId;
+        rArgs.beneficiary = beneficiary;
+        // Carry the original caller through the DELEGATECALL so the destination's pay flow sees the right
+        // `payer` for its data-hook context.
+        rArgs.payer = _msgSender();
+        rArgs.payMetadata = payMetadata;
+
+        beneficiaryTokenCount = JBCashOutOpsLib.routeReclaimToBeneficiaryProject({
+            deps: _libDeps(), feeFreeSurplusOf: _feeFreeSurplusOf, heldFeesOf: _heldFeesOf, args: rArgs
+        });
+    }
+
+    /// @notice Delegate to the library's addToBalance-routing function. Extracted alongside
+    /// `_routeReclaimAsPayViaLib` for the same stack-shape reason.
+    /// @param tokenToReclaim Source token being routed.
+    /// @param reclaimAmount Gross reclaim from the source store.
+    /// @param sourceProjectId Source project paying any external-router source fee.
+    /// @param beneficiaryProjectId Destination project.
+    /// @param addToBalanceMetadata Bytes forwarded to the emitted `AddToBalance` event on the destination.
+    function _routeReclaimAsAddToBalanceViaLib(
+        address tokenToReclaim,
+        uint256 reclaimAmount,
+        uint256 sourceProjectId,
+        uint256 beneficiaryProjectId,
+        bytes calldata addToBalanceMetadata
+    )
+        private
+    {
+        JBCashOutOpsLib.routeReclaimAsAddToBalance({
+            deps: _libDeps(),
+            feeFreeSurplusOf: _feeFreeSurplusOf,
+            heldFeesOf: _heldFeesOf,
+            sourceProjectId: sourceProjectId,
+            beneficiaryProjectId: beneficiaryProjectId,
+            tokenToReclaim: tokenToReclaim,
+            reclaimAmount: reclaimAmount,
+            addToBalanceMetadata: addToBalanceMetadata
+        });
     }
 
     /// @notice Processes held fees for a project, sending them to the protocol's fee project. Fees are held for 28 days
@@ -1230,141 +1248,90 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Holders can cash out their tokens to reclaim some of a project's surplus, or to trigger rules determined
-    /// by
-    /// the project's current ruleset's data hook.
-    /// @dev Only a token holder or an operator with the `CASH_OUT_TOKENS` permission from that holder can cash out
-    /// those
-    /// tokens.
-    /// @param holder The account cashing out tokens.
-    /// @param projectId The ID of the project cashing out tokens.
-    /// @param cashOutCount The number of project tokens to cash out, as a fixed point number with 18 decimals.
-    /// @param tokenToReclaim The address of the token to reclaim.
-    /// @param beneficiary The address to send the reclaimed terminal tokens to.
-    /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hook if
-    /// applicable.
-    /// @return reclaimAmount The number of terminal tokens reclaimed for the `beneficiary`, as a fixed point number
-    /// with 18 decimals.
-    function _cashOutTokensOf(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        address payable beneficiary,
+    /// @notice `executePayout`'s same-terminal cross-project pay sub-branch, factored out so the
+    /// entrypoint stays under solc 0.8.28's non-via-ir Yul stack ceiling.
+    /// @dev For same-terminal pays we pass `sourceProjectId` through `_efficientPay` → `_pay` →
+    /// `JBPayHookSpecsLib.fulfill`, which per-spec withholds the source fee from each non-feeless non-noop
+    /// pay-hook divert and returns the gross. We credit only the RETAINED portion (`amount -
+    /// hookForwardGross`) to the destination's `_feeFreeSurplusOf` — the hook-forwarded gross already paid
+    /// source fee inline, so re-counting it as fee-free would let the destination cash it out fee-free and
+    /// undo the inline charge. The returned `feeEligible` is the hook-forwarded gross, which the
+    /// aggregated `_takeFeeFrom` in `_sendPayoutsOf` charges against the source project (honoring source
+    /// ruleset's `holdFees()`).
+    /// @dev Cross-terminal pays pass `0` for `withholdFeeForSourceProjectId` (the destination terminal
+    /// owns its own fee model on inbound pays — we can't intercept its internal hook payments from here)
+    /// and `feeEligible` stays `0`.
+    /// @param terminal Destination terminal (this terminal or a cross-terminal).
+    /// @param sourceProjectId Source project — the project whose payout cycle is funding this split.
+    /// @param split Destination project split to pay.
+    /// @param token Terminal token being paid.
+    /// @param grossAmount Pre-fee split amount. Returned for non-feeless cross-terminal pays.
+    /// @param netAmount Post-cross-terminal-fee amount (== `netPayoutAmount` in the caller).
+    /// @param originalMessageSender Original payout caller, used as the beneficiary fallback.
+    /// @param metadata Pay metadata (the source project ID as a referral).
+    /// @return feeEligible Hook-forwarded gross, surfaced to the caller for the aggregated `_takeFeeFrom`.
+    function _payProjectSplitWithSourceFeeBinding(
+        IJBTerminal terminal,
+        uint256 sourceProjectId,
+        JBSplit calldata split,
+        address token,
+        uint256 grossAmount,
+        uint256 netAmount,
+        address originalMessageSender,
         bytes memory metadata
     )
-        internal
-        returns (uint256 reclaimAmount)
+        private
+        returns (uint256 feeEligible)
     {
-        // Keep a reference to the ruleset the cash out is being made during.
-        JBRuleset memory ruleset;
+        // Cache the same-terminal predicate — the inline ternary on the call site below would otherwise
+        // blow solc 0.8.28's non-via-ir Yul stack ceiling for this branch.
+        bool sameTerminal = terminal == IJBTerminal(address(this));
+        uint256 withhold = sameTerminal ? sourceProjectId : 0;
+        uint256 destProjectId = split.projectId;
+        address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
 
-        // Keep a reference to the cash out hook specifications.
-        JBCashOutHookSpecification[] memory hookSpecifications;
-
-        // Keep a reference to the cash out tax rate being used.
-        uint256 cashOutTaxRate;
-
-        // Cache whether the beneficiary is feeless.
-        bool beneficiaryIsFeeless = _isFeeless({addr: beneficiary, projectId: projectId});
-
-        // Record the cash out and burn the project tokens.
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = _recordAndBurnCashOut({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: beneficiaryIsFeeless,
-            metadata: metadata
-        });
-
-        // Keep a reference to the amount being reclaimed that is subject to fees.
-        uint256 amountEligibleForFees;
-
-        // Send the reclaimed funds to the beneficiary.
-        if (reclaimAmount != 0) {
-            // Determine if a fee should be taken. Fees are not taken if the beneficiary is feeless.
-            if (!beneficiaryIsFeeless) {
-                if (cashOutTaxRate != 0) {
-                    // Non-zero tax: fees apply to the full reclaim amount.
-                    amountEligibleForFees += reclaimAmount;
-                    unchecked {
-                        reclaimAmount -= _feeAmountFrom(reclaimAmount);
-                    }
-                } else {
-                    // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
-                    uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
-                    if (feeFreeSurplus != 0) {
-                        uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
-                        unchecked {
-                            _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
-                        }
-                        amountEligibleForFees += feeableAmount;
-                        unchecked {
-                            reclaimAmount -= _feeAmountFrom(feeableAmount);
-                        }
-                    }
-                }
-            }
-
-            // Subtract the fee from the reclaim amount.
-            if (reclaimAmount != 0) {
-                _transferFrom({from: address(this), to: beneficiary, token: tokenToReclaim, amount: reclaimAmount});
-            }
+        uint256 balanceBefore;
+        if (sameTerminal) {
+            balanceBefore = STORE.balanceOf({terminal: address(this), projectId: destProjectId, token: token});
         }
 
-        // If the data hook returned cash out hook specifications, fulfill them. The context is built
-        // field-by-field rather than as a struct literal so each assignment uses only one stack slot at a
-        // time, keeping the call site under solc 0.8.28's non-via-ir Yul stack ceiling (a 10-field struct
-        // literal would otherwise trip it from inside `_cashOutTokensOf`).
-        if (hookSpecifications.length != 0) {
-            JBTokenAmount memory reclaimTokenAmount =
-                _tokenAmountOf({projectId: projectId, token: tokenToReclaim, value: reclaimAmount});
-            JBAfterCashOutRecordedContext memory ctx;
-            ctx.holder = holder;
-            ctx.projectId = projectId;
-            ctx.rulesetId = ruleset.id;
-            ctx.cashOutCount = cashOutCount;
-            ctx.reclaimedAmount = reclaimTokenAmount;
-            ctx.forwardedAmount = reclaimTokenAmount;
-            ctx.cashOutTaxRate = cashOutTaxRate;
-            ctx.beneficiary = beneficiary;
-            ctx.cashOutMetadata = metadata;
-            amountEligibleForFees += JBCashOutHookSpecsLib.fulfill(FEELESS_ADDRESSES, ctx, hookSpecifications);
-        }
-
-        // Cap fee-free surplus at remaining balance.
-        // Why: this single call replaces per-branch calls so that EVERY cashout path (non-zero tax,
-        // zero tax, and feeless beneficiary) gets the cap. Without it, the zero-tax path would use
-        // a stale _feeFreeSurplusOf that may exceed STORE.balanceOf (e.g. if pay hooks reduced the
-        // balance during a prior inbound payout), overcharging fees on round-trip prevention.
-        // Placed after hook fulfillment so any further balance reductions from cashout hooks are
-        // also accounted for.
-        _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
-
-        // Take the fee from all outbound reclaimings.
-        if (amountEligibleForFees != 0) {
-            _takeFeeFrom({
-                projectId: projectId,
-                token: tokenToReclaim,
-                amount: amountEligibleForFees,
-                beneficiary: beneficiary,
-                shouldHoldFees: false
-            });
-        }
-
-        emit CashOutTokens({
-            rulesetId: ruleset.id,
-            rulesetCycleNumber: ruleset.cycleNumber,
-            projectId: projectId,
-            holder: holder,
+        // Library callback into the terminal's `_efficientPay`. Same-terminal pays go through `_pay` →
+        // `JBPayHookSpecsLib.fulfill` with per-spec withholding; cross-terminal pays go through external
+        // `terminal.pay()` and the withholding is silently ignored (returns `hookForwardGross == 0`).
+        (, uint256 hookForwardGross,) = _efficientPay({
+            terminal: terminal,
+            projectId: destProjectId,
+            token: token,
+            amount: netAmount,
+            payer: address(this),
             beneficiary: beneficiary,
-            cashOutCount: cashOutCount,
-            cashOutTaxRate: cashOutTaxRate,
-            reclaimAmount: reclaimAmount,
             metadata: metadata,
-            caller: _msgSender()
+            withholdFeeForSourceProjectId: withhold
         });
+
+        // Cross-terminal pays: nothing more to do here — the destination terminal handles its own fees on
+        // the inbound pay, and there's no `_feeFreeSurplusOf` credit because the destination's recorded
+        // balance grew on the OTHER terminal, not this one. Report fee eligibility only when this terminal
+        // actually deducted a source fee before routing.
+        if (!sameTerminal) return netAmount < grossAmount ? grossAmount : 0;
+
+        _creditFeeFreeSurplusDelta({projectId: destProjectId, token: token, balanceBefore: balanceBefore});
+
+        // Surface the hook-forwarded gross as fee-eligible against the source project. The aggregated
+        // `_takeFeeFrom` in `_sendPayoutsOf` honors source ruleset's `holdFees()` flag, matching the fee
+        // policy of ordinary cross-terminal payouts.
+        feeEligible = hookForwardGross;
+    }
+
+    /// @notice Credit `_feeFreeSurplusOf` by the actual balance delta recorded for a same-terminal pay.
+    function _creditFeeFreeSurplusDelta(uint256 projectId, address token, uint256 balanceBefore) private {
+        uint256 balanceAfter = STORE.balanceOf({terminal: address(this), projectId: projectId, token: token});
+        if (balanceAfter > balanceBefore) {
+            unchecked {
+                _feeFreeSurplusOf[projectId][token] += balanceAfter - balanceBefore;
+            }
+        }
+        _capFeeFreeSurplus({projectId: projectId, token: token});
     }
 
     /// @notice Revert if a value is less than the specified minimum.
@@ -1372,62 +1339,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param min The minimum acceptable value.
     function _checkMin(uint256 value, uint256 min) internal pure {
         if (value < min) revert JBMultiTerminal_UnderMin(value, min);
-    }
-
-    /// @notice Find the first of B's accounting contexts whose balance grew during the routing, credit
-    /// `_feeFreeSurplusOf[beneficiaryProjectId][token]` by the delta, cap to remaining balance, and return.
-    /// Reverts with `JBMultiTerminal_BeneficiaryProjectNotPaid` if no context grew — without delivery, the
-    /// skipped source-side fee can't be bound and would leak.
-    /// @dev Shared by `_routeReclaimToBeneficiaryProject` and `_routeReclaimAsAddToBalance`. The "first
-    /// growing context wins" rule matches a well-behaved router that picks one of B's tokens (the post-swap
-    /// token) and deposits into that single bucket.
-    /// @param beneficiaryProjectId The destination project.
-    /// @param contexts Accounting contexts captured before the routing.
-    /// @param balancesBefore Pre-routing balances aligned to `contexts` by index.
-    function _creditFirstGrowingBeneficiaryContext(
-        uint256 beneficiaryProjectId,
-        JBAccountingContext[] memory contexts,
-        uint256[] memory balancesBefore
-    )
-        internal
-    {
-        // Walk B's accounting contexts in declared order. The first context whose balance grew is treated as
-        // the bucket the router chose to deposit into (typically the post-swap token in a cross-token route).
-        // We bind the deferred source-side fee to that bucket and stop — subsequent grown contexts are ignored
-        // by design, capping the credit at one delivery delta even if a misbehaving router somehow split the
-        // deposit across multiple buckets.
-        for (uint256 i; i < contexts.length;) {
-            // Read B's post-routing balance for this context's token. Compared against the pre-routing snapshot
-            // captured by `_snapshotBeneficiaryContextBalances` to detect the delivery delta.
-            uint256 balanceAfter =
-                STORE.balanceOf({terminal: address(this), projectId: beneficiaryProjectId, token: contexts[i].token});
-
-            if (balanceAfter > balancesBefore[i]) {
-                // Credit the delivery delta into B's fee-free counter for this token. `unchecked` is safe:
-                // `balanceAfter > balancesBefore[i]` is the loop condition, so the subtraction can't underflow,
-                // and the addition can't overflow before the underlying balance does (terminal balance is the
-                // upper bound on any cumulative credit — see the cap call below).
-                unchecked {
-                    _feeFreeSurplusOf[beneficiaryProjectId][contexts[i].token] += balanceAfter - balancesBefore[i];
-                }
-
-                // Cap the credit at B's current balance for this token. If pay/addToBalance hooks pulled funds
-                // back out during routing, the post-balance read inside `_capFeeFreeSurplus` clamps the
-                // counter so it never exceeds what's actually sitting in B's bucket. Without this, B's later
-                // zero-tax cashouts would over-fee phantom amounts.
-                _capFeeFreeSurplus({projectId: beneficiaryProjectId, token: contexts[i].token});
-                return;
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        // No context grew. Either the destination terminal silently dropped the funds or routed them
-        // elsewhere (e.g. to a different terminal not registered as B's primary). Revert the entire
-        // cross-project flow so the source-side fee skip never becomes a leak — A's burn is undone too.
-        revert JBMultiTerminal_BeneficiaryProjectNotPaid(beneficiaryProjectId);
     }
 
     /// @notice Fund a project either by calling this terminal's internal `addToBalance` function or by calling the
@@ -1465,15 +1376,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Pay a project either by calling this terminal's internal `pay` function or by calling the recipient
-    /// terminal's `pay` function.
-    /// @param terminal The terminal on which the project is expecting to receive payments.
-    /// @param projectId The ID of the project to pay.
-    /// @param token The token to pay with.
-    /// @param amount The amount to pay, as a fixed point number with the amount of decimals that the terminal's
-    /// accounting context specifies.
-    /// @param beneficiary The address to receive any platform tokens minted.
-    /// @param metadata Additional metadata to include with the payment.
+    /// @notice Pay a project on either this terminal or a recipient terminal, dispatching the
+    /// same-terminal-internal vs cross-terminal-external path.
+    /// @dev Same-terminal path: delegates to internal `_pay` and propagates
+    /// `withholdFeeForSourceProjectId` through to `JBPayHookSpecsLib.fulfill` for per-spec source-fee
+    /// withholding. Cross-terminal path: external `terminal.pay()` with the standard pre-/post-transfer
+    /// allowance dance; `withholdFeeForSourceProjectId` is silently ignored (the destination terminal owns
+    /// its own fee model on inbound pays — we can't intercept its hook payments from here) and the
+    /// returned `hookForwardGrossFeeEligible` stays at the default `0`.
+    /// @param terminal Destination terminal.
+    /// @param projectId Destination project.
+    /// @param token Payment token.
+    /// @param amount Payment amount.
+    /// @param payer Payer recorded on the destination's data-hook context (carried through from the
+    /// original caller, important for cross-project flows under DELEGATECALL).
+    /// @param beneficiary Beneficiary of the resulting project-token mint.
+    /// @param metadata Bytes forwarded to the destination's data hook / pay hooks.
+    /// @param withholdFeeForSourceProjectId Source project ID for per-spec source-fee withholding
+    /// (same-terminal pays only; `0` to disable).
+    /// @return newlyIssuedTokenCount Destination-project tokens minted to `beneficiary`.
+    /// @return hookForwardGrossFeeEligible Sum of non-feeless non-noop pay-hook spec amounts whose source
+    /// fee was withheld on the same-terminal path; always `0` for cross-terminal pays.
+    /// @return hookForwardGrossFeeExempt Sum of feeless pay-hook spec amounts while source-fee binding is on.
     function _efficientPay(
         IJBTerminal terminal,
         uint256 projectId,
@@ -1481,25 +1405,30 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 amount,
         address payer,
         address beneficiary,
-        bytes memory metadata
+        bytes memory metadata,
+        uint256 withholdFeeForSourceProjectId
     )
         internal
-        returns (uint256 newlyIssuedTokenCount)
+        returns (uint256 newlyIssuedTokenCount, uint256 hookForwardGrossFeeEligible, uint256 hookForwardGrossFeeExempt)
     {
         if (terminal == IJBTerminal(address(this))) {
-            return _pay({
+            PayHookForwarding memory hookForwarding;
+            (newlyIssuedTokenCount, hookForwarding) = _pay({
                 projectId: projectId,
                 token: token,
                 amount: amount,
                 payer: payer,
                 beneficiary: beneficiary,
                 memo: "",
-                metadata: metadata
+                metadata: metadata,
+                withholdFeeForSourceProjectId: withholdFeeForSourceProjectId
             });
+            return (newlyIssuedTokenCount, hookForwarding.feeEligible, hookForwarding.feeExempt);
         }
 
-        // Cross-terminal: standard pre/post transfer + external `pay()`. `minReturnedTokens: 0` because callers
-        // own their own slippage gate (e.g. `_checkMin(beneficiaryTokenCount, minTokensOut)`).
+        // Cross-terminal: standard pre/post transfer + external `pay()`. The destination terminal owns its
+        // own fee model on inbound pays; the `withholdFeeForSourceProjectId` is silently ignored here and
+        // `hookForwardGrossFeeEligible` stays at the default `0`.
         uint256 payValue = _beforeTransferTo({to: address(terminal), token: token, amount: amount});
 
         newlyIssuedTokenCount = terminal.pay{value: payValue}({
@@ -1513,101 +1442,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         _afterTransferTo({to: address(terminal), token: token});
-    }
-
-    /// @notice Shared cashout-prep step for both cross-project entrypoints (`_payAfterCashOutTokensOf` and
-    /// `_addToBalanceAfterCashOutTokensOf`). Records the cashout with `beneficiaryIsFeeless: true`, burns the
-    /// holder's project tokens, runs cashout-side hook specs, caps the source's fee-free surplus, and takes
-    /// hook fees. Returns the gross reclaim amount that the caller must then route to the destination project.
-    /// @dev `beneficiary` is recorded in the `CashOutTokens` event and credited any fee-project tokens minted
-    /// from hook fees. For pay it's the user-supplied destination beneficiary; for addToBalance the caller
-    /// passes `_msgSender()` (no separate recipient exists).
-    /// @param holder The account whose source-project tokens are being burned.
-    /// @param projectId The ID of the source project being cashed out from.
-    /// @param cashOutCount The number of source-project tokens to burn.
-    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
-    /// @param beneficiary The address recorded in the event slot and credited any hook-fee project tokens.
-    /// @param cashOutMetadata Bytes forwarded to the source project's data hook and any cashout hook specs.
-    /// @return reclaimAmount The gross reclaim amount returned by the store.
-    function _executeCrossProjectCashOut(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        address beneficiary,
-        bytes memory cashOutMetadata
-    )
-        internal
-        returns (uint256 reclaimAmount)
-    {
-        // Record the cash out and burn the project tokens. `beneficiaryIsFeeless: true` — the equivalent fee
-        // is bound on the destination side via the `_feeFreeSurplusOf[beneficiaryProjectId]` credit computed
-        // from the delivery delta in the routing step. The external entrypoint reverts if delivery falls short,
-        // so this can never become a leak.
-        (
-            JBRuleset memory ruleset,
-            uint256 _reclaim,
-            uint256 cashOutTaxRate,
-            JBCashOutHookSpecification[] memory hookSpecifications
-        ) = _recordAndBurnCashOut({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: true,
-            metadata: cashOutMetadata
-        });
-        reclaimAmount = _reclaim;
-
-        emit CashOutTokens({
-            rulesetId: ruleset.id,
-            rulesetCycleNumber: ruleset.cycleNumber,
-            projectId: projectId,
-            holder: holder,
-            beneficiary: beneficiary,
-            cashOutCount: cashOutCount,
-            cashOutTaxRate: cashOutTaxRate,
-            reclaimAmount: reclaimAmount,
-            metadata: cashOutMetadata,
-            caller: _msgSender()
-        });
-
-        // Only hook-spec amounts are fee-eligible here; the destination portion is intentionally feeless.
-        uint256 amountEligibleForFees;
-
-        // Hook fees still apply (those funds leave the protocol to external hooks). Hook context sees
-        // `address(this)` as the beneficiary since the terminal is custodying the reclaim mid-flow.
-        if (hookSpecifications.length != 0) {
-            JBTokenAmount memory reclaimTokenAmount =
-                _tokenAmountOf({projectId: projectId, token: tokenToReclaim, value: reclaimAmount});
-            JBAfterCashOutRecordedContext memory ctx;
-            ctx.holder = holder;
-            ctx.projectId = projectId;
-            ctx.rulesetId = ruleset.id;
-            ctx.cashOutCount = cashOutCount;
-            ctx.reclaimedAmount = reclaimTokenAmount;
-            ctx.forwardedAmount = reclaimTokenAmount;
-            ctx.cashOutTaxRate = cashOutTaxRate;
-            ctx.beneficiary = payable(address(this));
-            ctx.cashOutMetadata = cashOutMetadata;
-            amountEligibleForFees = JBCashOutHookSpecsLib.fulfill(FEELESS_ADDRESSES, ctx, hookSpecifications);
-        }
-
-        // Cap the source project's fee-free surplus at remaining balance after the outflow. Same invariant as
-        // `_cashOutTokensOf`: every cashout path keeps `_feeFreeSurplusOf[projectId]` consistent with the
-        // post-outflow balance so later zero-tax cashouts from A don't fee phantom amounts.
-        _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
-
-        // Take the fee on the hook amounts.
-        if (amountEligibleForFees != 0) {
-            _takeFeeFrom({
-                projectId: projectId,
-                token: tokenToReclaim,
-                amount: amountEligibleForFees,
-                beneficiary: beneficiary,
-                shouldHoldFees: false
-            });
-        }
     }
 
     /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
@@ -1644,102 +1478,26 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _afterTransferTo({to: address(terminal), token: token});
     }
 
-    /// @notice Fulfills a list of pay hook specifications.
-    /// @param projectId The ID of the project to pay.
-    /// @param specifications The pay hook specifications to be fulfilled.
-    /// @param tokenAmount The amount of tokens that the project was paid.
-    /// @param payer The address that sent the payment.
-    /// @param ruleset The ruleset active during this payment.
-    /// @param beneficiary The address which will receive any tokens that the payment yields.
-    /// @param newlyIssuedTokenCount The number of tokens issued and sent to the beneficiary.
-    /// @param metadata Bytes to send along to the emitted event and pay hooks as applicable.
-    function _fulfillPayHookSpecificationsFor(
-        uint256 projectId,
-        JBPayHookSpecification[] memory specifications,
-        JBTokenAmount memory tokenAmount,
-        address payer,
-        JBRuleset memory ruleset,
-        address beneficiary,
-        uint256 newlyIssuedTokenCount,
-        bytes memory metadata
-    )
-        internal
-    {
-        // Keep a reference to payment context for the pay hooks.
-        JBAfterPayRecordedContext memory context = JBAfterPayRecordedContext({
-            payer: payer,
-            projectId: projectId,
-            rulesetId: ruleset.id,
-            amount: tokenAmount,
-            forwardedAmount: tokenAmount,
-            weight: ruleset.weight,
-            newlyIssuedTokenCount: newlyIssuedTokenCount,
-            beneficiary: beneficiary,
-            hookMetadata: bytes(""),
-            payerMetadata: metadata
-        });
-
-        // Fulfill each specification through their pay hooks.
-        for (uint256 i; i < specifications.length;) {
-            // Set the specification being iterated on.
-            JBPayHookSpecification memory specification = specifications[i];
-
-            // A noop specification is informational only and doesn't trigger the hook.
-            if (specification.noop) {
-                unchecked {
-                    ++i;
-                }
-                continue;
-            }
-
-            // Pass the correct token `forwardedAmount` to the hook.
-            context.forwardedAmount = JBTokenAmount({
-                value: specification.amount,
-                token: tokenAmount.token,
-                decimals: tokenAmount.decimals,
-                currency: tokenAmount.currency
-            });
-
-            // Pass the correct metadata from the data hook's specification.
-            context.hookMetadata = specification.metadata;
-
-            // Trigger any inherited pre-transfer logic.
-            // Keep a reference to the amount that'll be paid as a `msg.value`.
-            uint256 payValue = _beforeTransferTo({
-                to: address(specification.hook), token: tokenAmount.token, amount: specification.amount
-            });
-
-            // Fulfill the specification.
-            specification.hook.afterPayRecordedWith{value: payValue}(context);
-
-            // Revoke the temporary pull allowance now that the hook call has finished.
-            _afterTransferTo({to: address(specification.hook), token: tokenAmount.token});
-
-            emit HookAfterRecordPay({
-                hook: specification.hook,
-                context: context,
-                specificationAmount: specification.amount,
-                caller: _msgSender()
-            });
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /// @notice Internal implementation of payment logic. Records the payment in the store, mints tokens via the
-    /// controller, and fulfills any pay hook specifications from the data hook.
-    /// @param projectId The ID of the project to pay.
-    /// @param token The address of the token to pay the project with.
-    /// @param amount The amount of tokens to send, as a fixed point number with the same number of
-    /// decimals as the token's accounting context. If this terminal's token is the native token, `amount` is ignored
-    /// and `msg.value` is used in its place.
-    /// @param payer The address making the payment.
-    /// @param beneficiary The address to mint tokens to, and pass along to the ruleset's data hook and pay hook if
-    /// applicable.
-    /// @param memo A memo to pass along to the emitted event.
-    /// @param metadata Bytes to send along to the emitted event, as well as the data hook and pay hook if applicable.
-    /// @return newlyIssuedTokenCount The number of project tokens minted to `beneficiary` as a result of this payment.
+    /// @notice Internal implementation of payment logic. Records the payment in the store, mints project
+    /// tokens via the controller, emits `Pay`, and fulfills any pay hook specifications from the data hook.
+    /// @dev When `withholdFeeForSourceProjectId != 0`, `JBPayHookSpecsLib.fulfill` per-spec withholds the
+    /// standard fee from each non-feeless non-noop pay-hook divert and returns the gross — the caller (an
+    /// internal fee-skipped funding path: `executePayout` same-terminal pay split or
+    /// `JBCashOutOpsLib.routeReclaimToBeneficiaryProject` cashout-pay routing) charges that fee against
+    /// the source project. The public `pay` entrypoint passes `0` and gets the legacy pass-through (no
+    /// withholding, no source-fee charge).
+    /// @param projectId Destination project being paid.
+    /// @param token Payment token (`JBConstants.NATIVE_TOKEN` for ETH).
+    /// @param amount Payment amount (post-`_acceptFundsFor` for the public path).
+    /// @param payer The payer of the inbound payment (set on the data-hook context).
+    /// @param beneficiary Address receiving the resulting project-token mint.
+    /// @param memo Memo string emitted in `Pay`.
+    /// @param metadata Bytes forwarded to the data hook + pay hooks.
+    /// @param withholdFeeForSourceProjectId Source project ID for per-spec source-fee withholding; `0`
+    /// disables withholding (public-pay path).
+    /// @return newlyIssuedTokenCount Project tokens minted to `beneficiary` (post-reserved-share).
+    /// @return hookForwarding Hook forwarding accounting: `feeEligible` is charged to the source project,
+    /// while `feeExempt` is feeless/bound but not charged.
     function _pay(
         uint256 projectId,
         address token,
@@ -1747,36 +1505,75 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address payer,
         address beneficiary,
         string memory memo,
-        bytes memory metadata
+        bytes memory metadata,
+        uint256 withholdFeeForSourceProjectId
     )
         internal
-        returns (uint256 newlyIssuedTokenCount)
+        returns (uint256 newlyIssuedTokenCount, PayHookForwarding memory hookForwarding)
     {
         // Keep a reference to the token amount to forward to the store.
         JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
 
-        // Record the payment.
-        // Keep a reference to the ruleset the payment is being made during.
-        // Keep a reference to the pay hook specifications.
-        // Keep a reference to the token count that'll be minted as a result of the payment.
-        (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = STORE.recordPaymentFrom({
-            payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
+        // Record + mint via a private helper so this function fits under solc 0.8.28's non-via-ir Yul
+        // stack ceiling after the source-fee-withholding plumbing was added.
+        JBRuleset memory ruleset;
+        JBPayHookSpecification[] memory hookSpecifications;
+        (ruleset, hookSpecifications, newlyIssuedTokenCount) = _recordAndMintForPay({
+            projectId: projectId, tokenAmount: tokenAmount, payer: payer, beneficiary: beneficiary, metadata: metadata
         });
 
-        // Mint tokens if needed.
-        if (tokenCount != 0) {
-            // Set the token count to be the number of tokens minted for the beneficiary instead of the total
-            // amount.
-            newlyIssuedTokenCount = _controllerOf(projectId)
-                .mintTokensOf({
+        _emitPayEvent({
+            ruleset: ruleset,
+            projectId: projectId,
+            payer: payer,
+            beneficiary: beneficiary,
+            amount: amount,
+            newlyIssuedTokenCount: newlyIssuedTokenCount,
+            memo: memo,
+            metadata: metadata
+        });
+
+        // Pay-hook fulfillment via the external library (DELEGATECALL preserves terminal storage). When
+        // `withholdFeeForSourceProjectId != 0` the library per-spec withholds the source fee from each
+        // non-feeless non-noop hook and returns the gross — caller charges that fee against the source.
+        if (hookSpecifications.length != 0) {
+            hookForwarding = _fulfillPayHooksViaLib({
                 projectId: projectId,
-                tokenCount: tokenCount,
+                tokenAmount: tokenAmount,
+                payer: payer,
+                rulesetId: ruleset.id,
+                rulesetWeight: ruleset.weight,
                 beneficiary: beneficiary,
-                memo: "",
-                useReservedPercent: true
+                newlyIssuedTokenCount: newlyIssuedTokenCount,
+                metadata: metadata,
+                hookSpecifications: hookSpecifications,
+                withholdFeeForSourceProjectId: withholdFeeForSourceProjectId
             });
         }
+    }
 
+    /// @notice Emit the `Pay` event. Extracted into a helper so `_pay` doesn't hold the 10-arg emit
+    /// setup in its stack frame alongside its many locals (solc 0.8.28 non-via-ir stack shape).
+    /// @param ruleset Ruleset active during the payment (event uses `id` + `cycleNumber`).
+    /// @param projectId Project being paid.
+    /// @param payer Payer (event slot).
+    /// @param beneficiary Beneficiary of the resulting token mint.
+    /// @param amount Gross payment amount.
+    /// @param newlyIssuedTokenCount Project tokens minted to `beneficiary`.
+    /// @param memo Memo string.
+    /// @param metadata Bytes forwarded to the data hook / pay hook.
+    function _emitPayEvent(
+        JBRuleset memory ruleset,
+        uint256 projectId,
+        address payer,
+        address beneficiary,
+        uint256 amount,
+        uint256 newlyIssuedTokenCount,
+        string memory memo,
+        bytes memory metadata
+    )
+        private
+    {
         emit Pay({
             rulesetId: ruleset.id,
             rulesetCycleNumber: ruleset.cycleNumber,
@@ -1789,20 +1586,96 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             metadata: metadata,
             caller: _msgSender()
         });
+    }
 
-        // If the data hook returned pay hook specifications, fulfill them.
-        if (hookSpecifications.length != 0) {
-            _fulfillPayHookSpecificationsFor({
+    /// @notice Record the payment in the store and mint any project tokens the controller would issue.
+    /// Extracted from `_pay` to keep its stack frame under solc 0.8.28's non-via-ir Yul ceiling.
+    /// @param projectId Project being paid.
+    /// @param tokenAmount Bundled token amount (token, value, decimals, currency).
+    /// @param payer Address making the payment (forwarded into the data-hook context).
+    /// @param beneficiary Address receiving the minted project tokens.
+    /// @param metadata Bytes forwarded to the data hook.
+    /// @return ruleset Ruleset active during the payment.
+    /// @return hookSpecifications Pay hook specs returned by the data hook (may be empty).
+    /// @return newlyIssuedTokenCount Project tokens actually minted to `beneficiary` (post-reserved-share).
+    function _recordAndMintForPay(
+        uint256 projectId,
+        JBTokenAmount memory tokenAmount,
+        address payer,
+        address beneficiary,
+        bytes memory metadata
+    )
+        private
+        returns (
+            JBRuleset memory ruleset,
+            JBPayHookSpecification[] memory hookSpecifications,
+            uint256 newlyIssuedTokenCount
+        )
+    {
+        uint256 tokenCount;
+        (ruleset, tokenCount, hookSpecifications) = STORE.recordPaymentFrom({
+            payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
+        });
+        // Token count from the store is the gross amount the project tokens would be valued at; the
+        // controller's `mintTokensOf` applies the reserved-percent split and returns the beneficiary's
+        // post-reserved share.
+        if (tokenCount != 0) {
+            newlyIssuedTokenCount = _controllerOf(projectId)
+                .mintTokensOf({
                 projectId: projectId,
-                specifications: hookSpecifications,
-                tokenAmount: tokenAmount,
-                payer: payer,
-                ruleset: ruleset,
+                tokenCount: tokenCount,
                 beneficiary: beneficiary,
-                newlyIssuedTokenCount: newlyIssuedTokenCount,
-                metadata: metadata
+                memo: "",
+                useReservedPercent: true
             });
         }
+    }
+
+    /// @notice Build the `JBAfterPayRecordedContext` field-by-field and forward to `JBPayHookSpecsLib.fulfill`.
+    /// Extracted from `_pay` to keep its stack frame under solc 0.8.28's non-via-ir Yul ceiling.
+    /// @param projectId Project being paid.
+    /// @param tokenAmount Bundled token amount (passed to the hook context).
+    /// @param payer Payer of the inbound payment.
+    /// @param rulesetId ID of the active ruleset.
+    /// @param rulesetWeight Weight of the active ruleset (for the hook context).
+    /// @param beneficiary Beneficiary of the resulting mint.
+    /// @param newlyIssuedTokenCount Project tokens already minted to `beneficiary`.
+    /// @param metadata Bytes forwarded as the data-hook payer metadata.
+    /// @param hookSpecifications Pay hook specs to fulfill.
+    /// @param withholdFeeForSourceProjectId Source project ID for per-spec source-fee withholding (0 = off).
+    /// @return hookForwarding Hook forwarding accounting: `feeEligible` is charged to the source project,
+    /// while `feeExempt` is feeless/bound but not charged.
+    function _fulfillPayHooksViaLib(
+        uint256 projectId,
+        JBTokenAmount memory tokenAmount,
+        address payer,
+        uint256 rulesetId,
+        uint256 rulesetWeight,
+        address beneficiary,
+        uint256 newlyIssuedTokenCount,
+        bytes memory metadata,
+        JBPayHookSpecification[] memory hookSpecifications,
+        uint256 withholdFeeForSourceProjectId
+    )
+        private
+        returns (PayHookForwarding memory hookForwarding)
+    {
+        JBAfterPayRecordedContext memory ctx;
+        ctx.payer = payer;
+        ctx.projectId = projectId;
+        ctx.rulesetId = rulesetId;
+        ctx.amount = tokenAmount;
+        ctx.forwardedAmount = tokenAmount;
+        ctx.weight = rulesetWeight;
+        ctx.newlyIssuedTokenCount = newlyIssuedTokenCount;
+        ctx.beneficiary = beneficiary;
+        ctx.payerMetadata = metadata;
+        (hookForwarding.feeEligible, hookForwarding.feeExempt) = JBPayHookSpecsLib.fulfill({
+            context: ctx,
+            specifications: hookSpecifications,
+            feelessAddresses: FEELESS_ADDRESSES,
+            withholdFeeForSourceProjectId: withholdFeeForSourceProjectId
+        });
     }
 
     /// @notice Process a fee of the specified amount from a project.
@@ -1843,74 +1716,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
-    /// @notice Records a cash out in the terminal store and burns the holder's project tokens.
-    /// @dev Shared between `_cashOutTokensOf` and `_payAfterCashOutTokensOf`. The two flows differ in what
-    /// happens AFTER the burn (where the reclaim goes, how fees are taken), but the record-and-burn step is
-    /// identical.
-    /// @param holder The account whose project tokens are being burned.
-    /// @param projectId The ID of the project the project tokens belong to.
-    /// @param cashOutCount The number of project tokens to burn.
-    /// @param tokenToReclaim The terminal token to reclaim from the project's surplus.
-    /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address (passed through
-    /// to the data hook context via the store).
-    /// @param metadata Bytes to send along to the data hook.
-    /// @return ruleset The ruleset the cash out is being made during.
-    /// @return reclaimAmount The amount of terminal tokens to be reclaimed.
-    /// @return cashOutTaxRate The cash out tax rate being used.
-    /// @return hookSpecifications The cash out hook specifications returned by the data hook.
-    function _recordAndBurnCashOut(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        bool beneficiaryIsFeeless,
-        bytes memory metadata
-    )
-        internal
-        returns (
-            JBRuleset memory ruleset,
-            uint256 reclaimAmount,
-            uint256 cashOutTaxRate,
-            JBCashOutHookSpecification[] memory hookSpecifications
-        )
-    {
-        // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
-        IJBController controller = _controllerOf(projectId);
-
-        // Record the cash out.
-        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-            holder: holder,
-            projectId: projectId,
-            cashOutCount: cashOutCount,
-            tokenToReclaim: tokenToReclaim,
-            beneficiaryIsFeeless: beneficiaryIsFeeless,
-            metadata: metadata
-        });
-
-        // Burn the project tokens.
-        if (cashOutCount != 0) {
-            controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
-        }
-    }
-
-    /// @notice Resolve B's primary terminal for the reclaim token, reverting if the directory has no entry.
-    /// @dev Shared by `_routeReclaimToBeneficiaryProject` and `_routeReclaimAsAddToBalance`.
-    function _resolveBeneficiaryTerminal(
-        uint256 beneficiaryProjectId,
-        address tokenToReclaim
-    )
-        internal
-        view
-        returns (IJBTerminal destinationTerminal)
-    {
-        destinationTerminal = DIRECTORY.primaryTerminalOf({projectId: beneficiaryProjectId, token: tokenToReclaim});
-        if (address(destinationTerminal) == address(0)) {
-            revert JBMultiTerminal_RecipientProjectTerminalNotFound({
-                projectId: beneficiaryProjectId, token: tokenToReclaim
-            });
-        }
-    }
-
     /// @notice Returns held fees to the project who paid them based on the specified amount.
     /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee.
@@ -1930,43 +1735,38 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Routes the cashout reclaim to B's primary terminal as a `pay` and credits B's fee-free
-    /// surplus by the delivery delta on the first of B's accounting contexts that grew.
-    /// @dev Extracted from the external `payAfterCashOutTokensOf` to keep that function under the
-    /// via-IR-free stack ceiling. Uses `_efficientPay` (handles same-terminal vs cross-terminal with
-    /// `_beforeTransferTo`/`_afterTransferTo`). `minReturnedTokens: 0` is enforced inside `_efficientPay`;
-    /// the user-facing mint floor is `_checkMin(beneficiaryTokenCount, minTokensOut)` in the caller.
-    /// @param tokenToReclaim The token reclaimed from the source project.
-    /// @param reclaimAmount The amount of `tokenToReclaim` being routed.
-    /// @param beneficiaryProjectId The destination project.
-    /// @param beneficiary The address that receives the newly minted destination-project tokens.
-    /// @param payMetadata Bytes forwarded to the destination project's pay flow.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    function _routeReclaimToBeneficiaryProject(
+    /// @notice Build the `JBCashOutOpsLib.CrossProjectCashOutArgs` struct and call the library's
+    /// `executeCrossProjectCashOut`. Extracted from `cashOutAndDeliver` so its stack frame stays under
+    /// solc 0.8.28's non-via-ir Yul ceiling.
+    /// @param holder Account whose source-project tokens are being burned.
+    /// @param projectId Source project being cashed out from.
+    /// @param cashOutCount Number of source-project tokens to burn.
+    /// @param tokenToReclaim Terminal token reclaimed from the source surplus.
+    /// @param eventBeneficiary Address recorded in the `CashOutTokens` event slot.
+    /// @param cashOutMetadata Bytes forwarded to the source data hook and any cashout hook specs.
+    /// @return reclaimAmount Gross reclaim returned by the source store (pre-routing).
+    function _executeCrossProjectCashOutViaLib(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
         address tokenToReclaim,
-        uint256 reclaimAmount,
-        uint256 beneficiaryProjectId,
-        address beneficiary,
-        bytes memory payMetadata
+        address eventBeneficiary,
+        bytes calldata cashOutMetadata
     )
-        internal
-        returns (uint256 beneficiaryTokenCount)
+        private
+        returns (uint256 reclaimAmount)
     {
-        IJBTerminal destinationTerminal = _resolveBeneficiaryTerminal(beneficiaryProjectId, tokenToReclaim);
-        (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
-            _snapshotBeneficiaryContextBalances(beneficiaryProjectId);
+        JBCashOutOpsLib.CrossProjectCashOutArgs memory cArgs;
+        cArgs.holder = holder;
+        cArgs.projectId = projectId;
+        cArgs.cashOutCount = cashOutCount;
+        cArgs.tokenToReclaim = tokenToReclaim;
+        cArgs.beneficiary = eventBeneficiary;
+        cArgs.cashOutMetadata = cashOutMetadata;
 
-        beneficiaryTokenCount = _efficientPay({
-            terminal: destinationTerminal,
-            projectId: beneficiaryProjectId,
-            token: tokenToReclaim,
-            amount: reclaimAmount,
-            payer: _msgSender(),
-            beneficiary: beneficiary,
-            metadata: payMetadata
+        reclaimAmount = JBCashOutOpsLib.executeCrossProjectCashOut({
+            deps: _libDeps(), feeFreeSurplusOf: _feeFreeSurplusOf, heldFeesOf: _heldFeesOf, args: cArgs
         });
-
-        _creditFirstGrowingBeneficiaryContext(beneficiaryProjectId, contexts, balancesBefore);
     }
 
     /// @notice Sends payouts to a project's payout split group using the specified ruleset.
@@ -2085,30 +1885,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Snapshot B's accounting contexts and pre-routing balances on this terminal.
-    /// @dev Shared by `_routeReclaimToBeneficiaryProject` and `_routeReclaimAsAddToBalance`. Reverts if B has
-    /// no accounting contexts on this terminal — without buckets to deliver into, nothing can land here.
-    function _snapshotBeneficiaryContextBalances(uint256 beneficiaryProjectId)
-        internal
-        view
-        returns (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore)
-    {
-        contexts = STORE.accountingContextsOf({terminal: address(this), projectId: beneficiaryProjectId});
-
-        if (contexts.length == 0) {
-            revert JBMultiTerminal_BeneficiaryProjectHasNoAccountingContexts(beneficiaryProjectId);
-        }
-
-        balancesBefore = new uint256[](contexts.length);
-        for (uint256 i; i < contexts.length;) {
-            balancesBefore[i] =
-                STORE.balanceOf({terminal: address(this), projectId: beneficiaryProjectId, token: contexts[i].token});
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
     /// @notice Takes a fee into the platform's project (with the `JBConstants.FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
     /// @param token The address of the token that the fee is paid in.
@@ -2193,20 +1969,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Allows a project to send out funds from its surplus up to the current surplus allowance.
-    /// @dev Only a project's owner or an operator with the `USE_ALLOWANCE` permission from that owner can use the
-    /// surplus allowance.
-    /// @dev Incurs the protocol fee unless the caller is a feeless address.
-    /// @param projectId The ID of the project to use the surplus allowance of.
-    /// @param owner The project's owner.
-    /// @param token The token to pay out from the surplus.
-    /// @param amount The amount of terminal tokens to use from the project's current surplus allowance, as a fixed
-    /// point number with the same number of decimals as the token's accounting context.
-    /// @param currency The expected currency of the amount to pay out. Must match the currency of one of the
-    /// project's current ruleset's surplus allowances.
-    /// @param beneficiary The address to send the funds to.
-    /// @param feeBeneficiary The address to send the tokens resulting from paying the fee.
-    /// @param memo A memo to pass along to the emitted event.
-    /// @return netAmountPaidOut The amount of tokens paid out.
     function _useAllowanceOf(
         uint256 projectId,
         address owner,
@@ -2220,21 +1982,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256 netAmountPaidOut)
     {
-        // Keep a reference to the ruleset.
         JBRuleset memory ruleset;
-
-        // Keep a reference to the amount paid out before fees.
         uint256 amountPaidOut;
-
-        // Record the use of the allowance.
         (ruleset, amountPaidOut) =
             STORE.recordUsedAllowanceOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
-        // Cap fee-free surplus at remaining balance. Non-fee-free funds leave first.
         _capFeeFreeSurplus({projectId: projectId, token: token});
 
-        // Take a fee from the `amountPaidOut`, if needed.
-        // The net amount is the final amount withdrawn after the fee has been taken.
         netAmountPaidOut = amountPaidOut
             - (_isFeeless({addr: owner, projectId: projectId}) || _isFeeless({addr: beneficiary, projectId: projectId})
                     ? 0
@@ -2242,7 +1996,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         projectId: projectId,
                         token: token,
                         amount: amountPaidOut,
-                        // The project owner will receive tokens minted by paying the platform fee.
                         beneficiary: feeBeneficiary,
                         shouldHoldFees: ruleset.holdFees()
                     }));
@@ -2260,7 +2013,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             caller: _msgSender()
         });
 
-        // Transfer any remaining balance to the beneficiary.
         if (netAmountPaidOut != 0) {
             _transferFrom({from: address(this), to: beneficiary, token: token, amount: netAmountPaidOut});
         }
@@ -2308,6 +2060,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     function _balanceOf(address token) internal view returns (uint256) {
         // If the `token` is native, get the native token balance.
         return token == JBConstants.NATIVE_TOKEN ? address(this).balance : IERC20(token).balanceOf(address(this));
+    }
+
+    /// @notice Build the `JBCashOutOpsLib.Deps` bundle from this terminal's immutables.
+    /// @dev Centralizing this construction in one helper saved ~450 bytes vs. duplicating it at every
+    /// call site (immutables aren't visible to external library code under DELEGATECALL, so every lib
+    /// callsite has to pass them in). The repeated assignments at each callsite each cost ~30-40 bytes
+    /// in dispatch and arg encoding; one helper amortizes that.
+    /// @return deps The dependency bundle expected by every external function on `JBCashOutOpsLib`.
+    function _libDeps() internal view returns (JBCashOutOpsLib.Deps memory deps) {
+        deps.store = STORE;
+        deps.directory = DIRECTORY;
+        deps.feelessAddresses = FEELESS_ADDRESSES;
+        deps.projects = PROJECTS;
     }
 
     /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).

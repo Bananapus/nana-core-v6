@@ -446,7 +446,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(address(_terminal));
-        JBMultiTerminal(address(_terminal))
+        (uint256 netPayoutAmount, uint256 feeEligibleAmount) = JBMultiTerminal(address(_terminal))
             .executePayout({
             split: _splitMemory,
             projectId: _projectId,
@@ -454,6 +454,59 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
             amount: _defaultAmount,
             originalMessageSender: address(this)
         });
+
+        assertEq(netPayoutAmount, amountAfterTax);
+        assertEq(feeEligibleAmount, _defaultAmount);
+    }
+
+    function test_GivenPreferAddToBalanceDNEQTrueAndExternalTerminalIsFeeless() external {
+        // it will pay the external terminal without making the split fee eligible
+
+        mockExpect(
+            address(feelessAddresses),
+            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockSecondTerminal), _projectId)),
+            abi.encode(true)
+        );
+
+        mockExpect(
+            address(directory),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_projectId, _usdc)),
+            abi.encode(IJBTerminal(address(_mockSecondTerminal)))
+        );
+
+        JBSplit memory _splitMemory = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            projectId: _projectId,
+            beneficiary: _noBene,
+            lockedUntil: _lockedUntil,
+            hook: IJBSplitHook(address(0))
+        });
+
+        mockExpect(_usdc, abi.encodeCall(IERC20.approve, (_mockSecondTerminal, _defaultAmount)), "");
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), _mockSecondTerminal)), abi.encode(0));
+
+        mockExpect(
+            _mockSecondTerminal,
+            abi.encodeCall(
+                IJBTerminal.pay,
+                (_projectId, _usdc, _defaultAmount, address(this), 0, "", bytes(abi.encodePacked(uint256(_projectId))))
+            ),
+            abi.encode(1e18)
+        );
+
+        vm.prank(address(_terminal));
+        (uint256 netPayoutAmount, uint256 feeEligibleAmount) = JBMultiTerminal(address(_terminal))
+            .executePayout({
+            split: _splitMemory,
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            originalMessageSender: address(this)
+        });
+
+        assertEq(netPayoutAmount, _defaultAmount);
+        assertEq(feeEligibleAmount, 0);
     }
 
     function test_GivenBeneficiaryEQFeeless() external {

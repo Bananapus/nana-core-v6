@@ -89,7 +89,7 @@ contract TestAccessToFunds_Local is TestBaseWorkflow {
         });
     }
 
-    function _feeAmountFrom(uint256 amount) private view returns (uint256) {
+    function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
         return JBFees.feeAmountFrom({amountBeforeFee: amount, feePercent: JBConstants.FEE});
     }
 

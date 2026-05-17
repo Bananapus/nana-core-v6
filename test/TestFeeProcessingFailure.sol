@@ -189,7 +189,7 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
 
     /// @notice Held fee processing: when fee payment reverts, the FeeReverted event is emitted
     /// and the fee amount is credited back to the project balance via _recordAddedBalanceFor.
-    function test_heldFeeProcessing_revert_refundsToProject() external view {
+    function test_heldFeeProcessing_revert_refundsToProject() external pure {
         // This test requires holdFees=true ruleset — we test the principle:
         // When _processFee's try block reverts, the catch block calls _recordAddedBalanceFor.
         // This returns the fee amount to the project's terminal store balance.

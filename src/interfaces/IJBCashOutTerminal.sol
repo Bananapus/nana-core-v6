@@ -3,45 +3,13 @@ pragma solidity ^0.8.0;
 
 import {IJBCashOutHook} from "./IJBCashOutHook.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
+import {JBPayType} from "../enums/JBPayType.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
 
 /// @notice A terminal that can be cashed out from.
 interface IJBCashOutTerminal is IJBTerminal {
-    /// @notice Atomically cash out a holder's tokens of one project and add the reclaim to another project's
-    /// balance (no project tokens minted on the destination side).
-    /// @dev Equivalent to calling `cashOutTokensOf` followed by `addToBalanceOf` on the destination project,
-    /// except the source-side cash out fee is skipped (the equivalent fee is bound on the destination
-    /// project's side instead). Held-fee return is hardcoded to `false` on the destination side — this
-    /// entrypoint is for value top-up only, not fee unlock.
-    /// @dev The destination terminal is whichever terminal the directory has registered as the beneficiary
-    /// project's primary terminal for `tokenToReclaim` (which may itself be a router that swaps before adding
-    /// to balance). Cashout-side hooks (if specified by the data hook) execute additively.
-    /// @dev Round-trip fee preservation is enforced by snapshotting the beneficiary project's
-    /// accounting-context balances on this terminal before and after the routing, and crediting
-    /// `_feeFreeSurplusOf` by the per-token delta on each context that grew. The beneficiary project's current
-    /// ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out.
-    /// @param holder The address whose project tokens are being burned.
-    /// @param projectId The ID of the project whose project tokens are being burned.
-    /// @param cashOutCount The number of project tokens to burn.
-    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
-    /// @param beneficiaryProjectId The destination project receiving the reclaim.
-    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specifications.
-    /// @param addToBalanceMetadata Forwarded to the destination project's `addToBalanceOf` event.
-    /// @return reclaimAmount The gross reclaim amount returned by the store.
-    function addToBalanceAfterCashOutTokensOf(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        uint256 beneficiaryProjectId,
-        bytes calldata cashOutMetadata,
-        bytes calldata addToBalanceMetadata
-    )
-        external
-        returns (uint256 reclaimAmount);
-
     /// @notice A cash out was processed for a project.
     /// @param rulesetId The ID of the ruleset during the cash out.
     /// @param rulesetCycleNumber The cycle number of the ruleset during the cash out.
@@ -130,28 +98,36 @@ interface IJBCashOutTerminal is IJBTerminal {
         external
         returns (uint256 reclaimAmount);
 
-    /// @notice Atomically cash out a holder's tokens of one project and pay the reclaim into another. Equivalent
-    /// to calling `cashOutTokensOf` followed by `pay` on the destination project, except the source-side cash out
-    /// fee is skipped (the equivalent fee is bound on the destination project's side instead).
-    /// @dev The destination terminal is whichever terminal the directory has registered as the beneficiary project's
-    /// primary terminal for `tokenToReclaim` (which may itself be a router that swaps before paying). Cashout-side
-    /// hooks (if specified by the data hook) execute additively.
-    /// @dev Round-trip fee preservation is enforced by snapshotting the beneficiary project's accounting-context
-    /// balances on this terminal before and after the routing, and crediting `_feeFreeSurplusOf` by the per-token
-    /// delta on each context that grew. The beneficiary project's current ruleset can set
-    /// `pauseCrossProjectFeeFreeInflows` to opt out.
+    /// @notice Atomically cash out a holder's tokens of one project and deliver the reclaim to a
+    /// destination project on the same terminal (or via the destination's primary terminal acting as a
+    /// router that swaps and deposits back).
+    /// @dev Replaces the prior split between `payAfterCashOutTokensOf` (`Full`) and
+    /// `addToBalanceAfterCashOutTokensOf` (`DonationOnly`). Same-terminal retained delivery is credited as
+    /// destination fee-free surplus; external/router delivery pays the source cashout fee up front and
+    /// routes only the net amount. Held-fee return is NOT available through this entry on either variant;
+    /// use the direct `addToBalanceOf` for that.
+    /// @dev `payType == Full` runs the destination's pay flow (mints destination tokens to `beneficiary`,
+    /// runs its data hook, slippage-checks against `minTokensOut`, and binds the source fee on any
+    /// pay-hook egress via per-spec withholding inside `JBPayHookSpecsLib.fulfill`).
+    /// `payType == DonationOnly` adds the reclaim to the destination's balance without minting;
+    /// `beneficiary` and `minTokensOut` are ignored on that path (`_msgSender()` is recorded in the
+    /// `CashOutTokens` event slot to keep an audit trail).
     /// @param holder The address whose project tokens are being burned.
     /// @param projectId The ID of the project whose project tokens are being burned.
     /// @param cashOutCount The number of project tokens to burn.
     /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
     /// @param beneficiaryProjectId The destination project.
-    /// @param beneficiary The address that receives the newly minted tokens of the destination project.
-    /// @param minTokensOut The minimum number of destination-project tokens that must be minted; reverts otherwise.
-    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specifications.
-    /// @param payMetadata Forwarded to the destination project's pay flow.
-    /// @return reclaimAmount The gross reclaim amount returned by the store.
-    /// @return beneficiaryTokenCount The number of destination-project tokens minted to `beneficiary`.
-    function payAfterCashOutTokensOf(
+    /// @param beneficiary For `Full`, the address that receives the newly minted destination-project
+    /// tokens; ignored for `DonationOnly`.
+    /// @param minTokensOut For `Full`, the minimum destination-project token mint required; reverts if
+    /// unmet. Ignored for `DonationOnly`.
+    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specs.
+    /// @param deliveryMetadata Forwarded to the destination project's pay flow (`Full`) or the emitted
+    /// `AddToBalance` event (`DonationOnly`).
+    /// @param payType Variant selector (`Full` mints destination tokens, `DonationOnly` adds to balance).
+    /// @return reclaimAmount The gross reclaim amount returned by the source store.
+    /// @return beneficiaryTokenCount Destination-project tokens minted (`0` for `DonationOnly`).
+    function cashOutAndDeliver(
         address holder,
         uint256 projectId,
         uint256 cashOutCount,
@@ -160,7 +136,8 @@ interface IJBCashOutTerminal is IJBTerminal {
         address beneficiary,
         uint256 minTokensOut,
         bytes calldata cashOutMetadata,
-        bytes calldata payMetadata
+        bytes calldata deliveryMetadata,
+        JBPayType payType
     )
         external
         returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount);

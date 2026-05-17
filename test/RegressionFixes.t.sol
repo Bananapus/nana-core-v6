@@ -377,9 +377,9 @@ contract RegressionFixesTest is TestBaseWorkflow {
         });
 
         // Send payouts from project A: 10 ETH goes to project B via the split.
-        // The data hook diverts 5 ETH to the pay hook, so STORE.balanceOf[B] only increases by 5 ETH.
-        // But _feeFreeSurplusOf[B] was incremented by the full 10 ETH before the pay.
-        // After the fix (), _capFeeFreeSurplus caps it at 5 ETH.
+        // The data hook returns a pay-hook spec for 5 ETH. The hook receives 4.875 ETH after per-hook
+        // source-fee withholding, the source project is charged on the 5 ETH hook gross, and B retains
+        // the remaining 5 ETH as fee-free surplus.
         _terminal.sendPayoutsOf({
             projectId: projectIdA,
             token: JBConstants.NATIVE_TOKEN,
@@ -398,10 +398,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             "_feeFreeSurplusOf must not exceed STORE.balanceOf after data hook diverts funds"
         );
 
-        // The store should have recorded only the portion not diverted to the pay hook.
-        // With 10 ETH payout and 5 ETH diverted: store balance = 5 ETH.
-        assertEq(storeBalance, 5 ether, "Store balance should be payment minus pay hook diversion");
-        assertEq(feeFreeSurplus, 5 ether, "Fee-free surplus should be capped at store balance");
+        assertEq(storeBalance, 5 ether, "Store balance == payment minus hook diversion");
+        assertEq(feeFreeSurplus, 5 ether, "Fee-free surplus == retained portion");
 
         // Verify zero-tax cashout charges correct fees via helper (avoids stack-too-deep).
         _verifyCashOutFees(projectIdB);
@@ -424,7 +422,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
                 metadata: new bytes(0)
             });
 
-            // With cashOutTaxRate = 0, the fee is charged on the feeFreeSurplus portion (5 ETH).
+            // Zero-tax cashout pays fee on the capped fee-free surplus (5 ETH).
             // Fee = 2.5% of 5 ETH = 0.125 ETH. Net = 5 - 0.125 = 4.875 ETH.
             uint256 expectedFee = mulDiv(5 ether, 25, 1000);
             uint256 expectedNet = 5 ether - expectedFee;
@@ -432,9 +430,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
                 reclaimAmount, expectedNet, 2, "Cashout should charge correct fee (2.5% of capped fee-free surplus)"
             );
 
-            // Crucially, the fee should NOT be calculated on the full 10 ETH payout amount.
-            // Without the fix, feeFreeSurplus would be 10 ETH but balance only 5 ETH,
-            // causing an overcharge.
+            // Crucially, the fee should NOT be calculated on the full payout amount.
+            // Without the fix, feeFreeSurplus would be 10 ETH but balance only 5 ETH, causing an overcharge.
             assertLt(reclaimAmount, 5 ether, "Fee must be deducted from cashout");
         }
     }
