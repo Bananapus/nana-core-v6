@@ -50,6 +50,7 @@ contract DustRouterTerminal is IJBTerminal {
     uint256 private immutable _nativeRetainAmount;
     address private immutable _secondaryToken;
     uint256 private immutable _secondaryRetainAmount;
+    uint256 private immutable _previewHookAmount;
 
     mapping(uint256 projectId => mapping(address token => JBAccountingContext)) private _contextFor;
     mapping(uint256 projectId => JBAccountingContext[]) private _contextsOf;
@@ -59,13 +60,15 @@ contract DustRouterTerminal is IJBTerminal {
         address payable sink,
         uint256 nativeRetainAmount,
         address secondaryToken,
-        uint256 secondaryRetainAmount
+        uint256 secondaryRetainAmount,
+        uint256 previewHookAmount
     ) {
         _core = core;
         _sink = sink;
         _nativeRetainAmount = nativeRetainAmount;
         _secondaryToken = secondaryToken;
         _secondaryRetainAmount = secondaryRetainAmount;
+        _previewHookAmount = previewHookAmount;
     }
 
     receive() external payable {}
@@ -166,10 +169,17 @@ contract DustRouterTerminal is IJBTerminal {
         bytes calldata
     )
         external
-        pure
+        view
         override
         returns (JBRuleset memory, uint256, uint256, JBPayHookSpecification[] memory)
     {
+        JBPayHookSpecification[] memory hookSpecs = new JBPayHookSpecification[](_previewHookAmount == 0 ? 0 : 1);
+        if (_previewHookAmount != 0) {
+            hookSpecs[0] = JBPayHookSpecification({
+                hook: IJBPayHook(_sink), noop: false, amount: _previewHookAmount, metadata: new bytes(0)
+            });
+        }
+
         return (
             JBRuleset({
                 cycleNumber: 0,
@@ -184,7 +194,7 @@ contract DustRouterTerminal is IJBTerminal {
             }),
             0,
             0,
-            new JBPayHookSpecification[](0)
+            hookSpecs
         );
     }
 
@@ -241,6 +251,8 @@ contract DustRouterTerminal is IJBTerminal {
 ///   - `holdFees()` on source ruleset honored for the new pay-split fee (held vs immediate)
 ///   - `preferAddToBalance == true` keeps existing fee-free behavior (no hook route possible)
 ///   - `cashOutAndPay(...)` charges the new fee immediately (parity with direct cashout)
+///   - external/router `cashOutAndPay(...)` routes only skip fees when no hooks are previewed, all
+///     beneficiary contexts are source-token contexts, and the full source-token reclaim is retained here
 ///   - non-data-hook destinations stay fee-free (the existing same-terminal fast path is preserved)
 contract TestInternalPayFeeBypass is TestBaseWorkflow {
     IJBController private _controller;
@@ -610,16 +622,121 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
     }
 
     // ==========================================
-    // 8. External/router route pays source fee up front and may deliver swapped value back
+    // 8. External/router route with no previewed hook forwarding can retain source tokens fee-free
     // ==========================================
 
-    function test_cashOutAndPay_externalRouterCrossToken_chargesSourceFeeAndAllowsNetRoute() external {
+    function test_cashOutAndPay_externalRouterSourceToken_withoutHookForwarding_creditsRetainedOutputFeeFree()
+        external
+    {
         _launchFeeProject();
 
-        address payable sink = payable(makeAddr("router-sink"));
+        address payable sink = payable(makeAddr("router-sink-source-token"));
+        DustRouterTerminal router = new DustRouterTerminal({
+            core: _terminal,
+            sink: sink,
+            nativeRetainAmount: 10 ether,
+            secondaryToken: address(0),
+            secondaryRetainAmount: 0,
+            previewHookAmount: 0
+        });
+
+        uint256 projectIdB = _launchProjectNoDataHookWithTerminalConfig(_makeNativeOnlyRouterTerminalConfig(router));
+        (uint256 projectIdA, address holder) = _seedSourceProjectAndHolder(10 ether);
+        uint256 tokens = _tokens.totalBalanceOf(holder, projectIdA);
+        uint256 feeProjectBefore =
+            _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN);
+
+        vm.prank(holder);
+        _terminal.cashOutAndPay({
+            holder: holder,
+            projectId: projectIdA,
+            cashOutCount: tokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            beneficiaryProjectId: projectIdB,
+            beneficiary: holder,
+            minTokensOut: 0,
+            cashOutMetadata: new bytes(0),
+            payMetadata: new bytes(0)
+        });
+
+        assertEq(sink.balance, 0, "source-token reclaim was retained");
+        assertEq(_store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN), 10 ether, "B retained");
+        assertEq(_readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN), 10 ether, "retained source token credited");
+        assertEq(
+            _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN),
+            feeProjectBefore,
+            "no source fee when retained source token binds the reclaim"
+        );
+    }
+
+    // ==========================================
+    // 9. External/router no-hook cross-token route pays source fee up front
+    // ==========================================
+
+    function test_cashOutAndPay_externalRouterCrossToken_withoutHookForwarding_chargesSourceFeeAndRoutesNet() external {
+        _launchFeeProject();
+
+        address payable sink = payable(makeAddr("router-sink-cross-token"));
+        MockERC20 usdc = usdcToken();
+        uint256 usdcRetainAmount = 100_000_000;
+        DustRouterTerminal router = new DustRouterTerminal({
+            core: _terminal,
+            sink: sink,
+            nativeRetainAmount: 0,
+            secondaryToken: address(usdc),
+            secondaryRetainAmount: usdcRetainAmount,
+            previewHookAmount: 0
+        });
+        usdc.mint(address(router), usdcRetainAmount);
+
+        uint256 projectIdB = _launchProjectNoDataHookWithRouter(router, address(usdc));
+        (uint256 projectIdA, address holder) = _seedSourceProjectAndHolder(10 ether);
+        uint256 tokens = _tokens.totalBalanceOf(holder, projectIdA);
+        uint256 expectedSourceFee = JBFees.standardFeeAmountFrom(10 ether);
+        uint256 feeProjectBefore =
+            _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN);
+
+        vm.prank(holder);
+        _terminal.cashOutAndPay({
+            holder: holder,
+            projectId: projectIdA,
+            cashOutCount: tokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            beneficiaryProjectId: projectIdB,
+            beneficiary: holder,
+            minTokensOut: 0,
+            cashOutMetadata: new bytes(0),
+            payMetadata: new bytes(0)
+        });
+
+        assertEq(sink.balance, 10 ether - expectedSourceFee, "router received net reclaim");
+        assertEq(_store.balanceOf(address(_terminal), projectIdB, address(usdc)), usdcRetainAmount, "USDC retained");
+        assertEq(_readFeeFreeSurplus(projectIdB, address(usdc)), 0, "cross-token output not credited fee-free");
+        assertEq(
+            _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN),
+            feeProjectBefore + expectedSourceFee,
+            "source fee processed immediately"
+        );
+    }
+
+    // ==========================================
+    // 10. External/router route with previewed hook forwarding pays source fee up front
+    // ==========================================
+
+    function test_cashOutAndPay_externalRouterCrossToken_withHookForwarding_chargesSourceFeeAndRoutesNet() external {
+        _launchFeeProject();
+
+        address payable sink = payable(makeAddr("router-sink-hooked"));
         MockERC20 usdc = usdcToken();
         uint256 usdcRetainAmount = 1_000_000;
-        DustRouterTerminal router = new DustRouterTerminal(_terminal, sink, 0, address(usdc), usdcRetainAmount);
+        DustRouterTerminal router = new DustRouterTerminal({
+            core: _terminal,
+            sink: sink,
+            nativeRetainAmount: 0,
+            secondaryToken: address(usdc),
+            secondaryRetainAmount: usdcRetainAmount,
+            previewHookAmount: 5 ether
+        });
         usdc.mint(address(router), usdcRetainAmount);
 
         uint256 projectIdB = _launchProjectNoDataHookWithRouter(router, address(usdc));
@@ -643,12 +760,10 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         });
 
         assertEq(sink.balance, 10 ether - expectedSourceFee, "router received only net reclaim");
-        assertEq(
-            _store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN), 0, "no native retained in B"
-        );
-        assertEq(_readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN), 0, "no native fee-free credit");
         assertEq(_store.balanceOf(address(_terminal), projectIdB, address(usdc)), usdcRetainAmount, "USDC retained");
-        assertEq(_readFeeFreeSurplus(projectIdB, address(usdc)), 0, "cross-token route is not fee-free credited");
+        assertEq(
+            _readFeeFreeSurplus(projectIdB, address(usdc)), 0, "hook-forwarding external route is not fee-free credited"
+        );
         assertEq(
             _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN),
             feeProjectBefore + expectedSourceFee,
@@ -657,7 +772,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
     }
 
     // ==========================================
-    // 9. Non-data-hook destination -> existing fee-free same-terminal pay preserved
+    // 11. Non-data-hook destination -> existing fee-free same-terminal pay preserved
     // ==========================================
 
     function test_payoutSplitToNonDataHookedProject_staysFeeFree() external {
@@ -777,17 +892,30 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         internal
         returns (uint256 projectId)
     {
+        return _launchProjectNoDataHookWithTerminalConfigAndMetadata({
+            terminalConfig: terminalConfig, metadata: _defaultMetadata(), projectUri: "B-plain"
+        });
+    }
+
+    function _launchProjectNoDataHookWithTerminalConfigAndMetadata(
+        JBTerminalConfig[] memory terminalConfig,
+        JBRulesetMetadata memory metadata,
+        string memory projectUri
+    )
+        internal
+        returns (uint256 projectId)
+    {
         JBRulesetConfig[] memory cfg = new JBRulesetConfig[](1);
         cfg[0] = _makeRulesetConfig({
             duration: 0,
-            metadata: _defaultMetadata(),
+            metadata: metadata,
             splitGroups: new JBSplitGroup[](0),
             fundAccessLimitGroups: new JBFundAccessLimitGroup[](0)
         });
 
         projectId = _controller.launchProjectFor({
             owner: _projectOwner,
-            projectUri: "B-plain",
+            projectUri: projectUri,
             rulesetConfigurations: cfg,
             terminalConfigurations: terminalConfig,
             memo: ""
@@ -967,6 +1095,35 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         view
         returns (JBTerminalConfig[] memory termConfigs)
     {
+        return _makeRouterTerminalConfigWithSecondaryCurrency({
+            router: router, secondaryToken: secondaryToken, secondaryCurrency: uint32(uint160(secondaryToken))
+        });
+    }
+
+    function _makeNativeOnlyRouterTerminalConfig(DustRouterTerminal router)
+        internal
+        view
+        returns (JBTerminalConfig[] memory termConfigs)
+    {
+        JBAccountingContext[] memory nativeCtxs = new JBAccountingContext[](1);
+        nativeCtxs[0] = JBAccountingContext({
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+
+        termConfigs = new JBTerminalConfig[](2);
+        termConfigs[0] = JBTerminalConfig({terminal: router, accountingContextsToAccept: nativeCtxs});
+        termConfigs[1] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: nativeCtxs});
+    }
+
+    function _makeRouterTerminalConfigWithSecondaryCurrency(
+        DustRouterTerminal router,
+        address secondaryToken,
+        uint32 secondaryCurrency
+    )
+        internal
+        view
+        returns (JBTerminalConfig[] memory termConfigs)
+    {
         JBAccountingContext[] memory routerCtxs = new JBAccountingContext[](1);
         routerCtxs[0] = JBAccountingContext({
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
@@ -974,8 +1131,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
 
         JBAccountingContext[] memory coreCtxs = new JBAccountingContext[](2);
         coreCtxs[0] = routerCtxs[0];
-        coreCtxs[1] =
-            JBAccountingContext({token: secondaryToken, decimals: 6, currency: uint32(uint160(secondaryToken))});
+        coreCtxs[1] = JBAccountingContext({token: secondaryToken, decimals: 6, currency: secondaryCurrency});
 
         termConfigs = new JBTerminalConfig[](2);
         termConfigs[0] = JBTerminalConfig({terminal: router, accountingContextsToAccept: routerCtxs});

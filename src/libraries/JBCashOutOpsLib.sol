@@ -17,6 +17,7 @@ import {JBAccountingContext} from "../structs/JBAccountingContext.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
 import {JBFee} from "../structs/JBFee.sol";
+import {JBPayHookSpecification} from "../structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "../structs/JBRulesetMetadata.sol";
 import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
@@ -379,8 +380,10 @@ library JBCashOutOpsLib {
     /// for withholding — the destination terminal owns its own fee model and we can't intercept its
     /// internal hook payments from here.
     /// @dev Same-terminal source-token reclaim not credited as destination fee-free surplus and not already
-    /// charged as non-feeless hook egress reverts. External/router routes charge the source fee up front
-    /// and route the net amount, so swapped value can return without becoming destination fee-free surplus.
+    /// charged as non-feeless hook egress reverts. External/router routes are fee-free only when the
+    /// destination preview shows no hook forwarding, every beneficiary context on this terminal uses the
+    /// source token, and the full reclaim is retained here in that token. Cross-token/router output pays the
+    /// source fee up front and routes net.
     /// @param deps Terminal immutables.
     /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
     /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
@@ -395,13 +398,17 @@ library JBCashOutOpsLib {
         external
         returns (uint256 beneficiaryTokenCount)
     {
-        // Resolve the destination terminal (may equal `address(this)` for same-terminal pays, or be a
-        // router that swaps before depositing back).
+        // Resolve the destination terminal. It may equal `address(this)` for same-terminal pays, or it may
+        // be a router/external terminal that swaps before depositing back into this terminal.
         IJBTerminal destinationTerminal =
             _resolveBeneficiaryTerminal(deps.directory, args.beneficiaryProjectId, args.tokenToReclaim);
         if (destinationTerminal != IJBTerminal(address(this))) {
             return _routeExternalReclaimToBeneficiaryProject({
-                deps: deps, heldFeesOf: heldFeesOf, args: args, destinationTerminal: destinationTerminal
+                deps: deps,
+                feeFreeSurplusOf: feeFreeSurplusOf,
+                heldFeesOf: heldFeesOf,
+                args: args,
+                destinationTerminal: destinationTerminal
             });
         }
 
@@ -432,7 +439,7 @@ library JBCashOutOpsLib {
             withholdFeeForSourceProjectId: args.sourceProjectId
         });
 
-        uint256 creditedSourceTokenAmount = _creditGrowingBeneficiaryContexts({
+        (uint256 creditedSourceTokenAmount,) = _creditGrowingBeneficiaryContexts({
             store: deps.store,
             feeFreeSurplusOf: feeFreeSurplusOf,
             beneficiaryProjectId: args.beneficiaryProjectId,
@@ -467,15 +474,90 @@ library JBCashOutOpsLib {
         }
     }
 
-    /// @notice Route a reclaim through an external/router terminal after charging the source cashout fee.
-    /// @dev External terminals can swap or forward value before it returns to this terminal, so no
-    /// same-token destination credit is trusted as fee-bound. The route sends only `reclaim - fee`.
+    /// @notice Route a reclaim through an external/router terminal.
+    /// @dev Uses the source-token-only external-route policy. Previewed hook forwarding takes the
+    /// source-fee-upfront path. No-hook routes can be fee-free only when every beneficiary context on this
+    /// terminal uses the source token and the full reclaim is retained in that source-token bucket.
     /// @param deps Terminal immutables.
+    /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
     /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
     /// @param args Pay-routing arguments — see `RouteAsPayArgs`.
     /// @param destinationTerminal The destination project's primary terminal for the reclaim token.
     /// @return beneficiaryTokenCount Destination-project tokens minted to `args.beneficiary`.
     function _routeExternalReclaimToBeneficiaryProject(
+        Deps memory deps,
+        mapping(uint256 => mapping(address => uint256)) storage feeFreeSurplusOf,
+        mapping(uint256 => mapping(address => JBFee[])) storage heldFeesOf,
+        RouteAsPayArgs memory args,
+        IJBTerminal destinationTerminal
+    )
+        private
+        returns (uint256 beneficiaryTokenCount)
+    {
+        // If the external/router pay preview shows value going to pay hooks, keep the conservative path:
+        // charge the source fee up front and only route net. A failed preview is also conservative — if we
+        // cannot prove that the destination pay path is pure retention, the source pays the fee now.
+        if (_externalPayPreviewForwardsToHooks({terminal: destinationTerminal, args: args})) {
+            return _routeExternalReclaimToBeneficiaryProjectWithSourceFee({
+                deps: deps, heldFeesOf: heldFeesOf, args: args, destinationTerminal: destinationTerminal
+            });
+        }
+
+        (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore) =
+            _snapshotBeneficiaryContextBalancesIfAny(deps.store, args.beneficiaryProjectId);
+
+        // No previewed pay-hook forwarding: take the fee-free path only when every beneficiary context on
+        // this terminal is denominated in the source token. Mixed-token projects take the upfront-fee path
+        // because this terminal does not have a protocol-owned token-to-value registry to prove cross-token
+        // router output is worth the skipped source fee.
+        if (!_allBeneficiaryContextsUseSourceToken({contexts: contexts, sourceToken: args.tokenToReclaim})) {
+            return _routeExternalReclaimToBeneficiaryProjectWithSourceFee({
+                deps: deps, heldFeesOf: heldFeesOf, args: args, destinationTerminal: destinationTerminal
+            });
+        }
+
+        (beneficiaryTokenCount,,) = IJBCashOutOpsExecutor(address(this))
+            .executeEfficientPay({
+            terminal: destinationTerminal,
+            projectId: args.beneficiaryProjectId,
+            token: args.tokenToReclaim,
+            amount: args.reclaimAmount,
+            payer: args.payer,
+            beneficiary: args.beneficiary,
+            metadata: args.payMetadata,
+            withholdFeeForSourceProjectId: 0
+        });
+
+        (uint256 creditedSourceTokenAmount, bool creditedAnyContext) = _creditGrowingBeneficiaryContexts({
+            store: deps.store,
+            feeFreeSurplusOf: feeFreeSurplusOf,
+            beneficiaryProjectId: args.beneficiaryProjectId,
+            tokenToReclaim: args.tokenToReclaim,
+            contexts: contexts,
+            balancesBefore: balancesBefore
+        });
+
+        // The router preview promised no hook forwarding, and the context check above ruled out cross-token
+        // accounting. Now require the route to actually land the full reclaim back in this terminal in the
+        // source token before granting destination fee-free surplus.
+        if (!creditedAnyContext) revert JBMultiTerminal_BeneficiaryProjectNotPaid(args.beneficiaryProjectId);
+        if (creditedSourceTokenAmount < args.reclaimAmount) {
+            revert JBMultiTerminal_SourceFeeSkippedReclaimNotFeeBound({
+                projectId: args.beneficiaryProjectId,
+                token: args.tokenToReclaim,
+                reclaimAmount: args.reclaimAmount,
+                feeBoundAmount: creditedSourceTokenAmount
+            });
+        }
+    }
+
+    /// @notice Route a reclaim through an external/router terminal after charging the source cashout fee.
+    /// @param deps Terminal immutables.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param args Pay-routing arguments — see `RouteAsPayArgs`.
+    /// @param destinationTerminal The destination project's primary terminal for the reclaim token.
+    /// @return beneficiaryTokenCount Destination-project tokens minted to `args.beneficiary`.
+    function _routeExternalReclaimToBeneficiaryProjectWithSourceFee(
         Deps memory deps,
         mapping(uint256 => mapping(address => JBFee[])) storage heldFeesOf,
         RouteAsPayArgs memory args,
@@ -484,8 +566,8 @@ library JBCashOutOpsLib {
         private
         returns (uint256 beneficiaryTokenCount)
     {
-        // External/router terminals may swap or forward value before it returns here, so this terminal
-        // cannot prove retained source-token backing. Charge the source fee up front and only route net.
+        // External/router terminals may move value before it returns here, and different-token retained
+        // output cannot prove source-token backing. Charge the source fee up front and route net.
         uint256 amountToRoute = args.reclaimAmount
             - _takeFeeFrom({
                 deps: deps,
@@ -508,6 +590,91 @@ library JBCashOutOpsLib {
             metadata: args.payMetadata,
             withholdFeeForSourceProjectId: 0
         });
+    }
+
+    /// @notice Return true if the external/router pay preview cannot prove a no-hook retained route.
+    /// @dev Counts any positive non-noop pay-hook spec as forwarding. Preview failures are treated as
+    /// forwarding so the caller takes the upfront source-fee path.
+    /// @param terminal The external/router terminal to preview.
+    /// @param args Pay-routing arguments — see `RouteAsPayArgs`.
+    /// @return True if the route should use the upfront source-fee path.
+    function _externalPayPreviewForwardsToHooks(
+        IJBTerminal terminal,
+        RouteAsPayArgs memory args
+    )
+        private
+        view
+        returns (bool)
+    {
+        (bool success, bytes memory data) = address(terminal)
+            .staticcall(
+                abi.encodeCall(
+                    IJBTerminal.previewPayFor,
+                    (
+                        args.beneficiaryProjectId,
+                        args.tokenToReclaim,
+                        args.reclaimAmount,
+                        args.beneficiary,
+                        args.payMetadata
+                    )
+                )
+            );
+        if (!success || data.length == 0) return true;
+
+        JBPayHookSpecification[] memory hookSpecifications = _payHookSpecificationsFromPreview(data);
+        for (uint256 i; i < hookSpecifications.length;) {
+            if (!hookSpecifications[i].noop && hookSpecifications[i].amount != 0) return true;
+            unchecked {
+                ++i;
+            }
+        }
+        return false;
+    }
+
+    /// @notice Return true if external retained output can bind a skipped source fee without price feeds.
+    /// @dev External/router fee-free delivery is intentionally source-token-only. If the beneficiary has no
+    /// contexts on this terminal, or any context uses another token, the route pays the source fee up front.
+    /// @param contexts The beneficiary project's contexts on this terminal.
+    /// @param sourceToken The token reclaimed from the source project.
+    /// @return True if at least one context exists and every context uses the source token.
+    function _allBeneficiaryContextsUseSourceToken(
+        JBAccountingContext[] memory contexts,
+        address sourceToken
+    )
+        private
+        pure
+        returns (bool)
+    {
+        if (contexts.length == 0) return false;
+
+        for (uint256 i; i < contexts.length;) {
+            if (contexts[i].token != sourceToken) return false;
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return true;
+    }
+
+    /// @notice Decode pay-hook specifications from a terminal pay preview payload.
+    /// @dev Kept separate so `_externalPayPreviewForwardsToHooks` avoids holding all decoded values on its stack.
+    /// @param data ABI-encoded `previewPayFor` return data.
+    /// @return hookSpecs The previewed pay-hook specifications.
+    function _payHookSpecificationsFromPreview(bytes memory data)
+        private
+        pure
+        returns (JBPayHookSpecification[] memory hookSpecs)
+    {
+        JBRuleset memory ruleset;
+        uint256 beneficiaryTokenCount;
+        uint256 reservedTokenCount;
+        (ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecs) =
+            abi.decode(data, (JBRuleset, uint256, uint256, JBPayHookSpecification[]));
+        ruleset;
+        beneficiaryTokenCount;
+        reservedTokenCount;
     }
 
     /// @notice `cashOutAndAddToBalance`: route the reclaim to B's primary terminal as
@@ -571,7 +738,7 @@ library JBCashOutOpsLib {
 
         if (!isSameTerminal) return;
 
-        uint256 creditedSourceTokenAmount = _creditGrowingBeneficiaryContexts({
+        (uint256 creditedSourceTokenAmount,) = _creditGrowingBeneficiaryContexts({
             store: deps.store,
             feeFreeSurplusOf: feeFreeSurplusOf,
             beneficiaryProjectId: beneficiaryProjectId,
@@ -879,10 +1046,29 @@ library JBCashOutOpsLib {
         view
         returns (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore)
     {
-        contexts = store.accountingContextsOf({terminal: address(this), projectId: beneficiaryProjectId});
+        (contexts, balancesBefore) =
+            _snapshotBeneficiaryContextBalancesIfAny({store: store, beneficiaryProjectId: beneficiaryProjectId});
         if (contexts.length == 0) {
             revert JBMultiTerminal_BeneficiaryProjectHasNoAccountingContexts(beneficiaryProjectId);
         }
+    }
+
+    /// @notice Snapshot beneficiary accounting contexts without requiring one to exist.
+    /// @dev Used by external/router fee-free delivery. If the destination has no contexts on this terminal,
+    /// the caller can fall back to source-fee-upfront routing.
+    /// @param store The terminal store to read accounting contexts and balances from.
+    /// @param beneficiaryProjectId The project whose balances are being snapshotted.
+    /// @return contexts The beneficiary project's accounting contexts on this terminal.
+    /// @return balancesBefore The matching pre-route balances.
+    function _snapshotBeneficiaryContextBalancesIfAny(
+        IJBTerminalStore store,
+        uint256 beneficiaryProjectId
+    )
+        private
+        view
+        returns (JBAccountingContext[] memory contexts, uint256[] memory balancesBefore)
+    {
+        contexts = store.accountingContextsOf({terminal: address(this), projectId: beneficiaryProjectId});
         balancesBefore = new uint256[](contexts.length);
         for (uint256 i; i < contexts.length;) {
             balancesBefore[i] =
@@ -906,13 +1092,14 @@ library JBCashOutOpsLib {
         uint256[] memory balancesBefore
     )
         private
-        returns (uint256 creditedSourceTokenAmount)
+        returns (uint256 creditedSourceTokenAmount, bool creditedAnyContext)
     {
         for (uint256 i; i < contexts.length;) {
             uint256 balanceAfter =
                 store.balanceOf({terminal: address(this), projectId: beneficiaryProjectId, token: contexts[i].token});
 
             if (balanceAfter > balancesBefore[i]) {
+                creditedAnyContext = true;
                 uint256 balanceDelta = balanceAfter - balancesBefore[i];
 
                 unchecked {

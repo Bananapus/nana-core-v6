@@ -100,9 +100,12 @@ interface IJBCashOutTerminal is IJBTerminal {
         returns (uint256 reclaimAmount);
 
     /// @notice Atomically cash out a holder's tokens of one project and pay the reclaim into another project.
-    /// @dev Same-terminal retained delivery is credited as destination fee-free surplus; external/router
-    /// delivery pays the source cashout fee up front and routes only the net amount. Destination pay hooks
-    /// are run, and same-terminal pay-hook egress is source-fee-bound.
+    /// @dev Same-terminal retained delivery is credited as destination fee-free surplus. External/router
+    /// delivery is source-token-only: previewed pay-hook forwarding or mixed/cross-token router output pays
+    /// the source cashout fee up front and routes only net, while no-forwarding routes can remain fee-free
+    /// only when every beneficiary context on this terminal uses the source token and the full reclaim is
+    /// retained in that token. Destination pay hooks are run, and same-terminal pay-hook egress is
+    /// source-fee-bound.
     /// @param holder The address whose project tokens are being burned.
     /// @param projectId The ID of the project whose project tokens are being burned.
     /// @param cashOutCount The number of project tokens to burn.

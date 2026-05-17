@@ -309,13 +309,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Atomically cash out `holder`'s tokens of `projectId` and pay the reclaim into
     /// `beneficiaryProjectId`.
     /// @dev Same-terminal retained delivery is credited as destination fee-free surplus. External/router
-    /// delivery cannot prove source-token retained backing here, so it pays the source cashout fee up
-    /// front and routes only the net amount. If the destination's ruleset routes pays through a data hook
-    /// AND the destination terminal is THIS terminal, any pay-hook divert pays its source fee inline via
-    /// `JBPayHookSpecsLib.fulfill` per-spec withholding (see `_routeReclaimAsPayViaLib`).
+    /// delivery first previews the destination pay path: if the preview shows any pay-hook forwarding (or
+    /// cannot be previewed), it pays the source cashout fee up front and routes only the net amount. If no
+    /// forwarding is previewed, it routes the full reclaim only when every beneficiary context on this
+    /// terminal uses the source token and the full source-token reclaim is retained here. Mixed-token or
+    /// cross-token router output pays the source fee up front. If the destination's ruleset routes pays
+    /// through a data hook AND the destination terminal is THIS terminal, any pay-hook divert pays its source
+    /// fee inline via `JBPayHookSpecsLib.fulfill` per-spec withholding (see `_routeReclaimAsPayViaLib`).
     /// @dev The destination's current ruleset can set `pauseCrossProjectFeeFreeInflows` to opt out
-    /// (reverts). Same-terminal routes revert if no delivery is fee-bound or retained; external routes
-    /// avoid that leak by charging the source fee before the router hop.
+    /// (reverts). Routes revert if no delivery is fee-bound or retained; external routes with previewed
+    /// forwarding avoid that leak by charging the source fee before the router hop.
     /// @param holder The account whose source-project tokens are being burned.
     /// @param projectId The ID of the source project being cashed out from.
     /// @param cashOutCount The number of source-project tokens to burn.

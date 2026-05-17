@@ -92,13 +92,15 @@ holder cashes out the source project
   -> the source project's tokens burn, cashout-side hooks run additively
   -> reclaim is paid to DIRECTORY.primaryTerminalOf(beneficiaryProjectId, tokenToReclaim) — this terminal or a router
   -> destination terminal mints the destination project's tokens to the beneficiary
-  -> terminal iterates the destination project's accounting contexts on this terminal, credits _feeFreeSurplusOf[beneficiaryProjectId][token]
-     on the first context whose balance grew
-  -> reverts if no delivery to the destination project lands on this terminal under any of the destination project's accounting contexts
+  -> same-terminal retained balance deltas are credited to _feeFreeSurplusOf[beneficiaryProjectId][token]
+  -> same-terminal pay-hook egress is source-fee-bound per hook
+  -> external/router routes can skip the source fee only when no pay-hook forwarding is previewed, every beneficiary context on this terminal uses the source token, and the full source-token reclaim is retained here
+  -> external/router routes with previewed forwarding or mixed/cross-token output pay the source fee up front and route net
+  -> reverts if no same-terminal delivery is fee-bound or retained
   -> the destination project's next non-feeless cashout pays the deferred fee on the credited amount
 ```
 
-`payAfterCashOutTokensOf` reverts if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
+`cashOutAndPay` and `cashOutAndAddToBalance` revert if the destination project's current ruleset has `pauseCrossProjectFeeFreeInflows` set. The
 default (`false`) allows the inflow, matching the existing intra-terminal payout semantic where receiving
 projects accumulate `_feeFreeSurplusOf` credits from other projects' outflows.
 
@@ -135,8 +137,9 @@ If a duration-based ruleset auto-cycles without a new ruleset ID, payout-limit u
 
 - fee-free surplus and same-terminal payout behavior:
   `test/TestFeeFreeCashOutBypass.sol`
-- cross-project cash-out (`payAfterCashOutTokensOf`) unit + fuzz coverage:
-  `test/units/static/JBMultiTerminal/TestPayAfterCashOutTokensOf.sol`
+- cross-project cash-out (`cashOutAndPay` / `cashOutAndAddToBalance`) unit coverage:
+  `test/units/static/JBMultiTerminal/TestCashOutAndPay.sol` and
+  `test/units/static/JBMultiTerminal/TestCashOutAndAddToBalance.sol`
 - migration and terminal-accounting continuity:
   `test/TestTerminalMigration.sol`
 - ruleset ordering and transition behavior:
