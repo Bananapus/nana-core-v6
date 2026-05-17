@@ -96,8 +96,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -153,8 +152,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -220,8 +218,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: true,
             useDataHookForCashOut: false,
             dataHook: address(_dataHook),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -315,8 +312,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -377,8 +373,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
@@ -442,8 +437,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
             useDataHookForPay: true,
             useDataHookForCashOut: false,
             dataHook: address(_dataHook),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

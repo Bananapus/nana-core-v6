@@ -64,8 +64,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         JBFundAccessLimitGroup[] memory _fundAccessLimitGroup = new JBFundAccessLimitGroup[](0);
@@ -118,8 +117,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -246,8 +244,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -343,8 +340,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -442,8 +438,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();
@@ -553,8 +548,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         uint256 _packed = _rulesMetadata.packRulesetMetadata();

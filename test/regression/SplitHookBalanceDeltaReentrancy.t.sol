@@ -139,7 +139,8 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
             minTokensPaidOut: 0
         });
 
-        uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.FEE});
+        uint256 expectedFee =
+            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.STANDARD_FEE});
         uint256 feeProjectBalanceAfter =
             jbTerminalStore().balanceOf(address(jbMultiTerminal()), FEE_PROJECT_ID, JBConstants.NATIVE_TOKEN);
         uint256 ownerFeeTokensAfter = jbTokens().totalBalanceOf(_projectOwner, FEE_PROJECT_ID);
@@ -182,7 +183,8 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
         _payProject(originProjectId, address(0xBA1E), ORIGIN_PAYOUT);
 
         uint256 terminalBalanceBefore = address(jbMultiTerminal()).balance;
-        uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.FEE});
+        uint256 expectedFee =
+            JBFees.feeAmountFrom({amountBeforeFee: ORIGIN_PAYOUT, feePercent: JBConstants.STANDARD_FEE});
         uint256 expectedNetPayout = ORIGIN_PAYOUT - expectedFee;
 
         vm.prank(_projectOwner);
@@ -286,8 +288,7 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         JBSplitGroup[] memory splitGroups = new JBSplitGroup[](1);

@@ -64,8 +64,7 @@ contract TestSplits_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         // Instantiate split parameters.
@@ -191,7 +190,7 @@ contract TestSplits_Local is TestBaseWorkflow {
 
         // Calculate the amount returned after fees are processed.
         uint256 _beneficiaryNativeBalance =
-            _nativePayoutLimit - mulDiv(_nativePayoutLimit, JBConstants.FEE, JBConstants.MAX_FEE);
+            _nativePayoutLimit - mulDiv(_nativePayoutLimit, JBConstants.STANDARD_FEE, JBConstants.MAX_FEE);
 
         assertEq(_splitsGuy.balance, _beneficiaryNativeBalance);
 
@@ -254,8 +253,7 @@ contract TestSplits_Local is TestBaseWorkflow {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         // Package up ruleset configuration.

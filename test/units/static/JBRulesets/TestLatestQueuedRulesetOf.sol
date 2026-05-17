@@ -50,8 +50,7 @@ contract TestLatestQueuedRulesetOf_Local is JBRulesetsSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         // Params for tests
@@ -74,8 +73,7 @@ contract TestLatestQueuedRulesetOf_Local is JBRulesetsSetup {
             useDataHookForPay: false,
             useDataHookForCashOut: false,
             dataHook: address(0),
-            metadata: 0,
-            pauseCrossProjectFeeFreeInflows: false
+            metadata: 0
         });
 
         _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);

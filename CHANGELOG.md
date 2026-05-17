@@ -13,17 +13,6 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `JBTokens`
 - the shared core interfaces, structs, and libraries under `src/`
 
-## 0.0.53 — Drop the `via_ir` requirement
-
-`JBCashOutHookSpecsLib.fulfill` originally took 10 named arguments. When `JBMultiTerminal._cashOutTokensOf` and `_payAfterCashOutTokensOf` called it, the call site ran past solc 0.8.28's 16-slot Yul stack ceiling, which forced every consumer of `@bananapus/core-v6` to enable `via_ir = true` in their own `foundry.toml` profile. That cascaded into stack-too-deep failures in downstream packages whose own functions couldn't tolerate `via_ir` (notably `nana-721-hook-v6`'s `JB721TiersHookStore.tiersOf`).
-
-This release reshapes `fulfill` to accept the existing `JBAfterCashOutRecordedContext` directly — the same struct the hook receives — so no parallel arg bundle is needed. The new signature is `fulfill(IJBFeelessAddresses, JBAfterCashOutRecordedContext, JBCashOutHookSpecification[])`. The per-iteration loop body is extracted into a private `_fulfillOne` helper so its locals don't share `fulfill`'s stack frame. Both call sites in `JBMultiTerminal` build the context field-by-field (one stack slot per assignment) instead of via a struct literal (which would push all ten fields onto the stack at once and trip the same ceiling at the caller).
-
-Integrator impact:
-- `JBCashOutHookSpecsLib.fulfill(IJBFeelessAddresses, uint256, JBTokenAmount, address, uint256, bytes, JBRuleset, uint256, address payable, JBCashOutHookSpecification[])` → `fulfill(IJBFeelessAddresses, JBAfterCashOutRecordedContext, JBCashOutHookSpecification[])`. The only on-chain caller is `JBMultiTerminal` (this PR updates both call sites), so the public ABI surface of `JBMultiTerminal` is unchanged.
-- Consumers of `@bananapus/core-v6@^0.0.53` can drop `via_ir = true` from their `foundry.toml` profiles if they only enabled it because of `JBCashOutHookSpecsLib`. `nana-core-v6`'s own profile flips `via_ir` to `false` to lock in the property.
-- All 997 unit/non-fork tests pass on the refactored library + call sites.
-
 ## Summary
 
 - v6 adds explicit preview APIs for pay and cash-out flows. Integrations can simulate more of the terminal path directly from the core contracts.
@@ -41,23 +30,6 @@ Integrator impact:
 - `IJBController.addPriceFeed(...)` became `addPriceFeedFor(...)`.
 - `IJBTerminal.currentSurplusOf(...)` now takes `address[] calldata tokens` instead of the old accounting-context array input.
 - The interface surface adds explicit hook-spec return types to preview flows, which changes what off-chain callers can and should decode.
-- `IJBCashOutTerminal.payAfterCashOutTokensOf(...)` is new. It burns source-project tokens and pays the
-  reclaim into another project via that project's primary terminal for the reclaim token (which may itself
-  be a router that swaps before paying). Source-side cashout fee is skipped; the equivalent fee is bound on
-  the destination project's side by crediting `_feeFreeSurplusOf[beneficiaryProjectId][token]` on the first of the destination project's accounting contexts on this
-  terminal whose balance grows during the routing. Reverts if no delivery lands on this terminal under any
-  of the destination project's accounting contexts.
-- `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)` is new. Sibling of
-  `payAfterCashOutTokensOf` that adds the reclaim to the destination project's balance instead of paying
-  (no destination tokens minted). Same source-side fee-skip + destination-side `_feeFreeSurplusOf` credit
-  semantics, same opt-out via `pauseCrossProjectFeeFreeInflows`. Held-fee return on the destination side
-  is hardcoded to `false` so this entrypoint cannot unlock B's held fees.
-- `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` is new (bit 80 in the packed metadata word). Opt-out
-  flag on the destination project's current ruleset; when set, `payAfterCashOutTokensOf` and
-  `addToBalanceAfterCashOutTokensOf` calls targeting the destination project revert. Default
-  `false` allows inflows — matching the existing intra-terminal payout semantic where receiving projects
-  accumulate `_feeFreeSurplusOf` credits from other projects' outflows. The trailing `metadata` field
-  narrowed from 14 to 13 bits to make room.
 
 ## Breaking ABI changes
 
@@ -66,16 +38,8 @@ Integrator impact:
 - `IJBController.previewMintOf(...)` is new.
 - `IJBTerminal.previewPayFor(...)` is new.
 - `IJBCashOutTerminal.previewCashOutFrom(...)` is new.
-- `IJBCashOutTerminal.payAfterCashOutTokensOf(...)` is new.
-- `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)` is new.
-- `IJBFeeTerminal.FEE()` is REMOVED. The terminal no longer re-exports the protocol fee constant; read
-  `JBConstants.FEE` directly. Off-chain integrators that previously called `terminal.FEE()` must switch to
-  reading the constant from `JBConstants`.
 - `IJBTerminalStore.previewPayFrom(...)` and `previewCashOutFrom(...)` are new.
 - `IJBTerminal.currentSurplusOf(...)` changed parameter shape.
-- `JBRulesetMetadata` adds `pauseCrossProjectFeeFreeInflows` and narrows `metadata` from 14 to 13 bits.
-  Packed `JBRuleset.metadata` layout has shifted accordingly. Integrators that read the packed word directly
-  must rebuild against the new layout.
 
 ## Indexer impact
 
@@ -94,24 +58,12 @@ Integrator impact:
 - Added functions
   - `IJBTerminal.previewPayFor(...)`
   - `IJBCashOutTerminal.previewCashOutFrom(...)`
-  - `IJBCashOutTerminal.payAfterCashOutTokensOf(...)`
-  - `IJBCashOutTerminal.addToBalanceAfterCashOutTokensOf(...)`
   - `IJBTerminalStore.previewPayFrom(...)`
   - `IJBTerminalStore.previewCashOutFrom(...)`
   - `IJBController.previewMintOf(...)`
   - `IJBController.setTokenMetadataOf(...)`
-- Added ruleset metadata flags
-  - `JBRulesetMetadata.pauseCrossProjectFeeFreeInflows` (bit 80; narrowed `metadata` field from 14 to 13 bits)
-- Added libraries
-  - `JBHeldFeesLib` (held-fee bookkeeping extracted from `JBMultiTerminal` to relieve bytecode budget;
-    called via delegatecall, storage refs preserved)
-  - `JBCashOutHookSpecsLib` (cash-out hook specification fulfillment extracted from `JBMultiTerminal` to
-    relieve bytecode budget after adding `addToBalanceAfterCashOutTokensOf`; called via delegatecall, emits
-    `HookAfterRecordCashOut` from the terminal address)
 - Renamed functions
   - `IJBController.addPriceFeed(...)` -> `addPriceFeedFor(...)`
-- Removed functions
-  - `IJBFeeTerminal.FEE()` (read `JBConstants.FEE` directly)
 - Changed function shapes
   - `IJBTerminal.currentSurplusOf(...)`
 - Added events
