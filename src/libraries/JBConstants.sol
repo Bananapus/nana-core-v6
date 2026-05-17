@@ -21,6 +21,6 @@ library JBConstants {
     /// @notice The fee denominator. The protocol fee is `STANDARD_FEE / MAX_FEE`.
     uint16 public constant MAX_FEE = 1000;
 
-    /// @notice The standard protocol fee numerator: `25 / MAX_FEE` = 2.5%.
+    /// @notice The standard protocol fee numerator. The protocol fee is `STANDARD_FEE / MAX_FEE` = 2.5%.
     uint16 public constant STANDARD_FEE = 25;
 }

@@ -34,8 +34,8 @@ import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
 import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBAccountingContext} from "./structs/JBAccountingContext.sol";
-import {JBAfterPayRecordedContext} from "./structs/JBAfterPayRecordedContext.sol";
 import {JBAfterCashOutRecordedContext} from "./structs/JBAfterCashOutRecordedContext.sol";
+import {JBAfterPayRecordedContext} from "./structs/JBAfterPayRecordedContext.sol";
 import {JBCashOutHookSpecification} from "./structs/JBCashOutHookSpecification.sol";
 import {JBFee} from "./structs/JBFee.sol";
 import {JBPayHookSpecification} from "./structs/JBPayHookSpecification.sol";
@@ -439,7 +439,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Only accepts calls from this terminal itself.
     /// @param projectId The ID of the project paying the fee.
     /// @param token The token the fee is paid in.
-    /// @param amount The fee amount, as a fixed point number with 18 decimals.
+    /// @param amount The fee amount, as a fixed point number with the same number of decimals as the token's
+    /// accounting context.
     /// @param beneficiary The address to mint tokens to (from the project which receives fees), and pass along to the
     /// ruleset's data hook and pay hook if applicable.
     /// @param feeTerminal The terminal that'll receive the fees.
@@ -1691,13 +1692,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param projectId The ID of the project to record the added balance for.
     /// @param token The token to record the added balance for.
     /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
-    /// this
-    /// terminal.
+    /// this terminal.
     function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
         STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
-    /// @notice Returns held fees to the project who paid them based on the specified amount.
+    /// @notice Returns held fees to the project that paid them based on the specified amount.
     /// @dev Partial replenishments use the raw floor calculation so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee.
     /// @param projectId The project to return held fees to.
@@ -1707,56 +1707,49 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return returnedFees The amount of held fees that were returned, as a fixed point number with the same number of
     /// decimals as the token's accounting context.
     function _returnHeldFees(uint256 projectId, address token, uint256 amount) internal returns (uint256 returnedFees) {
-        // Keep a reference to the start index.
+        // Start from the first held fee that has not already been returned, processed, or forgiven.
         uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
 
-        // Get a reference to the project's held fees.
+        // Use the original array length as the upper bound. Returning held fees never appends new entries.
         uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
 
-        // If the start index is greater than or equal to the number of held fees, return 0.
         if (startIndex >= numberOfHeldFees) return 0;
 
-        // Get a reference to the leftover amount once all fees have been settled.
+        // Track how much of the new balance remains available to match against held fees.
         uint256 leftoverAmount = amount;
 
-        // Keep a reference to the number of iterations to perform.
-        uint256 count = numberOfHeldFees - startIndex;
-
-        // Keep a reference to the new start index.
+        // Move this forward for each fully returned held fee.
         uint256 newStartIndex = startIndex;
 
-        // Process each fee.
-        for (uint256 i; i < count;) {
-            // Save the fee being iterated on.
-            JBFee memory heldFee = _heldFeesOf[projectId][token][startIndex + i];
+        for (uint256 i = startIndex; i < numberOfHeldFees;) {
+            if (leftoverAmount == 0) break;
 
-            if (leftoverAmount == 0) {
-                break;
-            } else {
-                // Notice here we take `feeAmountFrom` on the stored `.amount`.
-                uint256 feeAmount = _feeAmountFrom(heldFee.amount);
+            // Held fees store the original gross amount that paid out before its fee was removed.
+            JBFee memory heldFee = _heldFeesOf[projectId][token][i];
 
-                // Keep a reference to the amount from which the fee was taken.
-                uint256 amountPaidOut = heldFee.amount - feeAmount;
+            uint256 feeAmount = _feeAmountFrom(heldFee.amount);
 
-                if (leftoverAmount >= amountPaidOut) {
-                    unchecked {
-                        leftoverAmount -= amountPaidOut;
-                        returnedFees += feeAmount;
-                    }
+            // This is the net amount that originally left the project after the held fee was removed.
+            uint256 amountPaidOut = heldFee.amount - feeAmount;
 
-                    // Move the start index forward to the held fee after the current one.
-                    newStartIndex = startIndex + i + 1;
-                } else {
-                    feeAmount = JBFees.standardFeeAmountResultingIn({amountAfterFee: leftoverAmount});
-
-                    // Get fee from `leftoverAmount`.
-                    unchecked {
-                        _heldFeesOf[projectId][token][startIndex + i].amount -= (leftoverAmount + feeAmount);
-                        returnedFees += feeAmount;
-                    }
-                    leftoverAmount = 0;
+            if (leftoverAmount >= amountPaidOut) {
+                unchecked {
+                    leftoverAmount -= amountPaidOut;
+                    returnedFees += feeAmount;
                 }
+
+                // Move the start index forward to the fee after this fully returned one.
+                newStartIndex = i + 1;
+            } else {
+                // Only part of this held fee can be returned. Convert the remaining net replenishment back into
+                // its corresponding gross fee and shrink the stored gross amount.
+                feeAmount = JBFees.standardFeeAmountResultingIn(leftoverAmount);
+
+                unchecked {
+                    _heldFeesOf[projectId][token][i].amount -= (leftoverAmount + feeAmount);
+                    returnedFees += feeAmount;
+                }
+                leftoverAmount = 0;
             }
             unchecked {
                 ++i;
@@ -1895,7 +1888,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
     /// @param token The address of the token that the fee is paid in.
-    /// @param amount The fee's token amount, as a fixed point number with 18 decimals.
+    /// @param amount The fee's token amount, as a fixed point number with the same number of decimals as the token's
+    /// accounting context.
     /// @param beneficiary The address to mint the platform's project's tokens for.
     /// @param shouldHoldFees If fees should be tracked and held instead of processing them immediately.
     /// @return feeAmount The amount of the fee taken.
@@ -1909,11 +1903,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         internal
         returns (uint256 feeAmount)
     {
-        // Get a reference to the fee amount.
+        // Calculate the standard fee from the gross amount.
         feeAmount = _feeAmountFrom(amount);
 
         if (shouldHoldFees) {
-            // Store the held fee.
+            // Store the gross amount so future repayments can recover the corresponding fee.
             _heldFeesOf[projectId][token].push(
                 JBFee({
                     amount: amount,
@@ -1932,10 +1926,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 caller: _msgSender()
             });
         } else {
-            // Get the terminal that'll receive the fee if one wasn't provided.
+            // Resolve the fee project's terminal for this token and process the fee immediately.
             IJBTerminal feeTerminal = _primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
 
-            // Process the fee.
             _processFee({
                 projectId: projectId,
                 token: token,
@@ -2169,6 +2162,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The amount before the fee is applied.
     /// @return The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
-        return JBFees.standardFeeAmountFrom({amountBeforeFee: amount});
+        return JBFees.standardFeeAmountFrom(amount);
     }
 }

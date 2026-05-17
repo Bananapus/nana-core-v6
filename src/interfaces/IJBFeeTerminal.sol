@@ -27,7 +27,7 @@ interface IJBFeeTerminal is IJBTerminal {
     /// @param projectId The ID of the project the fee was held for.
     /// @param token The token the fee is denominated in.
     /// @param amount The amount from which the fee was calculated.
-    /// @param fee The fee amount held.
+    /// @param fee The fee numerator used to calculate the held fee, out of `JBConstants.MAX_FEE`.
     /// @param beneficiary The address that will receive project tokens when the fee is processed.
     /// @param caller The address that triggered the fee hold.
     event HoldFee(
