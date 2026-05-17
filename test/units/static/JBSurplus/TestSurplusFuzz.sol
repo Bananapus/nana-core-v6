@@ -7,7 +7,6 @@ import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.s
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
-import {JBPayType} from "../../../../src/enums/JBPayType.sol";
 import {ERC165, IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {JBTest} from "../../../helpers/JBTest.sol";
 import {JBSurplus} from "../../../../src/libraries/JBSurplus.sol";
@@ -114,7 +113,7 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         return 0;
     }
 
-    function cashOutAndDeliver(
+    function cashOutAndPay(
         address,
         uint256,
         uint256,
@@ -123,8 +122,7 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         address,
         uint256,
         bytes calldata,
-        bytes calldata,
-        JBPayType
+        bytes calldata
     )
         external
         pure
@@ -132,6 +130,23 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         returns (uint256, uint256)
     {
         return (0, 0);
+    }
+
+    function cashOutAndAddToBalance(
+        address,
+        uint256,
+        uint256,
+        address,
+        uint256,
+        bytes calldata,
+        bytes calldata
+    )
+        external
+        pure
+        override
+        returns (uint256)
+    {
+        return 0;
     }
 }
 

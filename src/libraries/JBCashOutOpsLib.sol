@@ -35,6 +35,18 @@ interface IJBCashOutOpsExecutor {
     /// @notice Wrapper around `JBMultiTerminal._efficientPay`. Returns the `newlyIssuedTokenCount` minted
     /// to `beneficiary`, the fee-eligible hook gross, and the feeless/exempt hook gross reported by
     /// `JBPayHookSpecsLib.fulfill`.
+    /// @param terminal The terminal receiving the pay.
+    /// @param projectId The project being paid.
+    /// @param token The token being paid.
+    /// @param amount The amount being paid.
+    /// @param payer The payer forwarded into the destination pay context.
+    /// @param beneficiary The address receiving newly issued destination-project tokens.
+    /// @param metadata Metadata forwarded to the destination pay flow.
+    /// @param withholdFeeForSourceProjectId The source project whose fee should be withheld from same-terminal
+    /// pay-hook egress, or `0` to disable withholding.
+    /// @return newlyIssuedTokenCount Destination-project tokens minted to `beneficiary`.
+    /// @return hookForwardGrossFeeEligible Non-feeless hook gross whose source fee was withheld.
+    /// @return hookForwardGrossFeeExempt Feeless hook gross that is exempt from source-fee charging.
     function executeEfficientPay(
         IJBTerminal terminal,
         uint256 projectId,
@@ -49,7 +61,7 @@ interface IJBCashOutOpsExecutor {
         returns (uint256 newlyIssuedTokenCount, uint256 hookForwardGrossFeeEligible, uint256 hookForwardGrossFeeExempt);
 }
 
-/// @notice Cashout-side operations for `JBMultiTerminal`: direct cashouts, cross-project cashout-and-deliver
+/// @notice Cashout-side operations for `JBMultiTerminal`: direct cashouts, cross-project cashout routing
 /// (pay / addToBalance variants), and terminal balance migration. Extracted to keep `JBMultiTerminal`
 /// runtime bytecode under EIP-170's 24 KB ceiling on non-via-ir builds (`721-hook` depends on
 /// `nana-core-v6` and cannot use `via_ir`, so the terminal must fit without it).
@@ -79,6 +91,9 @@ library JBCashOutOpsLib {
     /// this terminal. Either the destination silently dropped the reclaim or routed it to a different
     /// terminal not registered as the destination's primary. Reverts so the source-fee skip never leaks.
     error JBMultiTerminal_BeneficiaryProjectNotPaid(uint256 projectId);
+
+    /// @notice The beneficiary project's current ruleset opted out of cross-project fee-free inflows.
+    error JBMultiTerminal_BeneficiaryProjectFeeFreeInflowsPaused(uint256 projectId);
 
     /// @notice A fee-skipped source reclaim was not provably retained as destination fee-free surplus or
     /// charged as hook egress in the source token/value basis.
@@ -135,8 +150,9 @@ library JBCashOutOpsLib {
         uint256 projectId;
         uint256 cashOutCount;
         address tokenToReclaim;
+        uint256 beneficiaryProjectId;
         // Address recorded in the `CashOutTokens` event and credited any hook-fee project tokens. For the
-        // `Full` variant this is the user-supplied destination beneficiary; for `DonationOnly` it's
+        // `cashOutAndPay` path this is the user-supplied destination beneficiary; for `cashOutAndAddToBalance` it's
         // `_msgSender()` (no separate destination recipient).
         address beneficiary;
         bytes cashOutMetadata;
@@ -262,14 +278,18 @@ library JBCashOutOpsLib {
         });
     }
 
-    /// @notice Shared cashout-prep step for both cross-project entrypoints (the `Full` and `DonationOnly`
-    /// variants of `cashOutAndDeliver`). Records the cashout with `beneficiaryIsFeeless: true` (the source
-    /// fee is bound on the destination via the routing step's `_feeFreeSurplusOf` credit), burns the
+    /// @notice Shared cashout-prep step for both cross-project entrypoints (the `cashOutAndPay` and
+    /// `cashOutAndAddToBalance` paths). Records the cashout with `beneficiaryIsFeeless: true` (the source fee is bound
+    /// on the destination via the routing step's `_feeFreeSurplusOf` credit), burns the
     /// holder's project tokens, runs any cashout-side hooks, caps the source's fee-free surplus, and takes
     /// hook fees. Returns the gross reclaim amount that the caller must route to the destination project.
     /// @dev `beneficiary` is recorded in the `CashOutTokens` event and credited any fee-project tokens
-    /// minted from hook fees. For the `Full` variant it's the user-supplied destination beneficiary; for
-    /// `DonationOnly` the caller passes `_msgSender()` (no separate destination recipient).
+    /// minted from hook fees. For the `cashOutAndPay` path it's the user-supplied destination beneficiary; for
+    /// `cashOutAndAddToBalance` the caller passes `_msgSender()` (no separate destination recipient).
+    /// @param deps Terminal immutables.
+    /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param args Cross-project cashout arguments — see `CrossProjectCashOutArgs`.
     /// @return reclaimAmount Gross reclaim from the source project's surplus (before destination routing).
     function executeCrossProjectCashOut(
         Deps memory deps,
@@ -280,6 +300,8 @@ library JBCashOutOpsLib {
         external
         returns (uint256 reclaimAmount)
     {
+        _requireBeneficiaryAcceptsFeeFreeInflows(deps.directory, args.beneficiaryProjectId);
+
         // `beneficiaryIsFeeless: true` — the cashout-side fee is intentionally skipped here. Same-terminal
         // routing binds the equivalent fee through `_feeFreeSurplusOf[beneficiaryProjectId]` credits and
         // any source-fee-bound hook forwarding; external/router routing charges the source fee up front.
@@ -346,7 +368,7 @@ library JBCashOutOpsLib {
         }
     }
 
-    /// @notice `cashOutAndDeliver`'s `Full` variant: route the reclaim to B's primary terminal as a `pay`
+    /// @notice `cashOutAndPay`: route the reclaim to B's primary terminal as a `pay`
     /// (mints destination-project tokens), with per-spec source-fee withholding on any non-feeless non-noop
     /// pay-hook divert.
     /// @dev Per-spec ("nuanced") source-fee binding: when the destination terminal is THIS terminal, we
@@ -359,6 +381,10 @@ library JBCashOutOpsLib {
     /// @dev Same-terminal source-token reclaim not credited as destination fee-free surplus and not already
     /// charged as non-feeless hook egress reverts. External/router routes charge the source fee up front
     /// and route the net amount, so swapped value can return without becoming destination fee-free surplus.
+    /// @param deps Terminal immutables.
+    /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param args Pay-routing arguments — see `RouteAsPayArgs`.
     /// @return beneficiaryTokenCount Destination-project tokens minted to `args.beneficiary`.
     function routeReclaimToBeneficiaryProject(
         Deps memory deps,
@@ -441,6 +467,14 @@ library JBCashOutOpsLib {
         }
     }
 
+    /// @notice Route a reclaim through an external/router terminal after charging the source cashout fee.
+    /// @dev External terminals can swap or forward value before it returns to this terminal, so no
+    /// same-token destination credit is trusted as fee-bound. The route sends only `reclaim - fee`.
+    /// @param deps Terminal immutables.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param args Pay-routing arguments — see `RouteAsPayArgs`.
+    /// @param destinationTerminal The destination project's primary terminal for the reclaim token.
+    /// @return beneficiaryTokenCount Destination-project tokens minted to `args.beneficiary`.
     function _routeExternalReclaimToBeneficiaryProject(
         Deps memory deps,
         mapping(uint256 => mapping(address => JBFee[])) storage heldFeesOf,
@@ -476,13 +510,21 @@ library JBCashOutOpsLib {
         });
     }
 
-    /// @notice `cashOutAndDeliver`'s `DonationOnly` variant: route the reclaim to B's primary terminal as
+    /// @notice `cashOutAndAddToBalance`: route the reclaim to B's primary terminal as
     /// `addToBalanceOf` (no destination mint, no data-hook invocation).
     /// @dev Parallel to `routeReclaimToBeneficiaryProject` for the pay variant. Same-terminal routes are
     /// fee-free when the full source-token amount is retained here. External/router routes pay the source
     /// fee up front and route net because this terminal cannot prove retained source-token backing after
     /// the external hop. Held-fee return on the destination side is hardcoded `false` — this entry is for
     /// value top-up only, never held-fee unlock.
+    /// @param deps Terminal immutables.
+    /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param sourceProjectId The project whose tokens were cashed out.
+    /// @param beneficiaryProjectId The project receiving the added balance.
+    /// @param tokenToReclaim The reclaimed token being routed.
+    /// @param reclaimAmount The gross reclaim amount from the source store.
+    /// @param addToBalanceMetadata Metadata forwarded to the destination `AddToBalance` event.
     function routeReclaimAsAddToBalance(
         Deps memory deps,
         mapping(uint256 => mapping(address => uint256)) storage feeFreeSurplusOf,
@@ -558,6 +600,12 @@ library JBCashOutOpsLib {
     /// — they belong to the fee beneficiary (project #1) and remain processable from the original terminal
     /// even after migration. The migrating project's `_feeFreeSurplusOf` counter is cleared (the deferred
     /// fee liability is settled by the migration fee below).
+    /// @param deps Terminal immutables.
+    /// @param feeFreeSurplusOf Storage ref to `JBMultiTerminal._feeFreeSurplusOf`.
+    /// @param heldFeesOf Storage ref to `JBMultiTerminal._heldFeesOf`.
+    /// @param projectId The project whose balance is being migrated.
+    /// @param token The token whose balance is being migrated.
+    /// @param to The terminal receiving the migrated balance.
     /// @return balance Pre-fee migrated balance returned by the store.
     function migrateBalanceOf(
         Deps memory deps,
@@ -640,6 +688,9 @@ library JBCashOutOpsLib {
     /// @dev External entry called from `JBMultiTerminal.executePayout` (which is the only other caller
     /// besides this library's internal routing). Lib-internal callers use `_destinationUsesDataHookForPay`
     /// directly to avoid the external-call dispatch overhead.
+    /// @param directory The directory used to resolve the destination project's controller.
+    /// @param destProjectId The destination project to inspect.
+    /// @return A flag indicating whether destination pays use a non-zero data hook.
     function destinationUsesDataHookForPay(IJBDirectory directory, uint256 destProjectId) external view returns (bool) {
         return _destinationUsesDataHookForPay(directory, destProjectId);
     }
@@ -897,6 +948,23 @@ library JBCashOutOpsLib {
         (, JBRulesetMetadata memory destMetadata) =
             IJBController(address(directory.controllerOf(destProjectId))).currentRulesetOf(destProjectId);
         return destMetadata.useDataHookForPay && destMetadata.dataHook != address(0);
+    }
+
+    /// @notice Revert if the beneficiary project's current ruleset opts out of cross-project fee-free inflows.
+    /// @param directory The directory used to resolve the beneficiary project's controller.
+    /// @param beneficiaryProjectId The project that would receive the fee-free inflow.
+    function _requireBeneficiaryAcceptsFeeFreeInflows(
+        IJBDirectory directory,
+        uint256 beneficiaryProjectId
+    )
+        private
+        view
+    {
+        (, JBRulesetMetadata memory bMetadata) =
+            IJBController(address(directory.controllerOf(beneficiaryProjectId))).currentRulesetOf(beneficiaryProjectId);
+        if (bMetadata.pauseCrossProjectFeeFreeInflows) {
+            revert JBMultiTerminal_BeneficiaryProjectFeeFreeInflowsPaused(beneficiaryProjectId);
+        }
     }
 
     /// @notice Cap `_feeFreeSurplusOf[projectId][token]` at the current store balance for the project.

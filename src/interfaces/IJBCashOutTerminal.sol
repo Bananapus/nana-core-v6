@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import {IJBCashOutHook} from "./IJBCashOutHook.sol";
 import {IJBTerminal} from "./IJBTerminal.sol";
-import {JBPayType} from "../enums/JBPayType.sol";
 import {JBAfterCashOutRecordedContext} from "../structs/JBAfterCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../structs/JBCashOutHookSpecification.sol";
 import {JBRuleset} from "../structs/JBRuleset.sol";
@@ -76,6 +75,59 @@ interface IJBCashOutTerminal is IJBTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 
+    /// @notice Atomically cash out a holder's tokens of one project and add the reclaim to another project's balance.
+    /// @dev Same-terminal retained delivery is credited as destination fee-free surplus; external/router
+    /// delivery pays the source cashout fee up front and routes only the net amount. Held-fee return is not
+    /// available through this entry; use direct `addToBalanceOf` for that.
+    /// @param holder The address whose project tokens are being burned.
+    /// @param projectId The ID of the project whose project tokens are being burned.
+    /// @param cashOutCount The number of project tokens to burn.
+    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
+    /// @param beneficiaryProjectId The destination project.
+    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specs.
+    /// @param addToBalanceMetadata Forwarded to the destination project's `AddToBalance` event.
+    /// @return reclaimAmount The gross reclaim amount returned by the source store.
+    function cashOutAndAddToBalance(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        uint256 beneficiaryProjectId,
+        bytes calldata cashOutMetadata,
+        bytes calldata addToBalanceMetadata
+    )
+        external
+        returns (uint256 reclaimAmount);
+
+    /// @notice Atomically cash out a holder's tokens of one project and pay the reclaim into another project.
+    /// @dev Same-terminal retained delivery is credited as destination fee-free surplus; external/router
+    /// delivery pays the source cashout fee up front and routes only the net amount. Destination pay hooks
+    /// are run, and same-terminal pay-hook egress is source-fee-bound.
+    /// @param holder The address whose project tokens are being burned.
+    /// @param projectId The ID of the project whose project tokens are being burned.
+    /// @param cashOutCount The number of project tokens to burn.
+    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
+    /// @param beneficiaryProjectId The destination project.
+    /// @param beneficiary The address that receives newly minted destination-project tokens.
+    /// @param minTokensOut The minimum destination-project token mint required; reverts if unmet.
+    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specs.
+    /// @param payMetadata Forwarded to the destination project's pay flow.
+    /// @return reclaimAmount The gross reclaim amount returned by the source store.
+    /// @return beneficiaryTokenCount Destination-project tokens minted.
+    function cashOutAndPay(
+        address holder,
+        uint256 projectId,
+        uint256 cashOutCount,
+        address tokenToReclaim,
+        uint256 beneficiaryProjectId,
+        address beneficiary,
+        uint256 minTokensOut,
+        bytes calldata cashOutMetadata,
+        bytes calldata payMetadata
+    )
+        external
+        returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount);
+
     /// @notice Burn a holder's project tokens to reclaim a proportional share of the project's surplus (paid out as a
     /// terminal token).
     /// @param holder The address whose project tokens are being burned.
@@ -97,48 +149,4 @@ interface IJBCashOutTerminal is IJBTerminal {
     )
         external
         returns (uint256 reclaimAmount);
-
-    /// @notice Atomically cash out a holder's tokens of one project and deliver the reclaim to a
-    /// destination project on the same terminal (or via the destination's primary terminal acting as a
-    /// router that swaps and deposits back).
-    /// @dev Replaces the prior split between `payAfterCashOutTokensOf` (`Full`) and
-    /// `addToBalanceAfterCashOutTokensOf` (`DonationOnly`). Same-terminal retained delivery is credited as
-    /// destination fee-free surplus; external/router delivery pays the source cashout fee up front and
-    /// routes only the net amount. Held-fee return is NOT available through this entry on either variant;
-    /// use the direct `addToBalanceOf` for that.
-    /// @dev `payType == Full` runs the destination's pay flow (mints destination tokens to `beneficiary`,
-    /// runs its data hook, slippage-checks against `minTokensOut`, and binds the source fee on any
-    /// pay-hook egress via per-spec withholding inside `JBPayHookSpecsLib.fulfill`).
-    /// `payType == DonationOnly` adds the reclaim to the destination's balance without minting;
-    /// `beneficiary` and `minTokensOut` are ignored on that path (`_msgSender()` is recorded in the
-    /// `CashOutTokens` event slot to keep an audit trail).
-    /// @param holder The address whose project tokens are being burned.
-    /// @param projectId The ID of the project whose project tokens are being burned.
-    /// @param cashOutCount The number of project tokens to burn.
-    /// @param tokenToReclaim The terminal token reclaimed from the source project's surplus.
-    /// @param beneficiaryProjectId The destination project.
-    /// @param beneficiary For `Full`, the address that receives the newly minted destination-project
-    /// tokens; ignored for `DonationOnly`.
-    /// @param minTokensOut For `Full`, the minimum destination-project token mint required; reverts if
-    /// unmet. Ignored for `DonationOnly`.
-    /// @param cashOutMetadata Forwarded to the source project's data hook and any cashout hook specs.
-    /// @param deliveryMetadata Forwarded to the destination project's pay flow (`Full`) or the emitted
-    /// `AddToBalance` event (`DonationOnly`).
-    /// @param payType Variant selector (`Full` mints destination tokens, `DonationOnly` adds to balance).
-    /// @return reclaimAmount The gross reclaim amount returned by the source store.
-    /// @return beneficiaryTokenCount Destination-project tokens minted (`0` for `DonationOnly`).
-    function cashOutAndDeliver(
-        address holder,
-        uint256 projectId,
-        uint256 cashOutCount,
-        address tokenToReclaim,
-        uint256 beneficiaryProjectId,
-        address beneficiary,
-        uint256 minTokensOut,
-        bytes calldata cashOutMetadata,
-        bytes calldata deliveryMetadata,
-        JBPayType payType
-    )
-        external
-        returns (uint256 reclaimAmount, uint256 beneficiaryTokenCount);
 }

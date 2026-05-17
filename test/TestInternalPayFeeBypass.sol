@@ -14,7 +14,6 @@ import {IJBRulesetApprovalHook} from "../src/interfaces/IJBRulesetApprovalHook.s
 import {IJBRulesetDataHook} from "../src/interfaces/IJBRulesetDataHook.sol";
 import {IJBSplitHook} from "../src/interfaces/IJBSplitHook.sol";
 import {IJBTerminal} from "../src/interfaces/IJBTerminal.sol";
-import {JBPayType} from "../src/enums/JBPayType.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
 import {JBFees} from "../src/libraries/JBFees.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
@@ -227,8 +226,8 @@ contract DustRouterTerminal is IJBTerminal {
 /// @notice Regression suite for the internal-pay fee-bypass fix.
 ///
 /// Before the fix, the same-terminal cross-project funding paths (`executePayout` pay-split, and the
-/// `payAfterCashOutTokensOf` cashout-routing leg) skipped the source-side fee because funds were presumed
-/// to stay inside the protocol. But the destination project's data hook can divert a subset of the inbound
+/// `cashOutAndPay` cashout-routing leg) skipped the source-side fee because funds were presumed to stay
+/// inside the protocol. But the destination project's data hook can divert a subset of the inbound
 /// payment to pay hooks (`JBPayHookSpecification`), which IS protocol egress — and that subset previously
 /// left without paying a source fee.
 ///
@@ -241,7 +240,7 @@ contract DustRouterTerminal is IJBTerminal {
 ///   - retained portion on destination credited fee-free (capped at actual recorded balance)
 ///   - `holdFees()` on source ruleset honored for the new pay-split fee (held vs immediate)
 ///   - `preferAddToBalance == true` keeps existing fee-free behavior (no hook route possible)
-///   - `cashOutAndDeliver(..., Full)` charges the new fee immediately (parity with direct cashout)
+///   - `cashOutAndPay(...)` charges the new fee immediately (parity with direct cashout)
 ///   - non-data-hook destinations stay fee-free (the existing same-terminal fast path is preserved)
 contract TestInternalPayFeeBypass is TestBaseWorkflow {
     IJBController private _controller;
@@ -469,17 +468,17 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
     }
 
     // ==========================================
-    // 5. cashOutAndDeliver(Full) -> immediate source fee on data-hooked destination
+    // 5. cashOutAndPay -> immediate source fee on data-hooked destination
     // ==========================================
 
-    function test_cashOutAndDeliverFull_intoDataHookedProject_chargesImmediateSourceFee() external {
+    function test_cashOutAndPay_intoDataHookedProject_chargesImmediateSourceFee() external {
         _launchFeeProject();
 
         RecordingPayHook payHook = new RecordingPayHook();
         uint256 projectIdB = _launchProjectWithDataHookForPay(makeAddr("data-hook-4"), address(payHook), 5 ether);
         (uint256 projectIdA, address holder) = _seedSourceProjectAndHolder(10 ether);
 
-        _doPayAfterCashOutAndAssert(projectIdA, projectIdB, holder, payHook, 10 ether, 5 ether);
+        _doCashOutAndPayAndAssert(projectIdA, projectIdB, holder, payHook, 10 ether, 5 ether);
     }
 
     function _seedSourceProjectAndHolder(uint256 payIn) internal returns (uint256 projectIdA, address holder) {
@@ -500,7 +499,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         });
     }
 
-    function _doPayAfterCashOutAndAssert(
+    function _doCashOutAndPayAndAssert(
         uint256 projectIdA,
         uint256 projectIdB,
         address holder,
@@ -515,7 +514,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         uint256 tokens = _tokens.totalBalanceOf(holder, projectIdA);
 
         vm.prank(holder);
-        (uint256 reclaim,) = _terminal.cashOutAndDeliver({
+        (uint256 reclaim,) = _terminal.cashOutAndPay({
             holder: holder,
             projectId: projectIdA,
             cashOutCount: tokens,
@@ -524,8 +523,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
             beneficiary: holder,
             minTokensOut: 0,
             cashOutMetadata: new bytes(0),
-            deliveryMetadata: new bytes(0),
-            payType: JBPayType.Full
+            payMetadata: new bytes(0)
         });
         assertEq(reclaim, payIn, "reclaim == full A surplus");
 
@@ -553,24 +551,24 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
     }
 
     // ==========================================
-    // 6. cashOutAndDeliver(Full) with 100% hook forwarding succeeds when fully fee-bound
+    // 6. cashOutAndPay with 100% hook forwarding succeeds when fully fee-bound
     // ==========================================
 
-    function test_cashOutAndDeliverFull_withFullHookForwarding_chargesFullImmediateFee() external {
+    function test_cashOutAndPay_withFullHookForwarding_chargesFullImmediateFee() external {
         _launchFeeProject();
 
         RecordingPayHook payHook = new RecordingPayHook();
         uint256 projectIdB = _launchProjectWithDataHookForPay(makeAddr("data-hook-full"), address(payHook), 10 ether);
         (uint256 projectIdA, address holder) = _seedSourceProjectAndHolder(10 ether);
 
-        _doPayAfterCashOutAndAssert(projectIdA, projectIdB, holder, payHook, 10 ether, 10 ether);
+        _doCashOutAndPayAndAssert(projectIdA, projectIdB, holder, payHook, 10 ether, 10 ether);
     }
 
     // ==========================================
     // 7. Feeless full hook forwarding is bound/exempt, not charged
     // ==========================================
 
-    function test_cashOutAndDeliverFull_feelessHookForwarding_isBoundWithoutSourceFee() external {
+    function test_cashOutAndPay_feelessHookForwarding_isBoundWithoutSourceFee() external {
         _launchFeeProject();
 
         RecordingPayHook payHook = new RecordingPayHook();
@@ -586,7 +584,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
         uint256 tokens = _tokens.totalBalanceOf(holder, projectIdA);
 
         vm.prank(holder);
-        (uint256 reclaim,) = _terminal.cashOutAndDeliver({
+        (uint256 reclaim,) = _terminal.cashOutAndPay({
             holder: holder,
             projectId: projectIdA,
             cashOutCount: tokens,
@@ -595,8 +593,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
             beneficiary: holder,
             minTokensOut: 0,
             cashOutMetadata: new bytes(0),
-            deliveryMetadata: new bytes(0),
-            payType: JBPayType.Full
+            payMetadata: new bytes(0)
         });
 
         assertEq(reclaim, 10 ether, "reclaim == full A surplus");
@@ -616,7 +613,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
     // 8. External/router route pays source fee up front and may deliver swapped value back
     // ==========================================
 
-    function test_cashOutAndDeliverFull_externalRouterCrossToken_chargesSourceFeeAndAllowsNetRoute() external {
+    function test_cashOutAndPay_externalRouterCrossToken_chargesSourceFeeAndAllowsNetRoute() external {
         _launchFeeProject();
 
         address payable sink = payable(makeAddr("router-sink"));
@@ -633,7 +630,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
             _store.balanceOf(address(_terminal), JBConstants.FEE_BENEFICIARY_PROJECT_ID, JBConstants.NATIVE_TOKEN);
 
         vm.prank(holder);
-        _terminal.cashOutAndDeliver({
+        _terminal.cashOutAndPay({
             holder: holder,
             projectId: projectIdA,
             cashOutCount: tokens,
@@ -642,8 +639,7 @@ contract TestInternalPayFeeBypass is TestBaseWorkflow {
             beneficiary: holder,
             minTokensOut: 0,
             cashOutMetadata: new bytes(0),
-            deliveryMetadata: new bytes(0),
-            payType: JBPayType.Full
+            payMetadata: new bytes(0)
         });
 
         assertEq(sink.balance, 10 ether - expectedSourceFee, "router received only net reclaim");

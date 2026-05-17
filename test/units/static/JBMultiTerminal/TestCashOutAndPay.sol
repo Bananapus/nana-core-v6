@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import {MockERC20} from "../../../mock/MockERC20.sol";
-import {JBPayType} from "../../../../src/enums/JBPayType.sol";
 import {JBMultiTerminal} from "../../../../src/JBMultiTerminal.sol";
 import {JBPermissioned} from "../../../../src/abstract/JBPermissioned.sol";
 import {IJBCashOutHook} from "../../../../src/interfaces/IJBCashOutHook.sol";
@@ -25,7 +24,7 @@ import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
-/// @notice Unit tests for `JBMultiTerminal.cashOutAndDeliver(..., JBPayType.Full)`. The flow burns source-project
+/// @notice Unit tests for `JBMultiTerminal.cashOutAndPay(...)`. The flow burns source-project
 /// tokens and pays the reclaim into a destination project via that project's primary terminal for the reclaim token.
 /// Same-terminal retained balances are credited to `_feeFreeSurplusOf[B][token]`; external/router routes pay the
 /// source fee up front and route only the net amount.
@@ -34,7 +33,7 @@ import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 /// `_feeFreeSurplusOf` is read/written via `vm.load`/`vm.store` (slot 0 — confirmed via `forge inspect`) so
 /// tests can directly verify the fee-free credit lands on the right (project, token) bucket and accumulates
 /// additively rather than overwriting.
-contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
+contract TestCashOutAndPay_Local is JBMultiTerminalSetup {
     // -- Source project (A) --
     uint64 _sourceProjectId = 1;
     uint256 _defaultCashOutCount = 1e18;
@@ -425,17 +424,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -450,17 +440,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -483,17 +464,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -517,17 +489,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -545,17 +508,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -575,17 +529,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            unrealisticMin,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, unrealisticMin, "", ""
         );
     }
 
@@ -614,17 +559,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            address(_erc20),
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, address(_erc20), _destProjectId, _bene, 0, "", ""
         );
     }
 
@@ -642,17 +578,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalPay({token: _mockToken, reclaimAmount: _defaultReclaim, mintCount: _defaultMintCount});
 
         vm.prank(_bene);
-        (uint256 reclaimAmount, uint256 beneficiaryTokenCount) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 reclaimAmount, uint256 beneficiaryTokenCount) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(reclaimAmount, _defaultReclaim, "reclaim should match the store's returned amount");
@@ -666,17 +593,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubABalanceRead(_mockToken, 0);
 
         vm.prank(_bene);
-        (uint256 reclaim, uint256 mintCount) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 reclaim, uint256 mintCount) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(reclaim, 0, "no reclaim");
@@ -697,9 +615,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         // Note: _stubCashoutSide skips burnTokensOf when cashOutCount == 0 — calling burn would revert
         // with "expected call but not made" if asserted. The test passing proves no burn was attempted.
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder, _sourceProjectId, 0, _mockToken, _destProjectId, _bene, 0, "", "", JBPayType.Full
-        );
+        (uint256 r, uint256 m) =
+            _terminal.cashOutAndPay(_holder, _sourceProjectId, 0, _mockToken, _destProjectId, _bene, 0, "", "");
 
         assertEq(r, _defaultReclaim, "reclaim flowed despite zero burn");
         assertEq(m, _defaultMintCount, "mint count passes through");
@@ -719,17 +636,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         vm.prank(_operator);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, _defaultReclaim);
@@ -755,17 +663,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), 0, "starts empty");
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(
@@ -791,17 +690,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_destProjectId, _mockToken, preExisting);
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(
@@ -831,17 +721,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_destProjectId, _mockToken, preExisting);
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), postBalance, "capped to remaining balance");
@@ -864,17 +745,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_sourceProjectId, _mockToken, sourceFeeFree);
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(
@@ -904,17 +776,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_sourceProjectId, _mockToken, sourceFeeFree);
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(
@@ -954,17 +817,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
             abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_BeneficiaryProjectNotPaid.selector, _destProjectId)
         );
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), 0, "no credit on input-token bucket");
@@ -989,17 +843,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalPay({token: _mockToken, reclaimAmount: _defaultReclaim, mintCount: _defaultMintCount});
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(_readFeeFreeSurplus(_destProjectId, _mockToken), _defaultReclaim, "source-token context gets credited");
@@ -1035,17 +880,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            address(_erc20),
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, address(_erc20), _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, _defaultReclaim);
@@ -1073,17 +909,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            JBConstants.NATIVE_TOKEN,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, JBConstants.NATIVE_TOKEN, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, _defaultReclaim);
@@ -1119,17 +946,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         // No mockExpect on the hook — it must NOT be called.
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, _defaultReclaim);
@@ -1209,17 +1027,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalPay({token: _mockToken, reclaimAmount: _defaultReclaim, mintCount: _defaultMintCount});
 
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, _defaultReclaim);
@@ -1245,17 +1054,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _stubSameTerminalPay({token: _mockToken, reclaimAmount: reclaimAmount, mintCount: mintCount});
 
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, reclaimAmount, "reclaim pass-through");
@@ -1279,17 +1079,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            minTokensOut,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, minTokensOut, "", ""
         );
     }
 
@@ -1318,17 +1109,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         _seedFeeFreeSurplus(_destProjectId, _mockToken, preExistingCredit);
 
         vm.prank(_bene);
-        _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            _mockToken,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, _mockToken, _destProjectId, _bene, 0, "", ""
         );
 
         // Expected: pre-existing + delta, then capped to balanceAfter.
@@ -1357,17 +1139,8 @@ contract TestPayAfterCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         vm.prank(_bene);
-        (uint256 r, uint256 m) = _terminal.cashOutAndDeliver(
-            _holder,
-            _sourceProjectId,
-            _defaultCashOutCount,
-            JBConstants.NATIVE_TOKEN,
-            _destProjectId,
-            _bene,
-            0,
-            "",
-            "",
-            JBPayType.Full
+        (uint256 r, uint256 m) = _terminal.cashOutAndPay(
+            _holder, _sourceProjectId, _defaultCashOutCount, JBConstants.NATIVE_TOKEN, _destProjectId, _bene, 0, "", ""
         );
 
         assertEq(r, reclaimAmount, "reclaim pass-through");
