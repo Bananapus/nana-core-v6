@@ -4,11 +4,7 @@ pragma solidity 0.8.28;
 import {JBFeelessAddresses} from "../../../../src/JBFeelessAddresses.sol";
 import {IJBFeelessAddresses} from "../../../../src/interfaces/IJBFeelessAddresses.sol";
 import {IJBFeelessHook} from "../../../../src/interfaces/IJBFeelessHook.sol";
-import {
-    MockFeelessHook,
-    MockNonConformingFeelessHook,
-    MockEoaLikeFeelessHook
-} from "../../../mock/MockFeelessHook.sol";
+import {MockFeelessHook, MockNonConformingFeelessHook, MockEoaLikeFeelessHook} from "../../../mock/MockFeelessHook.sol";
 import {JBFeelessSetup} from "./JBFeelessSetup.sol";
 
 contract TestSetFeelessHook_Local is JBFeelessSetup {
