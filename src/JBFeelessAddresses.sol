@@ -19,7 +19,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     error JBFeelessAddresses_InvalidFeelessHook(IJBFeelessHook hook);
 
     //*********************************************************************//
-    // ---------------- public stored properties ------------------------- //
+    // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
     /// @notice Optional hook consulted (in addition to the static mappings) when computing feeless status.
@@ -84,7 +84,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     }
 
     //*********************************************************************//
-    // -------------------------- public views --------------------------- //
+    // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
     /// @notice Returns whether the specified address is feeless for a specific project, considering the wildcard
@@ -100,12 +100,16 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
         IJBFeelessHook hook = feelessHook;
         if (address(hook) == address(0)) return false;
 
-        try hook.isFeeless(projectId, addr) returns (bool result) {
+        try hook.isFeeless({projectId: projectId, addr: addr}) returns (bool result) {
             return result;
         } catch {
             return false;
         }
     }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
 
     /// @notice Indicates whether this contract adheres to the specified interface.
     /// @dev See {IERC165-supportsInterface}.
