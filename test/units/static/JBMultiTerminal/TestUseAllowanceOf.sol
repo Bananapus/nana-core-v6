@@ -113,7 +113,9 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             memo: "",
             caller: address(this)
         });
-        _terminal.useAllowanceOf(_projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "", 0);
+        _terminal.useAllowanceOf(
+            _projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "", 0
+        );
     }
 
     function test_WhenBeneficiaryIsFeeless() external {
@@ -281,6 +283,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             abi.encodeCall(IJBController.mintTokensOf, (_projectId, 1, address(this), "", true)),
             abi.encode(2)
         );
+
+        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (_projectId, 2)), "");
 
         vm.expectEmit();
         emit IJBPayoutTerminal.UseAllowance({
@@ -564,6 +568,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             abi.encode(2)
         );
 
+        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (123, 2)), "");
+
         // Expect ProcessFee event (fee is processed immediately, not held)
         vm.expectEmit(true, true, true, true);
         emit IJBFeeTerminal.ProcessFee({
@@ -599,7 +605,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
             memo: "",
-            referralProjectId: 0
+            referralProjectId: 123
         });
     }
 

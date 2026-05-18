@@ -85,7 +85,7 @@ interface IJBCashOutTerminal is IJBTerminal {
     /// @param beneficiary The address to send the reclaimed terminal tokens to.
     /// @param metadata Extra data to send to the data hook and cash out hooks.
     /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
-    /// for no referral.
+    /// to credit the project being cashed out.
     /// @return reclaimAmount The number of terminal tokens reclaimed from the project's surplus.
     function cashOutTokensOf(
         address holder,

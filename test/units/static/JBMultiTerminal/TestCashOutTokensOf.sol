@@ -432,7 +432,9 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(
+            _holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0
+        );
     }
 
     /* function test_GivenDataHookReturnsCashOutHookSpecsHookIsNotFeelessAndTokenIsNative()
@@ -566,7 +568,9 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(
+            _holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0
+        );
     }
 
     function test_GivenTheCashOutHookSpecIsNoop() external whenCallerHasPermission {

@@ -145,9 +145,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// also not credited — the calling terminal's `_pay` is bypassed.
     /// @custom:param terminal The terminal that originated the fee-paying call.
     /// @custom:param referralProjectId The referral project credited.
-    mapping(address terminal => mapping(uint256 referralProjectId => uint256))
-        public
-        override feeVolumeByReferralOf;
+    mapping(address terminal => mapping(uint256 referralProjectId => uint256)) public override feeVolumeByReferralOf;
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //

@@ -285,6 +285,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// data hook and cash out hook if applicable.
     /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hook if
     /// applicable.
+    /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
+    /// to credit the project being cashed out.
     /// @return reclaimAmount The amount of **terminal tokens** sent to `beneficiary` in exchange for the burned project
     /// tokens, as a fixed point number with the same number of decimals as the terminal token's accounting context.
     function cashOutTokensOf(
@@ -305,7 +307,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         _requirePermissionFrom({account: holder, projectId: projectId, permissionId: JBPermissionIds.CASH_OUT_TOKENS});
 
         // Save-restore the transient referral slot so nested reentrant fee-paying calls don't pollute each other.
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
+        uint256 priorReferral = _setReferralProjectId(referralProjectId == 0 ? projectId : referralProjectId);
 
         reclaimAmount = _cashOutTokensOf({
             holder: holder,
@@ -750,6 +752,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// in terms of the token's accounting context currency), as a fixed point number with the same number of decimals
     /// as the token's accounting context. If the amount of tokens paid out would be less than this amount, the send is
     /// reverted.
+    /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
+    /// to credit the project sending payouts.
     /// @return amountPaidOut The total amount paid out.
     function sendPayoutsOf(
         uint256 projectId,
@@ -763,7 +767,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         override
         returns (uint256 amountPaidOut)
     {
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
+        uint256 priorReferral = _setReferralProjectId(referralProjectId == 0 ? projectId : referralProjectId);
 
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
 
@@ -791,6 +795,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param feeBeneficiary The address that receives the **project tokens** minted by the fee project in exchange
     /// for the protocol fee paid in terminal tokens.
     /// @param memo A memo to pass along to the emitted event.
+    /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
+    /// to credit the project whose surplus allowance is being used.
     /// @return netAmountPaidOut The number of **terminal tokens** sent to `beneficiary`, net of the protocol fee, as a
     /// fixed point number with the same number of decimals as the terminal token's accounting context.
     function useAllowanceOf(
@@ -814,7 +820,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Enforce permissions.
         _requirePermissionFrom({account: owner, projectId: projectId, permissionId: JBPermissionIds.USE_ALLOWANCE});
 
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
+        uint256 priorReferral = _setReferralProjectId(referralProjectId == 0 ? projectId : referralProjectId);
 
         netAmountPaidOut = _useAllowanceOf({
             projectId: projectId,
@@ -1780,8 +1786,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 uint256 referralProjectId = currentReferralProjectId;
                 if (referralProjectId != 0) {
                     STORE.recordFeeReferralCreditOf({
-                        referralProjectId: referralProjectId,
-                        amount: newlyIssuedTokenCount
+                        referralProjectId: referralProjectId, amount: newlyIssuedTokenCount
                     });
                 }
             }
