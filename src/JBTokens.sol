@@ -230,7 +230,7 @@ contract JBTokens is JBControlled, IJBTokens {
         });
 
         // Initialize the token.
-        token.initialize({name: name, symbol: symbol, tokens: address(this)});
+        token.initialize({name: name, symbol: symbol, tokensAddress: address(this)});
     }
 
     /// @notice Create new tokens for a holder. If the project has an ERC-20 deployed, tokens are minted directly to

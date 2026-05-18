@@ -15,7 +15,7 @@ library JBFees {
     /// @param feePercent The fee percent, out of `JBConstants.MAX_FEE`.
     /// @return The fee amount, as a fixed point number with the same number of decimals as `amountBeforeFee`.
     function feeAmountFrom(uint256 amountBeforeFee, uint256 feePercent) internal pure returns (uint256) {
-        return mulDiv(amountBeforeFee, feePercent, JBConstants.MAX_FEE);
+        return mulDiv({x: amountBeforeFee, y: feePercent, denominator: JBConstants.MAX_FEE});
     }
 
     /// @notice Returns the fee amount that, when added to `amountAfterFee`, produces the gross amount needed to yield
@@ -25,7 +25,8 @@ library JBFees {
     /// @param feePercent The fee percent, out of `JBConstants.MAX_FEE`.
     /// @return The fee amount, as a fixed point number with the same number of decimals as `amountAfterFee`.
     function feeAmountResultingIn(uint256 amountAfterFee, uint256 feePercent) internal pure returns (uint256) {
-        return mulDiv(amountAfterFee, JBConstants.MAX_FEE, JBConstants.MAX_FEE - feePercent) - amountAfterFee;
+        return mulDiv({x: amountAfterFee, y: JBConstants.MAX_FEE, denominator: JBConstants.MAX_FEE - feePercent})
+            - amountAfterFee;
     }
 
     /// @notice Returns the standard protocol fee taken from `amountBeforeFee`.
@@ -45,6 +46,6 @@ library JBFees {
     /// @return The fee amount that, when added to `amountAfterFee`, yields the gross pre-fee amount.
     function standardFeeAmountResultingIn(uint256 amountAfterFee) internal pure returns (uint256) {
         // Use `mulDiv` instead of `amountAfterFee * 40 / 39` to preserve overflow safety.
-        return mulDiv(amountAfterFee, 40, 39) - amountAfterFee;
+        return mulDiv({x: amountAfterFee, y: 40, denominator: 39}) - amountAfterFee;
     }
 }

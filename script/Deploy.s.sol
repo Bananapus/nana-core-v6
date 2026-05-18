@@ -26,25 +26,21 @@ contract Deploy is Script, Sphinx {
     IPermit2 private constant _PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /// @notice The address that is allowed to forward calls to the terminal and controller on a users behalf.
-    string private constant TRUSTED_FORWARDER_NAME = "Juicebox";
-    // forge-lint: disable-next-line(mixed-case-variable)
-    address private TRUSTED_FORWARDER;
+    string private constant _TRUSTED_FORWARDER_NAME = "Juicebox";
+    address private trustedForwarder;
 
     /// @notice The address that will manage the few privileged functions of the protocol.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    address private MANAGER;
+    address private manager;
 
     /// @notice The address that will own the fee-project.
     /// @dev Core deployment transfers project `#1` to this owner, but does not fully activate fee collection on its
     /// own. Production fee collection only starts once the fee project's controller, terminals, and accounting
     /// contexts are configured by follow-up deployment steps.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    address private FEE_PROJECT_OWNER;
+    address private feeProjectOwner;
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    uint256 private CORE_DEPLOYMENT_NONCE = 6;
+    uint256 private constant _CORE_DEPLOYMENT_NONCE = 6;
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v6";
@@ -55,71 +51,71 @@ contract Deploy is Script, Sphinx {
     /// @notice Deploys the protocol.
     function run() public sphinx {
         // Set the manager, this can be changed and won't affect deployment addresses.
-        MANAGER = safeAddress();
+        manager = safeAddress();
         // Set the owner of the fee project to be the project multisig. This does not by itself make fee collection
         // live; project `#1` still needs its follow-up controller/terminal/accounting-context configuration.
-        FEE_PROJECT_OWNER = safeAddress();
+        feeProjectOwner = safeAddress();
 
         // Deploy the protocol.
         deploy();
     }
 
     function deploy() public sphinx {
-        TRUSTED_FORWARDER =
-            address(new ERC2771Forwarder{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(TRUSTED_FORWARDER_NAME));
+        trustedForwarder =
+            address(new ERC2771Forwarder{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(_TRUSTED_FORWARDER_NAME));
 
         JBPermissions permissions =
-            new JBPermissions{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(TRUSTED_FORWARDER);
-        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
-            owner: safeAddress(), feeProjectOwner: safeAddress(), trustedForwarder: TRUSTED_FORWARDER
+            new JBPermissions{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(trustedForwarder);
+        JBProjects projects = new JBProjects{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
+            owner: safeAddress(), feeProjectOwner: safeAddress(), trustedForwarder: trustedForwarder
         });
-        JBDirectory directory = new JBDirectory{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+        JBDirectory directory = new JBDirectory{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
             permissions: permissions, projects: projects, owner: safeAddress()
         });
-        JBSplits splits = new JBSplits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
-        JBRulesets rulesets = new JBRulesets{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
-        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+        JBSplits splits = new JBSplits{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(directory);
+        JBRulesets rulesets = new JBRulesets{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(directory);
+        JBPrices prices = new JBPrices{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
             directory: directory,
             permissions: permissions,
             projects: projects,
             owner: safeAddress(),
-            trustedForwarder: TRUSTED_FORWARDER
+            trustedForwarder: trustedForwarder
         });
-        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+        JBTokens tokens = new JBTokens{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
             directory: directory,
-            token: new JBERC20{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(permissions, projects)
+            token: new JBERC20{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(permissions, projects)
         });
 
-        new JBFundAccessLimits{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(directory);
+        new JBFundAccessLimits{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(directory);
 
         JBFeelessAddresses feeless =
-            new JBFeelessAddresses{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}(safeAddress());
+            new JBFeelessAddresses{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}(safeAddress());
 
-        new JBMultiTerminal{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+        new JBMultiTerminal{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
             permissions: permissions,
             projects: projects,
             splits: splits,
-            store: new JBTerminalStore{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+            store: new JBTerminalStore{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
                 directory: directory, rulesets: rulesets, prices: prices
             }),
             tokens: tokens,
             feelessAddresses: feeless,
             permit2: _PERMIT2,
-            trustedForwarder: TRUSTED_FORWARDER
+            trustedForwarder: trustedForwarder
         });
 
         // If the manager is not the deployer we transfer all ownership to it.
-        if (MANAGER != safeAddress() && MANAGER != address(0)) {
-            directory.transferOwnership(MANAGER);
-            feeless.transferOwnership(MANAGER);
-            prices.transferOwnership(MANAGER);
-            projects.transferOwnership(MANAGER);
+        if (manager != safeAddress() && manager != address(0)) {
+            directory.transferOwnership(manager);
+            feeless.transferOwnership(manager);
+            prices.transferOwnership(manager);
+            projects.transferOwnership(manager);
         }
 
         // Transfer ownership to the fee project owner. Follow-up deployment steps must still finish configuring
         // project `#1` before protocol fees are collected instead of being forgiven back to payer projects.
-        if (FEE_PROJECT_OWNER != safeAddress() && FEE_PROJECT_OWNER != address(0)) {
-            projects.safeTransferFrom({from: safeAddress(), to: FEE_PROJECT_OWNER, tokenId: 1});
+        if (feeProjectOwner != safeAddress() && feeProjectOwner != address(0)) {
+            projects.safeTransferFrom({from: safeAddress(), to: feeProjectOwner, tokenId: 1});
         }
     }
 }

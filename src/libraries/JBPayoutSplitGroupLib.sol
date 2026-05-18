@@ -141,7 +141,7 @@ library JBPayoutSplitGroupLib {
         // refund = amount * (netPayoutAmount - sent) / netPayoutAmount. For full consumption this branch is
         // skipped. For zero consumption this refunds the full `amount` (i.e. the gross, fee allocation included).
         if (sent < netPayoutAmount) {
-            uint256 refund = mulDiv(amount, netPayoutAmount - sent, netPayoutAmount);
+            uint256 refund = mulDiv({x: amount, y: netPayoutAmount - sent, denominator: netPayoutAmount});
             if (refund != 0) {
                 store.recordAddedBalanceFor({projectId: projectId, token: token, amount: refund});
             }
@@ -151,7 +151,7 @@ library JBPayoutSplitGroupLib {
         // gross-equivalent of what the hook actually consumed so the held fee scales with consumption rather
         // than with the project's original payout intent.
         if (netPayoutAmount < amount && sent != 0) {
-            feeEligibleAmount = mulDiv(amount, sent, netPayoutAmount);
+            feeEligibleAmount = mulDiv({x: amount, y: sent, denominator: netPayoutAmount});
         }
     }
 
@@ -192,7 +192,7 @@ library JBPayoutSplitGroupLib {
             JBSplit memory split = payoutSplits[i];
 
             // The amount to send to the split.
-            uint256 payoutAmount = mulDiv(leftoverAmount, split.percent, leftoverPercentage);
+            uint256 payoutAmount = mulDiv({x: leftoverAmount, y: split.percent, denominator: leftoverPercentage});
 
             // Send the payout (inlined to keep stack pressure manageable with the tuple return).
             // Returns (netPayoutAmount sent, feeEligible gross-equivalent). For non-hook splits and fully-consumed
