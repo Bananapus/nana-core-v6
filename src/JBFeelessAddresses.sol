@@ -5,12 +5,28 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IJBFeelessAddresses} from "./interfaces/IJBFeelessAddresses.sol";
+import {IJBFeelessHook} from "./interfaces/IJBFeelessHook.sol";
 
 /// @notice A registry of addresses exempt from the protocol's 2.5% fee. Feeless addresses don't incur fees on
 /// payouts they receive, surplus allowance they use, or cash outs where they are the beneficiary.
 /// @dev All feeless status is managed by the contract owner (typically the protocol multisig).
 /// @dev `projectId = 0` is the wildcard — an address feeless for project 0 is feeless for ALL projects.
 contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
+    //*********************************************************************//
+    // --------------------------- custom errors ------------------------- //
+    //*********************************************************************//
+
+    error JBFeelessAddresses_InvalidFeelessHook(IJBFeelessHook hook);
+
+    //*********************************************************************//
+    // ---------------- public stored properties ------------------------- //
+    //*********************************************************************//
+
+    /// @notice Optional hook consulted (in addition to the static mappings) when computing feeless status.
+    /// @dev OR'd with the mappings — the hook can only widen the feeless set, never shrink it. `address(0)` disables
+    /// hook consultation.
+    IJBFeelessHook public override feelessHook;
+
     //*********************************************************************//
     // -------------------- internal stored properties ------------------- //
     //*********************************************************************//
@@ -53,17 +69,42 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
         emit SetFeelessAddress({projectId: projectId, addr: addr, isFeeless: flag, caller: _msgSender()});
     }
 
+    /// @notice Sets (or clears) the feeless hook consulted by `isFeelessFor`.
+    /// @dev Can only be called by this contract's owner (typically the protocol multisig).
+    /// @dev If `hook` is non-zero, it must report ERC-165 support for `IJBFeelessHook` or this call reverts.
+    /// @param hook The new hook. Pass `address(0)` to disable hook consultation.
+    function setFeelessHook(IJBFeelessHook hook) external virtual override onlyOwner {
+        if (address(hook) != address(0) && !hook.supportsInterface(type(IJBFeelessHook).interfaceId)) {
+            revert JBFeelessAddresses_InvalidFeelessHook(hook);
+        }
+
+        feelessHook = hook;
+
+        emit SetFeelessHook({hook: hook, caller: _msgSender()});
+    }
+
     //*********************************************************************//
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /// @notice Returns whether the specified address is feeless for a specific project, considering both the wildcard
-    /// (projectId 0) and project-specific feeless status.
+    /// @notice Returns whether the specified address is feeless for a specific project, considering the wildcard
+    /// (projectId 0) feeless status, the project-specific feeless status, and the feeless hook (if set).
+    /// @dev The hook is invoked via try/catch — a reverting or out-of-gas hook is treated as `false` so it cannot
+    /// brick the fee path in terminals.
     /// @param addr The address to check.
     /// @param projectId The ID of the project to check.
-    /// @return A flag indicating whether the address is feeless (globally or for the project).
+    /// @return A flag indicating whether the address is feeless (globally, for the project, or per the hook).
     function isFeelessFor(address addr, uint256 projectId) external view override returns (bool) {
-        return _isFeelessFor[0][addr] || _isFeelessFor[projectId][addr];
+        if (_isFeelessFor[0][addr] || _isFeelessFor[projectId][addr]) return true;
+
+        IJBFeelessHook hook = feelessHook;
+        if (address(hook) == address(0)) return false;
+
+        try hook.isFeeless(projectId, addr) returns (bool result) {
+            return result;
+        } catch {
+            return false;
+        }
     }
 
     /// @notice Indicates whether this contract adheres to the specified interface.
