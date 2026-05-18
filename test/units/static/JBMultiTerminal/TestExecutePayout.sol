@@ -18,6 +18,7 @@ import {JBMultiTerminalSetup} from "./JBMultiTerminalSetup.sol";
 
 contract TestExecutePayout_Local is JBMultiTerminalSetup {
     uint64 _projectId = 1;
+    uint64 _recipientProjectId = 2;
     uint64 _noProject = 0;
     uint48 _lockedUntil = 0;
     uint256 _defaultAmount = 1e18;
@@ -275,28 +276,28 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     }
 
     function test_GivenPreferAddToBalanceEQTrueAndTerminalEQThisAddress() external {
-        // it will call _addToBalanceOf internal
+        // it will call _addToBalanceOf internal on the same terminal for a different recipient project
 
-        // mock call to directory primaryTerminalOf
+        // mock call to directory primaryTerminalOf for the recipient project
         mockExpect(
             address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_projectId, _usdc)),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_recipientProjectId, _usdc)),
             abi.encode(IJBTerminal(address(_terminal)))
         );
 
         JBSplit memory _splitMemory = JBSplit({
             preferAddToBalance: true,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
-            projectId: _projectId,
+            projectId: _recipientProjectId,
             beneficiary: _noBene,
             lockedUntil: _lockedUntil,
             hook: IJBSplitHook(address(0))
         });
 
-        // mock call to JBTerminalStore recordAddedBalanceFor
+        // mock call to JBTerminalStore recordAddedBalanceFor for the recipient project
         mockExpect(
             address(store),
-            abi.encodeCall(IJBTerminalStore.recordAddedBalanceFor, (_projectId, _usdc, _defaultAmount)),
+            abi.encodeCall(IJBTerminalStore.recordAddedBalanceFor, (_recipientProjectId, _usdc, _defaultAmount)),
             ""
         );
 
@@ -314,7 +315,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     }
 
     function test_GivenPreferAddToBalanceEQTrueAndTerminalEQAnotherAddress() external {
-        // it will call that terminals addToBalanceOf
+        // it will call that terminals addToBalanceOf for a different recipient project
 
         // mock call to FeelessAddresses isFeeless
         mockExpect(
@@ -323,17 +324,17 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
             abi.encode(false)
         );
 
-        // mock call to directory primaryTerminalOf
+        // mock call to directory primaryTerminalOf for the recipient project
         mockExpect(
             address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_projectId, _usdc)),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_recipientProjectId, _usdc)),
             abi.encode(IJBTerminal(address(_mockSecondTerminal)))
         );
 
         JBSplit memory _splitMemory = JBSplit({
             preferAddToBalance: true,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
-            projectId: _projectId,
+            projectId: _recipientProjectId,
             beneficiary: _noBene,
             lockedUntil: _lockedUntil,
             hook: IJBSplitHook(address(0))
@@ -348,12 +349,12 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // Mock the forwarded allowance as fully consumed by the recipient terminal.
         vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), _mockSecondTerminal)), abi.encode(0));
 
-        // mock call to second terminals addToBalanceOf
+        // mock call to second terminals addToBalanceOf for the recipient project
         mockExpect(
             _mockSecondTerminal,
             abi.encodeCall(
                 IJBTerminal.addToBalanceOf,
-                (_projectId, _usdc, amountAfterTax, false, "", bytes(abi.encodePacked(uint256(_projectId))))
+                (_recipientProjectId, _usdc, amountAfterTax, false, "", bytes(abi.encodePacked(uint256(_projectId))))
             ),
             ""
         );
@@ -401,7 +402,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
     }
 
     function test_GivenPreferAddToBalanceDNEQTrueAndTerminalEQAnotherAddress() external {
-        // it will call that terminals pay function
+        // it will call that terminals pay function for a different recipient project
 
         // mock call to FeelessAddresses isFeeless
         mockExpect(
@@ -410,17 +411,17 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
             abi.encode(false)
         );
 
-        // mock call to directory primaryTerminalOf
+        // mock call to directory primaryTerminalOf for the recipient project
         mockExpect(
             address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_projectId, _usdc)),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (_recipientProjectId, _usdc)),
             abi.encode(IJBTerminal(address(_mockSecondTerminal)))
         );
 
         JBSplit memory _splitMemory = JBSplit({
             preferAddToBalance: false,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
-            projectId: _projectId,
+            projectId: _recipientProjectId,
             beneficiary: _noBene,
             lockedUntil: _lockedUntil,
             hook: IJBSplitHook(address(0))
@@ -435,12 +436,20 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // Mock the forwarded allowance as fully consumed by the recipient terminal.
         vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), _mockSecondTerminal)), abi.encode(0));
 
-        // mock call to second terminals pay function
+        // mock call to second terminals pay function for the recipient project
         mockExpect(
             _mockSecondTerminal,
             abi.encodeCall(
                 IJBTerminal.pay,
-                (_projectId, _usdc, amountAfterTax, address(this), 0, "", bytes(abi.encodePacked(uint256(_projectId))))
+                (
+                    _recipientProjectId,
+                    _usdc,
+                    amountAfterTax,
+                    address(this),
+                    0,
+                    "",
+                    bytes(abi.encodePacked(uint256(_projectId)))
+                )
             ),
             abi.encode(1e18)
         );
