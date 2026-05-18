@@ -267,6 +267,38 @@ contract TestRecordPayoutFor_Local is JBTerminalStoreSetup {
         assertEq(amountPaid, _defaultValue / 2);
     }
 
+    function test_GivenCrossCurrencyConversionRoundsToZero_DoesNotConsumePayoutLimit()
+        external
+        whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRuleset
+    {
+        _registerContext(address(_token), _nativeCurrency);
+
+        bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
+        bytes32 projectSlot = keccak256(abi.encode(_projectId, uint256(balanceOfSlot)));
+        bytes32 slot = keccak256(abi.encode(address(_token), uint256(projectSlot)));
+        vm.store(address(_store), slot, bytes32(_balance));
+
+        mockExpect(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitOf,
+                (_projectId, block.timestamp, address(this), address(_token), _currency)
+            ),
+            abi.encode(_defaultValue)
+        );
+
+        mockExpect(
+            address(prices),
+            abi.encodeCall(IJBPrices.pricePerUnitOf, (_projectId, _currency, _nativeCurrency, 18)),
+            abi.encode(2e36)
+        );
+
+        (, uint256 amountPaid) = _store.recordPayoutFor(_projectId, address(_token), _defaultValue, _currency);
+        assertEq(amountPaid, 0);
+        assertEq(_store.usedPayoutLimitOf(address(this), _projectId, address(_token), block.timestamp, _currency), 0);
+        assertEq(_store.balanceOf(address(this), _projectId, address(_token)), _balance);
+    }
+
     function test_GivenTheAmountPaidOutExceedsBalance()
         external
         whenThereIsAZeroUsedPayoutLimitOfTheSenderForCurrentRulesetAndAccessLimitsIsntCalled

@@ -367,6 +367,31 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
             // only up to this accumulated amount, preventing round-trip fee bypass.
+            // Revert on any self-referencing payout (the source project paying itself via a split),
+            // regardless of which terminal receives the call or which branch (pay vs add-to-balance)
+            // is taken. Both shapes are disguised owner actions that the payout pipeline must not
+            // silently authorize:
+            //   - pay branch: the destination terminal's `pay()` mints new project tokens against
+            //     the project's own surplus, diluting holders out-of-cycle and bypassing the
+            //     ruleset's `allowOwnerMinting=false` guarantee. This holds even when the
+            //     destination terminal is a different instance owned by the same project, because
+            //     every registered terminal can mint via the terminal-as-minter pathway.
+            //   - addToBalance branch: a same-project add-balance split shuffles surplus between
+            //     the project's own terminals through the payout pipeline. The same effect is
+            //     available via `addToBalanceOf` directly without the side effects (locked-split
+            //     consumption, payout-limit drawdown, fee-free-surplus accounting); routing it
+            //     through `sendPayoutsOf` is never the right surface.
+            // The try-catch in the split group lib catches this revert and restores the balance.
+            if (split.projectId == projectId) {
+                revert JBMultiTerminal_MintNotAllowed({
+                    projectId: projectId, splitProjectId: split.projectId, terminal: address(terminal)
+                });
+            }
+
+            // Track the fee-free payout amount. During cashout at zero tax rate, fees apply
+            // only up to this accumulated amount, preventing round-trip fee bypass. Same-project
+            // splits would inflate this counter against the project's own future zero-tax cashouts
+            // but are already excluded by the self-reference revert above.
             if (terminal == this) {
                 _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
             }
@@ -384,17 +409,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     metadata: metadata
                 });
             } else {
-                // Revert if this is a self-referencing payout (project paying itself via a split).
-                // Same-project pay splits would mint tokens against existing balance without new funds entering.
-                // Projects that want to mint should do so explicitly via the controller.
-                // Cross-project pay splits on the same terminal are allowed (different project receives the funds).
-                // The try-catch in the split group lib catches this revert and restores the balance.
-                if (terminal == this && split.projectId == projectId) {
-                    revert JBMultiTerminal_MintNotAllowed({
-                        projectId: projectId, splitProjectId: split.projectId, terminal: address(terminal)
-                    });
-                }
-
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
 

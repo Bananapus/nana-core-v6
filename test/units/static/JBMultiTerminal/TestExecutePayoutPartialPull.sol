@@ -63,6 +63,7 @@ contract MockPartialPullSplitHook is IJBSplitHook {
             }
         } else {
             if (toConsume != 0) {
+                // forge-lint: disable-next-line(erc20-unchecked-transfer)
                 IERC20(context.token).transferFrom(msg.sender, address(this), toConsume);
             }
         }
@@ -481,6 +482,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
 contract MockOneWeiPullSplitHook is IJBSplitHook {
     function processSplitWith(JBSplitHookContext calldata context) external payable override {
         if (context.token != JBConstants.NATIVE_TOKEN) {
+            // forge-lint: disable-next-line(erc20-unchecked-transfer)
             IERC20(context.token).transferFrom(msg.sender, address(this), 1);
         }
     }
