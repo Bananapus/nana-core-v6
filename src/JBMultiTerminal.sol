@@ -712,6 +712,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             delete _heldFeesOf[projectId][token][currentIndex];
             _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
 
+            // Restore the originating fee-paying call's referral project for the duration of this fee's processing
+            // so the credit in `_processFee` attributes to the right project. No save needed: `processHeldFeesOf` is
+            // a top-level keeper call in practice — the incoming transient is 0. Defensive cleanup happens once
+            // after the loop instead of per-iteration.
+            currentReferralProjectId = heldFee.referralProjectId;
+
             // Process the standard fee on the original gross amount recorded when the held fee was created.
             _processFee({
                 projectId: projectId,
@@ -721,10 +727,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 feeTerminal: feeTerminal,
                 wasHeld: true
             });
+
             unchecked {
                 ++i;
             }
         }
+
+        // Defensive cleanup: zero the transient so any subsequent in-tx work (e.g. hook reentrancy) doesn't
+        // inherit the last processed fee's referral. EIP-1153 would clear it at end-of-tx anyway, but in-tx
+        // reentry is the only case where this matters.
+        currentReferralProjectId = 0;
 
         // If all held fees have been processed, reset the array and index entirely to bound storage growth.
         if (
@@ -1777,19 +1789,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // If this pay is the fee project receiving a fee, credit the originating caller's referral project (set in
-        // transient storage by the external fee-paying entry point) with the actual amount paid in. This records fee
-        // volume, not fee-project token issuance, so the credit is not affected by the fee project's current weight.
-        // Held-fee path is not credited here: by the time `processHeldFeesOf` calls `_pay`, the transient slot has
-        // been cleared. Cross-terminal fee processing (fee project's primary terminal is a different
-        // `JBMultiTerminal`) is also not credited because `_pay` is not called locally in that case.
-        if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
-            uint256 referralProjectId = currentReferralProjectId;
-            if (referralProjectId != 0) {
-                STORE.recordFeeReferralCreditOf({referralProjectId: referralProjectId, amount: tokenAmount.value});
-            }
-        }
-
         // `_pay` already carries ~10 locals (ruleset, tokenCount, hookSpecifications, balanceDiff, tokenAmount,
         // newlyIssuedTokenCount, internalSplitPayProjectId, feeFreeAmount, plus loop-local `i` and `hookAmount`).
         // Inlining the 9-arg `emit Pay` here hits "Stack too deep" under the non-IR build, so the emit is extracted
@@ -1843,6 +1842,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         try this.executeProcessFee({
             projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
+            // Credit the originating call's referral project with the fee amount that was actually paid in.
+            // Done here (after the external pay succeeds) rather than inside `_pay` so that:
+            //   (a) cross-terminal fee processing — when the fee project's primary terminal is a different terminal
+            //       instance and the local `_pay` is bypassed — still attributes correctly, because this call site is
+            //       the sender's, where the transient `currentReferralProjectId` is live;
+            //   (b) the held-fee path attributes correctly too — `processHeldFeesOf` restores the transient from the
+            //       persisted `JBFee.referralProjectId` before calling `_processFee`.
+            // `recordFeeReferralCreditOf` early-returns when the referral or amount is zero, so the call is safe
+            // when no referral is set.
+            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: amount});
+
             emit ProcessFee({
                 projectId: projectId,
                 token: token,
@@ -2090,12 +2100,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         if (shouldHoldFees) {
             // Store the gross amount so future repayments can recover the corresponding fee.
+            // Capture the in-flight `currentReferralProjectId` so attribution survives the 28-day hold window —
+            // by the time `processHeldFeesOf` runs, the transient slot has been cleared.
             _heldFeesOf[projectId][token].push(
                 JBFee({
                     amount: amount,
                     beneficiary: beneficiary,
                     // forge-lint: disable-next-line(unsafe-typecast)
-                    unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS)
+                    unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS),
+                    // forge-lint: disable-next-line(unsafe-typecast)
+                    referralProjectId: uint48(currentReferralProjectId)
                 })
             );
 

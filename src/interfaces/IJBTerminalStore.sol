@@ -142,6 +142,13 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
+    /// @notice Emitted when a referral project is credited with a fee payment amount.
+    /// @param terminal The terminal that originated the fee-paying call (`msg.sender` on `recordFeeReferralCreditOf`).
+    /// @param referralProjectId The referral project credited.
+    /// @param amount The fee amount credited, in the terminal's accounting-context units.
+    /// @param newTotal The new value of `totalFeeVolumeOf[terminal]` after this credit.
+    event ReferralCredit(address indexed terminal, uint256 indexed referralProjectId, uint256 amount, uint256 newTotal);
+
     /// @notice The cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
     /// originated through a given terminal.
     /// @dev Written by terminals via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal,
@@ -151,6 +158,13 @@ interface IJBTerminalStore {
     /// @param referralProjectId The referral project credited.
     /// @return The cumulative fee amount credited.
     function feeVolumeByReferralOf(address terminal, uint256 referralProjectId) external view returns (uint256);
+
+    /// @notice The cumulative fee payment amount credited across all referral projects for a given terminal.
+    /// @dev Incremented in lockstep with `feeVolumeByReferralOf` so consumers can compute pro-rata shares in a
+    /// single SLOAD pair without enumerating referrers.
+    /// @param terminal The terminal that originated the fee-paying calls.
+    /// @return The cumulative total fee amount credited across all referrers for this terminal.
+    function totalFeeVolumeOf(address terminal) external view returns (uint256);
 
     /// @notice Simulates a cash out without modifying state.
     /// @param terminal The terminal to simulate the cash out from.
