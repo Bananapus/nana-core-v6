@@ -1842,17 +1842,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         try this.executeProcessFee({
             projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
-            // Credit the originating call's referral project with the fee amount that was actually paid in.
-            // Done here (after the external pay succeeds) rather than inside `_pay` so that:
-            //   (a) cross-terminal fee processing — when the fee project's primary terminal is a different terminal
-            //       instance and the local `_pay` is bypassed — still attributes correctly, because this call site is
-            //       the sender's, where the transient `currentReferralProjectId` is live;
-            //   (b) the held-fee path attributes correctly too — `processHeldFeesOf` restores the transient from the
-            //       persisted `JBFee.referralProjectId` before calling `_processFee`.
-            // `recordFeeReferralCreditOf` early-returns when the referral or amount is zero, so the call is safe
-            // when no referral is set.
-            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: amount});
-
             emit ProcessFee({
                 projectId: projectId,
                 token: token,

@@ -86,7 +86,9 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee with unlockTimestamp in the future
         uint48 futureTimestamp = uint48(block.timestamp + 1000);
         _addHeldFee(
-            _projectId, _mockToken, JBFee({amount: 100, beneficiary: _beneficiary, unlockTimestamp: futureTimestamp})
+            _projectId,
+            _mockToken,
+            JBFee({amount: 100, beneficiary: _beneficiary, unlockTimestamp: futureTimestamp, referralProjectId: 0})
         );
 
         // Mock the directory call to find the fee terminal (project 1 is the fee beneficiary)
@@ -119,7 +121,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         _addHeldFee(
             _projectId,
             _mockToken,
-            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
+            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp, referralProjectId: 0})
         );
 
         // The fee amount that will be calculated from the held amount
@@ -187,7 +189,7 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         _addHeldFee(
             _projectId,
             _mockToken,
-            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
+            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp, referralProjectId: 0})
         );
 
         // The fee amount that will be calculated from the held amount

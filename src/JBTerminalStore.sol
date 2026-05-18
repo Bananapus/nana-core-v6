@@ -6,6 +6,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 
 import {IJBController} from "./interfaces/IJBController.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
+import {IJBMultiTerminal} from "./interfaces/IJBMultiTerminal.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
@@ -63,6 +64,11 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Constrains `mulDiv` operations on fixed point numbers to a maximum number of decimal points of persisted
     /// fidelity.
     uint256 internal constant _MAX_FIXED_POINT_FIDELITY = 18;
+
+    /// @notice The project ID that receives protocol fees. Mirrors `JBMultiTerminal._FEE_BENEFICIARY_PROJECT_ID`.
+    /// @dev Inlined here so the store can detect fee-into-fee-project payments and auto-credit the originating
+    /// call's referral project without an extra cross-contract call.
+    uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
@@ -338,28 +344,13 @@ contract JBTerminalStore is IJBTerminalStore {
     }
 
     /// @notice Credit a referral project with a fee payment amount routed through `msg.sender` (the calling terminal).
-    /// @dev Permissionless: the writes are scoped to `msg.sender`'s slots, so an arbitrary caller can only pollute
-    /// their own buckets — off-chain consumers should filter on known terminal addresses. No-op when `amount == 0`
-    /// or `referralProjectId == 0`.
-    /// @dev Updates `feeVolumeByReferralOf[msg.sender][referralProjectId]` and `totalFeeVolumeOf[msg.sender]` in
-    /// lockstep and emits a `ReferralCredit` event so off-chain consumers don't need to reconstruct the credit by
-    /// reading storage in the same block. Emitting from here (rather than the calling terminal) keeps the
-    /// already-tight `JBMultiTerminal` bytecode budget intact.
+    /// @dev Permissionless manual entry point — also auto-credited by `recordPaymentFrom` when a payment lands on the
+    /// fee project. The writes are scoped to `msg.sender`'s slots, so an arbitrary caller can only pollute their
+    /// own buckets — off-chain consumers should filter on known terminal addresses.
     /// @param referralProjectId The referral project to credit.
     /// @param amount The fee amount paid by the originating fee-take call.
     function recordFeeReferralCreditOf(uint256 referralProjectId, uint256 amount) external override {
-        if (amount == 0 || referralProjectId == 0) return;
-
-        feeVolumeByReferralOf[msg.sender][referralProjectId] += amount;
-        uint256 newTotal = totalFeeVolumeOf[msg.sender] + amount;
-        totalFeeVolumeOf[msg.sender] = newTotal;
-
-        emit ReferralCredit({
-            terminal: msg.sender,
-            referralProjectId: referralProjectId,
-            amount: amount,
-            newTotal: newTotal
-        });
+        _creditFeeReferral({referralProjectId: referralProjectId, amount: amount});
     }
 
     /// @notice Records a payment — calculates how many project tokens to mint based on the payment amount and the
@@ -403,6 +394,47 @@ contract JBTerminalStore is IJBTerminalStore {
             uint256 currentBalance = balanceOf[msg.sender][projectId][amount.token];
             balanceOf[msg.sender][projectId][amount.token] = currentBalance + balanceDiff;
         }
+
+        // If this payment is a fee being paid into the fee project, credit the originating fee-paying call's
+        // referral project. Try the calling terminal's transient slot first (covers the local fee-take path AND the
+        // held-fee path, where `processHeldFeesOf` has restored the transient before calling `_pay`). Then fall
+        // back to `payer` for cross-terminal fee processing: when the fee project's primary terminal is a different
+        // terminal instance, `msg.sender` is the receiver (transient = 0) and `payer` is the originating terminal
+        // (transient is live). Doing this in the store keeps `JBMultiTerminal` bytecode-budget-neutral.
+        if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
+            uint256 refId = _readReferral(msg.sender);
+            if (refId == 0 && payer != msg.sender) refId = _readReferral(payer);
+            _creditFeeReferral({referralProjectId: refId, amount: amount.value});
+        }
+    }
+
+    /// @notice Read a terminal's transient `currentReferralProjectId` if it implements `IJBMultiTerminal`.
+    /// @dev Low-level staticcall so non-terminal callers (EOAs, contracts without the function) harmlessly return 0
+    /// rather than reverting. The selector is hard-coded so the caller need not be a full `IJBMultiTerminal`.
+    /// @param terminal The address to probe.
+    /// @return refId The referral project ID, or 0 if the call failed or returned an empty/short result.
+    function _readReferral(address terminal) private view returns (uint256 refId) {
+        if (terminal.code.length == 0) return 0;
+        (bool ok, bytes memory data) =
+            terminal.staticcall(abi.encodeWithSelector(IJBMultiTerminal.currentReferralProjectId.selector));
+        if (ok && data.length == 32) refId = abi.decode(data, (uint256));
+    }
+
+    /// @notice Credit a referral project with a fee payment amount. Internal counterpart of
+    /// `recordFeeReferralCreditOf` — both write to the same slots and emit the same event.
+    /// @dev No-op when `referralProjectId == 0` or `amount == 0`.
+    /// @param referralProjectId The referral project to credit.
+    /// @param amount The fee amount to credit.
+    function _creditFeeReferral(uint256 referralProjectId, uint256 amount) private {
+        if (referralProjectId == 0 || amount == 0) return;
+
+        feeVolumeByReferralOf[msg.sender][referralProjectId] += amount;
+        uint256 newTotal = totalFeeVolumeOf[msg.sender] + amount;
+        totalFeeVolumeOf[msg.sender] = newTotal;
+
+        emit ReferralCredit({
+            terminal: msg.sender, referralProjectId: referralProjectId, amount: amount, newTotal: newTotal
+        });
     }
 
     /// @notice Records a payout — decrements the project's balance and enforces the payout limit. Called by the

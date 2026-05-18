@@ -284,7 +284,10 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             abi.encode(10)
         );
 
-        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (_projectId, 2)), "");
+        // Note: previously asserted `recordFeeReferralCreditOf` was invoked from `_pay`. The credit now happens
+        // inside `recordPaymentFrom` (auto-credit via staticcall on `currentReferralProjectId`), which is mocked
+        // here — so the credit's effects aren't observable in this unit-mock setup. End-to-end attribution is
+        // covered by integration tests instead.
 
         vm.expectEmit();
         emit IJBPayoutTerminal.UseAllowance({
@@ -568,7 +571,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             abi.encode(10)
         );
 
-        mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (123, 2)), "");
+        // Note: credit-call assertion moved to integration tests — `recordPaymentFrom` auto-credits internally now.
 
         // Expect ProcessFee event (fee is processed immediately, not held)
         vm.expectEmit(true, true, true, true);
