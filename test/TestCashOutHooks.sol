@@ -222,7 +222,8 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
     }
 
@@ -342,7 +343,8 @@ contract TestCashOutHooks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
     }
 

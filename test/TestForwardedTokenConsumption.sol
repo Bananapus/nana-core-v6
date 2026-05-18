@@ -172,7 +172,8 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             tokenToReclaim: address(usdcToken()),
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: ""
+            metadata: "",
+            referralProjectId: 0
         });
     }
 
@@ -218,7 +219,8 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             amount: _PAYOUT_AMOUNT,
             currency: uint32(uint160(address(usdcToken()))),
             token: address(usdcToken()),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         assertEq(usdcToken().allowance(address(_terminal), address(_terminal2)), 0);
@@ -272,7 +274,8 @@ contract TestForwardedTokenConsumption_Local is TestBaseWorkflow {
             amount: _PAYOUT_AMOUNT,
             currency: uint32(uint160(address(usdcToken()))),
             token: address(usdcToken()),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         assertEq(usdcToken().allowance(address(_terminal), address(_terminal2)), 0);

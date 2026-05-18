@@ -151,7 +151,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Verify held fees exist.
@@ -191,7 +192,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Fast-forward past fee holding period (28 days).
@@ -233,7 +235,8 @@ contract TestMigrationHeldFees_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Migrate.

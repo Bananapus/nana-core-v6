@@ -125,7 +125,8 @@ contract CrossTerminalSurplusSpoof_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(reclaimed, 1 ether, "spoofed global surplus should let a half burn reclaim the full local balance");

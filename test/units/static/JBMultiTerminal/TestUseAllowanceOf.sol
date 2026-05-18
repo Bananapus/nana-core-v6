@@ -63,7 +63,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
-        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "");
+        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "", 0);
     }
 
     function test_WhenOwnerEQFeeless() external {
@@ -113,7 +113,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             memo: "",
             caller: address(this)
         });
-        _terminal.useAllowanceOf(_projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "");
+        _terminal.useAllowanceOf(_projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "", 0);
     }
 
     function test_WhenBeneficiaryIsFeeless() external {
@@ -175,7 +175,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 100,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -303,7 +304,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -433,7 +435,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -595,7 +598,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 

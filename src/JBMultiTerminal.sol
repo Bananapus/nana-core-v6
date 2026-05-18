@@ -154,6 +154,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// the fee basis to `executePayout`.
     uint256 transient _internalSplitPayProjectId;
 
+    /// @notice Caller-originated `referralProjectId` for the duration of the current external fee-paying call.
+    /// @dev Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` via the `_setReferralProjectId`
+    /// save-restore wrapper. Read inside `_pay` to credit `feeVolumeByReferralOf` when the fee project's pay call
+    /// mints tokens to the fee beneficiary.
+    /// @dev Public so pay/cashout/split hooks can introspect which referral originated the in-flight call (e.g. to
+    /// apply referral-specific logic). Reads `0` outside any fee-paying call.
+    uint256 public transient override currentReferralProjectId;
+
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
@@ -286,7 +294,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address tokenToReclaim,
         uint256 minTokensReclaimed,
         address payable beneficiary,
-        bytes calldata metadata
+        bytes calldata metadata,
+        uint256 referralProjectId
     )
         external
         override
@@ -294,6 +303,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     {
         // Enforce permissions.
         _requirePermissionFrom({account: holder, projectId: projectId, permissionId: JBPermissionIds.CASH_OUT_TOKENS});
+
+        // Save-restore the transient referral slot so nested reentrant fee-paying calls don't pollute each other.
+        uint256 priorReferral = _setReferralProjectId(referralProjectId);
 
         reclaimAmount = _cashOutTokensOf({
             holder: holder,
@@ -303,6 +315,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             beneficiary: beneficiary,
             metadata: metadata
         });
+
+        _setReferralProjectId(priorReferral);
 
         // The amount being reclaimed must be at least as much as was expected.
         _checkMin({value: reclaimAmount, min: minTokensReclaimed});
@@ -742,13 +756,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address token,
         uint256 amount,
         uint256 currency,
-        uint256 minTokensPaidOut
+        uint256 minTokensPaidOut,
+        uint256 referralProjectId
     )
         external
         override
         returns (uint256 amountPaidOut)
     {
+        uint256 priorReferral = _setReferralProjectId(referralProjectId);
+
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
+
+        _setReferralProjectId(priorReferral);
 
         // The amount being paid out must be at least as much as was expected.
         _checkMin({value: amountPaidOut, min: minTokensPaidOut});
@@ -782,7 +801,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 minTokensPaidOut,
         address payable beneficiary,
         address payable feeBeneficiary,
-        string calldata memo
+        string calldata memo,
+        uint256 referralProjectId
     )
         external
         override
@@ -794,6 +814,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Enforce permissions.
         _requirePermissionFrom({account: owner, projectId: projectId, permissionId: JBPermissionIds.USE_ALLOWANCE});
 
+        uint256 priorReferral = _setReferralProjectId(referralProjectId);
+
         netAmountPaidOut = _useAllowanceOf({
             projectId: projectId,
             owner: owner,
@@ -804,6 +826,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             feeBeneficiary: feeBeneficiary,
             memo: memo
         });
+
+        _setReferralProjectId(priorReferral);
 
         // The amount being withdrawn must be at least as much as was expected.
         _checkMin({value: netAmountPaidOut, min: minTokensPaidOut});
@@ -1304,6 +1328,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
+    /// @notice Set the transient `currentReferralProjectId` slot and return the prior value (for save-restore).
+    /// @dev Returning the prior value lets the caller restore it after the inner call completes, which is required
+    /// to keep nested reentrant fee-paying calls from polluting each other. Per EIP-1153, a revert in the inner
+    /// call also reverts the transient write, so no explicit cleanup on the failure path is needed.
+    /// @param referralProjectId The new value to write into the transient slot.
+    /// @return prior The value previously stored in the slot.
+    function _setReferralProjectId(uint256 referralProjectId) private returns (uint256 prior) {
+        prior = currentReferralProjectId;
+        currentReferralProjectId = referralProjectId;
+    }
+
     /// @notice Revert if a value is less than the specified minimum.
     /// @param value The value to compare against the minimum.
     /// @param min The minimum acceptable value.
@@ -1734,6 +1769,22 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 useReservedPercent: true
             });
+
+            // If this pay is the fee project receiving a fee, credit the originating caller's referral project
+            // (set in transient storage by the external fee-paying entry point) with the fee project tokens just
+            // minted. Normalizes referral attribution across fee tokens by using the fee project's token as the unit.
+            // Held-fee path is not credited here: by the time `processHeldFeesOf` calls `_pay`, the transient slot
+            // has been cleared. Cross-terminal fee processing (fee project's primary terminal is a different
+            // `JBMultiTerminal`) is also not credited because `_pay` is not called locally in that case.
+            if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
+                uint256 referralProjectId = currentReferralProjectId;
+                if (referralProjectId != 0) {
+                    STORE.recordFeeReferralCreditOf({
+                        referralProjectId: referralProjectId,
+                        amount: newlyIssuedTokenCount
+                    });
+                }
+            }
         }
 
         // `_pay` already carries ~10 locals (ruleset, tokenCount, hookSpecifications, balanceDiff, tokenAmount,

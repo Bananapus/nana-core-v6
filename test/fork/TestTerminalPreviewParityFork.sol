@@ -100,7 +100,8 @@ contract TestTerminalPreviewParityFork is TestTerminalPreviewParity_Local {
 
         vm.prank(_beneficiary);
         uint256 reclaimAmount = _terminal.cashOutTokensOf(
-            _beneficiary, projectId, cashOutCount, JBConstants.NATIVE_TOKEN, 0, payable(_beneficiary), ""
+            _beneficiary, projectId, cashOutCount, JBConstants.NATIVE_TOKEN, 0, payable(_beneficiary), "",
+            0
         );
 
         assertEq(reclaimAmount, previewReclaimAmount);

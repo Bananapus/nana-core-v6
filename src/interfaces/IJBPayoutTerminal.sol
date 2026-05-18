@@ -102,13 +102,16 @@ interface IJBPayoutTerminal is IJBTerminal {
     /// @param amount The total amount of tokens to pay out.
     /// @param currency The currency the amount is denominated in.
     /// @param minTokensPaidOut The minimum number of terminal tokens expected to be paid out.
+    /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
+    /// for no referral.
     /// @return amountPaidOut The total amount paid out.
     function sendPayoutsOf(
         uint256 projectId,
         address token,
         uint256 amount,
         uint256 currency,
-        uint256 minTokensPaidOut
+        uint256 minTokensPaidOut,
+        uint256 referralProjectId
     )
         external
         returns (uint256 amountPaidOut);
@@ -122,6 +125,8 @@ interface IJBPayoutTerminal is IJBTerminal {
     /// @param beneficiary The address to send the funds to.
     /// @param feeBeneficiary The address that will receive any project tokens minted from fees.
     /// @param memo A memo to pass along to the emitted event.
+    /// @param referralProjectId Optional project to credit with the protocol fee volume taken by this call. Pass `0`
+    /// for no referral.
     /// @return netAmountPaidOut The net amount paid out to the beneficiary after fees.
     function useAllowanceOf(
         uint256 projectId,
@@ -131,7 +136,8 @@ interface IJBPayoutTerminal is IJBTerminal {
         uint256 minTokensPaidOut,
         address payable beneficiary,
         address payable feeBeneficiary,
-        string calldata memo
+        string calldata memo,
+        uint256 referralProjectId
     )
         external
         returns (uint256 netAmountPaidOut);

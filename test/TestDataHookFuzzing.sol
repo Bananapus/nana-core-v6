@@ -535,7 +535,8 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         uint256 reclaimed = address(this).balance - balanceBefore;
@@ -606,7 +607,8 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         // After half cash out, balance should be reduced by reclaim + hookAmount.
@@ -772,7 +774,8 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
     }
 

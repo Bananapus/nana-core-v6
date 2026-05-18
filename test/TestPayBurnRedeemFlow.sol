@@ -180,7 +180,8 @@ contract TestPayBurnCashOutFlow_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN, // Unused.
             minTokensReclaimed: 0,
             beneficiary: payable(_beneficiary),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         // Make sure the beneficiary has a new balance of project tokens.

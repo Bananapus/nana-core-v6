@@ -18,7 +18,8 @@ contract MaliciousPayoutBeneficiary is IERC721Receiver, Test {
             amount: 5 * 10 ** 18,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
         assertEq(_reentrantPayout, 0);
     }
@@ -49,7 +50,8 @@ contract MaliciousAllowanceBeneficiary is IERC721Receiver, Test {
             minTokensPaidOut: 0,
             beneficiary: payable(address(this)),
             feeBeneficiary: payable(0x000000000000000000000000000000000000007B),
-            memo: "MEMO"
+            memo: "MEMO",
+            referralProjectId: 0
         });
     }
 

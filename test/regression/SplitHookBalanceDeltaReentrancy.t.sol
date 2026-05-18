@@ -44,7 +44,8 @@ contract BalanceDeltaCashOutSplitHook is ERC165, IJBSplitHook {
                 tokenToReclaim: JBConstants.NATIVE_TOKEN,
                 minTokensReclaimed: 0,
                 beneficiary: payable(address(this)),
-                metadata: new bytes(0)
+                metadata: new bytes(0),
+                referralProjectId: 0
             });
         }
     }
@@ -136,7 +137,8 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: ORIGIN_PAYOUT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         uint256 expectedFee =
@@ -194,7 +196,8 @@ contract SplitHookBalanceDeltaReentrancy is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: ORIGIN_PAYOUT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         uint256 originRecordedBalance =

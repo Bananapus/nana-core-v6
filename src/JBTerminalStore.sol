@@ -134,6 +134,21 @@ contract JBTerminalStore is IJBTerminalStore {
         public
         override usedSurplusAllowanceOf;
 
+    /// @notice Cumulative fee-project tokens (project #1's project token) credited to a referral project as a
+    /// result of fee-paying calls that originated through a given terminal.
+    /// @dev Normalized across fee tokens — the unit is the fee project's token, which is what the protocol issues
+    /// as the "thanks for paying a fee" receipt. Written by terminals via `recordFeeReferralCreditOf`; the writing
+    /// terminal is `msg.sender`, so a caller can only pollute their own bucket.
+    /// @dev Only credited on the immediate (non-held) fee-take path. Held fees processed later via
+    /// `processHeldFeesOf` do not credit because the transient `currentReferralProjectId` has been cleared by
+    /// then. Cross-terminal fee processing (fee project's primary terminal is a different terminal instance) is
+    /// also not credited — the calling terminal's `_pay` is bypassed.
+    /// @custom:param terminal The terminal that originated the fee-paying call.
+    /// @custom:param referralProjectId The referral project credited.
+    mapping(address terminal => mapping(uint256 referralProjectId => uint256))
+        public
+        override feeVolumeByReferralOf;
+
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
@@ -320,6 +335,18 @@ contract JBTerminalStore is IJBTerminalStore {
                 balanceOf[msg.sender][projectId][tokenToReclaim] = currentBalance - balanceDiff;
             }
         }
+    }
+
+    /// @notice Credit a referral project with fee-project tokens minted as a result of a fee-paying call routed
+    /// through `msg.sender` (the calling terminal).
+    /// @dev Permissionless: the write is scoped to `msg.sender`'s slot, so an arbitrary caller can only pollute
+    /// their own bucket — off-chain consumers should filter on known terminal addresses. No-op when `amount == 0`.
+    /// @param referralProjectId The referral project to credit.
+    /// @param amount The number of fee-project tokens minted by the originating fee-take call.
+    function recordFeeReferralCreditOf(uint256 referralProjectId, uint256 amount) external override {
+        if (amount == 0) return;
+
+        feeVolumeByReferralOf[msg.sender][referralProjectId] += amount;
     }
 
     /// @notice Records a payment — calculates how many project tokens to mint based on the payment amount and the

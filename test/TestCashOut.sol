@@ -153,7 +153,8 @@ contract TestCashOut_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_beneficiary),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         // Keep a reference to the expected amount cashed out.

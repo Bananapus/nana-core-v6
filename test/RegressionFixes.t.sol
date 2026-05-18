@@ -121,7 +121,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Queue a new ruleset with a much lower payout limit (1 ETH).
@@ -207,7 +208,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Queue a new ruleset with zero payout limits (all balance is surplus).
@@ -385,7 +387,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // --- Verify invariant: _feeFreeSurplusOf[B] <= STORE.balanceOf[B] ---
@@ -421,7 +424,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
                 tokenToReclaim: JBConstants.NATIVE_TOKEN,
                 minTokensReclaimed: 0,
                 beneficiary: payable(splitBeneficiary),
-                metadata: new bytes(0)
+                metadata: new bytes(0),
+                referralProjectId: 0
             });
 
             // With cashOutTaxRate = 0, the fee is charged on the feeFreeSurplus portion (5 ETH).
@@ -497,7 +501,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertLe(
@@ -521,7 +526,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertLe(
@@ -642,7 +648,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
     }
 
@@ -674,7 +681,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
     }
 
@@ -691,7 +699,8 @@ contract RegressionFixesTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(reclaimAmount, expectedAmount, "Direct payment cashout should be fee-free");
