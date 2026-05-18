@@ -42,7 +42,7 @@ library JBCashOuts {
         if (cashOutCount >= totalSupply) return surplus;
 
         // Get a reference to the linear proportion.
-        uint256 base = mulDiv(surplus, cashOutCount, totalSupply);
+        uint256 base = mulDiv({x: surplus, y: cashOutCount, denominator: totalSupply});
 
         // These conditions are all part of the same curve.
         // Edge conditions are separated to minimize the operations performed in those cases.
@@ -50,11 +50,12 @@ library JBCashOuts {
             return base;
         }
 
-        return mulDiv(
-            base,
-            (JBConstants.MAX_CASH_OUT_TAX_RATE - cashOutTaxRate) + mulDiv(cashOutTaxRate, cashOutCount, totalSupply),
-            JBConstants.MAX_CASH_OUT_TAX_RATE
-        );
+        return mulDiv({
+            x: base,
+            y: (JBConstants.MAX_CASH_OUT_TAX_RATE - cashOutTaxRate)
+                + mulDiv({x: cashOutTaxRate, y: cashOutCount, denominator: totalSupply}),
+            denominator: JBConstants.MAX_CASH_OUT_TAX_RATE
+        });
     }
 
     /// @notice Returns the minimum number of tokens that must be cashed out to receive at least `desiredOutput` of
@@ -93,9 +94,9 @@ library JBCashOuts {
 
         // Linear case (no tax): out = surplus * c / totalSupply, so c = ceil(out * totalSupply / surplus).
         if (cashOutTaxRate == 0) {
-            uint256 count = mulDiv(desiredOutput, totalSupply, surplus);
+            uint256 count = mulDiv({x: desiredOutput, y: totalSupply, denominator: surplus});
             // Round up if the floor division undershoots.
-            if (mulDiv(surplus, count, totalSupply) < desiredOutput) count++;
+            if (mulDiv({x: surplus, y: count, denominator: totalSupply}) < desiredOutput) count++;
             return count;
         }
 

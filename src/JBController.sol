@@ -1061,7 +1061,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             JBSplit memory split = splits[i];
 
             // Calculate the amount to send to the split.
-            uint256 splitTokenCount = mulDiv(tokenCount, split.percent, JBConstants.SPLITS_TOTAL_PERCENT);
+            uint256 splitTokenCount =
+                mulDiv({x: tokenCount, y: split.percent, denominator: JBConstants.SPLITS_TOTAL_PERCENT});
 
             // Mints tokens for the split if needed.
             if (splitTokenCount > 0) {
@@ -1264,8 +1265,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         returns (uint256 beneficiaryTokenCount, uint256 reservedTokenCount)
     {
         // Compute the beneficiary's portion after removing the reserved share.
-        beneficiaryTokenCount =
-            mulDiv(tokenCount, JBConstants.MAX_RESERVED_PERCENT - reservedPercent, JBConstants.MAX_RESERVED_PERCENT);
+        beneficiaryTokenCount = mulDiv({
+            x: tokenCount,
+            y: JBConstants.MAX_RESERVED_PERCENT - reservedPercent,
+            denominator: JBConstants.MAX_RESERVED_PERCENT
+        });
 
         // The remaining tokens are reserved.
         reservedTokenCount = tokenCount - beneficiaryTokenCount;

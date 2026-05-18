@@ -41,7 +41,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
 
     /// @notice The JBTokens contract that owns this token.
     /// @dev Set via `initialize` because JBERC20 is deployed before JBTokens (circular dependency).
-    IJBTokens public TOKENS;
+    IJBTokens public tokens;
 
     //*********************************************************************//
     // -------------------- private stored properties -------------------- //
@@ -80,7 +80,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @notice Only the JBTokens contract can call this function.
     // forge-lint: disable-next-line(unwrapped-modifier-logic)
     modifier onlyTokens() {
-        if (msg.sender != address(TOKENS)) revert JBERC20_Unauthorized({caller: msg.sender, tokens: address(TOKENS)});
+        if (msg.sender != address(tokens)) revert JBERC20_Unauthorized({caller: msg.sender, tokens: address(tokens)});
         _;
     }
 
@@ -130,11 +130,11 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @return magicValue `0x1626ba7e` if the signature is valid, `0xffffffff` otherwise.
     function isValidSignature(bytes32 hash, bytes memory signature) external view override returns (bytes4 magicValue) {
         // Recover the signer from the signature. Return invalid if recovery fails.
-        (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover(hash, signature);
+        (address signer, ECDSA.RecoverError error,) = ECDSA.tryRecover({hash: hash, signature: signature});
         if (error != ECDSA.RecoverError.NoError) return 0xffffffff;
 
         // Get the project ID this token belongs to.
-        uint256 projectId = TOKENS.projectIdOf(IJBToken(address(this)));
+        uint256 projectId = tokens.projectIdOf(IJBToken(address(this)));
 
         // Get the project owner (the NFT holder).
         address projectOwner = PROJECTS.ownerOf(projectId);
@@ -195,8 +195,8 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     /// @notice Initialize a new project token with the given name, symbol, and owner.
     /// @param name_ The token's name.
     /// @param symbol_ The token's symbol.
-    /// @param tokens The JBTokens contract that manages this token.
-    function initialize(string memory name_, string memory symbol_, address tokens) public override {
+    /// @param tokensAddress The JBTokens contract that manages this token.
+    function initialize(string memory name_, string memory symbol_, address tokensAddress) public override {
         // Prevent re-initialization by reverting if a name is already set or if the provided name is empty.
         if (bytes(_name).length != 0 || bytes(name_).length == 0) {
             revert JBERC20_AlreadyInitialized({
@@ -206,7 +206,7 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
 
         _name = name_;
         _symbol = symbol_;
-        TOKENS = IJBTokens(tokens);
+        tokens = IJBTokens(tokensAddress);
     }
 
     //*********************************************************************//

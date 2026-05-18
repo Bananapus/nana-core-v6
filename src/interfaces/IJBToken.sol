@@ -29,8 +29,8 @@ interface IJBToken {
     /// @notice Initializes the token with a name, symbol, and the JBTokens contract.
     /// @param name The token's name.
     /// @param symbol The token's symbol.
-    /// @param tokens The JBTokens contract that manages this token.
-    function initialize(string memory name, string memory symbol, address tokens) external;
+    /// @param tokensAddress The JBTokens contract that manages this token.
+    function initialize(string memory name, string memory symbol, address tokensAddress) external;
 
     /// @notice Mints tokens to an account.
     /// @param account The address to mint tokens to.

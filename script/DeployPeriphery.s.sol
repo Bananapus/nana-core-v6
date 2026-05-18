@@ -22,19 +22,13 @@ import {JBMatchingPriceFeed} from "../src/periphery/JBMatchingPriceFeed.sol";
 contract DeployPeriphery is Script, Sphinx {
     /// @notice tracks the deployment of the core contracts for the chain we are deploying to.
     CoreDeployment core;
-
-    // forge-lint: disable-next-line(mixed-case-variable)
-    address private TRUSTED_FORWARDER;
-
-    // forge-lint: disable-next-line(mixed-case-variable)
-    bytes32 private DEADLINES_SALT = keccak256("_JBDeadlinesV6_");
-    // forge-lint: disable-next-line(mixed-case-variable)
-    bytes32 private USD_NATIVE_FEED_SALT = keccak256("USD_FEEDV6");
+    address private trustedForwarder;
+    bytes32 private constant _DEADLINES_SALT = keccak256("_JBDeadlinesV6_");
+    bytes32 private constant _USD_NATIVE_FEED_SALT = keccak256("USD_FEEDV6");
 
     /// @notice The nonce that gets used across all chains to sync deployment addresses and allow for new deployments of
     /// the same bytecode.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    uint256 private CORE_DEPLOYMENT_NONCE = 6;
+    uint256 private constant _CORE_DEPLOYMENT_NONCE = 6;
 
     /// @notice The address of the omnichain ruleset operator contract (e.g. JBOmnichainDeployer).
     /// @dev TRUST ASSUMPTION: This address is granted implicit permission to launch rulesets, set terminals, and queue
@@ -43,8 +37,7 @@ contract DeployPeriphery is Script, Sphinx {
     /// @dev This address should correspond to the deterministic CREATE2 deployment of the omnichain deployer contract
     /// from the nana-omnichain-deployers-v6 repository. This script only enforces that the address is nonzero, so
     /// operators must verify it matches the intended deployment on every target chain before running this script.
-    // forge-lint: disable-next-line(mixed-case-variable)
-    address private OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
+    address private constant _OMNICHAIN_RULESET_OPERATOR = address(0x8f5DED85c40b50d223269C1F922A056E72101590);
 
     function configureSphinx() public override {
         sphinxConfig.projectName = "nana-core-v6";
@@ -59,7 +52,7 @@ contract DeployPeriphery is Script, Sphinx {
         core = CoreDeploymentLib.getDeployment(vm.envOr("NANA_CORE_DEPLOYMENT_PATH", string("deployments/")));
 
         // We use the same trusted forwarder as the core deployment.
-        TRUSTED_FORWARDER = core.permissions.trustedForwarder();
+        trustedForwarder = core.permissions.trustedForwarder();
 
         // Deploy the protocol.
         deploy();
@@ -68,7 +61,7 @@ contract DeployPeriphery is Script, Sphinx {
     function deploy() public sphinx {
         // Validate the omnichain ruleset operator is set. See TRUST ASSUMPTION above. This is intentionally a
         // nonzero-only check; correctness of the configured operator is verified out of band.
-        require(OMNICHAIN_RULESET_OPERATOR != address(0), "Omnichain ruleset operator not set");
+        require(_OMNICHAIN_RULESET_OPERATOR != address(0), "Omnichain ruleset operator not set");
 
         // Deploy the ETH/USD price feed.
         IJBPriceFeed feed;
@@ -77,20 +70,19 @@ contract DeployPeriphery is Script, Sphinx {
         matchingPriceFeed = new JBMatchingPriceFeed();
 
         // Same as the chainlink example grace period.
-        // forge-lint: disable-next-line(mixed-case-variable)
-        uint256 L2GracePeriod = 3600 seconds;
+        uint256 l2GracePeriod = 3600 seconds;
 
         // NOTE: Feeds come from this url `https://data.chain.link/feeds/ethereum/mainnet/eth-usd`.
         // Sequencer feeds come from this url `https://docs.chain.link/data-feeds/l2-sequencer-feeds`.
 
         // Perform the deploy for L1(s).
         if (block.chainid == 1) {
-            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({
+            feed = new JBChainlinkV3PriceFeed{salt: _USD_NATIVE_FEED_SALT}({
                 feed: AggregatorV3Interface(address(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419)),
                 threshold: 3600 seconds
             });
         } else if (block.chainid == 11_155_111) {
-            feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({
+            feed = new JBChainlinkV3PriceFeed{salt: _USD_NATIVE_FEED_SALT}({
                 feed: AggregatorV3Interface(address(0x694AA1769357215DE4FAC081bf1f309aDC325306)),
                 threshold: 3600 seconds
             });
@@ -101,47 +93,47 @@ contract DeployPeriphery is Script, Sphinx {
             // Optimism
             if (block.chainid == 10) {
                 source = AggregatorV3Interface(0x13e3Ee699D1909E989722E753853AE30b17e08c5);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: _USD_NATIVE_FEED_SALT}({
                     feed: source,
                     threshold: 3600 seconds,
                     sequencerFeed: AggregatorV2V3Interface(0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389),
-                    gracePeriod: L2GracePeriod
+                    gracePeriod: l2GracePeriod
                 });
             }
             // Optimism Sepolia
             else if (block.chainid == 11_155_420) {
                 source = AggregatorV3Interface(address(0x61Ec26aA57019C486B10502285c5A3D4A4750AD7));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
+                feed = new JBChainlinkV3PriceFeed{salt: _USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             }
             // Base
             else if (block.chainid == 8453) {
                 source = AggregatorV3Interface(0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: _USD_NATIVE_FEED_SALT}({
                     feed: source,
                     threshold: 3600 seconds,
                     sequencerFeed: AggregatorV2V3Interface(0xBCF85224fc0756B9Fa45aA7892530B47e10b6433),
-                    gracePeriod: L2GracePeriod
+                    gracePeriod: l2GracePeriod
                 });
             }
             // Base Sepolia
             else if (block.chainid == 84_532) {
                 source = AggregatorV3Interface(address(0x4aDC67696bA383F43DD60A9e78F2C97Fbbfc7cb1));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
+                feed = new JBChainlinkV3PriceFeed{salt: _USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             }
             // Arbitrum
             else if (block.chainid == 42_161) {
                 source = AggregatorV3Interface(0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612);
-                feed = new JBChainlinkV3SequencerPriceFeed{salt: USD_NATIVE_FEED_SALT}({
+                feed = new JBChainlinkV3SequencerPriceFeed{salt: _USD_NATIVE_FEED_SALT}({
                     feed: source,
                     threshold: 3600 seconds,
                     sequencerFeed: AggregatorV2V3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D),
-                    gracePeriod: L2GracePeriod
+                    gracePeriod: l2GracePeriod
                 });
             }
             // Arbitrum Sepolia
             else if (block.chainid == 421_614) {
                 source = AggregatorV3Interface(address(0xd30e2101a97dcbAeBCBC04F14C3f624E67A35165));
-                feed = new JBChainlinkV3PriceFeed{salt: USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
+                feed = new JBChainlinkV3PriceFeed{salt: _USD_NATIVE_FEED_SALT}({feed: source, threshold: 3600 seconds});
             } else {
                 revert("Unsupported chain");
             }
@@ -213,29 +205,29 @@ contract DeployPeriphery is Script, Sphinx {
         );
 
         // Deploy the USDC/USD price feed.
-        _deployUSDCFeed(L2GracePeriod);
+        _deployUSDCFeed(l2GracePeriod);
 
         // Deploy the JBDeadlines
-        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline3Hours).creationCode, arguments: ""})) {
-            new JBDeadline3Hours{salt: DEADLINES_SALT}();
+        if (!_isDeployed({salt: _DEADLINES_SALT, creationCode: type(JBDeadline3Hours).creationCode, arguments: ""})) {
+            new JBDeadline3Hours{salt: _DEADLINES_SALT}();
         }
 
-        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline1Day).creationCode, arguments: ""})) {
-            new JBDeadline1Day{salt: DEADLINES_SALT}();
+        if (!_isDeployed({salt: _DEADLINES_SALT, creationCode: type(JBDeadline1Day).creationCode, arguments: ""})) {
+            new JBDeadline1Day{salt: _DEADLINES_SALT}();
         }
 
-        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline3Days).creationCode, arguments: ""})) {
-            new JBDeadline3Days{salt: DEADLINES_SALT}();
+        if (!_isDeployed({salt: _DEADLINES_SALT, creationCode: type(JBDeadline3Days).creationCode, arguments: ""})) {
+            new JBDeadline3Days{salt: _DEADLINES_SALT}();
         }
 
-        if (!_isDeployed({salt: DEADLINES_SALT, creationCode: type(JBDeadline7Days).creationCode, arguments: ""})) {
-            new JBDeadline7Days{salt: DEADLINES_SALT}();
+        if (!_isDeployed({salt: _DEADLINES_SALT, creationCode: type(JBDeadline7Days).creationCode, arguments: ""})) {
+            new JBDeadline7Days{salt: _DEADLINES_SALT}();
         }
 
         core.directory
             .setIsAllowedToSetFirstController({
                 addr: address(
-                    new JBController{salt: keccak256(abi.encode(CORE_DEPLOYMENT_NONCE))}({
+                    new JBController{salt: keccak256(abi.encode(_CORE_DEPLOYMENT_NONCE))}({
                         directory: core.directory,
                         fundAccessLimits: core.fundAccess,
                         prices: core.prices,
@@ -244,8 +236,8 @@ contract DeployPeriphery is Script, Sphinx {
                         rulesets: core.rulesets,
                         splits: core.splits,
                         tokens: core.tokens,
-                        omnichainRulesetOperator: OMNICHAIN_RULESET_OPERATOR,
-                        trustedForwarder: TRUSTED_FORWARDER
+                        omnichainRulesetOperator: _OMNICHAIN_RULESET_OPERATOR,
+                        trustedForwarder: trustedForwarder
                     })
                 ),
                 flag: true
@@ -253,7 +245,7 @@ contract DeployPeriphery is Script, Sphinx {
     }
 
     // forge-lint: disable-next-line(mixed-case-function, mixed-case-variable)
-    function _deployUSDCFeed(uint256 L2GracePeriod) internal {
+    function _deployUSDCFeed(uint256 l2GracePeriod) internal {
         IJBPriceFeed usdcFeed;
         address usdc;
 
@@ -275,7 +267,7 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: AggregatorV3Interface(0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3),
                 threshold: 86_400 seconds,
                 sequencerFeed: AggregatorV2V3Interface(0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389),
-                gracePeriod: L2GracePeriod
+                gracePeriod: l2GracePeriod
             });
         } else if (block.chainid == 11_155_420) {
             usdc = address(0x5fd84259d66Cd46123540766Be93DFE6D43130D7);
@@ -289,7 +281,7 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: AggregatorV3Interface(0x7e860098F58bBFC8648a4311b374B1D669a2bc6B),
                 threshold: 86_400 seconds,
                 sequencerFeed: AggregatorV2V3Interface(0xBCF85224fc0756B9Fa45aA7892530B47e10b6433),
-                gracePeriod: L2GracePeriod
+                gracePeriod: l2GracePeriod
             });
         } else if (block.chainid == 84_532) {
             usdc = address(0x036CbD53842c5426634e7929541eC2318f3dCF7e);
@@ -303,7 +295,7 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: AggregatorV3Interface(0x50834F3163758fcC1Df9973b6e91f0F0F0434aD3),
                 threshold: 86_400 seconds,
                 sequencerFeed: AggregatorV2V3Interface(0xFdB631F5EE196F0ed6FAa767959853A9F217697D),
-                gracePeriod: L2GracePeriod
+                gracePeriod: l2GracePeriod
             });
         } else if (block.chainid == 421_614) {
             usdc = address(0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d);

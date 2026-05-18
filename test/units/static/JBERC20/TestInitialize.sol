@@ -24,8 +24,8 @@ contract TestInitialize_Local is JBERC20Setup {
 
         _erc20.initialize(_name, _symbol, _tokens);
 
-        // ensure TOKENS is set
-        address setTokens = address(JBERC20(address(_erc20)).TOKENS());
+        // ensure tokens is set
+        address setTokens = address(JBERC20(address(_erc20)).tokens());
         assertEq(setTokens, _tokens);
 
         // will fail as internal name is no longer zero length
@@ -46,8 +46,8 @@ contract TestInitialize_Local is JBERC20Setup {
 
         _erc20.initialize(_name, _symbol, _tokens);
 
-        // ensure TOKENS is set
-        address setTokens = address(JBERC20(address(_erc20)).TOKENS());
+        // ensure tokens is set
+        address setTokens = address(JBERC20(address(_erc20)).tokens());
         assertEq(setTokens, _tokens);
 
         // name is set

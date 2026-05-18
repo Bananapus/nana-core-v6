@@ -623,11 +623,11 @@ contract JBRulesets is JBControlled, IJBRulesets {
     {
         // A subsequent ruleset to one with a duration of 0 should have the next possible weight.
         if (baseRulesetDuration == 0) {
-            return mulDiv(
-                baseRulesetWeight,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent,
-                JBConstants.MAX_WEIGHT_CUT_PERCENT
-            );
+            return mulDiv({
+                x: baseRulesetWeight,
+                y: JBConstants.MAX_WEIGHT_CUT_PERCENT - baseRulesetWeightCutPercent,
+                denominator: JBConstants.MAX_WEIGHT_CUT_PERCENT
+            });
         }
 
         // The weight should be based off the base ruleset's weight.
@@ -673,7 +673,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
         for (uint256 i; i < weightCutMultiple;) {
             // Base the new weight on the specified ruleset's weight.
-            weight = mulDiv(weight, cutFactor, maxPercent);
+            weight = mulDiv({x: weight, y: cutFactor, denominator: maxPercent});
 
             // The calculation doesn't need to continue if the weight is 0.
             if (weight == 0) break;

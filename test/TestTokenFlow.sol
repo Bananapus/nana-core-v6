@@ -100,7 +100,7 @@ contract TestTokenFlow_Local is TestBaseWorkflow {
         } else {
             // Create a new `IJBToken` and change it's owner to the `JBTokens` contract.
             IJBToken _newToken = IJBToken(Clones.clone(address(new JBERC20(jbPermissions(), jbProjects()))));
-            _newToken.initialize({name: "NewTestName", symbol: "NewTestSymbol", tokens: address(_tokens)});
+            _newToken.initialize({name: "NewTestName", symbol: "NewTestSymbol", tokensAddress: address(_tokens)});
 
             // Mock the token can be added to the project.
             vm.mockCall(
