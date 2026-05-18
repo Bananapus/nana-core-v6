@@ -142,14 +142,14 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice The cumulative fee-project tokens (project #1's token) credited to a referral project as a result
-    /// of fee-paying calls that originated through a given terminal.
-    /// @dev Normalized across fee tokens by using the fee project's project token as the unit. Written by terminals
-    /// via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal, so a malicious caller can
-    /// only pollute their own slot. Off-chain consumers should filter on known terminal addresses.
+    /// @notice The cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
+    /// originated through a given terminal.
+    /// @dev Written by terminals via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal,
+    /// so a malicious caller can only pollute their own slot. Off-chain consumers should filter on known terminal
+    /// addresses.
     /// @param terminal The terminal that originated the fee-paying call.
     /// @param referralProjectId The referral project credited.
-    /// @return The cumulative fee-project tokens credited.
+    /// @return The cumulative fee amount credited.
     function feeVolumeByReferralOf(address terminal, uint256 referralProjectId) external view returns (uint256);
 
     /// @notice Simulates a cash out without modifying state.
@@ -279,12 +279,11 @@ interface IJBTerminalStore {
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 
-    /// @notice Credit a referral project with fee-project tokens minted as a result of a fee-paying call routed
-    /// through `msg.sender` (the calling terminal).
+    /// @notice Credit a referral project with a fee payment amount routed through `msg.sender` (the calling terminal).
     /// @dev Permissionless: the write is scoped to `msg.sender`'s slot, so an arbitrary caller can only pollute
     /// their own bucket. No-op when `amount == 0`.
     /// @param referralProjectId The referral project to credit.
-    /// @param amount The number of fee-project tokens minted by this fee-take call.
+    /// @param amount The fee amount paid by this fee-take call.
     function recordFeeReferralCreditOf(uint256 referralProjectId, uint256 amount) external;
 
     /// @notice Records a payment to a project.

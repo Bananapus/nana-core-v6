@@ -35,7 +35,7 @@ interface IJBMultiTerminal is IJBTerminal, IJBFeeTerminal, IJBCashOutTerminal, I
     /// @dev Backed by transient storage. Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` (save-
     /// restore wrapper) so hooks invoked during that call (pay hooks, cashout hooks, split hooks) can introspect
     /// which referral originated the activity. Reads `0` outside any fee-paying call.
-    /// @dev Per-referral cumulative fee-project tokens credited via this terminal are stored in
+    /// @dev Per-referral cumulative fee payment amounts credited via this terminal are stored in
     /// `JBTerminalStore.feeVolumeByReferralOf(address terminal, uint256 referralProjectId)`.
     function currentReferralProjectId() external view returns (uint256);
 }

@@ -156,8 +156,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Caller-originated `referralProjectId` for the duration of the current external fee-paying call.
     /// @dev Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` via the `_setReferralProjectId`
-    /// save-restore wrapper. Read inside `_pay` to credit `feeVolumeByReferralOf` when the fee project's pay call
-    /// mints tokens to the fee beneficiary.
+    /// save-restore wrapper. Read inside `_pay` to credit `feeVolumeByReferralOf` when the fee project's pay call is
+    /// recorded locally.
     /// @dev Public so pay/cashout/split hooks can introspect which referral originated the in-flight call (e.g. to
     /// apply referral-specific logic). Reads `0` outside any fee-paying call.
     uint256 public transient override currentReferralProjectId;
@@ -1775,20 +1775,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 memo: "",
                 useReservedPercent: true
             });
+        }
 
-            // If this pay is the fee project receiving a fee, credit the originating caller's referral project
-            // (set in transient storage by the external fee-paying entry point) with the fee project tokens just
-            // minted. Normalizes referral attribution across fee tokens by using the fee project's token as the unit.
-            // Held-fee path is not credited here: by the time `processHeldFeesOf` calls `_pay`, the transient slot
-            // has been cleared. Cross-terminal fee processing (fee project's primary terminal is a different
-            // `JBMultiTerminal`) is also not credited because `_pay` is not called locally in that case.
-            if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
-                uint256 referralProjectId = currentReferralProjectId;
-                if (referralProjectId != 0) {
-                    STORE.recordFeeReferralCreditOf({
-                        referralProjectId: referralProjectId, amount: newlyIssuedTokenCount
-                    });
-                }
+        // If this pay is the fee project receiving a fee, credit the originating caller's referral project (set in
+        // transient storage by the external fee-paying entry point) with the actual amount paid in. This records fee
+        // volume, not fee-project token issuance, so the credit is not affected by the fee project's current weight.
+        // Held-fee path is not credited here: by the time `processHeldFeesOf` calls `_pay`, the transient slot has
+        // been cleared. Cross-terminal fee processing (fee project's primary terminal is a different
+        // `JBMultiTerminal`) is also not credited because `_pay` is not called locally in that case.
+        if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
+            uint256 referralProjectId = currentReferralProjectId;
+            if (referralProjectId != 0) {
+                STORE.recordFeeReferralCreditOf({referralProjectId: referralProjectId, amount: tokenAmount.value});
             }
         }
 

@@ -281,7 +281,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         mockExpect(
             address(controller),
             abi.encodeCall(IJBController.mintTokensOf, (_projectId, 1, address(this), "", true)),
-            abi.encode(2)
+            abi.encode(10)
         );
 
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (_projectId, 2)), "");
@@ -565,7 +565,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         mockExpect(
             address(controller),
             abi.encodeCall(IJBController.mintTokensOf, (_projectId, 1, address(this), "", true)),
-            abi.encode(2)
+            abi.encode(10)
         );
 
         mockExpect(address(store), abi.encodeCall(IJBTerminalStore.recordFeeReferralCreditOf, (123, 2)), "");
