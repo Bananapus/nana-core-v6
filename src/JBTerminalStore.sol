@@ -70,6 +70,12 @@ contract JBTerminalStore is IJBTerminalStore {
     /// call's referral project without an extra cross-contract call.
     uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
 
+    /// @notice The currency identifier for `JBConstants.NATIVE_TOKEN` (ETH). All `feeVolumeByReferralOf` and
+    /// `totalFeeVolumeOf` credits are normalized to this currency at 18 decimals so volumes across different fee
+    /// tokens (USDC, USDT, ETH, …) are summable.
+    // forge-lint: disable-next-line(unsafe-typecast)
+    uint256 internal constant _NATIVE_TOKEN_CURRENCY = uint256(uint32(uint160(JBConstants.NATIVE_TOKEN)));
+
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
@@ -401,10 +407,19 @@ contract JBTerminalStore is IJBTerminalStore {
         // back to `payer` for cross-terminal fee processing: when the fee project's primary terminal is a different
         // terminal instance, `msg.sender` is the receiver (transient = 0) and `payer` is the originating terminal
         // (transient is live). Doing this in the store keeps `JBMultiTerminal` bytecode-budget-neutral.
+        //
+        // Amount is normalized to NATIVE_TOKEN units (18 decimals) so that volumes across different fee tokens
+        // (ETH, USDC, USDT, …) are summable into a single denominator. Missing price feeds skip the credit
+        // silently — the payment itself still succeeds.
         if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
             uint256 refId = _readReferral(msg.sender);
             if (refId == 0 && payer != msg.sender) refId = _readReferral(payer);
-            _creditFeeReferral({referralProjectId: refId, amount: amount.value});
+            _creditFeeReferral({
+                referralProjectId: refId,
+                amount: _normalizeToNativeTokenUnits({
+                    value: amount.value, decimals: amount.decimals, currency: amount.currency
+                })
+            });
         }
     }
 
@@ -418,6 +433,50 @@ contract JBTerminalStore is IJBTerminalStore {
         (bool ok, bytes memory data) =
             terminal.staticcall(abi.encodeWithSelector(IJBMultiTerminal.currentReferralProjectId.selector));
         if (ok && data.length == 32) refId = abi.decode(data, (uint256));
+    }
+
+    /// @notice Normalize a fee-token amount to `JBConstants.NATIVE_TOKEN` units at 18 decimals.
+    /// @dev Two-step: first adjust decimals to 18 via `JBFixedPointNumber.adjustDecimals`, then convert currency
+    /// via `PRICES.pricePerUnitOf` using the fee project's price feeds. If no price feed exists for the pair, the
+    /// `try` block catches the revert and the credit is silently skipped — the payment itself still succeeds.
+    /// @param value The amount in the source token's native decimals.
+    /// @param decimals The source token's decimals.
+    /// @param currency The source token's accounting-context currency (`uint32(uint160(token))`).
+    /// @return normalized The amount expressed in `NATIVE_TOKEN` units (18 decimals), or 0 if conversion failed.
+    function _normalizeToNativeTokenUnits(
+        uint256 value,
+        uint256 decimals,
+        uint256 currency
+    )
+        private
+        view
+        returns (uint256 normalized)
+    {
+        // Adjust the source amount up/down to 18 decimals so all credits share a common precision.
+        normalized = decimals == _MAX_FIXED_POINT_FIDELITY
+            ? value
+            : JBFixedPointNumber.adjustDecimals({
+                value: value, decimals: decimals, targetDecimals: _MAX_FIXED_POINT_FIDELITY
+            });
+
+        if (normalized == 0 || currency == _NATIVE_TOKEN_CURRENCY) return normalized;
+
+        // Convert from the source currency to NATIVE_TOKEN via the fee project's price feeds. A missing feed
+        // reverts inside `PRICES.pricePerUnitOf` — caught here so the payment is not blocked.
+        try PRICES.pricePerUnitOf({
+            projectId: _FEE_BENEFICIARY_PROJECT_ID,
+            pricingCurrency: currency,
+            unitCurrency: _NATIVE_TOKEN_CURRENCY,
+            decimals: _MAX_FIXED_POINT_FIDELITY
+        }) returns (
+            uint256 price
+        ) {
+            normalized = price == 0
+                ? 0
+                : mulDiv({x: normalized, y: 10 ** _MAX_FIXED_POINT_FIDELITY, denominator: price});
+        } catch {
+            normalized = 0;
+        }
     }
 
     /// @notice Credit a referral project with a fee payment amount. Internal counterpart of
