@@ -65,8 +65,14 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
         _tokens = jbTokens();
         _projectOwner = multisig();
 
-        _projectId = _launchProject("self-split", true /* withPlaceholderSplit */ );
-        _crossProjectId = _launchProject("cross-project", false /* withPlaceholderSplit */ );
+        _projectId = _launchProject(
+            "self-split",
+            true /* withPlaceholderSplit */
+        );
+        _crossProjectId = _launchProject(
+            "cross-project",
+            false /* withPlaceholderSplit */
+        );
 
         // Register both terminals AND configure terminal B's accounting context so cross-terminal
         // split routing is actually reachable for the cross-terminal shapes. Without this,
@@ -80,9 +86,7 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
 
         JBAccountingContext[] memory terminalBContexts = new JBAccountingContext[](1);
         terminalBContexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
         vm.prank(_projectOwner);
         _terminalB.addAccountingContextsFor(_projectId, terminalBContexts);
@@ -103,7 +107,9 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
     // --- Same-terminal, pay branch (the original guard already covered this shape) ---
 
     function test_sameTerminal_payBranch_reverts() external {
-        _rewriteSplit({destinationTerminal: address(_terminalA), preferAddToBalance: false, recipientProjectId: _projectId});
+        _rewriteSplit({
+            destinationTerminal: address(_terminalA), preferAddToBalance: false, recipientProjectId: _projectId
+        });
         _expectSelfSplitSwallowed();
     }
 
@@ -112,7 +118,9 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
     function test_crossTerminal_payBranch_reverts_andBlocksMint() external {
         uint256 supplyBefore = _tokens.totalSupplyOf(_projectId);
 
-        _rewriteSplit({destinationTerminal: address(_terminalB), preferAddToBalance: false, recipientProjectId: _projectId});
+        _rewriteSplit({
+            destinationTerminal: address(_terminalB), preferAddToBalance: false, recipientProjectId: _projectId
+        });
         _expectSelfSplitSwallowed();
 
         // The split must not have minted on terminal B against the project's own surplus.
@@ -122,7 +130,9 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
     // --- Same-terminal, addToBalance branch ---
 
     function test_sameTerminal_addToBalanceBranch_reverts() external {
-        _rewriteSplit({destinationTerminal: address(_terminalA), preferAddToBalance: true, recipientProjectId: _projectId});
+        _rewriteSplit({
+            destinationTerminal: address(_terminalA), preferAddToBalance: true, recipientProjectId: _projectId
+        });
         _expectSelfSplitSwallowed();
 
         // Terminal A's net balance returns to PAY_AMOUNT after the split-group catch restores funds.
@@ -135,7 +145,9 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
         uint256 terminalABefore = address(_terminalA).balance;
         uint256 terminalBBefore = address(_terminalB).balance;
 
-        _rewriteSplit({destinationTerminal: address(_terminalB), preferAddToBalance: true, recipientProjectId: _projectId});
+        _rewriteSplit({
+            destinationTerminal: address(_terminalB), preferAddToBalance: true, recipientProjectId: _projectId
+        });
         _expectSelfSplitSwallowed();
 
         // Neither terminal should have moved funds: the cross-terminal balance shuffle must not occur.
@@ -146,10 +158,13 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
     // --- Cross-project sanity: same shape with `split.projectId != projectId` must NOT revert ---
 
     function test_crossProject_payBranch_proceeds() external {
-        _rewriteSplit({destinationTerminal: address(_terminalA), preferAddToBalance: false, recipientProjectId: _crossProjectId});
+        _rewriteSplit({
+            destinationTerminal: address(_terminalA), preferAddToBalance: false, recipientProjectId: _crossProjectId
+        });
 
         // Sanity: this must succeed, proving the guard only fires on self-reference.
-        IJBPayoutTerminal(address(_terminalA)).sendPayoutsOf({
+        IJBPayoutTerminal(address(_terminalA))
+            .sendPayoutsOf({
             projectId: _projectId,
             token: JBConstants.NATIVE_TOKEN,
             amount: PAYOUT_AMOUNT,
@@ -170,7 +185,8 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
         // the funds must return to the project's balance. We assert the lack of net movement by
         // checking terminal A's balance is unchanged after `sendPayoutsOf`.
         uint256 terminalABefore = address(_terminalA).balance;
-        IJBPayoutTerminal(address(_terminalA)).sendPayoutsOf({
+        IJBPayoutTerminal(address(_terminalA))
+            .sendPayoutsOf({
             projectId: _projectId,
             token: JBConstants.NATIVE_TOKEN,
             amount: PAYOUT_AMOUNT,
@@ -186,9 +202,8 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
         // there. We force the primary by listing `destinationTerminal` first.
         IJBTerminal[] memory terminals = new IJBTerminal[](2);
         terminals[0] = IJBTerminal(destinationTerminal);
-        terminals[1] = IJBTerminal(
-            destinationTerminal == address(_terminalA) ? address(_terminalB) : address(_terminalA)
-        );
+        terminals[1] =
+            IJBTerminal(destinationTerminal == address(_terminalA) ? address(_terminalB) : address(_terminalA));
         vm.prank(_projectOwner);
         _directory.setTerminalsOf(_projectId, terminals);
 
@@ -279,9 +294,7 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
 
         JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](1);
         accountingContexts[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN,
-            decimals: 18,
-            currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
 
         JBTerminalConfig[] memory terminalConfigs = new JBTerminalConfig[](1);
