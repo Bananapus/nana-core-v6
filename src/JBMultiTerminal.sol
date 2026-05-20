@@ -151,10 +151,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     bool transient _acceptingToken;
 
     /// @notice Source project ID for the same-terminal split pay currently being recorded.
+    /// @dev After `_pay` consumes and clears this value, `_fulfillPayHookSpecificationsFor` reuses the slot to return
+    /// the fee basis to `executePayout`.
     uint256 transient _internalSplitPayProjectId;
-
-    /// @notice Fee-eligible pay-hook forwards found while recording the current same-terminal split pay.
-    uint256 transient _internalSplitPayFeeEligibleAmount;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -441,8 +440,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 });
 
                 if (isThisTerminal) {
-                    feeEligibleAmount += _internalSplitPayFeeEligibleAmount;
-                    _internalSplitPayFeeEligibleAmount = 0;
+                    feeEligibleAmount += _internalSplitPayProjectId;
+                    delete _internalSplitPayProjectId;
 
                     // Destination pay hooks may have forwarded part of the same-terminal split pay. The fee-free
                     // counter starts at the full pay amount, then this cap trims it back to what actually remains in
@@ -1558,6 +1557,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
+        uint256 amountEligibleForFees;
+
         // Keep a reference to payment context for the pay hooks.
         JBAfterPayRecordedContext memory context = JBAfterPayRecordedContext({
             payer: payer,
@@ -1591,8 +1592,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 if (!_isFeeless({addr: address(specification.hook), projectId: internalSplitPayProjectId})) {
                     // Same-terminal split pays defer source-side fees until the destination data hook is known. Net
                     // non-feeless hook forwards here so they match ordinary payout semantics before funds leave.
+                    // Keep the fee basis local until every hook returns. Writing the transient accumulator before the
+                    // hook call would let a reentrant payout overwrite the outer split's pending fee basis.
                     unchecked {
-                        _internalSplitPayFeeEligibleAmount += specificationAmount;
+                        amountEligibleForFees += specificationAmount;
                         specificationAmount -= specificationAmount / 40;
                     }
                 }
@@ -1631,6 +1634,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 ++i;
             }
         }
+
+        // `_pay` consumed and cleared the source project ID before calling hooks, so the transient slot can now carry
+        // the hook-derived fee basis back to `executePayout`. Publish it only after all untrusted hook calls return.
+        _internalSplitPayProjectId = amountEligibleForFees;
     }
 
     /// @notice Internal implementation of payment logic. Records the payment in the store, mints tokens via the
@@ -1659,7 +1666,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Same-terminal split pays are the only inbound pays whose source-side fee was intentionally deferred. Cache
         // and clear the transient source project before untrusted data/pay hooks can reenter ordinary pay flows.
         uint256 internalSplitPayProjectId = _internalSplitPayProjectId;
-        if (internalSplitPayProjectId != 0) _internalSplitPayProjectId = 0;
+        if (internalSplitPayProjectId != 0) delete _internalSplitPayProjectId;
 
         // Keep a reference to the token amount to forward to the store.
         JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});

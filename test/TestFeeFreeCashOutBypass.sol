@@ -75,6 +75,43 @@ contract SplitPayHookRecorder is IJBPayHook {
     }
 }
 
+contract ReenteringSplitPayHook is IJBPayHook {
+    IJBMultiTerminal public immutable TERMINAL;
+    uint256 public immutable PROJECT_ID;
+    uint256 public immutable AMOUNT;
+
+    bool public didReenter;
+    uint256 public receivedValue;
+
+    constructor(IJBMultiTerminal terminal, uint256 projectId, uint256 amount) {
+        TERMINAL = terminal;
+        PROJECT_ID = projectId;
+        AMOUNT = amount;
+    }
+
+    function afterPayRecordedWith(JBAfterPayRecordedContext calldata context) external payable {
+        receivedValue += msg.value;
+
+        if (didReenter) return;
+        didReenter = true;
+
+        // Reenter the terminal through a real payout path while the outer pay hook is running. This proves the
+        // outer same-terminal split's fee basis is carried on the stack instead of in reentrancy-clobberable storage.
+        try TERMINAL.sendPayoutsOf({
+            projectId: PROJECT_ID,
+            token: context.amount.token,
+            amount: AMOUNT,
+            currency: context.amount.currency,
+            minTokensPaidOut: 0
+        }) {}
+            catch {}
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(IJBPayHook).interfaceId;
+    }
+}
+
 /// @notice Tests that the fee-free cashout bypass via same-terminal round-trip is closed:
 /// fees apply on cashout up to the cumulative fee-free payout amount, then deplete.
 contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
@@ -429,6 +466,64 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN) - feeProjectBalanceBefore,
             payoutAmount / 40,
             "hook forward plus residue cashout pay one full split fee"
+        );
+    }
+
+    /// @notice A reentrant pay hook cannot erase the source-side fee basis for its outer split pay.
+    function testPayHookReentryCannotClobberInternalSplitFeeBasis() external {
+        uint256 payoutAmount = 10 ether;
+        uint256 hookAmount = 9 ether;
+        uint256 hookFee = hookAmount / 40;
+
+        uint256 reentryProjectId =
+            _launchSingleSplitProject({targetProjectId: _projectIdB, payoutAmount: 1, projectUri: "reentry-payer"});
+
+        ReenteringSplitPayHook hook =
+            new ReenteringSplitPayHook({terminal: _terminal, projectId: reentryProjectId, amount: 1});
+        SplitPayHookDataHook dataHook = new SplitPayHookDataHook({hook: hook, forwardAmount: hookAmount});
+
+        (, uint256 hookPayerProjectId) = _launchPayHookSplitProjects({dataHook: dataHook, payoutAmount: payoutAmount});
+
+        // Give the hook-controlled project enough balance to execute a real nested same-terminal split payout.
+        vm.deal(_attacker, payoutAmount + 1);
+        vm.prank(_attacker);
+        _terminal.pay{value: 1}({
+            projectId: reentryProjectId,
+            amount: 1,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        vm.prank(_attacker);
+        _terminal.pay{value: payoutAmount}({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        uint256 feeProjectBalanceBefore = jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+
+        _terminal.sendPayoutsOf({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        assertTrue(hook.didReenter(), "hook should exercise nested payout path");
+        assertEq(hook.receivedValue(), hookAmount - hookFee, "hook receives net split amount");
+        assertEq(
+            jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN) - feeProjectBalanceBefore,
+            hookFee,
+            "outer hook forward fee survives reentrant payout"
         );
     }
 
@@ -1102,8 +1197,9 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
         // `payoutAmount` is a small test constant, well below the uint224 accounting limit.
         // forge-lint: disable-next-line(unsafe-typecast)
+        uint224 payoutLimitAmount = uint224(payoutAmount);
         payoutLimits[0] =
-            JBCurrencyAmount({amount: uint224(payoutAmount), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+            JBCurrencyAmount({amount: payoutLimitAmount, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
         JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
         fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
             terminal: address(_terminal),
@@ -1125,6 +1221,60 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             projectUri: "hook-payer",
             rulesetConfigurations: payerRuleset,
             terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
+    }
+
+    function _launchSingleSplitProject(
+        uint256 targetProjectId,
+        uint256 payoutAmount,
+        string memory projectUri
+    )
+        internal
+        returns (uint256 projectId)
+    {
+        JBSplit[] memory splits = new JBSplit[](1);
+        splits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
+            projectId: uint64(targetProjectId),
+            beneficiary: payable(_attacker),
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+
+        JBSplitGroup[] memory splitGroups = new JBSplitGroup[](1);
+        splitGroups[0] = JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: splits});
+
+        JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
+        // `payoutAmount` is a small test constant, well below the uint224 accounting limit.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint224 payoutLimitAmount = uint224(payoutAmount);
+        payoutLimits[0] =
+            JBCurrencyAmount({amount: payoutLimitAmount, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+
+        JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
+        fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
+            terminal: address(_terminal),
+            token: JBConstants.NATIVE_TOKEN,
+            payoutLimits: payoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+
+        JBRulesetConfig[] memory ruleset = new JBRulesetConfig[](1);
+        ruleset[0].mustStartAtOrAfter = 0;
+        ruleset[0].duration = 0;
+        ruleset[0].weight = _weight;
+        ruleset[0].metadata = _zeroTaxMetadata();
+        ruleset[0].splitGroups = splitGroups;
+        ruleset[0].fundAccessLimitGroups = fundAccessLimitGroups;
+
+        projectId = _controller.launchProjectFor({
+            owner: _projectOwner,
+            projectUri: projectUri,
+            rulesetConfigurations: ruleset,
+            terminalConfigurations: _nativeTerminalConfigurations(),
             memo: ""
         });
     }
