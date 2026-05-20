@@ -452,7 +452,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         _splits[0] = JBSplit({
             preferAddToBalance: false,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
-            projectId: 1, // non-zero to execute rest of the function
+            projectId: 2, // non-zero and not the source project
             beneficiary: payable(address(0xdead)),
             lockedUntil: 0,
             hook: IJBSplitHook(address(0))
@@ -503,7 +503,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         address terminal = makeAddr("terminal");
         mockExpect(
             address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (1, address(_token))),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (2, address(_token))),
             abi.encode(terminal)
         );
 
@@ -562,7 +562,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         _splits[0] = JBSplit({
             preferAddToBalance: false,
             percent: JBConstants.SPLITS_TOTAL_PERCENT,
-            projectId: 1, // non-zero to execute rest of the function
+            projectId: 2, // non-zero and not the source project
             beneficiary: payable(address(0)),
             lockedUntil: 0,
             hook: IJBSplitHook(address(0))
@@ -613,7 +613,7 @@ contract TestSendReservedTokensToSplitsOf_Local is JBControllerSetup {
         address terminal = makeAddr("terminal");
         mockExpect(
             address(directory),
-            abi.encodeCall(IJBDirectory.primaryTerminalOf, (1, address(_token))),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (2, address(_token))),
             abi.encode(terminal)
         );
 

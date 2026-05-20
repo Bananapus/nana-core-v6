@@ -3,6 +3,7 @@ pragma solidity ^0.8.6;
 
 import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 
+import {JBController} from "../src/JBController.sol";
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBDirectory} from "../src/interfaces/IJBDirectory.sol";
 import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
@@ -15,6 +16,7 @@ import {JBSplitGroupIds} from "../src/libraries/JBSplitGroupIds.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
 import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
 import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
 import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplit} from "../src/structs/JBSplit.sol";
@@ -304,6 +306,62 @@ contract TestSplits_Local is TestBaseWorkflow {
 
         // Assert that the beneficiary did receive the tokens.
         assertEq(_token.balanceOf(_splitsGuy), _amount);
+    }
+
+    function testReservedPercentSplitTerminal_rejectsSelfProject() public {
+        uint256 _nativePayAmount = 1 ether;
+        address _payee = makeAddr("payee");
+
+        vm.startPrank(_projectOwner);
+        IERC20Metadata _projectToken =
+            IERC20Metadata(address(_controller.deployERC20For(_projectId, "Token", "Token", bytes32(0))));
+
+        JBAccountingContext[] memory _projectTokenContexts = new JBAccountingContext[](1);
+        _projectTokenContexts[0] = JBAccountingContext({
+            token: address(_projectToken), decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+        _terminal.addAccountingContextsFor(_projectId, _projectTokenContexts);
+
+        (JBRuleset memory _ruleset,) = _controller.currentRulesetOf(_projectId);
+
+        JBSplit[] memory _reserveRateSplits = new JBSplit[](1);
+        _reserveRateSplits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            projectId: uint64(_projectId),
+            beneficiary: _splitsGuy,
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+
+        JBSplitGroup[] memory _splitsGroup = new JBSplitGroup[](1);
+        _splitsGroup[0] = JBSplitGroup({groupId: JBSplitGroupIds.RESERVED_TOKENS, splits: _reserveRateSplits});
+        _controller.setSplitGroupsOf(_projectId, _ruleset.id, _splitsGroup);
+        vm.stopPrank();
+
+        vm.deal(_payee, _nativePayAmount);
+        vm.prank(_payee);
+        _terminal.pay{value: _nativePayAmount}({
+            projectId: _projectId,
+            amount: _nativePayAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _payee,
+            minReturnedTokens: 0,
+            memo: "Take my money!",
+            metadata: new bytes(0)
+        });
+
+        uint256 _pendingReservedTokenBalance = _controller.pendingReservedTokenBalanceOf(_projectId);
+        uint256 _splitBalanceBefore = _tokens.totalBalanceOf(_splitsGuy, _projectId);
+        assertGt(_pendingReservedTokenBalance, 0);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBController.JBController_ReservedTokenSplitProjectSameAsOwner.selector, _projectId)
+        );
+        _controller.sendReservedTokensToSplitsOf(_projectId);
+
+        assertEq(_controller.pendingReservedTokenBalanceOf(_projectId), _pendingReservedTokenBalance);
+        assertEq(_tokens.totalBalanceOf(_splitsGuy, _projectId), _splitBalanceBefore);
     }
 
     function testFuzzedSplitParameters(uint32 _currencyId, uint256 _multiplier) public {

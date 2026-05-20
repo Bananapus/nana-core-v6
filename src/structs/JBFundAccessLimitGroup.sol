@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {JBCurrencyAmount} from "./JBCurrencyAmount.sol";
 
 /// @notice Defines how much a project can withdraw from a specific terminal and token each funding cycle.
+/// @dev A ruleset configuration should include at most one group for each `(terminal, token)` pair.
 /// @dev Example — payout limit of 5 USD in an ETH terminal: the project can distribute up to 5 USD worth of ETH to
 /// its splits per cycle. Example — surplus allowance of 5 USD: the project owner can pull up to 5 USD worth of ETH
 /// from the surplus (balance above payout limits).

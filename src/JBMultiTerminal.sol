@@ -63,14 +63,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBMultiTerminal_FeePaymentFailed(uint256 projectId, address token, uint256 amount, bytes reason);
     error JBMultiTerminal_FeeTerminalNotFound(address token);
     error JBMultiTerminal_MintNotAllowed(uint256 projectId, uint256 splitProjectId, address terminal);
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
+    error JBMultiTerminal_ReentrantTokenTransfer(address token);
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
+    error JBMultiTerminal_TerminalMigrationToSelf(uint256 projectId, address token);
     error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
     error JBMultiTerminal_TokenNotAccepted(address token);
     error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
@@ -139,6 +142,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param projectId The ID of the project holding fees.
     /// @custom:param token The token the fees are held in.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _nextHeldFeeIndexOf;
+
+    /// @notice Whether this terminal is currently measuring an incoming ERC-20 balance delta.
+    bool transient _acceptingToken;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -521,6 +527,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.MIGRATE_TERMINAL
         });
 
+        // Migrating to the same terminal would zero this terminal's store balance and then try to re-add it through
+        // the external terminal interface. ERC-20 self-transfers produce no balance delta, leaving funds stranded.
+        if (address(to) == address(this)) {
+            revert JBMultiTerminal_TerminalMigrationToSelf({projectId: projectId, token: token});
+        }
+
         // The terminal being migrated to must accept the same token as this terminal.
         if (to.accountingContextForTokenOf({projectId: projectId, token: token}).currency == 0) {
             revert JBMultiTerminal_TerminalTokensIncompatible({projectId: projectId, token: token, terminal: to});
@@ -545,12 +557,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
             uint256 feeAmount;
             if (!_isFeeless({addr: address(to), projectId: projectId}) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
+                // Migration is atomic: if the protocol fee route is broken, revert so the source balance is preserved
+                // and cannot be repeatedly migrated as a shrinking refunded-fee residue.
                 feeAmount = _takeFeeFrom({
                     projectId: projectId,
                     token: token,
                     amount: balance,
                     beneficiary: payable(_ownerOf(projectId)),
-                    shouldHoldFees: false
+                    shouldHoldFees: false,
+                    refundOnFailure: false
                 });
             }
 
@@ -675,7 +690,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 amount: _feeAmountFrom(heldFee.amount),
                 beneficiary: heldFee.beneficiary,
                 feeTerminal: feeTerminal,
-                wasHeld: true
+                wasHeld: true,
+                refundOnFailure: true
             });
             unchecked {
                 ++i;
@@ -1042,11 +1058,20 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Get a reference to the balance before receiving tokens.
         uint256 balanceBefore = _balanceOf(token);
 
+        // Prevent callback-capable tokens from nesting another incoming ERC-20 transfer inside this balance-delta
+        // measurement.
+        if (_acceptingToken) revert JBMultiTerminal_ReentrantTokenTransfer(token);
+        _acceptingToken = true;
+
         // Transfer tokens to this terminal from the msg sender.
         _transferFrom({from: _msgSender(), to: payable(address(this)), token: token, amount: amount});
 
         // The amount should reflect the change in balance.
-        return _balanceOf(token) - balanceBefore;
+        uint256 acceptedAmount = _balanceOf(token) - balanceBefore;
+
+        _acceptingToken = false;
+
+        return acceptedAmount;
     }
 
     /// @notice Adds funds to a project's balance without minting tokens.
@@ -1249,7 +1274,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 token: tokenToReclaim,
                 amount: amountEligibleForFees,
                 beneficiary: beneficiary,
-                shouldHoldFees: false
+                shouldHoldFees: false,
+                refundOnFailure: true
             });
         }
 
@@ -1663,13 +1689,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param beneficiary The address which will receive any platform tokens minted.
     /// @param feeTerminal The terminal that'll receive the fee.
     /// @param wasHeld A flag indicating if the fee to process was held by this terminal.
+    /// @param refundOnFailure If true, failed fee processing is forgiven and credited back to the payer project.
     function _processFee(
         uint256 projectId,
         address token,
         uint256 amount,
         address beneficiary,
         IJBTerminal feeTerminal,
-        bool wasHeld
+        bool wasHeld,
+        bool refundOnFailure
     )
         internal
     {
@@ -1685,6 +1713,12 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 caller: _msgSender()
             });
         } catch (bytes memory reason) {
+            if (!refundOnFailure) {
+                revert JBMultiTerminal_FeePaymentFailed({
+                    projectId: projectId, token: token, amount: amount, reason: reason
+                });
+            }
+
             // Fee processing failed — intentionally forgive the fee and return the amount to the project.
             // The held-fee entry (if any) was already deleted by `processHeldFeesOf` before this call, so there is no
             // retry path. This is by design: a broken or misconfigured fee route should not permanently lock project
@@ -1883,7 +1917,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             token: token,
             amount: amountEligibleForFees,
             beneficiary: projectOwner,
-            shouldHoldFees: ruleset.holdFees()
+            shouldHoldFees: ruleset.holdFees(),
+            refundOnFailure: true
         });
 
         emit SendPayouts({
@@ -1906,13 +1941,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// accounting context.
     /// @param beneficiary The address to mint the platform's project's tokens for.
     /// @param shouldHoldFees If fees should be tracked and held instead of processing them immediately.
+    /// @param refundOnFailure If true, failed immediate fee processing is credited back to the payer project.
     /// @return feeAmount The amount of the fee taken.
     function _takeFeeFrom(
         uint256 projectId,
         address token,
         uint256 amount,
         address beneficiary,
-        bool shouldHoldFees
+        bool shouldHoldFees,
+        bool refundOnFailure
     )
         internal
         returns (uint256 feeAmount)
@@ -1949,7 +1986,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 amount: feeAmount,
                 beneficiary: beneficiary,
                 feeTerminal: feeTerminal,
-                wasHeld: false
+                wasHeld: false,
+                refundOnFailure: refundOnFailure
             });
         }
     }
@@ -2033,7 +2071,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         amount: amountPaidOut,
                         // The project owner will receive tokens minted by paying the platform fee.
                         beneficiary: feeBeneficiary,
-                        shouldHoldFees: ruleset.holdFees()
+                        shouldHoldFees: ruleset.holdFees(),
+                        refundOnFailure: true
                     }));
 
         emit UseAllowance({

@@ -24,6 +24,9 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     error JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 allowanceIndex
     );
+    error JBFundAccessLimits_DuplicateFundAccessLimitGroup(
+        uint256 projectId, uint256 rulesetId, uint256 groupIndex, address terminal, address token
+    );
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
@@ -94,6 +97,28 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
         for (uint256 i; i < numberOfFundAccessLimitGroups;) {
             // Set the limits being iterated on.
             JBFundAccessLimitGroup calldata fundAccessLimitGroup = fundAccessLimitGroups[i];
+
+            // Each terminal/token pair should have exactly one group. The per-group currency ordering checks below
+            // prevent duplicate currencies inside one group; this prevents splitting a duplicate currency across two
+            // groups for the same terminal/token pair.
+            for (uint256 j; j < i;) {
+                JBFundAccessLimitGroup calldata previousGroup = fundAccessLimitGroups[j];
+                if (
+                    previousGroup.terminal == fundAccessLimitGroup.terminal
+                        && previousGroup.token == fundAccessLimitGroup.token
+                ) {
+                    revert JBFundAccessLimits_DuplicateFundAccessLimitGroup({
+                        projectId: projectId,
+                        rulesetId: rulesetId,
+                        groupIndex: i,
+                        terminal: fundAccessLimitGroup.terminal,
+                        token: fundAccessLimitGroup.token
+                    });
+                }
+                unchecked {
+                    ++j;
+                }
+            }
 
             // Keep a reference to the number of payout limits.
             uint256 numberOfPayoutLimits = fundAccessLimitGroup.payoutLimits.length;

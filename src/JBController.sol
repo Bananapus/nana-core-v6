@@ -67,6 +67,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     error JBController_NoReservedTokens(uint256 projectId);
     error JBController_OnlyDirectory(address sender, IJBDirectory directory);
     error JBController_PendingReservedTokens(uint256 pendingReservedTokenBalance);
+    error JBController_ReservedTokenSplitProjectSameAsOwner(uint256 projectId);
     error JBController_RulesetsAlreadyLaunched(uint256 projectId);
     error JBController_RulesetsArrayEmpty(uint256 projectId, uint256 rulesetConfigurationCount);
     error JBController_RulesetSetTokenNotAllowed(uint256 projectId);
@@ -382,8 +383,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice Creates a new Juicebox project in one transaction — mints the project NFT, queues initial rulesets,
     /// and
     /// configures terminals. This is the primary entry point for launching a project.
-    /// @dev Anyone can call this on behalf of any owner. Each sub-operation (mint, queue, configure) can also be done
-    /// individually if needed.
+    /// @dev Anyone can call this on behalf of any owner. This is a launch convenience, not owner authorization proof:
+    /// frontends and operators must use the transaction sender, an explicit owner signature, or their own deployment
+    /// flow to decide whether the owner intentionally launched a configuration. Each sub-operation (mint, queue,
+    /// configure) can also be done individually if needed.
     /// @param owner The project's owner. The project ERC-721 will be minted to this address.
     /// @param projectUri The project's metadata URI. This is typically an IPFS hash, optionally with the `ipfs://`
     /// prefix. This can be updated by the project's owner.
@@ -1118,6 +1121,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
                     if (split.projectId != 0) {
+                        if (split.projectId == projectId) {
+                            revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
+                        }
+
                         // Get a reference to the receiving project's primary payment terminal for the token.
                         IJBTerminal terminal = token == IJBToken(address(0))
                             ? IJBTerminal(address(0))

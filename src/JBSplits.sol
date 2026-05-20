@@ -173,14 +173,30 @@ contract JBSplits is JBControlled, IJBSplits {
         uint256 numberOfCurrentSplits = currentSplits.length;
 
         // Check to see if all locked splits are included in the array of splits which is being set.
+        // Duplicate locked splits must be preserved with the same multiplicity. Otherwise a table with two identical
+        // locked splits could be collapsed into one matching split and one unrelated split while each old split sees
+        // the same new match.
         for (uint256 i; i < numberOfCurrentSplits;) {
             // If not locked, continue.
-            if (
-                // forge-lint: disable-next-line(block-timestamp)
-                block.timestamp < currentSplits[i].lockedUntil
-                    && !_includesLockedSplits({splits: splits, lockedSplit: currentSplits[i]})
-            ) {
-                revert JBSplits_PreviousLockedSplitsNotIncluded({projectId: projectId, rulesetId: rulesetId});
+            // forge-lint: disable-next-line(block-timestamp)
+            if (block.timestamp < currentSplits[i].lockedUntil) {
+                uint256 requiredCount;
+                for (uint256 j; j < numberOfCurrentSplits;) {
+                    if (
+                        // forge-lint: disable-next-line(block-timestamp)
+                        block.timestamp < currentSplits[j].lockedUntil
+                            && _isLockedSplitIncluded({split: currentSplits[j], lockedSplit: currentSplits[i]})
+                    ) {
+                        ++requiredCount;
+                    }
+                    unchecked {
+                        ++j;
+                    }
+                }
+
+                if (_includedLockedSplitCount({splits: splits, lockedSplit: currentSplits[i]}) < requiredCount) {
+                    revert JBSplits_PreviousLockedSplitsNotIncluded({projectId: projectId, rulesetId: rulesetId});
+                }
             }
             unchecked {
                 ++i;
@@ -332,31 +348,38 @@ contract JBSplits is JBControlled, IJBSplits {
         return splits;
     }
 
-    /// @notice Determine if the provided splits array includes the locked split.
+    /// @notice Count the splits in the provided array that include the locked split.
     /// @param splits The array of splits to check within.
     /// @param lockedSplit The locked split.
-    /// @return A flag indicating if the `lockedSplit` is contained in the `splits`.
-    function _includesLockedSplits(JBSplit[] memory splits, JBSplit memory lockedSplit) internal pure returns (bool) {
+    /// @return count The number of matching splits.
+    function _includedLockedSplitCount(
+        JBSplit[] memory splits,
+        JBSplit memory lockedSplit
+    )
+        internal
+        pure
+        returns (uint256 count)
+    {
         // Keep a reference to the number of splits.
         uint256 numberOfSplits = splits.length;
 
         for (uint256 i; i < numberOfSplits;) {
-            // Set the split being iterated on.
-            JBSplit memory split = splits[i];
-
-            // Check for sameness.
-            if (
-                // Allow the lock to be extended.
-                split.percent == lockedSplit.percent && split.beneficiary == lockedSplit.beneficiary
-                    && split.hook == lockedSplit.hook && split.projectId == lockedSplit.projectId
-                    && split.preferAddToBalance == lockedSplit.preferAddToBalance
-                    && split.lockedUntil >= lockedSplit.lockedUntil
-            ) return true;
+            if (_isLockedSplitIncluded({split: splits[i], lockedSplit: lockedSplit})) ++count;
             unchecked {
                 ++i;
             }
         }
+    }
 
-        return false;
+    /// @notice Determine if a split satisfies the locked split's immutable fields and lock length.
+    /// @param split The split to check.
+    /// @param lockedSplit The locked split.
+    /// @return A flag indicating whether the split includes the locked split.
+    function _isLockedSplitIncluded(JBSplit memory split, JBSplit memory lockedSplit) internal pure returns (bool) {
+        // Allow the lock to be extended.
+        return split.percent == lockedSplit.percent && split.beneficiary == lockedSplit.beneficiary
+            && split.hook == lockedSplit.hook && split.projectId == lockedSplit.projectId
+            && split.preferAddToBalance == lockedSplit.preferAddToBalance
+            && split.lockedUntil >= lockedSplit.lockedUntil;
     }
 }

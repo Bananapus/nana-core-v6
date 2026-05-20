@@ -102,7 +102,7 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         });
     }
 
-    function test_migrationFeeFailure_strandsForgivenFeeAndChargesItAgainOnCleanup() external {
+    function test_migrationFeeFailureRevertsAndPreservesSourceBalance() external {
         uint256 payAmount = 10 ether;
         uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: payAmount, feePercent: JBConstants.STANDARD_FEE});
 
@@ -114,19 +114,30 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         vm.prank(_feeProjectOwner);
         _directory.setTerminalsOf(1, new IJBTerminal[](0));
 
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_FeePaymentFailed.selector,
+                _projectId,
+                JBConstants.NATIVE_TOKEN,
+                expectedFee,
+                abi.encodeWithSelector(
+                    JBMultiTerminal.JBMultiTerminal_FeeTerminalNotFound.selector, JBConstants.NATIVE_TOKEN
+                )
+            )
+        );
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
-        // The failed fee is credited back on terminal A instead of migrating with the project.
+        // Migration is atomic: the broken fee route does not create a repeat-migratable fee residue.
         assertEq(
             _store.balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN),
-            expectedFee,
-            "failed migration fee remains on the source terminal"
+            payAmount,
+            "source balance is preserved"
         );
         assertEq(
             _store.balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN),
-            payAmount - expectedFee,
-            "only the post-fee amount reaches the destination terminal"
+            0,
+            "destination terminal receives nothing"
         );
         assertEq(
             _store.balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN),
@@ -143,21 +154,20 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
-        uint256 secondFee = JBFees.feeAmountFrom({amountBeforeFee: expectedFee, feePercent: JBConstants.STANDARD_FEE});
         assertEq(
             _store.balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN),
             0,
-            "cleanup migration clears the stranded source balance"
+            "successful migration clears the source balance"
         );
         assertEq(
             _store.balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN),
-            payAmount - secondFee,
-            "the previously forgiven fee is charged again during cleanup"
+            payAmount - expectedFee,
+            "destination receives the post-fee amount"
         );
         assertEq(
             _store.balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN),
-            secondFee,
-            "fee project only receives the second migration fee"
+            expectedFee,
+            "fee project receives the migration fee"
         );
     }
 }

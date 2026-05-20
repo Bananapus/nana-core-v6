@@ -167,6 +167,31 @@ contract TestSplitsLockedEdge_Local is JBSplitsSetup {
         splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, reducedGroups);
     }
 
+    /// @notice Duplicate locked splits must be preserved with the same multiplicity.
+    function test_duplicateLockedSplits_cannotCollapseMultiplicity() external {
+        uint48 lockTime = uint48(block.timestamp + 365 days);
+
+        JBSplit[] memory initialSplits = new JBSplit[](2);
+        initialSplits[0] = _makeSplit(500_000_000, BENEFICIARY, lockTime);
+        initialSplits[1] = _makeSplit(500_000_000, BENEFICIARY, lockTime);
+
+        JBSplitGroup[] memory groups = new JBSplitGroup[](1);
+        groups[0] = JBSplitGroup({groupId: GROUP_ID, splits: initialSplits});
+        splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, groups);
+
+        JBSplit[] memory collapsedSplits = new JBSplit[](2);
+        collapsedSplits[0] = _makeSplit(500_000_000, BENEFICIARY, lockTime);
+        collapsedSplits[1] = _makeSplit(500_000_000, address(0xDEAD), 0);
+
+        JBSplitGroup[] memory collapsedGroups = new JBSplitGroup[](1);
+        collapsedGroups[0] = JBSplitGroup({groupId: GROUP_ID, splits: collapsedSplits});
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBSplits.JBSplits_PreviousLockedSplitsNotIncluded.selector, PROJECT_ID, RULESET_ID_A)
+        );
+        splits.setSplitGroupsOf(PROJECT_ID, RULESET_ID_A, collapsedGroups);
+    }
+
     // ───────────────────── Lock expired allows removal
     // ─────────────────────
 
