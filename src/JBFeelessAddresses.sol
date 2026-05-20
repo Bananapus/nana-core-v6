@@ -108,16 +108,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @param projectId The ID of the project to check.
     /// @param caller The outer caller (typically the terminal's `_msgSender()`).
     /// @return A flag indicating whether the address is feeless.
-    function isFeelessFor(
-        address addr,
-        uint256 projectId,
-        address caller
-    )
-        external
-        view
-        override
-        returns (bool)
-    {
+    function isFeelessFor(address addr, uint256 projectId, address caller) external view override returns (bool) {
         return _isFeelessFor3({addr: addr, projectId: projectId, caller: caller});
     }
 

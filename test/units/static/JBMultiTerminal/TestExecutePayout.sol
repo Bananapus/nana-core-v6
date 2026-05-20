@@ -82,11 +82,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         );
 
         // mock call to FeelessAddresses isFeelessFor
-        mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(_hook, _noProject, address(_terminal)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_hook, _noProject, address(_terminal)), abi.encode(true));
 
         JBSplit memory _splitMemory = JBSplit({
             preferAddToBalance: false,
@@ -138,11 +134,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         );
 
         // mock call to FeelessAddresses isFeelessFor
-        mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(_hook, _noProject, address(_terminal)),
-            abi.encode(false)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_hook, _noProject, address(_terminal)), abi.encode(false));
 
         JBSplit memory _splitMemory = JBSplit({
             preferAddToBalance: false,
@@ -204,9 +196,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         // mock call to FeelessAddresses isFeelessFor
         mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(address(this), _noProject, address(_terminal)),
-            abi.encode(false)
+            address(feelessAddresses), feelessCalldata(address(this), _noProject, address(_terminal)), abi.encode(false)
         );
 
         JBSplit memory _splitMemory = JBSplit({
@@ -470,9 +460,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         // mock call to FeelessAddresses isFeeless
         mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(address(_bene), _projectId, address(_terminal)),
-            abi.encode(true)
+            address(feelessAddresses), feelessCalldata(address(_bene), _projectId, address(_terminal)), abi.encode(true)
         );
 
         JBSplit memory _splitMemory = JBSplit({
@@ -543,9 +531,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
 
         // mock call to FeelessAddresses isFeeless
         mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(address(this), _projectId, address(_terminal)),
-            abi.encode(false)
+            address(feelessAddresses), feelessCalldata(address(this), _projectId, address(_terminal)), abi.encode(false)
         );
 
         JBSplit memory _splitMemory = JBSplit({

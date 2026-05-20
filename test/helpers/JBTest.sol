@@ -42,9 +42,8 @@ contract JBTest is Test {
     /// ambiguous after the caller-aware overload was added. Terminals call the 3-arg variant forwarding
     /// `_msgSender()`, so unit tests mocking the registry must encode the 3-arg selector with the expected caller.
     function feelessCalldata(address addr, uint256 projectId, address caller) public pure returns (bytes memory) {
-        return abi.encodeWithSelector(
-            bytes4(keccak256("isFeelessFor(address,uint256,address)")), addr, projectId, caller
-        );
+        return
+            abi.encodeWithSelector(bytes4(keccak256("isFeelessFor(address,uint256,address)")), addr, projectId, caller);
     }
 
     // Multiple calls with different return values

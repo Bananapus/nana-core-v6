@@ -153,9 +153,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
         // mock call to feelessAddresses
         mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(address(this), _projectId, address(this)),
-            abi.encode(true)
+            address(feelessAddresses), feelessCalldata(address(this), _projectId, address(this)), abi.encode(true)
         );
 
         vm.expectEmit(true, true, true, false);
@@ -199,9 +197,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
 
         // mock call to feeless addresses
         mockExpect(
-            address(feelessAddresses),
-            feelessCalldata(address(this), _projectId, address(this)),
-            abi.encode(false)
+            address(feelessAddresses), feelessCalldata(address(this), _projectId, address(this)), abi.encode(false)
         );
 
         // needed for splits return call
