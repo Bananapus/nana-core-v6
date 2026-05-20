@@ -18,6 +18,7 @@ contract TerminalStoreHandler is Test {
 
     uint256 public projectId;
     address public projectOwner;
+    uint256[] public projectIds;
 
     // Ghost variables for fund tracking
     // forge-lint: disable-next-line(mixed-case-variable)
@@ -39,15 +40,22 @@ contract TerminalStoreHandler is Test {
         IJBTerminalStore _store,
         IJBController _controller,
         IJBTokens _tokens,
-        uint256 _projectId,
+        uint256[] memory _projectIds,
         address _projectOwner
     ) {
         terminal = _terminal;
         store = _store;
         controller = _controller;
         tokens = _tokens;
-        projectId = _projectId;
+        projectId = _projectIds[0];
         projectOwner = _projectOwner;
+
+        for (uint256 i; i < _projectIds.length;) {
+            projectIds.push(_projectIds[i]);
+            unchecked {
+                ++i;
+            }
+        }
 
         // Create actor addresses
         for (uint256 i = 0; i < NUM_ACTORS; i++) {
@@ -63,15 +71,21 @@ contract TerminalStoreHandler is Test {
         return actors[seed % actors.length];
     }
 
+    /// @notice Selects one of the tracked projects based on a seed.
+    function _getProject(uint256 seed) internal view returns (uint256) {
+        return projectIds[seed % projectIds.length];
+    }
+
     /// @notice Pay the project with native tokens.
-    function payProject(uint256 actorSeed, uint256 amount) public {
+    function payProject(uint256 actorSeed, uint256 projectSeed, uint256 amount) public {
         amount = bound(amount, 0.01 ether, 100 ether);
         address actor = _getActor(actorSeed);
+        uint256 selectedProjectId = _getProject(projectSeed);
 
         vm.deal(actor, amount);
         vm.prank(actor);
         terminal.pay{value: amount}({
-            projectId: projectId,
+            projectId: selectedProjectId,
             amount: amount,
             token: JBConstants.NATIVE_TOKEN,
             beneficiary: actor,
@@ -84,9 +98,10 @@ contract TerminalStoreHandler is Test {
     }
 
     /// @notice Cash out tokens for native tokens.
-    function cashOutTokens(uint256 actorSeed, uint256 cashOutPercent) public {
+    function cashOutTokens(uint256 actorSeed, uint256 projectSeed, uint256 cashOutPercent) public {
         address actor = _getActor(actorSeed);
-        uint256 tokenBalance = tokens.totalBalanceOf(actor, projectId);
+        uint256 selectedProjectId = _getProject(projectSeed);
+        uint256 tokenBalance = tokens.totalBalanceOf({holder: actor, projectId: selectedProjectId});
         if (tokenBalance == 0) return;
 
         cashOutPercent = bound(cashOutPercent, 1, 100);
@@ -96,7 +111,7 @@ contract TerminalStoreHandler is Test {
         vm.prank(actor);
         uint256 reclaimAmount = terminal.cashOutTokensOf({
             holder: actor,
-            projectId: projectId,
+            projectId: selectedProjectId,
             cashOutCount: cashOutCount,
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
@@ -108,15 +123,18 @@ contract TerminalStoreHandler is Test {
     }
 
     /// @notice Send payouts from the project.
-    function sendPayouts(uint256 amount) public {
-        uint256 balance = store.balanceOf(address(terminal), projectId, JBConstants.NATIVE_TOKEN);
+    function sendPayouts(uint256 projectSeed, uint256 amount) public {
+        uint256 selectedProjectId = _getProject(projectSeed);
+        uint256 balance = store.balanceOf({
+            terminal: address(terminal), projectId: selectedProjectId, token: JBConstants.NATIVE_TOKEN
+        });
         if (balance == 0) return;
 
         amount = bound(amount, 1, balance);
 
         vm.prank(projectOwner);
         try terminal.sendPayoutsOf({
-            projectId: projectId,
+            projectId: selectedProjectId,
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
@@ -131,12 +149,13 @@ contract TerminalStoreHandler is Test {
     }
 
     /// @notice Add to project balance without minting tokens.
-    function addToBalance(uint256 amount) public {
+    function addToBalance(uint256 projectSeed, uint256 amount) public {
         amount = bound(amount, 0.01 ether, 50 ether);
+        uint256 selectedProjectId = _getProject(projectSeed);
 
         vm.deal(address(this), amount);
         terminal.addToBalanceOf{value: amount}({
-            projectId: projectId,
+            projectId: selectedProjectId,
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             shouldReturnHeldFees: false,

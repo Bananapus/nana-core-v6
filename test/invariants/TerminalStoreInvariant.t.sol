@@ -24,6 +24,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     TerminalStoreHandler public handler;
 
     uint256 public projectId;
+    uint256 public projectId2;
     address public projectOwner;
 
     function setUp() public override {
@@ -117,15 +118,33 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
             terminalConfigurations: terminalConfigurations,
             memo: ""
         });
+        projectId2 = jbController()
+            .launchProjectFor({
+            owner: projectOwner,
+            projectUri: "testProject2",
+            rulesetConfigurations: rulesetConfig,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
 
         // Deploy ERC20 so tokens can be tracked
         vm.prank(projectOwner);
-        jbController().deployERC20For(projectId, "TestToken", "TT", bytes32(0));
+        jbController().deployERC20For({projectId: projectId, name: "TestToken", symbol: "TT", salt: bytes32(0)});
+        vm.prank(projectOwner);
+        jbController().deployERC20For({projectId: projectId2, name: "TestToken2", symbol: "TT2", salt: bytes32(0)});
 
         // Deploy handler
-        handler = new TerminalStoreHandler(
-            jbMultiTerminal(), jbTerminalStore(), jbController(), jbTokens(), projectId, projectOwner
-        );
+        uint256[] memory projectIds = new uint256[](2);
+        projectIds[0] = projectId;
+        projectIds[1] = projectId2;
+        handler = new TerminalStoreHandler({
+            _terminal: jbMultiTerminal(),
+            _store: jbTerminalStore(),
+            _controller: jbController(),
+            _tokens: jbTokens(),
+            _projectIds: projectIds,
+            _projectOwner: projectOwner
+        });
 
         // Register handler as target
         bytes4[] memory selectors = new bytes4[](4);
@@ -138,15 +157,25 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
-    /// @notice INV-TS-1: Terminal ETH balance >= sum of recorded balances for this project.
-    /// @dev The terminal's actual ETH balance should always be >= what the store records,
-    ///      because fees from other projects also accumulate in the terminal.
+    /// @notice Sum the native balances for every project the handler can touch plus the fee project.
+    function _trackedNativeBalance() internal view returns (uint256 balance) {
+        balance = jbTerminalStore()
+            .balanceOf({terminal: address(jbMultiTerminal()), projectId: 1, token: JBConstants.NATIVE_TOKEN});
+        balance += jbTerminalStore()
+            .balanceOf({terminal: address(jbMultiTerminal()), projectId: projectId, token: JBConstants.NATIVE_TOKEN});
+        balance += jbTerminalStore()
+            .balanceOf({terminal: address(jbMultiTerminal()), projectId: projectId2, token: JBConstants.NATIVE_TOKEN});
+    }
+
+    /// @notice INV-TS-1: Terminal ETH balance covers every tracked project's recorded native balance.
+    /// @dev This is the core native-token solvency invariant for the campaign: randomized actions can move value among
+    ///      two independent projects and the fee project, but the terminal must always hold enough ETH to cover their
+    ///      combined store balances.
     function invariant_TS1_terminalBalanceCoversRecordedBalance() public view {
-        uint256 recordedBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
+        uint256 recordedBalance = _trackedNativeBalance();
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
-        assertGe(actualBalance, recordedBalance, "INV-TS-1: Terminal ETH balance must be >= recorded project balance");
+        assertGe(actualBalance, recordedBalance, "INV-TS-1: Terminal ETH balance must cover tracked project balances");
     }
 
     /// @notice INV-TS-2: Reclaimable surplus <= current surplus, always.
@@ -181,26 +210,25 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     /// @dev We can only check that it's >= 0; true monotonicity requires tracking across calls,
     ///      which the handler ghost variables assist with.
     function invariant_TS3_feeProjectBalanceNonNegative() public view {
-        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 feeProjectBalance = jbTerminalStore()
+            .balanceOf({terminal: address(jbMultiTerminal()), projectId: 1, token: JBConstants.NATIVE_TOKEN});
 
         // Fee project balance should be non-negative (always true for uint, but conceptually
         // this checks that the fee project accumulates fees from cashouts).
         assertGe(feeProjectBalance, 0, "INV-TS-3: Fee project balance should be non-negative");
     }
 
-    /// @notice INV-TS-4: Total actual ETH in terminal = recorded balance of all projects.
-    /// @dev The terminal's ETH balance should equal the sum of all project balances recorded in the store.
+    /// @notice INV-TS-4: The campaign's tracked native balances account for the terminal's ETH.
+    /// @dev No handler action sends raw ETH directly to the terminal, so there should be no untracked native balance.
     function invariant_TS4_terminalBalanceConservation() public view {
-        uint256 projectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
-        uint256 feeProjectBalance = jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN);
+        uint256 trackedBalance = _trackedNativeBalance();
         uint256 actualBalance = address(jbMultiTerminal()).balance;
 
         // The terminal's actual balance should equal the sum of all recorded project balances.
         // There should be no "unaccounted" ETH sitting in the terminal.
         assertEq(
             actualBalance,
-            projectBalance + feeProjectBalance,
+            trackedBalance,
             "INV-TS-4: Terminal ETH balance must equal sum of all recorded project balances"
         );
     }
@@ -212,15 +240,13 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 totalIn = handler.ghost_totalPaidIn() + handler.ghost_totalAddedToBalance();
         uint256 totalOut = handler.ghost_totalCashedOut() + handler.ghost_totalPaidOut();
 
-        uint256 projectBalance =
-            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
+        uint256 trackedBalance = _trackedNativeBalance();
 
         // Everything that went in must be >= everything that went out + what remains.
-        // Strict equality breaks because fees redistribute between projects.
+        // The tracked balance includes the fee project, so fee redistribution stays inside this equation.
         assertGe(
             totalIn,
-            totalOut + projectBalance
-                - jbTerminalStore().balanceOf(address(jbMultiTerminal()), 1, JBConstants.NATIVE_TOKEN),
+            totalOut + trackedBalance,
             "INV-TS-5: Ghost conservation - funds in >= funds out + project balance (adjusted for fees)"
         );
     }
