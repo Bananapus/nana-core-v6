@@ -341,6 +341,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             if (!_isFeeless({addr: address(split.hook), projectId: projectId})) {
+                // `amount / 40` is the inlined form of the prior `_feeAmountFrom(amount)` helper:
+                // `mulDiv(amount, STANDARD_FEE=25, MAX_FEE=1000)` ≡ `amount / 40`. Inlined throughout this file
+                // to keep `JBMultiTerminal` under EIP-170. Same convention applies at every `/ 40` site below.
                 unchecked {
                     netPayoutAmount -= amount / 40;
                 }
@@ -375,6 +378,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee if the funds are leaving this contract and the receiving terminal isn't
             // a feeless address.
             if (!isThisTerminal && !_isFeeless({addr: address(terminal), projectId: projectId})) {
+                // `amount / 40` = inlined `_feeAmountFrom(amount)`. See note at the first `/ 40` site above.
                 unchecked {
                     netPayoutAmount -= amount / 40;
                 }
@@ -449,6 +453,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // This payout is eligible for a fee since the funds are leaving this contract and the recipient isn't a
             // feeless address.
             if (!_isFeeless({addr: recipient, projectId: projectId})) {
+                // `amount / 40` = inlined `_feeAmountFrom(amount)`. See note at the first `/ 40` site above.
                 unchecked {
                     netPayoutAmount -= amount / 40;
                 }
@@ -689,7 +694,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             delete _heldFeesOf[projectId][token][currentIndex];
             _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
 
-            // Process the fee.
+            // Process the fee. `heldFee.amount / 40` = inlined `_feeAmountFrom(heldFee.amount)`; see header note.
             _processFee({
                 projectId: projectId,
                 token: token,
@@ -1220,6 +1225,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             if (!beneficiaryIsFeeless) {
                 if (cashOutTaxRate != 0) {
                     // Non-zero tax: fees apply to the full reclaim amount.
+                    // `reclaimAmount / 40` = inlined `_feeAmountFrom(reclaimAmount)`; see header note.
                     amountEligibleForFees += reclaimAmount;
                     unchecked {
                         reclaimAmount -= reclaimAmount / 40;
@@ -1233,6 +1239,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                             _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
                         }
                         amountEligibleForFees += feeableAmount;
+                        // `feeableAmount / 40` = inlined `_feeAmountFrom(feeableAmount)`; see header note.
                         unchecked {
                             reclaimAmount -= feeableAmount / 40;
                         }
@@ -1479,7 +1486,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 continue;
             }
 
-            // Get the fee for the specified amount.
+            // Get the fee for the specified amount. `specification.amount / 40` = inlined
+            // `_feeAmountFrom(specification.amount)`; see header note.
             uint256 specificationAmountFee =
                 _isFeeless({addr: address(specification.hook), projectId: projectId}) ? 0 : specification.amount / 40;
 
@@ -1587,6 +1595,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 // non-feeless hook forwards here so they match ordinary payout semantics before funds leave.
                 // Keep the fee basis local until every hook returns. Writing the transient accumulator before the
                 // hook call would let a reentrant payout overwrite the outer split's pending fee basis.
+                // `specificationAmount / 40` = inlined `_feeAmountFrom(specificationAmount)`; see header note.
                 unchecked {
                     amountEligibleForFees += specificationAmount;
                     specificationAmount -= specificationAmount / 40;
@@ -1705,6 +1714,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
+        // `_pay` already carries ~10 locals (ruleset, tokenCount, hookSpecifications, balanceDiff, tokenAmount,
+        // newlyIssuedTokenCount, internalSplitPayProjectId, feeFreeAmount, plus loop-local `i` and `hookAmount`).
+        // Inlining the 9-arg `emit Pay` here hits "Stack too deep" under the non-IR build, so the emit is extracted
+        // to `_emitPay` which gets its own stack frame.
         _emitPay({
             ruleset: ruleset,
             projectId: projectId,
@@ -1732,7 +1745,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Emits a `Pay` event.
+    /// @notice Emits a `Pay` event. Extracted from `_pay` so the 9-field event payload gets its own stack frame —
+    /// inlining the emit into `_pay` overflows the non-IR build's stack budget.
     function _emitPay(
         JBRuleset memory ruleset,
         uint256 projectId,
@@ -1852,6 +1866,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Held fees store the original gross amount that paid out before its fee was removed.
             JBFee memory heldFee = _heldFeesOf[projectId][token][i];
 
+            // `heldFee.amount / 40` = inlined `_feeAmountFrom(heldFee.amount)`; see header note.
             uint256 feeAmount = heldFee.amount / 40;
 
             // This is the net amount that originally left the project after the held fee was removed.
@@ -1952,6 +1967,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send any leftover funds to the project owner and update the fee tracking accordingly.
         if (leftoverPayoutAmount != 0) {
             // Keep a reference to the fee for the leftover payout amount.
+            // `leftoverPayoutAmount / 40` = inlined `_feeAmountFrom(leftoverPayoutAmount)`; see header note.
             uint256 fee = _isFeeless({addr: projectOwner, projectId: projectId}) ? 0 : leftoverPayoutAmount / 40;
 
             uint256 netLeftoverPayoutAmount;
@@ -2031,6 +2047,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (uint256 feeAmount)
     {
         // Calculate the standard fee from the gross amount.
+        // `amount / 40` = inlined `_feeAmountFrom(amount)`; see header note at the first `/ 40` site.
         feeAmount = amount / 40;
 
         if (shouldHoldFees) {
