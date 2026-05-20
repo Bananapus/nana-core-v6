@@ -1121,10 +1121,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
                     if (split.projectId != 0) {
-                        // A non-zero split project ID routes the reserved tokens into a project payment. Keep that
-                        // project distinct from the one distributing reserves: a same-project split would feed minted
-                        // reserved tokens back through this project's own payment terminal, creating a self-referential
-                        // mint/distribute loop instead of paying an independent reserved-token recipient.
+                        // A non-zero split project ID routes reserves through a payment terminal. Keep it distinct
+                        // from the project distributing reserves: otherwise the project pays itself with newly minted
+                        // reserved tokens, and the terminal mints new tokens for the split beneficiary against that
+                        // self-payment. That turns the split into a self-funded owner/beneficiary mint path instead of
+                        // an independent reserve recipient.
                         if (split.projectId == projectId) {
                             revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
                         }
