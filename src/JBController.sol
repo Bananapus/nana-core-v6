@@ -1125,11 +1125,11 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         // "mint the reserved tokens directly to the split beneficiary." That cross-project route is
                         // allowed because the destination project earns the payment and mints its own tokens.
                         if (split.projectId == projectId) {
-                            // Keep reserved-token distribution one-way. Without this guard, the source project would
-                            // mint its pending reserved tokens to this controller, then pay those same newly minted
-                            // tokens back into its own terminal. The terminal records that as fresh revenue and mints
-                            // another batch of project tokens, so a reserve split could recursively turn a reserve
-                            // allocation into self-funded issuance instead of simply distributing the allocation.
+                            // Keep reserved-token distribution one-way. `sendReservedTokensToSplitsOf` clears the
+                            // pending reserve balance before `_sendTokensToSplitsOf` runs, so a self-project split
+                            // would mint reserves to this controller and then pay those newly minted tokens into the
+                            // same project's terminal. The terminal accounts for that payment as new revenue, which
+                            // mints another batch of project tokens and starts the reserve cycle again.
                             revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
                         }
 
