@@ -1120,17 +1120,15 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     // sender.
                     address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
+                    // Reserved token splits with no project ID mint directly to the beneficiary. A non-zero project ID
+                    // takes the "pay another project" path, which treats the reserved tokens as revenue for the
+                    // destination project and can mint another batch of tokens according to its ruleset.
                     if (split.projectId != 0) {
-                        // Reserved token splits with no project ID mint directly to the beneficiary. A non-zero
-                        // project ID is the explicit "pay another project" path, where that destination project earns
-                        // the payment and mints its own tokens according to its ruleset.
                         if (split.projectId == projectId) {
-                            // The source project is not a valid destination for that payment path.
-                            // `sendReservedTokensToSplitsOf` clears the pending reserve balance before
-                            // `_sendTokensToSplitsOf` runs. A self-project split would therefore mint reserves to this
-                            // controller and then pay those newly minted tokens into the same project's terminal. The
-                            // terminal accounts for that payment as new revenue, which mints another batch of project
-                            // tokens and starts the reserve cycle again.
+                            // The source project is not a valid destination for the terminal-payment path.
+                            // `sendReservedTokensToSplitsOf` clears the pending reserve balance before this helper
+                            // runs. Paying those freshly minted reserves into the same project's terminal would book
+                            // them as new revenue, mint another batch of tokens, and start the reserve cycle again.
                             revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
                         }
 
