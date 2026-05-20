@@ -1121,15 +1121,15 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
                     if (split.projectId != 0) {
-                        // A non-zero split project ID routes reserves through a payment terminal instead of minting
-                        // directly to a wallet. The receiving project can be any other project, which lets reserved
-                        // tokens fund an external recipient through its normal `pay(...)` flow.
+                        // A non-zero split project ID means "pay another project with these reserves" instead of
+                        // "mint the reserved tokens directly to the split beneficiary." That cross-project route is
+                        // allowed because the destination project earns the payment and mints its own tokens.
                         if (split.projectId == projectId) {
-                            // Keep that receiving project distinct from the project distributing reserves. If a
-                            // project pays itself with its own newly minted reserved tokens, the terminal treats the
-                            // transfer as a fresh payment and mints new project tokens for the split beneficiary. That
-                            // makes the reserved split a self-funded owner/beneficiary mint path rather than an
-                            // independent reserve recipient.
+                            // The same-project route must stay closed. The source project would first mint pending
+                            // reserved tokens to this controller, then pay those freshly minted tokens back into its
+                            // own terminal, which treats the transfer as new revenue and mints more tokens to the
+                            // split beneficiary. Reserved splits should distribute an existing reserve allocation, not
+                            // create a self-funded payment loop.
                             revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
                         }
 
