@@ -453,7 +453,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
         // Feelessness lookup.
         vm.mockCall(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (hook, _noProject)),
+            feelessCalldata(hook, _noProject, address(_terminal)),
             abi.encode(feeless)
         );
         // Library needs decimals to build the hook context.

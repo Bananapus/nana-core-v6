@@ -89,22 +89,36 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
 
     /// @notice Returns whether the specified address is feeless for a specific project, considering the wildcard
     /// (projectId 0) feeless status, the project-specific feeless status, and the feeless hook (if set).
-    /// @dev The hook is invoked via try/catch — a reverting or out-of-gas hook is treated as `false` so it cannot
-    /// brick the fee path in terminals.
+    /// @dev Calls the caller-aware overload with `caller = address(0)`. Intended for off-chain queries and for
+    /// callers that don't have an outer caller to report.
     /// @param addr The address to check.
     /// @param projectId The ID of the project to check.
     /// @return A flag indicating whether the address is feeless (globally, for the project, or per the hook).
     function isFeelessFor(address addr, uint256 projectId) external view override returns (bool) {
-        if (_isFeelessFor[0][addr] || _isFeelessFor[projectId][addr]) return true;
+        return _isFeelessFor3({addr: addr, projectId: projectId, caller: address(0)});
+    }
 
-        IJBFeelessHook hook = feelessHook;
-        if (address(hook) == address(0)) return false;
-
-        try hook.isFeeless({projectId: projectId, addr: addr}) returns (bool result) {
-            return result;
-        } catch {
-            return false;
-        }
+    /// @notice Returns whether the specified address is feeless for a specific project, providing the outer caller
+    /// of the fee-bearing operation so hooks can scope grants by who initiated the action.
+    /// @dev The static admin-set mappings are caller-agnostic and always apply. The hook (if set) receives `caller`
+    /// (typically the terminal's `_msgSender()`) and may use it to narrow its grant — e.g. grant an ecosystem
+    /// router feeless cash-outs only when the router itself is the caller, not when it appears as a split recipient
+    /// of someone else's payout. Hook is invoked via try/catch — a reverting hook is treated as `false`.
+    /// @param addr The address to check.
+    /// @param projectId The ID of the project to check.
+    /// @param caller The outer caller (typically the terminal's `_msgSender()`).
+    /// @return A flag indicating whether the address is feeless.
+    function isFeelessFor(
+        address addr,
+        uint256 projectId,
+        address caller
+    )
+        external
+        view
+        override
+        returns (bool)
+    {
+        return _isFeelessFor3({addr: addr, projectId: projectId, caller: caller});
     }
 
     //*********************************************************************//
@@ -117,5 +131,24 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @return A flag indicating if the provided interface ID is supported.
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return interfaceId == type(IJBFeelessAddresses).interfaceId || interfaceId == type(IERC165).interfaceId;
+    }
+
+    //*********************************************************************//
+    // ------------------------- internal views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice Shared implementation backing both `isFeelessFor` overloads. Static mappings are caller-agnostic; the
+    /// hook (if set) receives the outer caller and may use it to narrow its grant.
+    function _isFeelessFor3(address addr, uint256 projectId, address caller) internal view returns (bool) {
+        if (_isFeelessFor[0][addr] || _isFeelessFor[projectId][addr]) return true;
+
+        IJBFeelessHook hook = feelessHook;
+        if (address(hook) == address(0)) return false;
+
+        try hook.isFeeless({projectId: projectId, addr: addr, caller: caller}) returns (bool result) {
+            return result;
+        } catch {
+            return false;
+        }
     }
 }

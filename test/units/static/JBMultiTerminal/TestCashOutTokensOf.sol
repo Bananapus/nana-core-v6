@@ -140,7 +140,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock feeless address check
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(true)
         );
 
@@ -198,7 +198,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock feeless address check
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(true)
         );
 
@@ -261,7 +261,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock feeless address check
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(false)
         );
 
@@ -380,7 +380,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(true)
         );
 
@@ -406,7 +406,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockHook), _projectId)),
+            feelessCalldata(address(_mockHook), _projectId, _bene),
             abi.encode(true)
         );
 
@@ -502,7 +502,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(true)
         );
 
@@ -528,7 +528,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockHook), _projectId)),
+            feelessCalldata(address(_mockHook), _projectId, _bene),
             abi.encode(false)
         );
 
@@ -621,7 +621,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
+            feelessCalldata(_bene, _projectId, _bene),
             abi.encode(true)
         );
         mockExpect(

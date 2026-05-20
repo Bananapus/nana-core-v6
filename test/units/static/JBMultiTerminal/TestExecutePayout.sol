@@ -84,7 +84,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeelessFor
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_hook, _noProject)),
+            feelessCalldata(_hook, _noProject, address(_terminal)),
             abi.encode(true)
         );
 
@@ -140,7 +140,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeelessFor
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_hook, _noProject)),
+            feelessCalldata(_hook, _noProject, address(_terminal)),
             abi.encode(false)
         );
 
@@ -205,7 +205,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeelessFor
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _noProject)),
+            feelessCalldata(address(this), _noProject, address(_terminal)),
             abi.encode(false)
         );
 
@@ -320,7 +320,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockSecondTerminal), _projectId)),
+            feelessCalldata(address(_mockSecondTerminal), _projectId, address(_terminal)),
             abi.encode(false)
         );
 
@@ -407,7 +407,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockSecondTerminal), _projectId)),
+            feelessCalldata(address(_mockSecondTerminal), _projectId, address(_terminal)),
             abi.encode(false)
         );
 
@@ -471,7 +471,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_bene), _projectId)),
+            feelessCalldata(address(_bene), _projectId, address(_terminal)),
             abi.encode(true)
         );
 
@@ -506,7 +506,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_bene), _projectId)),
+            feelessCalldata(address(_bene), _projectId, address(_terminal)),
             abi.encode(false)
         );
 
@@ -544,7 +544,7 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         // mock call to FeelessAddresses isFeeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(_terminal)),
             abi.encode(false)
         );
 

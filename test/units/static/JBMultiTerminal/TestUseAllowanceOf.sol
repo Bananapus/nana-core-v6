@@ -60,7 +60,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // feeless check
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(true)
         );
 
@@ -98,7 +98,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // feeless check
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(true)
         );
 
@@ -150,14 +150,14 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // first feeless check which will return false.
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(false)
         );
 
         // second which is true for beneficiary.
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)),
+            feelessCalldata(beneficiary, _projectId, address(this)),
             abi.encode(true)
         );
 
@@ -254,14 +254,14 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // first feeless check which will return false.
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(false)
         );
 
         // second which is also false.
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)),
+            feelessCalldata(beneficiary, _projectId, address(this)),
             abi.encode(false)
         );
 
@@ -403,14 +403,14 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // first feeless check: owner is NOT feeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(false)
         );
 
         // second feeless check: beneficiary is NOT feeless
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)),
+            feelessCalldata(beneficiary, _projectId, address(this)),
             abi.encode(false)
         );
 
@@ -542,14 +542,14 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         // first feeless check: false
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(this), _projectId)),
+            feelessCalldata(address(this), _projectId, address(this)),
             abi.encode(false)
         );
 
         // second feeless check: false
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (beneficiary, _projectId)),
+            feelessCalldata(beneficiary, _projectId, address(this)),
             abi.encode(false)
         );
 

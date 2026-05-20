@@ -2244,11 +2244,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     }
 
     /// @notice Returns a flag indicating if interacting with an address should not incur fees.
+    /// @dev Forwards `_msgSender()` (the outer caller of the terminal, with ERC-2771 forwarders unwrapped) to the
+    /// registry so an installed feeless hook can scope its grant by caller — e.g. recognise an ecosystem router
+    /// that wraps cash-out → pay and grant it fee-free cash-outs only when it itself is the caller.
     /// @param addr The address to check.
     /// @param projectId The ID of the project to check the per-project feeless status for.
     /// @return A flag indicating if the address should not incur fees (globally or for the project).
     function _isFeeless(address addr, uint256 projectId) internal view returns (bool) {
-        return FEELESS_ADDRESSES.isFeelessFor({addr: addr, projectId: projectId});
+        return FEELESS_ADDRESSES.isFeelessFor({addr: addr, projectId: projectId, caller: _msgSender()});
     }
 
     /// @notice The calldata. Preferred to use over `msg.data`.
