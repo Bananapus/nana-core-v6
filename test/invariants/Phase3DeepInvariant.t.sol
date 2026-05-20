@@ -333,19 +333,17 @@ contract Phase3DeepInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 supply2 = jbController().totalTokenSupplyWithReservedTokensOf(project2);
         uint256 balance2 = jbTerminalStore().balanceOf(address(jbMultiTerminal()), project2, JBConstants.NATIVE_TOKEN);
 
-        // The token supply should relate to the balance. With weight=1000e18 tokens per ETH,
-        // each token represents 0.001 ETH. A non-zero supply with zero balance is a problem.
+        // The token supply should relate to the balance before owner-controlled outflows occur. Once payouts,
+        // surplus allowance, or cash outs run, the ruleset can intentionally leave non-zero supply with zero balance.
         if (supply2 > 0) {
-            // At minimum, some balance should exist to back the tokens
-            // (unless all tokens were from reserved minting with no funds)
-            // This is a soft check — tokens from pay() always have backing
-            uint256 totalPaid = handler.ghost_totalPaidIn(project2) + handler.ghost_totalAddedToBalance(project2);
-            uint256 totalOut = handler.ghost_totalCashedOut(project2) + handler.ghost_totalPaidOut(project2)
-                + handler.ghost_totalAllowanceUsed(project2);
+            if (
+                handler.ghost_totalCashedOut(project2) != 0 || handler.ghost_totalPaidOut(project2) != 0
+                    || handler.ghost_totalAllowanceUsed(project2) != 0
+            ) return;
 
-            if (totalPaid > totalOut) {
-                assertGt(balance2, 0, "INV-P3-4: Tokens exist but terminal balance is 0");
-            }
+            uint256 totalPaid = handler.ghost_totalPaidIn(project2) + handler.ghost_totalAddedToBalance(project2);
+
+            if (totalPaid != 0) assertGt(balance2, 0, "INV-P3-4: paid tokens have no backing balance");
         }
     }
 

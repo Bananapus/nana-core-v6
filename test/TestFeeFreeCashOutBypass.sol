@@ -5,17 +5,75 @@ import {TestBaseWorkflow} from "./helpers/TestBaseWorkflow.sol";
 import {JBTokens} from "../src/JBTokens.sol";
 import {IJBController} from "../src/interfaces/IJBController.sol";
 import {IJBMultiTerminal} from "../src/interfaces/IJBMultiTerminal.sol";
+import {IJBPayHook} from "../src/interfaces/IJBPayHook.sol";
+import {IJBRulesetDataHook} from "../src/interfaces/IJBRulesetDataHook.sol";
 import {IJBSplitHook} from "../src/interfaces/IJBSplitHook.sol";
 import {JBConstants} from "../src/libraries/JBConstants.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBAfterPayRecordedContext} from "../src/structs/JBAfterPayRecordedContext.sol";
+import {JBBeforeCashOutRecordedContext} from "../src/structs/JBBeforeCashOutRecordedContext.sol";
+import {JBBeforePayRecordedContext} from "../src/structs/JBBeforePayRecordedContext.sol";
+import {JBCashOutHookSpecification} from "../src/structs/JBCashOutHookSpecification.sol";
 import {JBCurrencyAmount} from "../src/structs/JBCurrencyAmount.sol";
 import {JBFundAccessLimitGroup} from "../src/structs/JBFundAccessLimitGroup.sol";
+import {JBPayHookSpecification} from "../src/structs/JBPayHookSpecification.sol";
+import {JBRuleset} from "../src/structs/JBRuleset.sol";
 import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
 import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplit} from "../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
+
+contract SplitPayHookDataHook is IJBRulesetDataHook {
+    IJBPayHook public immutable HOOK;
+    uint256 public immutable FORWARD_AMOUNT;
+
+    constructor(IJBPayHook hook, uint256 forwardAmount) {
+        HOOK = hook;
+        FORWARD_AMOUNT = forwardAmount;
+    }
+
+    function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata)
+        external
+        pure
+        returns (uint256, uint256, uint256, uint256, JBCashOutHookSpecification[] memory)
+    {
+        return (0, 0, 0, 0, new JBCashOutHookSpecification[](0));
+    }
+
+    function beforePayRecordedWith(JBBeforePayRecordedContext calldata context)
+        external
+        view
+        returns (uint256 weight, JBPayHookSpecification[] memory hookSpecifications)
+    {
+        weight = context.weight;
+        hookSpecifications = new JBPayHookSpecification[](1);
+        hookSpecifications[0] = JBPayHookSpecification({hook: HOOK, noop: false, amount: FORWARD_AMOUNT, metadata: ""});
+    }
+
+    function hasMintPermissionFor(uint256, JBRuleset memory, address) external pure returns (bool) {
+        return false;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(IJBRulesetDataHook).interfaceId;
+    }
+}
+
+contract SplitPayHookRecorder is IJBPayHook {
+    uint256 public receivedValue;
+    uint256 public recordedForwardedValue;
+
+    function afterPayRecordedWith(JBAfterPayRecordedContext calldata context) external payable {
+        receivedValue += msg.value;
+        recordedForwardedValue += context.forwardedAmount.value;
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
+        return interfaceId == type(IJBPayHook).interfaceId;
+    }
+}
 
 /// @notice Tests that the fee-free cashout bypass via same-terminal round-trip is closed:
 /// fees apply on cashout up to the cumulative fee-free payout amount, then deplete.
@@ -34,6 +92,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
 
     uint112 private _weight = 1000 * 10 ** 18;
     uint224 private _payoutLimit = 10 ether;
+    uint256 private constant _FEE_FREE_SURPLUS_SLOT = 0;
 
     function setUp() public override {
         super.setUp();
@@ -297,6 +356,80 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
 
         // After surplus depletion, direct pay-in cashout should be fee-free.
         assertEq(secondReclaim, payAmount, "direct pay-in cashout should be fee-free after surplus depleted");
+    }
+
+    /// @notice A destination project's pay hook cannot drain same-terminal split payouts without the source-side fee.
+    function testPayHookForwardFromInternalSplitPaysFeeAndTracksOnlyResidue() external {
+        uint256 payoutAmount = 10 ether;
+        uint256 hookAmount = 9 ether;
+        uint256 hookFee = hookAmount / 40;
+        uint256 residue = payoutAmount - hookAmount;
+        uint256 residueFee = residue / 40;
+
+        SplitPayHookRecorder hook = new SplitPayHookRecorder();
+        SplitPayHookDataHook dataHook = new SplitPayHookDataHook({hook: hook, forwardAmount: hookAmount});
+
+        (uint256 hookRecipientProjectId, uint256 hookPayerProjectId) =
+            _launchPayHookSplitProjects({dataHook: dataHook, payoutAmount: payoutAmount});
+
+        vm.deal(_attacker, payoutAmount);
+        vm.prank(_attacker);
+        _terminal.pay{value: payoutAmount}({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        uint256 feeProjectBalanceBefore = jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+
+        _terminal.sendPayoutsOf({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        assertEq(hook.receivedValue(), hookAmount - hookFee, "pay hook receives net split amount");
+        assertEq(hook.recordedForwardedValue(), hookAmount - hookFee, "hook context exposes net forwarded amount");
+        assertEq(
+            jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN) - feeProjectBalanceBefore,
+            hookFee,
+            "hook forward pays source-side fee"
+        );
+        assertEq(
+            jbTerminalStore().balanceOf(address(_terminal), hookRecipientProjectId, JBConstants.NATIVE_TOKEN),
+            residue,
+            "only the unforwarded residue stays in recipient balance"
+        );
+        assertEq(
+            _readFeeFreeSurplus({projectId: hookRecipientProjectId, token: JBConstants.NATIVE_TOKEN}),
+            residue,
+            "only the unforwarded residue becomes fee-free surplus"
+        );
+
+        uint256 recipientTokens = _tokens.totalBalanceOf(_attacker, hookRecipientProjectId);
+        vm.prank(_attacker);
+        uint256 reclaimAmount = _terminal.cashOutTokensOf({
+            holder: _attacker,
+            projectId: hookRecipientProjectId,
+            cashOutCount: recipientTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(_attacker),
+            metadata: new bytes(0)
+        });
+
+        assertEq(reclaimAmount, residue - residueFee, "residue pays fee on zero-tax cashout");
+        assertEq(
+            jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN) - feeProjectBalanceBefore,
+            payoutAmount / 40,
+            "hook forward plus residue cashout pay one full split fee"
+        );
     }
 
     /// @notice Fee-free surplus only covers the exact payout amount — partial cashout leaves remainder.
@@ -921,6 +1054,95 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
 
         vm.prank(_projectOwner);
         _controller.queueRulesetsOf({projectId: projectId, rulesetConfigurations: rc, memo: ""});
+    }
+
+    function _launchPayHookSplitProjects(
+        SplitPayHookDataHook dataHook,
+        uint256 payoutAmount
+    )
+        internal
+        returns (uint256 hookRecipientProjectId, uint256 hookPayerProjectId)
+    {
+        JBTerminalConfig[] memory terminalConfigurations = _nativeTerminalConfigurations();
+
+        JBRulesetMetadata memory recipientMetadata = _zeroTaxMetadata();
+        recipientMetadata.useDataHookForPay = true;
+        recipientMetadata.dataHook = address(dataHook);
+
+        JBRulesetConfig[] memory recipientRuleset = new JBRulesetConfig[](1);
+        recipientRuleset[0].mustStartAtOrAfter = 0;
+        recipientRuleset[0].duration = 0;
+        recipientRuleset[0].weight = _weight;
+        recipientRuleset[0].metadata = recipientMetadata;
+        recipientRuleset[0].splitGroups = new JBSplitGroup[](0);
+        recipientRuleset[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
+
+        hookRecipientProjectId = _controller.launchProjectFor({
+            owner: _projectOwner,
+            projectUri: "hook-recipient",
+            rulesetConfigurations: recipientRuleset,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
+
+        JBSplit[] memory splits = new JBSplit[](1);
+        splits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // forge-lint: disable-next-line(unsafe-typecast)
+            projectId: uint64(hookRecipientProjectId),
+            beneficiary: payable(_attacker),
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+
+        JBSplitGroup[] memory splitGroups = new JBSplitGroup[](1);
+        splitGroups[0] = JBSplitGroup({groupId: uint32(uint160(JBConstants.NATIVE_TOKEN)), splits: splits});
+
+        JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](1);
+        // `payoutAmount` is a small test constant, well below the uint224 accounting limit.
+        // forge-lint: disable-next-line(unsafe-typecast)
+        payoutLimits[0] =
+            JBCurrencyAmount({amount: uint224(payoutAmount), currency: uint32(uint160(JBConstants.NATIVE_TOKEN))});
+        JBFundAccessLimitGroup[] memory fundAccessLimitGroups = new JBFundAccessLimitGroup[](1);
+        fundAccessLimitGroups[0] = JBFundAccessLimitGroup({
+            terminal: address(_terminal),
+            token: JBConstants.NATIVE_TOKEN,
+            payoutLimits: payoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+
+        JBRulesetConfig[] memory payerRuleset = new JBRulesetConfig[](1);
+        payerRuleset[0].mustStartAtOrAfter = 0;
+        payerRuleset[0].duration = 0;
+        payerRuleset[0].weight = _weight;
+        payerRuleset[0].metadata = _zeroTaxMetadata();
+        payerRuleset[0].splitGroups = splitGroups;
+        payerRuleset[0].fundAccessLimitGroups = fundAccessLimitGroups;
+
+        hookPayerProjectId = _controller.launchProjectFor({
+            owner: _projectOwner,
+            projectUri: "hook-payer",
+            rulesetConfigurations: payerRuleset,
+            terminalConfigurations: terminalConfigurations,
+            memo: ""
+        });
+    }
+
+    function _nativeTerminalConfigurations() internal view returns (JBTerminalConfig[] memory terminalConfigurations) {
+        JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
+        tokensToAccept[0] = JBAccountingContext({
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+
+        terminalConfigurations = new JBTerminalConfig[](1);
+        terminalConfigurations[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: tokensToAccept});
+    }
+
+    function _readFeeFreeSurplus(uint256 projectId, address token) internal view returns (uint256) {
+        bytes32 innerSlot = keccak256(abi.encode(projectId, _FEE_FREE_SURPLUS_SLOT));
+        bytes32 finalSlot = keccak256(abi.encode(token, innerSlot));
+        return uint256(vm.load(address(_terminal), finalSlot));
     }
 
     function _zeroTaxMetadata() internal pure returns (JBRulesetMetadata memory) {
