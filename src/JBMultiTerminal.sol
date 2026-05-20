@@ -65,7 +65,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     error JBMultiTerminal_FeePaymentFailed(uint256 projectId, address token, uint256 amount, bytes reason);
     error JBMultiTerminal_FeeTerminalNotFound(address token);
-    error JBMultiTerminal_MintNotAllowed(uint256 projectId, uint256 splitProjectId, address terminal);
+    error JBMultiTerminal_MintNotAllowed();
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
@@ -398,11 +398,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             //     consumption, payout-limit drawdown, fee-free-surplus accounting); routing it
             //     through `sendPayoutsOf` is never the right surface.
             // The try-catch in the split group lib catches this revert and restores the balance.
-            if (split.projectId == projectId) {
-                revert JBMultiTerminal_MintNotAllowed({
-                    projectId: projectId, splitProjectId: split.projectId, terminal: address(terminal)
-                });
-            }
+            if (split.projectId == projectId) revert JBMultiTerminal_MintNotAllowed();
 
             // Send the `projectId` in the metadata as a referral.
             bytes memory metadata = bytes(abi.encodePacked(projectId));
@@ -442,11 +438,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 if (isThisTerminal) {
                     feeEligibleAmount += _internalSplitPayProjectId;
                     delete _internalSplitPayProjectId;
-
-                    // Destination pay hooks may have forwarded part of the same-terminal split pay. The fee-free
-                    // counter starts at the full pay amount, then this cap trims it back to what actually remains in
-                    // the destination project's terminal balance.
-                    _capFeeFreeSurplus({projectId: split.projectId, token: token});
                 }
             }
         } else {
@@ -1588,16 +1579,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             uint256 specificationAmount = specification.amount;
 
-            if (internalSplitPayProjectId != 0 && specificationAmount != 0) {
-                if (!_isFeeless({addr: address(specification.hook), projectId: internalSplitPayProjectId})) {
-                    // Same-terminal split pays defer source-side fees until the destination data hook is known. Net
-                    // non-feeless hook forwards here so they match ordinary payout semantics before funds leave.
-                    // Keep the fee basis local until every hook returns. Writing the transient accumulator before the
-                    // hook call would let a reentrant payout overwrite the outer split's pending fee basis.
-                    unchecked {
-                        amountEligibleForFees += specificationAmount;
-                        specificationAmount -= specificationAmount / 40;
-                    }
+            if (
+                internalSplitPayProjectId != 0
+                    && !_isFeeless({addr: address(specification.hook), projectId: internalSplitPayProjectId})
+            ) {
+                // Same-terminal split pays defer source-side fees until the destination data hook is known. Net
+                // non-feeless hook forwards here so they match ordinary payout semantics before funds leave.
+                // Keep the fee basis local until every hook returns. Writing the transient accumulator before the
+                // hook call would let a reentrant payout overwrite the outer split's pending fee basis.
+                unchecked {
+                    amountEligibleForFees += specificationAmount;
+                    specificationAmount -= specificationAmount / 40;
                 }
             }
 
@@ -1675,14 +1667,25 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the ruleset the payment is being made during.
         // Keep a reference to the pay hook specifications.
         // Keep a reference to the token count that'll be minted as a result of the payment.
-        (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = STORE.recordPaymentFrom({
+        JBRuleset memory ruleset;
+        uint256 tokenCount;
+        JBPayHookSpecification[] memory hookSpecifications;
+        (ruleset, tokenCount, hookSpecifications) = STORE.recordPaymentFrom({
             payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
         });
 
-        // Start by treating the whole same-terminal split pay as fee-free. The pay-hook loop subtracts each forwarded
-        // amount because those funds leave the destination project immediately.
+        // Only the value retained in the destination balance needs later cashout fee recovery. Non-feeless pay-hook
+        // forwards pay their source-equivalent fee inline before leaving the project.
         if (internalSplitPayProjectId != 0) {
-            _feeFreeSurplusOf[projectId][token] += tokenAmount.value;
+            uint256 feeFreeAmount = tokenAmount.value;
+            for (uint256 i; i < hookSpecifications.length;) {
+                // The store already proved the hook-spec total does not exceed the pay amount.
+                unchecked {
+                    feeFreeAmount -= hookSpecifications[i].amount;
+                    ++i;
+                }
+            }
+            _feeFreeSurplusOf[projectId][token] += feeFreeAmount;
         }
 
         // Keep a reference to the number of tokens issued for the beneficiary.

@@ -527,6 +527,87 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
         );
     }
 
+    /// @notice Prior destination balance cannot keep hook-forwarded value in the fee-free surplus counter.
+    function testPayHookForwardOnlyTracksResidueWhenRecipientHasPriorBalance() external {
+        uint256 priorPayAmount = 100 ether;
+        uint256 payoutAmount = 10 ether;
+        uint256 hookAmount = 9 ether;
+        uint256 residue = payoutAmount - hookAmount;
+        uint256 residueFee = residue / 40;
+
+        address priorHolder = makeAddr("priorHolder");
+        SplitPayHookRecorder hook = new SplitPayHookRecorder();
+        SplitPayHookDataHook dataHook = new SplitPayHookDataHook({hook: hook, forwardAmount: hookAmount});
+
+        (uint256 hookRecipientProjectId, uint256 hookPayerProjectId) =
+            _launchPayHookSplitProjects({dataHook: dataHook, payoutAmount: payoutAmount});
+
+        vm.deal(priorHolder, priorPayAmount);
+        vm.prank(priorHolder);
+        _terminal.pay{value: priorPayAmount}({
+            projectId: hookRecipientProjectId,
+            amount: priorPayAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: priorHolder,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+        assertEq(
+            _readFeeFreeSurplus({projectId: hookRecipientProjectId, token: JBConstants.NATIVE_TOKEN}),
+            0,
+            "ordinary outside pay does not create fee-free surplus"
+        );
+
+        vm.deal(_attacker, payoutAmount);
+        vm.prank(_attacker);
+        _terminal.pay{value: payoutAmount}({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _attacker,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        _terminal.sendPayoutsOf({
+            projectId: hookPayerProjectId,
+            amount: payoutAmount,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            token: JBConstants.NATIVE_TOKEN,
+            minTokensPaidOut: 0
+        });
+
+        assertEq(
+            _readFeeFreeSurplus({projectId: hookRecipientProjectId, token: JBConstants.NATIVE_TOKEN}),
+            residue,
+            "prior balance must not preserve already-fee-charged hook forwards in the counter"
+        );
+
+        uint256 feeProjectBalanceBeforeCashOut =
+            jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+        uint256 priorHolderTokens = _tokens.totalBalanceOf(priorHolder, hookRecipientProjectId);
+
+        vm.prank(priorHolder);
+        _terminal.cashOutTokensOf({
+            holder: priorHolder,
+            projectId: hookRecipientProjectId,
+            cashOutCount: priorHolderTokens,
+            tokenToReclaim: JBConstants.NATIVE_TOKEN,
+            minTokensReclaimed: 0,
+            beneficiary: payable(priorHolder),
+            metadata: new bytes(0)
+        });
+
+        assertEq(
+            jbTerminalStore().balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN)
+                - feeProjectBalanceBeforeCashOut,
+            residueFee,
+            "cashout fee is limited to the retained residue, not prior outside-pay balance"
+        );
+    }
+
     /// @notice Fee-free surplus only covers the exact payout amount — partial cashout leaves remainder.
     function testPartialCashOutConsumesPartialSurplus() external {
         uint256 payAmount = 10 ether;
