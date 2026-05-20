@@ -18,14 +18,14 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBFundAccessLimits_DuplicateFundAccessLimitGroup(
+        uint256 projectId, uint256 rulesetId, uint256 groupIndex, address terminal, address token
+    );
     error JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 limitIndex
     );
     error JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 allowanceIndex
-    );
-    error JBFundAccessLimits_DuplicateFundAccessLimitGroup(
-        uint256 projectId, uint256 rulesetId, uint256 groupIndex, address terminal, address token
     );
 
     //*********************************************************************//

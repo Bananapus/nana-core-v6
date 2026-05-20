@@ -72,9 +72,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
     error JBMultiTerminal_ReentrantTokenTransfer(address token);
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
-    error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
-    error JBMultiTerminal_TerminalMigrationToSelf(uint256 projectId, address token);
     error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
+    error JBMultiTerminal_TerminalMigrationToSelf(uint256 projectId, address token);
+    error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
     error JBMultiTerminal_TokenNotAccepted(address token);
     error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
 
@@ -142,6 +142,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param projectId The ID of the project holding fees.
     /// @custom:param token The token the fees are held in.
     mapping(uint256 projectId => mapping(address token => uint256)) internal _nextHeldFeeIndexOf;
+
+    //*********************************************************************//
+    // ------------------- transient stored properties ------------------- //
+    //*********************************************************************//
 
     /// @notice Whether this terminal is currently measuring an incoming ERC-20 balance delta.
     bool transient _acceptingToken;
