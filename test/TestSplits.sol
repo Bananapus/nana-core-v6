@@ -21,8 +21,10 @@ import {JBRulesetConfig} from "../src/structs/JBRulesetConfig.sol";
 import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplit} from "../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
+import {JBSplitHookContext} from "../src/structs/JBSplitHookContext.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 
 contract TestSplits_Local is TestBaseWorkflow {
@@ -364,6 +366,77 @@ contract TestSplits_Local is TestBaseWorkflow {
         assertEq(_tokens.totalBalanceOf(_splitsGuy, _projectId), _splitBalanceBefore);
     }
 
+    function testReservedPercentSplitTerminal_allowsSelfProjectWhenHookHandlesDistribution() public {
+        uint256 _nativePayAmount = 1 ether;
+        address _payee = makeAddr("payee");
+        ReservedTokenPullingSplitHook _hook = new ReservedTokenPullingSplitHook();
+
+        vm.startPrank(_projectOwner);
+        IERC20Metadata _projectToken = IERC20Metadata(
+            address(
+                _controller.deployERC20For({projectId: _projectId, name: "Token", symbol: "Token", salt: bytes32(0)})
+            )
+        );
+
+        JBAccountingContext[] memory _projectTokenContexts = new JBAccountingContext[](1);
+        _projectTokenContexts[0] = JBAccountingContext({
+            token: address(_projectToken), decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+
+        // Keep the test in the risky topology: the source project accepts its own ERC-20 through this terminal.
+        // A no-hook same-project reserved split must revert here because terminal payment would recycle newly minted
+        // reserves as fresh revenue. The hook branch is different because the hook consumes the tokens directly.
+        _terminal.addAccountingContextsFor({projectId: _projectId, accountingContexts: _projectTokenContexts});
+
+        (JBRuleset memory _ruleset,) = _controller.currentRulesetOf(_projectId);
+
+        JBSplit[] memory _reserveRateSplits = new JBSplit[](1);
+        _reserveRateSplits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            // Same project ID is allowed with a hook because the split is delivered to the hook, not to the terminal.
+            projectId: uint64(_projectId),
+            beneficiary: _splitsGuy,
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(_hook))
+        });
+
+        JBSplitGroup[] memory _splitsGroup = new JBSplitGroup[](1);
+        _splitsGroup[0] = JBSplitGroup({groupId: JBSplitGroupIds.RESERVED_TOKENS, splits: _reserveRateSplits});
+        _controller.setSplitGroupsOf({projectId: _projectId, rulesetId: _ruleset.id, splitGroups: _splitsGroup});
+        vm.stopPrank();
+
+        vm.deal(_payee, _nativePayAmount);
+        vm.prank(_payee);
+        _terminal.pay{value: _nativePayAmount}({
+            projectId: _projectId,
+            amount: _nativePayAmount,
+            token: JBConstants.NATIVE_TOKEN,
+            beneficiary: _payee,
+            minReturnedTokens: 0,
+            memo: "Take my money!",
+            metadata: new bytes(0)
+        });
+
+        uint256 _pendingReservedTokenBalance = _controller.pendingReservedTokenBalanceOf(_projectId);
+        uint256 _totalSupplyBefore = _tokens.totalSupplyOf(_projectId);
+        assertGt(_pendingReservedTokenBalance, 0);
+
+        _controller.sendReservedTokensToSplitsOf(_projectId);
+
+        // Only the pending reserves are minted, then the hook pulls that exact amount from the controller allowance.
+        // If this ever falls through to the terminal-payment path, the supply/pending-reserve assertions below catch
+        // the accidental self-payment cycle.
+        assertEq(_controller.pendingReservedTokenBalanceOf(_projectId), 0);
+        assertEq(_tokens.totalSupplyOf(_projectId), _totalSupplyBefore + _pendingReservedTokenBalance);
+        assertEq(_projectToken.balanceOf(address(_hook)), _pendingReservedTokenBalance);
+        assertEq(_hook.callCount(), 1);
+        assertEq(_hook.token(), address(_projectToken));
+        assertEq(_hook.amount(), _pendingReservedTokenBalance);
+        assertEq(_hook.projectId(), _projectId);
+        assertEq(_hook.splitProjectId(), _projectId);
+    }
+
     function testFuzzedSplitParameters(uint32 _currencyId, uint256 _multiplier) public {
         _multiplier = bound(_multiplier, 2, JBConstants.SPLITS_TOTAL_PERCENT);
 
@@ -437,5 +510,32 @@ contract TestSplits_Local is TestBaseWorkflow {
             terminalConfigurations: _terminalConfigurations,
             memo: ""
         });
+    }
+}
+
+/// @notice Test hook which consumes the full ERC-20 allowance offered by a reserved-token split.
+/// @dev Used to prove hooked same-project reserved splits are hook deliveries, not terminal self-payments.
+contract ReservedTokenPullingSplitHook is IJBSplitHook {
+    uint256 public callCount;
+    address public token;
+    uint256 public amount;
+    uint256 public projectId;
+    uint256 public splitProjectId;
+
+    function processSplitWith(JBSplitHookContext calldata context) external payable override {
+        ++callCount;
+        token = context.token;
+        amount = context.amount;
+        projectId = context.projectId;
+        splitProjectId = context.split.projectId;
+
+        // Reserved-token split hooks receive an ERC-20 allowance from `JBController`, not a terminal payment.
+        // Pull the full allowance so the test proves a same-project hook can consume the reserve distribution
+        // without recycling those tokens through the project's own terminal and starting a new reserve cycle.
+        IERC20Metadata(context.token).transferFrom({from: msg.sender, to: address(this), value: context.amount});
+    }
+
+    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
+        return interfaceId == type(IJBSplitHook).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 }
