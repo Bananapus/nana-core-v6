@@ -1121,6 +1121,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
 
                     if (split.projectId != 0) {
+                        // A non-zero split project ID routes the reserved tokens into another project's terminal. Do
+                        // not let a project route its own reserved tokens back into itself, which would make the
+                        // reserved-token distribution self-referential instead of paying an independent recipient.
                         if (split.projectId == projectId) {
                             revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
                         }
