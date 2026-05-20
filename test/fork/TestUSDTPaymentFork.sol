@@ -125,9 +125,11 @@ contract TestUSDTPaymentFork is TestBaseWorkflow {
         assertEq(jbTokens().totalBalanceOf(_beneficiary, _projectId), beneficiaryTokenCount, "beneficiary credited");
     }
 
-    /// @notice The reentrancy guard `_acceptingToken` is correctly cleared after a successful USDT pay, so a second
-    /// pay in the same tx (from a non-reentrant path) succeeds.
-    function testFork_pay_usdt_sequentialPaysSucceed() public {
+    /// @notice Sanity: two sequential pays in separate transactions both mint. Forge resets transient storage
+    /// between top-level test calls, so this only proves the happy-path pay flow holds twice in succession — NOT
+    /// that the `_acceptingToken` guard clears correctly mid-tx. A real intra-tx reentrancy test would need a
+    /// callback-capable token at the payer position.
+    function testFork_pay_usdt_twoTxSanity() public {
         uint256 amount = 100 * 10 ** 6;
 
         vm.prank(_USDT_WHALE);
@@ -141,6 +143,6 @@ contract TestUSDTPaymentFork is TestBaseWorkflow {
         uint256 second = _terminal.pay(_projectId, address(_USDT), amount, _beneficiary, 0, "", "");
 
         assertGt(first, 0, "first pay minted");
-        assertGt(second, 0, "second pay minted - guard cleared between calls");
+        assertGt(second, 0, "second pay minted");
     }
 }

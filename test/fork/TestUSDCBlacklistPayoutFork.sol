@@ -127,8 +127,10 @@ contract TestUSDCBlacklistPayoutFork is TestBaseWorkflow {
 
         uint256 terminalBalanceBefore = _USDC.balanceOf(address(_terminal));
 
+        // USDC's Blacklistable._notBlacklisted modifier reverts with this exact string. Pin it so a regression
+        // that swallows the blacklist check (or reverts for an unrelated reason) breaks the test.
         vm.prank(_payer);
-        vm.expectRevert(); // USDC reverts on Blacklistable._notBlacklisted check
+        vm.expectRevert(bytes("Blacklistable: account is blacklisted"));
         _terminal.pay(_projectId, address(_USDC), amount, _beneficiary, 0, "", "");
 
         assertEq(
