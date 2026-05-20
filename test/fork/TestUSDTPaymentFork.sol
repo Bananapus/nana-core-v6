@@ -97,7 +97,7 @@ contract TestUSDTPaymentFork is TestBaseWorkflow {
     /// @notice USDT's non-bool `transferFrom` is handled correctly by `_acceptFundsFor`'s SafeERC20 path. Without
     /// SafeERC20 (or with naive `transferFrom` whose return value is decoded as a bool), this would revert.
     function testFork_pay_usdt_acceptsNonBoolTransfer() public {
-        uint256 amount = 1_000 * 10 ** 6; // 1000 USDT (6 decimals)
+        uint256 amount = 1000 * 10 ** 6; // 1000 USDT (6 decimals)
 
         // Fund the payer from the whale and grant the terminal an allowance. SafeERC20 handles USDT's void return.
         vm.prank(_USDT_WHALE);
@@ -109,8 +109,15 @@ contract TestUSDTPaymentFork is TestBaseWorkflow {
         uint256 terminalBalanceBefore = _USDT.balanceOf(address(_terminal));
 
         vm.prank(_payer);
-        uint256 beneficiaryTokenCount =
-            _terminal.pay({projectId: _projectId, token: address(_USDT), amount: amount, beneficiary: _beneficiary, minReturnedTokens: 0, memo: "", metadata: ""});
+        uint256 beneficiaryTokenCount = _terminal.pay({
+            projectId: _projectId,
+            token: address(_USDT),
+            amount: amount,
+            beneficiary: _beneficiary,
+            minReturnedTokens: 0,
+            memo: "",
+            metadata: ""
+        });
 
         assertGt(beneficiaryTokenCount, 0, "USDT payment must mint project tokens");
         assertEq(_USDT.balanceOf(_payer), payerBalanceBefore - amount, "payer USDT decremented");

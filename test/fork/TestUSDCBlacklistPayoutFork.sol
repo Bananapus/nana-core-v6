@@ -132,9 +132,7 @@ contract TestUSDCBlacklistPayoutFork is TestBaseWorkflow {
         _terminal.pay(_projectId, address(_USDC), amount, _beneficiary, 0, "", "");
 
         assertEq(
-            _USDC.balanceOf(address(_terminal)),
-            terminalBalanceBefore,
-            "no USDC moved when the payer is blacklisted"
+            _USDC.balanceOf(address(_terminal)), terminalBalanceBefore, "no USDC moved when the payer is blacklisted"
         );
     }
 }
