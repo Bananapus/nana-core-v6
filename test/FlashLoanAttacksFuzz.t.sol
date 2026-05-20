@@ -34,45 +34,51 @@ contract FlashLoanAttacksFuzz is TestBaseWorkflow {
         _launchTestProject();
     }
 
-    /// @notice Universal no-profit property over random atomic action sequences.
-    /// @dev `actions` is a packed byte string: low nibble is action selector, high nibble is unused. `amounts`
-    /// is the per-step amount (bounded). Seed projects start with 50 ETH pre-paid so the attacker has a non-empty
-    /// surplus to attempt to drain.
+    /// @notice Universal no-profit property over random action sequences.
+    /// @dev Strengthens the original 5-action atomic fuzz:
+    /// - Attacker is pre-seeded with project tokens (the dangerous "already has skin in the game" case).
+    /// - 10 action slots instead of 5, with a 4th action (warp + owner payout) that creates the cross-period
+    ///   surplus-dip the attacker would need to extract profit from.
+    /// - The fuzz draws an action selector per slot AND a "use-1-wei" mask, surfacing dust-amount edges.
+    /// The property remains: starting-vs-final ETH delta must be non-positive.
     function testFuzz_atomicSequence_noNetProfit(
-        uint8 a0,
-        uint8 a1,
-        uint8 a2,
-        uint8 a3,
-        uint8 a4,
-        uint256[5] memory amounts
+        uint8[10] memory actions,
+        uint256[10] memory amounts,
+        uint8 dustMask,
+        uint8 actorRotation
     )
         public
     {
         // Pre-seed the project so there's surplus to attempt to drain.
         _payProject(address(0x5EED), 50 ether);
 
-        // Fund the attacker generously; we measure NET flow at the end.
+        // Pre-seed the attacker with project tokens — they already paid in once (dangerous case: attacker has
+        // standing claim before they start the sequence, so cashOut can dump real value).
+        _payProject(attacker, 20 ether);
         uint256 startingBalance = 1000 ether;
         vm.deal(attacker, startingBalance);
 
-        uint8[5] memory actions = [a0, a1, a2, a3, a4];
-        for (uint256 i; i < 5; ++i) {
-            _doAction({selector: actions[i] % 3, amount: amounts[i]});
+        for (uint256 i; i < 10; ++i) {
+            // Per-step "dust" mask flips the amount to 1 wei when the bit is set, surfacing rounding edges.
+            uint256 amount = (dustMask >> i) & 1 == 1 ? 1 : amounts[i];
+            _doAction({selector: actions[i] % 4, amount: amount, otherActor: actorRotation});
         }
 
-        // Cash out everything the attacker still holds, so any latent token value is converted to ETH.
+        // Cash out everything the attacker still holds — convert latent token value to ETH.
         uint256 finalTokens = jbTokens().totalBalanceOf(attacker, projectId);
         if (finalTokens > 0) _tryCashOut(finalTokens);
 
-        // The attacker may have spent ETH on calls; they must NEVER have more than they started with.
+        // The attacker started with `startingBalance` ETH AND `20 ether`-worth of project tokens (cost = 20 ether).
+        // Net "deposit" cost = startingBalance + 20 ether worth of tokens already paid for. They must never end
+        // with more ETH than `startingBalance + 20 ether` (i.e., never recover MORE than they put in).
         assertLe(
             attacker.balance,
-            startingBalance,
-            "atomic sequence yielded net profit to a single actor - flash-loan protection broken"
+            startingBalance + 20 ether,
+            "atomic sequence yielded net profit beyond initial deposit - flash-loan protection broken"
         );
     }
 
-    function _doAction(uint256 selector, uint256 amount) internal {
+    function _doAction(uint256 selector, uint256 amount, uint8 otherActor) internal {
         if (selector == 0) {
             amount = _boundLocal(amount, 0, 100 ether);
             if (attacker.balance < amount || amount == 0) return;
@@ -82,10 +88,16 @@ contract FlashLoanAttacksFuzz is TestBaseWorkflow {
             if (holdings == 0) return;
             uint256 burn = _boundLocal(amount, 1, holdings);
             _tryCashOut(burn);
-        } else {
+        } else if (selector == 2) {
             amount = _boundLocal(amount, 0, 100 ether);
             if (attacker.balance < amount || amount == 0) return;
             _tryAddToBalance(amount);
+        } else {
+            // Selector 3: warp + another actor pays in (creates the cross-period surplus dynamic the attacker
+            // might try to exploit). The "other actor" is derived from the seed so different runs vary who pays.
+            vm.warp(block.timestamp + 1 + (uint256(otherActor) % 86_400));
+            address rando = address(uint160(uint256(keccak256(abi.encode("rando", otherActor)))));
+            _payProject(rando, _boundLocal(amount, 0.1 ether, 30 ether));
         }
     }
 
