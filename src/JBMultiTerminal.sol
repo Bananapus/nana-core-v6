@@ -30,6 +30,7 @@ import {IJBTerminalStore} from "./interfaces/IJBTerminalStore.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
 import {JBFees} from "./libraries/JBFees.sol";
+import {JBHeldFees} from "./libraries/JBHeldFees.sol";
 import {JBMetadataResolver} from "./libraries/JBMetadataResolver.sol";
 import {JBPayoutSplitGroupLib} from "./libraries/JBPayoutSplitGroupLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
@@ -921,30 +922,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         external
         view
         override
-        returns (JBFee[] memory heldFees)
+        returns (JBFee[] memory)
     {
-        // Keep a reference to the start index.
-        uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
-
-        // Get a reference to the number of held fees.
-        uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
-
-        // If the start index is greater than or equal to the number of held fees, return 0.
-        if (startIndex >= numberOfHeldFees) return new JBFee[](0);
-
-        // If the start index plus the count is greater than the number of fees, set the count to the number of fees
-        if (startIndex + count > numberOfHeldFees) count = numberOfHeldFees - startIndex;
-
-        // Create a new array to hold the fees.
-        heldFees = new JBFee[](count);
-
-        // Copy the fees into the array.
-        for (uint256 i; i < count;) {
-            heldFees[i] = _heldFeesOf[projectId][token][startIndex + i];
-            unchecked {
-                ++i;
-            }
-        }
+        return JBHeldFees.viewHeldFees({
+            heldFeesOf: _heldFeesOf,
+            nextHeldFeeIndexOf: _nextHeldFeeIndexOf,
+            projectId: projectId,
+            token: token,
+            count: count
+        });
     }
 
     /// @notice Simulates a cash out without modifying state — use this to preview how many tokens a holder would
@@ -1885,66 +1871,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// as the token's accounting context.
     /// @return returnedFees The amount of held fees that were returned, as a fixed point number with the same number of
     /// decimals as the token's accounting context.
-    function _returnHeldFees(uint256 projectId, address token, uint256 amount) internal returns (uint256 returnedFees) {
-        // Start from the first held fee that has not already been returned, processed, or forgiven.
-        uint256 startIndex = _nextHeldFeeIndexOf[projectId][token];
-
-        // Use the original array length as the upper bound. Returning held fees never appends new entries.
-        uint256 numberOfHeldFees = _heldFeesOf[projectId][token].length;
-
-        if (startIndex >= numberOfHeldFees) return 0;
-
-        // Track how much of the new balance remains available to match against held fees.
-        uint256 leftoverAmount = amount;
-
-        // Move this forward for each fully returned held fee.
-        uint256 newStartIndex = startIndex;
-
-        for (uint256 i = startIndex; i < numberOfHeldFees;) {
-            if (leftoverAmount == 0) break;
-
-            // Held fees store the original gross amount that paid out before its fee was removed.
-            JBFee memory heldFee = _heldFeesOf[projectId][token][i];
-
-            // Recompute the standard fee associated with the held gross amount.
-            uint256 feeAmount = _feeAmountFrom(heldFee.amount);
-
-            // This is the net amount that originally left the project after the held fee was removed.
-            uint256 amountPaidOut = heldFee.amount - feeAmount;
-
-            if (leftoverAmount >= amountPaidOut) {
-                unchecked {
-                    leftoverAmount -= amountPaidOut;
-                    returnedFees += feeAmount;
-                }
-
-                // Move the start index forward to the fee after this fully returned one.
-                newStartIndex = i + 1;
-            } else {
-                // Only part of this held fee can be returned. Convert the remaining net replenishment back into
-                // its corresponding gross fee and shrink the stored gross amount.
-                feeAmount = JBFees.standardFeeAmountResultingIn(leftoverAmount);
-
-                unchecked {
-                    _heldFeesOf[projectId][token][i].amount -= (leftoverAmount + feeAmount);
-                    returnedFees += feeAmount;
-                }
-                leftoverAmount = 0;
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        // Update the next held fee index.
-        if (startIndex != newStartIndex) _nextHeldFeeIndexOf[projectId][token] = newStartIndex;
-
-        emit ReturnHeldFees({
+    function _returnHeldFees(uint256 projectId, address token, uint256 amount) internal returns (uint256) {
+        return JBHeldFees.returnHeldFees({
+            heldFeesOf: _heldFeesOf,
+            nextHeldFeeIndexOf: _nextHeldFeeIndexOf,
             projectId: projectId,
             token: token,
             amount: amount,
-            returnedFees: returnedFees,
-            leftoverAmount: leftoverAmount,
             caller: _msgSender()
         });
     }
