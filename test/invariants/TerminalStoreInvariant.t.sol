@@ -62,12 +62,12 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         feeRulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         feeRulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
 
-        JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
+        JBTerminalConfig[] memory feeTerminalConfigurations = new JBTerminalConfig[](1);
         JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
         tokensToAccept[0] = JBAccountingContext({
             token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
         });
-        terminalConfigurations[0] =
+        feeTerminalConfigurations[0] =
             JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
 
         jbController()
@@ -75,7 +75,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
             owner: address(420),
             projectUri: "feeCollector",
             rulesetConfigurations: feeRulesetConfig,
-            terminalConfigurations: terminalConfigurations,
+            terminalConfigurations: feeTerminalConfigurations,
             memo: ""
         });
 
@@ -94,8 +94,8 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
             pauseCreditTransfers: false,
             allowOwnerMinting: true,
             allowSetCustomToken: true,
-            allowTerminalMigration: false,
-            allowSetTerminals: false,
+            allowTerminalMigration: true,
+            allowSetTerminals: true,
             ownerMustSendPayouts: false,
             allowSetController: false,
             allowAddAccountingContext: true,
@@ -109,6 +109,12 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         });
         rulesetConfig[0].splitGroups = new JBSplitGroup[](0);
         rulesetConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
+
+        JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](2);
+        terminalConfigurations[0] =
+            JBTerminalConfig({terminal: jbMultiTerminal(), accountingContextsToAccept: tokensToAccept});
+        terminalConfigurations[1] =
+            JBTerminalConfig({terminal: jbMultiTerminal2(), accountingContextsToAccept: tokensToAccept});
 
         projectId = jbController()
             .launchProjectFor({
@@ -139,6 +145,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         projectIds[1] = projectId2;
         handler = new TerminalStoreHandler({
             _terminal: jbMultiTerminal(),
+            _terminal2: jbMultiTerminal2(),
             _store: jbTerminalStore(),
             _controller: jbController(),
             _tokens: jbTokens(),
@@ -147,24 +154,36 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         });
 
         // Register handler as target
-        bytes4[] memory selectors = new bytes4[](4);
+        bytes4[] memory selectors = new bytes4[](5);
         selectors[0] = TerminalStoreHandler.payProject.selector;
         selectors[1] = TerminalStoreHandler.cashOutTokens.selector;
         selectors[2] = TerminalStoreHandler.sendPayouts.selector;
         selectors[3] = TerminalStoreHandler.addToBalance.selector;
+        selectors[4] = TerminalStoreHandler.migrateBalance.selector;
 
         targetContract(address(handler));
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
-    /// @notice Sum the native balances for every project the handler can touch plus the fee project.
+    /// @notice Sum a terminal's native balances for every project the handler can touch plus the fee project.
+    /// @param terminal The terminal whose recorded native balances are being summed.
+    function _recordedNativeBalanceOf(address terminal) internal view returns (uint256 balance) {
+        balance = jbTerminalStore().balanceOf({terminal: terminal, projectId: 1, token: JBConstants.NATIVE_TOKEN});
+        balance += jbTerminalStore()
+            .balanceOf({terminal: terminal, projectId: projectId, token: JBConstants.NATIVE_TOKEN});
+        balance += jbTerminalStore()
+            .balanceOf({terminal: terminal, projectId: projectId2, token: JBConstants.NATIVE_TOKEN});
+    }
+
+    /// @notice Sum the native balances for every project and terminal the handler can touch plus the fee project.
     function _trackedNativeBalance() internal view returns (uint256 balance) {
-        balance = jbTerminalStore()
-            .balanceOf({terminal: address(jbMultiTerminal()), projectId: 1, token: JBConstants.NATIVE_TOKEN});
-        balance += jbTerminalStore()
-            .balanceOf({terminal: address(jbMultiTerminal()), projectId: projectId, token: JBConstants.NATIVE_TOKEN});
-        balance += jbTerminalStore()
-            .balanceOf({terminal: address(jbMultiTerminal()), projectId: projectId2, token: JBConstants.NATIVE_TOKEN});
+        balance = _recordedNativeBalanceOf(address(jbMultiTerminal()));
+        balance += _recordedNativeBalanceOf(address(jbMultiTerminal2()));
+    }
+
+    /// @notice Sum the actual ETH held by every terminal in this invariant campaign.
+    function _trackedTerminalEthBalance() internal view returns (uint256 balance) {
+        balance = address(jbMultiTerminal()).balance + address(jbMultiTerminal2()).balance;
     }
 
     /// @notice INV-TS-1: Terminal ETH balance covers every tracked project's recorded native balance.
@@ -173,7 +192,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     ///      combined store balances.
     function invariant_TS1_terminalBalanceCoversRecordedBalance() public view {
         uint256 recordedBalance = _trackedNativeBalance();
-        uint256 actualBalance = address(jbMultiTerminal()).balance;
+        uint256 actualBalance = _trackedTerminalEthBalance();
 
         assertGe(actualBalance, recordedBalance, "INV-TS-1: Terminal ETH balance must cover tracked project balances");
     }
@@ -183,8 +202,9 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
         uint256 totalSupply = jbTokens().totalSupplyOf(projectId);
         if (totalSupply == 0) return; // Skip when no tokens exist
 
-        IJBTerminal[] memory _terminals = new IJBTerminal[](1);
+        IJBTerminal[] memory _terminals = new IJBTerminal[](2);
         _terminals[0] = IJBTerminal(jbMultiTerminal());
+        _terminals[1] = IJBTerminal(jbMultiTerminal2());
         uint256 surplus = jbTerminalStore()
             .currentSurplusOf({
             projectId: projectId,
@@ -212,6 +232,8 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     function invariant_TS3_feeProjectBalanceNonNegative() public view {
         uint256 feeProjectBalance = jbTerminalStore()
             .balanceOf({terminal: address(jbMultiTerminal()), projectId: 1, token: JBConstants.NATIVE_TOKEN});
+        feeProjectBalance += jbTerminalStore()
+            .balanceOf({terminal: address(jbMultiTerminal2()), projectId: 1, token: JBConstants.NATIVE_TOKEN});
 
         // Fee project balance should be non-negative (always true for uint, but conceptually
         // this checks that the fee project accumulates fees from cashouts).
@@ -222,7 +244,7 @@ contract TerminalStoreInvariant_Local is StdInvariant, TestBaseWorkflow {
     /// @dev No handler action sends raw ETH directly to the terminal, so there should be no untracked native balance.
     function invariant_TS4_terminalBalanceConservation() public view {
         uint256 trackedBalance = _trackedNativeBalance();
-        uint256 actualBalance = address(jbMultiTerminal()).balance;
+        uint256 actualBalance = _trackedTerminalEthBalance();
 
         // The terminal's actual balance should equal the sum of all recorded project balances.
         // There should be no "unaccounted" ETH sitting in the terminal.
