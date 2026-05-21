@@ -327,8 +327,17 @@ contract CoreHookCompositionInvariant_Local is StdInvariant, CoreHookComposition
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
+    /// @notice Composed accounting checks for the split-hook callback path.
+    /// @dev Keep these assertions in one public invariant so Foundry replays one handler campaign while still checking
+    /// terminal backing plus origin/target token supply consistency after every sequence.
+    function invariant_HOOKCOMP_hookCompositionAccounting() public view {
+        _assertTerminalBackingCoversRecordedBalances();
+        _assertTokenSupplyConsistencyOf({projectId: targetProjectId});
+        _assertTokenSupplyConsistencyOf({projectId: originProjectId});
+    }
+
     /// @notice Terminal ETH backing must cover every project balance touched by the hook-composition model.
-    function invariant_HOOKCOMP1_terminalBackingCoversRecordedBalances() public view {
+    function _assertTerminalBackingCoversRecordedBalances() private view {
         uint256 recordedTotal = _recordedBalanceOf(_FEE_PROJECT_ID) + _recordedBalanceOf(originProjectId)
             + _recordedBalanceOf(targetProjectId);
 
@@ -337,16 +346,6 @@ contract CoreHookCompositionInvariant_Local is StdInvariant, CoreHookComposition
             right: recordedTotal,
             err: "HOOKCOMP1: terminal backing must cover fee/origin/target balances"
         });
-    }
-
-    /// @notice Target supply minted through the reentrant split hook must stay internally consistent.
-    function invariant_HOOKCOMP2_targetSupplyConsistency() public view {
-        _assertTokenSupplyConsistencyOf({projectId: targetProjectId});
-    }
-
-    /// @notice Origin supply must stay internally consistent while payouts re-enter through the split hook.
-    function invariant_HOOKCOMP3_originSupplyConsistency() public view {
-        _assertTokenSupplyConsistencyOf({projectId: originProjectId});
     }
 }
 
