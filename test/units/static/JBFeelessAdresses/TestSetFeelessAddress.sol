@@ -19,7 +19,7 @@ contract TestSetFeelessAddress_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessAddress(_feeLess, true);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0}), true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0, caller: address(0)}), true);
     }
 
     function test_WhenCallerIsOwner_SetFeelessAddressFor() external {
@@ -32,13 +32,13 @@ contract TestSetFeelessAddress_Local is JBFeelessSetup {
         _feelessAddresses.setFeelessAddressFor({projectId: projectId, addr: _feeLess, flag: true});
 
         // Project-specific check
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId}), true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId, caller: address(0)}), true);
         // Wildcard (project 0) should NOT be set
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0}), false);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 0, caller: address(0)}), false);
         // isFeelessFor should return true for the specific project
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId}), true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: projectId, caller: address(0)}), true);
         // isFeelessFor should return false for a different project
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 99}), false);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 99, caller: address(0)}), false);
     }
 
     function test_WhenCallerIsOwner_WildcardAppliesToAllProjects() external {
@@ -46,8 +46,8 @@ contract TestSetFeelessAddress_Local is JBFeelessSetup {
         _feelessAddresses.setFeelessAddress(_feeLess, true);
 
         // Wildcard applies to any projectId
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 1}), true);
-        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 999}), true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 1, caller: address(0)}), true);
+        assertEq(_feelessAddresses.isFeelessFor({addr: _feeLess, projectId: 999, caller: address(0)}), true);
     }
 
     function test_RevertIf_RevertWhen_CallerIsNotOwner() external {

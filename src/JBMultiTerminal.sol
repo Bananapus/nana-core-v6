@@ -1399,6 +1399,34 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
+    /// @notice Emits a `Pay` event. Extracted from `_pay` so the 9-field event payload gets its own stack frame —
+    /// inlining the emit into `_pay` overflows the non-IR build's stack budget.
+    function _emitPay(
+        JBRuleset memory ruleset,
+        uint256 projectId,
+        address payer,
+        address beneficiary,
+        uint256 amount,
+        uint256 newlyIssuedTokenCount,
+        string memory memo,
+        bytes memory metadata
+    )
+        internal
+    {
+        emit Pay({
+            rulesetId: ruleset.id,
+            rulesetCycleNumber: ruleset.cycleNumber,
+            projectId: projectId,
+            payer: payer,
+            beneficiary: beneficiary,
+            amount: amount,
+            newlyIssuedTokenCount: newlyIssuedTokenCount,
+            memo: memo,
+            metadata: metadata,
+            caller: _msgSender()
+        });
+    }
+
     /// @notice Fund a project on another terminal by granting a temporary pull allowance for this call only.
     /// @param terminal The recipient terminal.
     /// @param projectId The ID of the project to fund.
@@ -1676,10 +1704,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the ruleset the payment is being made during.
         // Keep a reference to the pay hook specifications.
         // Keep a reference to the token count that'll be minted as a result of the payment.
-        JBRuleset memory ruleset;
-        uint256 tokenCount;
-        JBPayHookSpecification[] memory hookSpecifications;
-        (ruleset, tokenCount, hookSpecifications) = STORE.recordPaymentFrom({
+        (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = STORE.recordPaymentFrom({
             payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
         });
 
@@ -1743,34 +1768,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 internalSplitPayProjectId: internalSplitPayProjectId
             });
         }
-    }
-
-    /// @notice Emits a `Pay` event. Extracted from `_pay` so the 9-field event payload gets its own stack frame —
-    /// inlining the emit into `_pay` overflows the non-IR build's stack budget.
-    function _emitPay(
-        JBRuleset memory ruleset,
-        uint256 projectId,
-        address payer,
-        address beneficiary,
-        uint256 amount,
-        uint256 newlyIssuedTokenCount,
-        string memory memo,
-        bytes memory metadata
-    )
-        internal
-    {
-        emit Pay({
-            rulesetId: ruleset.id,
-            rulesetCycleNumber: ruleset.cycleNumber,
-            projectId: projectId,
-            payer: payer,
-            beneficiary: beneficiary,
-            amount: amount,
-            newlyIssuedTokenCount: newlyIssuedTokenCount,
-            memo: memo,
-            metadata: metadata,
-            caller: _msgSender()
-        });
     }
 
     /// @notice Process a fee of the specified amount from a project.
