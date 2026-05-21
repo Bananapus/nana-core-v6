@@ -23,12 +23,16 @@ interface IJBFeelessAddresses {
     /// @dev `address(0)` means no hook is set.
     function feelessHook() external view returns (IJBFeelessHook);
 
-    /// @notice Returns whether the specified address is feeless for a specific project, considering the wildcard
-    /// (projectId 0) feeless status, the project-specific feeless status, and the feeless hook (if set).
+    /// @notice Returns whether the specified address is feeless for a specific project, providing the outer caller
+    /// of the fee-bearing operation so hooks can scope grants by who initiated the action.
+    /// @dev Static admin-set mappings are op-agnostic and always apply. The hook (if set) receives `caller` and may
+    /// use it to scope its grant (e.g. an ecosystem router can be feeless only when it itself is the caller).
     /// @param addr The address to check.
     /// @param projectId The ID of the project to check.
-    /// @return A flag indicating whether the address is feeless (globally, for the project, or per the hook).
-    function isFeelessFor(address addr, uint256 projectId) external view returns (bool);
+    /// @param caller The outer caller (typically the terminal's `_msgSender()`). Pass `address(0)` for lookups
+    /// without caller context.
+    /// @return A flag indicating whether the address is feeless.
+    function isFeelessFor(address addr, uint256 projectId, address caller) external view returns (bool);
 
     /// @notice Sets whether an address is feeless globally (for all projects).
     /// @param addr The address to set the feeless status of.

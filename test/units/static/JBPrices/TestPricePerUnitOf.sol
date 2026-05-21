@@ -23,47 +23,31 @@ contract TestPricePerUnitOf_Local is JBPricesSetup {
         super.pricesSetup();
     }
 
+    function _storePriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency) internal {
+        bytes32 priceFeedForSlot = keccak256(abi.encode(projectId, uint256(1)));
+        bytes32 pricingSlot = keccak256(abi.encode(pricingCurrency, uint256(priceFeedForSlot)));
+        bytes32 slot = keccak256(abi.encode(unitCurrency, uint256(pricingSlot)));
+
+        vm.store(address(_prices), slot, bytes32(uint256(uint160(address(_feed)))));
+    }
+
     modifier givenDirectFeedExists() {
-        // Find the storage slot
-        bytes32 priceFeedForSlot = keccak256(abi.encode(_projectId, uint256(1)));
-        bytes32 pricingSlot = keccak256(abi.encode(_pricingCurrency, uint256(priceFeedForSlot)));
-        bytes32 slot = keccak256(abi.encode(_unitCurrency, uint256(pricingSlot)));
-
-        bytes32 feedBytes = bytes32(uint256(uint160(address(_feed))));
-
-        // Set direct price feed
-        vm.store(address(_prices), slot, feedBytes);
-
-        // Confirm price feed was set
-        IJBPriceFeed feed = _prices.priceFeedFor(_projectId, _pricingCurrency, _unitCurrency);
-        assertEq(address(feed), address(_feed));
+        _storePriceFeedFor(_projectId, _pricingCurrency, _unitCurrency);
 
         bytes memory currentUnitPriceCall = abi.encodeCall(IJBPriceFeed.currentUnitPrice, (_inverseDecimals));
         bytes memory directReturned = abi.encode(_directPrice);
 
-        mockExpect(address(feed), currentUnitPriceCall, directReturned);
+        mockExpect(address(_feed), currentUnitPriceCall, directReturned);
         _;
     }
 
     modifier givenIndirectFeedExists() {
-        // Find the storage slot
-        bytes32 priceFeedForSlot = keccak256(abi.encode(_projectId, uint256(1)));
-        bytes32 pricingSlot = keccak256(abi.encode(_unitCurrency, uint256(priceFeedForSlot)));
-        bytes32 slot = keccak256(abi.encode(_pricingCurrency, uint256(pricingSlot)));
-
-        bytes32 feedBytes = bytes32(uint256(uint160(address(_feed))));
-
-        // Set indirect price feed
-        vm.store(address(_prices), slot, feedBytes);
-
-        // Confirm price feed was set
-        IJBPriceFeed feed = _prices.priceFeedFor(_projectId, _unitCurrency, _pricingCurrency);
-        assertEq(address(feed), address(_feed));
+        _storePriceFeedFor(_projectId, _unitCurrency, _pricingCurrency);
 
         bytes memory currentUnitPriceCall = abi.encodeCall(IJBPriceFeed.currentUnitPrice, (_directDecimals));
         bytes memory directReturned = abi.encode(_inversePrice);
 
-        mockExpect(address(feed), currentUnitPriceCall, directReturned);
+        mockExpect(address(_feed), currentUnitPriceCall, directReturned);
         _;
     }
 
@@ -128,5 +112,29 @@ contract TestPricePerUnitOf_Local is JBPricesSetup {
 
         vm.expectPartialRevert(JBPrices.JBPrices_PriceFeedNotFound.selector);
         _prices.pricePerUnitOf(_projectId, _pricingCurrency, _unitCurrency, 6);
+    }
+
+    function test_WhenDirectPriceFeedReturnsZero() external {
+        // it should revert instead of returning a zero price to downstream conversion math
+
+        _storePriceFeedFor(_projectId, _pricingCurrency, _unitCurrency);
+
+        bytes memory currentUnitPriceCall = abi.encodeCall(IJBPriceFeed.currentUnitPrice, (_inverseDecimals));
+        mockExpect(address(_feed), currentUnitPriceCall, abi.encode(uint256(0)));
+
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroPrice.selector);
+        _prices.pricePerUnitOf(_projectId, _pricingCurrency, _unitCurrency, _inverseDecimals);
+    }
+
+    function test_WhenInversePriceFeedReturnsZero() external {
+        // it should revert before inverse conversion can divide by zero
+
+        _storePriceFeedFor(_projectId, _unitCurrency, _pricingCurrency);
+
+        bytes memory currentUnitPriceCall = abi.encodeCall(IJBPriceFeed.currentUnitPrice, (_directDecimals));
+        mockExpect(address(_feed), currentUnitPriceCall, abi.encode(uint256(0)));
+
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroPrice.selector);
+        _prices.pricePerUnitOf(_projectId, _pricingCurrency, _unitCurrency, _directDecimals);
     }
 }

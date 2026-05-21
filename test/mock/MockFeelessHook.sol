@@ -30,7 +30,7 @@ contract MockFeelessHook is ERC165, IJBFeelessHook {
         _allowed[projectId][addr] = flag;
     }
 
-    function isFeeless(uint256 projectId, address addr) external view override returns (bool) {
+    function isFeeless(uint256 projectId, address addr, address) external view override returns (bool) {
         if (mode == 1) revert Nope();
         if (mode == 2) require(false, "nope");
         if (mode == 3) return _allowed[projectId][addr];
@@ -46,14 +46,14 @@ contract MockFeelessHook is ERC165, IJBFeelessHook {
 /// @dev Used to test the `setFeelessHook` validation guard. Has the `isFeeless` selector so the
 /// call shape matches, but its `supportsInterface` advertises only IERC165, not IJBFeelessHook.
 contract MockNonConformingFeelessHook is ERC165 {
-    function isFeeless(uint256, address) external pure returns (bool) {
+    function isFeeless(uint256, address, address) external pure returns (bool) {
         return true;
     }
 }
 
 /// @notice "Hook" with no `supportsInterface` at all — `setFeelessHook` should revert when this is passed.
 contract MockEoaLikeFeelessHook {
-    function isFeeless(uint256, address) external pure returns (bool) {
+    function isFeeless(uint256, address, address) external pure returns (bool) {
         return true;
     }
 }

@@ -452,9 +452,7 @@ contract TestExecutePayoutPartialPull_Local is JBMultiTerminalSetup {
         vm.mockCall(hook, abi.encodeCall(IERC165.supportsInterface, (type(IJBSplitHook).interfaceId)), abi.encode(true));
         // Feelessness lookup.
         vm.mockCall(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (hook, _noProject)),
-            abi.encode(feeless)
+            address(feelessAddresses), feelessCalldata(hook, _noProject, address(_terminal)), abi.encode(feeless)
         );
         // Library needs decimals to build the hook context.
         // forge-lint: disable-next-line(unsafe-typecast)

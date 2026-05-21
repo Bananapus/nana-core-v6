@@ -15,6 +15,8 @@ import {JBSplit} from "../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
+import {JBCashOutHookSpecification} from "../src/structs/JBCashOutHookSpecification.sol";
+import {JBPayHookSpecification} from "../src/structs/JBPayHookSpecification.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @notice Tests for weird/non-standard ERC-20 tokens: fee-on-transfer, rebasing, return-false, low/high decimals.
@@ -527,6 +529,117 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
         assertTrue(tokensReceived > 0, "High decimal tokens should mint project tokens without overflow");
     }
 
+    function test_decimalBoundaryTokens_previewPayAndCashOutParity() public {
+        _assertDecimalBoundaryPreviewParity(0);
+        _assertDecimalBoundaryPreviewParity(1);
+        _assertDecimalBoundaryPreviewParity(27);
+    }
+
+    function _assertDecimalBoundaryPreviewParity(uint8 decimals) internal {
+        BoundaryDecimalToken token = new BoundaryDecimalToken("BoundaryDecimal", "BD", decimals);
+        uint256 pid = _launchProjectWithToken(address(token), decimals, false);
+        address payer = makeAddr("decimal-boundary-payer");
+
+        // Pay ten whole tokens in the token's own fixed-point units. For 0-decimal tokens, one whole token is 1.
+        uint256 scale = decimals == 0 ? 1 : 10 ** decimals;
+        uint256 payAmount = 10 * scale;
+        token.mint({to: payer, amount: payAmount});
+
+        uint256 minted = _payBoundaryToken({pid: pid, token: token, payer: payer, payAmount: payAmount});
+        _cashOutBoundaryToken({pid: pid, token: token, payer: payer, payAmount: payAmount, cashOutCount: minted});
+    }
+
+    function _payBoundaryToken(
+        uint256 pid,
+        BoundaryDecimalToken token,
+        address payer,
+        uint256 payAmount
+    )
+        internal
+        returns (uint256 minted)
+    {
+        (
+            ,
+            uint256 previewBeneficiaryTokenCount,
+            uint256 previewReservedTokenCount,
+            JBPayHookSpecification[] memory payHookSpecifications
+        ) = jbMultiTerminal()
+            .previewPayFor({
+            projectId: pid, token: address(token), amount: payAmount, beneficiary: payer, metadata: new bytes(0)
+        });
+
+        // Boundary-decimal payments should not need hooks or reserved-token side effects for preview parity.
+        assertEq(previewReservedTokenCount, 0);
+        assertEq(payHookSpecifications.length, 0);
+
+        vm.prank(payer);
+        token.approve({spender: address(jbMultiTerminal()), value: payAmount});
+
+        vm.prank(payer);
+        minted = jbMultiTerminal()
+            .pay({
+            projectId: pid,
+            token: address(token),
+            amount: payAmount,
+            beneficiary: payer,
+            minReturnedTokens: previewBeneficiaryTokenCount,
+            memo: "",
+            metadata: new bytes(0)
+        });
+
+        // The terminal records balances in each token's own decimals, so the accepted balance must equal the raw
+        // amount for vanilla ERC-20s even at 0 and 27 decimals.
+        assertEq(minted, previewBeneficiaryTokenCount);
+        assertEq(jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(token)), payAmount);
+    }
+
+    function _cashOutBoundaryToken(
+        uint256 pid,
+        BoundaryDecimalToken token,
+        address payer,
+        uint256 payAmount,
+        uint256 cashOutCount
+    )
+        internal
+    {
+        (
+            ,
+            uint256 previewReclaimAmount,
+            uint256 previewCashOutTaxRate,
+            JBCashOutHookSpecification[] memory cashOutHookSpecifications
+        ) = jbMultiTerminal()
+            .previewCashOutFrom({
+            holder: payer,
+            projectId: pid,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: address(token),
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
+
+        // With a zero cash-out tax rate and no fee-free internal split surplus, cashing out the entire supply should
+        // reclaim the exact raw token amount that was paid in.
+        assertEq(previewCashOutTaxRate, 0);
+        assertEq(previewReclaimAmount, payAmount);
+        assertEq(cashOutHookSpecifications.length, 0);
+
+        vm.prank(payer);
+        uint256 reclaimed = jbMultiTerminal()
+            .cashOutTokensOf({
+            holder: payer,
+            projectId: pid,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: address(token),
+            minTokensReclaimed: previewReclaimAmount,
+            beneficiary: payable(payer),
+            metadata: new bytes(0)
+        });
+
+        assertEq(reclaimed, previewReclaimAmount);
+        assertEq(token.balanceOf(payer), payAmount);
+        assertEq(jbTerminalStore().balanceOf(address(jbMultiTerminal()), pid, address(token)), 0);
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     //  Test 8: Return-false token — SafeERC20 catches
     // ═══════════════════════════════════════════════════════════════════
@@ -809,6 +922,23 @@ contract HighDecimalToken is ERC20 {
 
     function decimals() public pure override returns (uint8) {
         return 24;
+    }
+
+    function mint(address to, uint256 amount) external {
+        _mint(to, amount);
+    }
+}
+
+/// @notice ERC-20 with caller-selected decimals for terminal decimal-boundary tests.
+contract BoundaryDecimalToken is ERC20 {
+    uint8 private immutable _DECIMALS;
+
+    constructor(string memory name_, string memory symbol_, uint8 decimals_) ERC20(name_, symbol_) {
+        _DECIMALS = decimals_;
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _DECIMALS;
     }
 
     function mint(address to, uint256 amount) external {

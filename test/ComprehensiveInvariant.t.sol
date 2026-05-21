@@ -304,3 +304,39 @@ contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {
         );
     }
 }
+
+/// @notice Standalone sanity test that runs the comprehensive invariant handler ONCE directly. Forge's invariant
+/// fuzz with `fail_on_revert = false` silently absorbs handler reverts; if the handler's setup is broken,
+/// `callCount_pay` stays at 0 across the entire campaign and every "passing" invariant is trivially true over
+/// zero state changes. This non-invariant test calls the handler directly and asserts state actually moves.
+/// @dev Inherits the same setUp so we share JB-core state with the handler.
+contract ComprehensiveHandlerSanity is ComprehensiveInvariant_Local {
+    function test_handler_payProject_movesState() public {
+        uint256 paidInBefore = handler.ghost_totalPaidIn();
+        uint256 countBefore = handler.callCount_pay();
+        uint256 balanceBefore =
+            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
+
+        // Call handler.payProject directly. If this reverts, the entire invariant suite is vacuous because
+        // every other invariant is trivially true over zero state changes.
+        handler.payProject({actorSeed: 0, amount: 10 ether});
+
+        assertGt(handler.callCount_pay(), countBefore, "handler.payProject must succeed in isolation");
+        assertGt(handler.ghost_totalPaidIn(), paidInBefore, "ghost_totalPaidIn must increment");
+
+        uint256 balanceAfter =
+            jbTerminalStore().balanceOf(address(jbMultiTerminal()), projectId, JBConstants.NATIVE_TOKEN);
+        assertGt(balanceAfter, balanceBefore, "terminal recorded balance must grow after pay");
+    }
+
+    function test_handler_cashOut_movesState() public {
+        // Pay first so there's something to cash out.
+        handler.payProject({actorSeed: 0, amount: 10 ether});
+
+        uint256 countBefore = handler.callCount_cashOut();
+        // 100% cashout of actor[0]'s holdings.
+        handler.cashOutTokens({actorSeed: 0, cashOutPercent: 100});
+
+        assertGt(handler.callCount_cashOut(), countBefore, "handler.cashOutTokens must succeed after a pay");
+    }
+}

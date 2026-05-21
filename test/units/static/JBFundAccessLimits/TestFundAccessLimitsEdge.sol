@@ -108,6 +108,41 @@ contract TestFundAccessLimitsEdge_Local is JBTest {
         limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
     }
 
+    /// @notice Duplicate terminal/token groups should revert, even if each group is internally sorted.
+    function test_duplicateTerminalTokenGroup_reverts() external {
+        JBCurrencyAmount[] memory firstPayoutLimits = new JBCurrencyAmount[](1);
+        firstPayoutLimits[0] = JBCurrencyAmount({amount: 100, currency: 1});
+
+        JBCurrencyAmount[] memory secondPayoutLimits = new JBCurrencyAmount[](1);
+        secondPayoutLimits[0] = JBCurrencyAmount({amount: 200, currency: 2});
+
+        JBFundAccessLimitGroup[] memory groups = new JBFundAccessLimitGroup[](2);
+        groups[0] = JBFundAccessLimitGroup({
+            terminal: TERMINAL,
+            token: TOKEN,
+            payoutLimits: firstPayoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+        groups[1] = JBFundAccessLimitGroup({
+            terminal: TERMINAL,
+            token: TOKEN,
+            payoutLimits: secondPayoutLimits,
+            surplusAllowances: new JBCurrencyAmount[](0)
+        });
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBFundAccessLimits.JBFundAccessLimits_DuplicateFundAccessLimitGroup.selector,
+                PROJECT_ID,
+                RULESET_ID,
+                1,
+                TERMINAL,
+                TOKEN
+            )
+        );
+        limits.setFundAccessLimitsFor(PROJECT_ID, RULESET_ID, groups);
+    }
+
     /// @notice Descending currency order should revert.
     function test_currencyOrdering_rejectsDescending() external {
         JBCurrencyAmount[] memory payoutLimits = new JBCurrencyAmount[](2);

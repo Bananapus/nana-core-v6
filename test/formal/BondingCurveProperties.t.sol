@@ -16,6 +16,27 @@ import {JBRulesetMetadata} from "../../src/structs/JBRulesetMetadata.sol";
 contract BondingCurveProperties is Test {
     uint256 constant MAX_TAX = JBConstants.MAX_CASH_OUT_TAX_RATE; // 10_000
     uint256 constant MAX_FEE = JBConstants.MAX_FEE; // 1_000
+    uint256 constant TAX_1 = 1;
+    uint256 constant TAX_25_PERCENT = 2500;
+    uint256 constant TAX_50_PERCENT = 5000;
+    uint256 constant TAX_75_PERCENT = 7500;
+    uint256 constant TAX_ALMOST_MAX = 9999;
+
+    // =========================================================================
+    // Boundary table: exact tax-rate edges that fuzzing rarely samples
+    // =========================================================================
+    /// @notice Pins cash-out values at audit-selected tax-rate boundaries.
+    /// @dev Mirrors `test_cashOut_boundaryTaxRateTable` for Halmos-compatible entrypoint discovery.
+    // forge-lint: disable-next-line(mixed-case-function)
+    function check_cashOut_boundaryTaxRateTable() public pure {
+        _assertCashOutBoundaryTaxRateTable();
+    }
+
+    /// @notice Pins cash-out values at audit-selected tax-rate boundaries.
+    /// @dev The table catches accidental formula or branch changes at `{0, 1, 2500, 5000, 7500, 9999, 10000}`.
+    function test_cashOut_boundaryTaxRateTable() public pure {
+        _assertCashOutBoundaryTaxRateTable();
+    }
 
     // =========================================================================
     // Property 1: Boundedness — cashOutFrom never exceeds surplus
@@ -428,5 +449,32 @@ contract BondingCurveProperties is Test {
         assertEq(result.useDataHookForCashOut, original.useDataHookForCashOut, "useDataHookForCashOut mismatch");
         assertEq(result.dataHook, original.dataHook, "dataHook mismatch");
         assertEq(result.metadata, original.metadata, "metadata mismatch");
+    }
+
+    /// @notice Asserts the shared boundary table for both Forge and Halmos entrypoints.
+    function _assertCashOutBoundaryTaxRateTable() private pure {
+        // Partial cash-out case: 2,500 out of 10,000 project tokens against 10,000 surplus.
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: 0}) == 2500);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: TAX_1}) == 2499);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: TAX_25_PERCENT}) == 2031);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: TAX_50_PERCENT}) == 1562);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: TAX_75_PERCENT}) == 1093);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: TAX_ALMOST_MAX}) == 625);
+        assert(_cashOutFrom({cashOutCount: 2500, cashOutTaxRate: MAX_TAX}) == 0);
+
+        // Full cash-out returns all surplus for every non-max tax rate; 100% tax still returns zero by design.
+        assert(_cashOutFrom({cashOutCount: 10_000, cashOutTaxRate: 0}) == 10_000);
+        assert(_cashOutFrom({cashOutCount: 10_000, cashOutTaxRate: TAX_ALMOST_MAX}) == 10_000);
+        assert(_cashOutFrom({cashOutCount: 10_000, cashOutTaxRate: MAX_TAX}) == 0);
+    }
+
+    /// @notice Calls the cash-out library with the fixed 10,000-supply/10,000-surplus table inputs.
+    /// @param cashOutCount The number of project tokens being cashed out in the table row.
+    /// @param cashOutTaxRate The tax rate to apply to the table row.
+    /// @return reclaimAmount The reclaim amount returned by the bonding-curve library.
+    function _cashOutFrom(uint256 cashOutCount, uint256 cashOutTaxRate) private pure returns (uint256 reclaimAmount) {
+        return JBCashOuts.cashOutFrom({
+            surplus: 10_000, cashOutCount: cashOutCount, totalSupply: 10_000, cashOutTaxRate: cashOutTaxRate
+        });
     }
 }

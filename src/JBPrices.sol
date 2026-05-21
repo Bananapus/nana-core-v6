@@ -27,6 +27,7 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
 
     error JBPrices_PriceFeedAlreadyExists(IJBPriceFeed feed);
     error JBPrices_PriceFeedNotFound(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency);
+    error JBPrices_ZeroPrice(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed);
     error JBPrices_ZeroPricingCurrency(uint256 projectId, uint256 pricingCurrency);
     error JBPrices_ZeroUnitCurrency(uint256 projectId, uint256 unitCurrency);
 
@@ -191,8 +192,16 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         // Get a reference to the price feed.
         IJBPriceFeed feed = priceFeedFor[projectId][pricingCurrency][unitCurrency];
 
-        // If the feed exists, return its price.
-        if (feed != IJBPriceFeed(address(0))) return feed.currentUnitPrice(decimals);
+        // If the feed exists, return its non-zero price.
+        if (feed != IJBPriceFeed(address(0))) {
+            uint256 price = feed.currentUnitPrice(decimals);
+            if (price == 0) {
+                revert JBPrices_ZeroPrice({
+                    projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
+                });
+            }
+            return price;
+        }
 
         // Try getting the inverse feed.
         feed = priceFeedFor[projectId][unitCurrency][pricingCurrency];
@@ -202,7 +211,13 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         // is in the range of ~1e9 to ~1e27 (for 18 decimals). Extreme prices outside this range may lose
         // significant precision due to fixed-point division truncation.
         if (feed != IJBPriceFeed(address(0))) {
-            return mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: feed.currentUnitPrice(decimals)});
+            uint256 inversePrice = feed.currentUnitPrice(decimals);
+            if (inversePrice == 0) {
+                revert JBPrices_ZeroPrice({
+                    projectId: projectId, pricingCurrency: unitCurrency, unitCurrency: pricingCurrency, feed: feed
+                });
+            }
+            return mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: inversePrice});
         }
 
         // Check for a default feed (project ID 0) if not found.

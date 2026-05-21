@@ -37,6 +37,15 @@ contract JBTest is Test {
         vm.expectCall(_where, _encodedCall);
     }
 
+    /// @notice Calldata for `IJBFeelessAddresses.isFeelessFor(address,uint256,address)`.
+    /// @dev `isFeelessFor` is overloaded on the registry; `abi.encodeCall(IJBFeelessAddresses.isFeelessFor, ...)` is
+    /// ambiguous after the caller-aware overload was added. Terminals call the 3-arg variant forwarding
+    /// `_msgSender()`, so unit tests mocking the registry must encode the 3-arg selector with the expected caller.
+    function feelessCalldata(address addr, uint256 projectId, address caller) public pure returns (bytes memory) {
+        return
+            abi.encodeWithSelector(bytes4(keccak256("isFeelessFor(address,uint256,address)")), addr, projectId, caller);
+    }
+
     // Multiple calls with different return values
     function mockExpectSubsequent(address _where, bytes memory _encodedCall, bytes[] memory _returns) public {
         // Mocks calls with different return values

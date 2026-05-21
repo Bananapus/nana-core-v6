@@ -8,6 +8,9 @@ import {JBRulesetMetadata} from "./../structs/JBRulesetMetadata.sol";
 /// encodes: reservedPercent, cashOutTaxRate, baseCurrency, 14 boolean flags (pausePay, allowOwnerMinting, etc.),
 /// a data hook address, and 14 bits of custom metadata. Used throughout the protocol to read ruleset configuration
 /// without storing each field separately.
+/// @dev Getter functions are intentionally laid out in bit-position order (low → high), not alphabetical, so that
+/// the source reads as a visual key for the bit layout written by `packRulesetMetadata`. This is the documented
+/// exception to STYLE_GUIDE function ordering for libraries.
 library JBRulesetMetadataResolver {
     function reservedPercent(JBRuleset memory ruleset) internal pure returns (uint16) {
         return uint16(ruleset.metadata >> 4);

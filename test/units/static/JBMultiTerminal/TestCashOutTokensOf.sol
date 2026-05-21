@@ -138,11 +138,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         // mock feeless address check
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(true));
 
         // mock call to JBTerminalStore recordCashOutFor
         mockExpect(
@@ -196,11 +192,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         // mock feeless address check
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(true));
 
         // mock call to JBTerminalStore recordCashOutFor
         mockExpect(
@@ -259,11 +251,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         });
 
         // mock feeless address check
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(false)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(false));
 
         // mock call to JBTerminalStore recordCashOutFor
         mockExpect(
@@ -378,11 +366,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(true));
 
         // mock call to JBTerminalStore recordCashOutFor
         mockExpect(
@@ -404,11 +388,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
         );
 
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockHook), _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(address(_mockHook), _projectId, _bene), abi.encode(true));
 
         JBTokenAmount memory reclaimedAmount = JBTokenAmount({
             token: address(_mockToken2),
@@ -500,11 +480,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(true));
 
         // mock call to JBTerminalStore recordCashOutFor
         mockExpect(
@@ -526,11 +502,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
         );
 
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_mockHook), _projectId)),
-            abi.encode(false)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(address(_mockHook), _projectId, _bene), abi.encode(false));
 
         uint256 hookTax = JBFees.feeAmountFrom(_defaultAmount, 25);
         uint256 passedAfterTax = _defaultAmount - hookTax;
@@ -619,11 +591,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             metadata: 0
         });
 
-        mockExpect(
-            address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (_bene, _projectId)),
-            abi.encode(true)
-        );
+        mockExpect(address(feelessAddresses), feelessCalldata(_bene, _projectId, _bene), abi.encode(true));
         mockExpect(
             address(store),
             abi.encodeCall(

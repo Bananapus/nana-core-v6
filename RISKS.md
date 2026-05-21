@@ -20,7 +20,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 - **Hooks are not exploiting reentrancy.** Core does not use `ReentrancyGuard`. Safety depends on call ordering and the `JBTerminalStore_InadequateTerminalStoreBalance` backstop.
 - **Data hooks are highly trusted.** A data hook can change payment weight, cash-out tax rate, `effectiveTotalSupply`, `effectiveCashOutCount`, and hook-forwarding amounts. The protocol only bounds the final amounts.
-- **Price feeds are honest enough.** Surplus, payout conversions, and allowance math depend on `JBPrices`. Stale or manipulated feeds misprice the system.
+- **Price feeds are honest enough.** Surplus, payout conversions, and allowance math depend on `JBPrices`. Stale or manipulated feeds misprice the system. Registered feeds must return nonzero prices; zero prices now fail closed in `JBPrices` before downstream conversion math can divide by zero or silently treat an asset as worthless.
 - **Accepted ERC-20s behave like standard tokens.** Inbound fee-on-transfer handling is safer than outbound handling. Rebasing or nonstandard outbound behavior can still break accounting assumptions.
 - **Accepted tokens are not actively adversarial.** Core does not harden against tokens that reenter or distort balance observations during transfer.
 - **The trusted forwarder is not compromised.** If it is, `_msgSender()` can be spoofed across permission-gated contracts.
@@ -33,6 +33,10 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 - **Zero cash-out guard.** `cashOutFrom` returns `0` when `cashOutCount == 0`. Verify no path bypasses that guard.
 - **Pending reserved tokens lower cash-out value.** `totalTokenSupplyWithReservedTokensOf()` includes `pendingReservedTokenBalanceOf`, which can reduce per-token reclaim value until reserves are distributed.
+- **Reserved-token project splits cannot point back to the source project.** A reserved-token split can route tokens to
+  another project that accepts the token, but the source project is rejected so reserves cannot be recycled through its
+  own terminal and minted again as a payment.
+- **Voluntary burns are not hidden supply.** `burnTokensOf` destroys the holder's tokens or credits and lowers the live supply used by cash-out math. There is no separate hidden balance that can be removed from the denominator and later reclaimed. A burn can only benefit remaining holders by deleting the burner's own claim; if one holder already owns the entire outstanding supply, cashing out all tokens already returns the full surplus.
 - **External token supply only affects that project.** If a project uses `setTokenFor(...)`, the external token's `totalSupply()` feeds that project's cash-out math.
 - **`mulDiv` rounding exists.** Split cash outs can differ slightly from a combined cash out because of floor rounding.
 - **`minCashOutCountFor` uses binary search.** Large supplies increase loop count. Gas should stay bounded.
@@ -42,6 +46,12 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
 - **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
 - **Held fee entries are mutated in place.** If the accounting is off by even one unit in the wrong direction, `_returnHeldFees` can corrupt the entry.
+- **Fee-route failure is fail-open.** If the fee project terminal or fee route reverts, the terminal emits
+  `FeeReverted` and credits the failed fee amount back to the originating project instead of reverting the user's
+  payout, cash out, allowance use, held-fee processing, or terminal migration. This favors project liveness and
+  migration ability over guaranteed fee collection. During migration, a failed migration fee remains as refunded
+  source-terminal balance while the post-fee amount migrates; operators should monitor `FeeReverted` and restore fee
+  routing so refunded residuals can be swept cleanly.
 
 ### Weight Decay
 
@@ -101,7 +111,9 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 ### Migration
 
 - **Controller migration depends on ruleset permission.** `allowSetController` must be active, and migration fails if reserved tokens are still pending.
-- **Terminal migration also depends on ruleset permission.** Held fees are not migrated, and migration into a non-feeless terminal charges the normal protocol fee.
+- **Terminal migration also depends on ruleset permission.** Held fees are not migrated, and migration into a
+  non-feeless terminal attempts the normal protocol fee. Fee-route failure does not block migration; the failed fee is
+  refunded to the source terminal and reported through `FeeReverted`.
 - **Directory updates are high-impact.** `setTerminalsOf` and `setControllerOf` can redirect a project's fund and authority flow.
 
 ### Ruleset Queuing
@@ -109,6 +121,19 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - Only the current controller can call `RULESETS.queueFor()`.
 - The controller lets the owner, an allowed operator, or `OMNICHAIN_RULESET_OPERATOR` queue rulesets.
 - For `duration = 0` projects, a queued ruleset can take effect immediately.
+- Fund access limit groups must be unique per `(terminal, token)` pair, and each group's payout-limit and
+  surplus-allowance currencies must be strictly increasing. This keeps duplicate currencies from being split across
+  groups and making surplus views depend on malformed configuration.
+
+### Project Launch Provenance
+
+- **`launchProjectFor` is permissionless on behalf of an owner.** A third party can mint a project NFT to any address
+  and choose that project's initial URI, rulesets, terminals, splits, and fund access limits. This does not grant the
+  third party ongoing owner permissions, but it means project NFT ownership alone is not proof that the owner
+  intentionally launched the initial configuration.
+- **Project IDs are first-come-first-served.** Reading `JBProjects.count() + 1` is only a prediction until the launch
+  transaction lands. Operators that need a specific ID should reserve it explicitly with `createFor(...)` and then use
+  `launchRulesetsFor(...)`, or verify the returned `projectId` before wiring downstream contracts.
 
 ## 5. DoS Vectors
 
@@ -135,9 +160,16 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - A gas-burning approval hook can still DoS `currentOf()` by exhausting gas.
 - Repeated approval-hook rejection at a ruleset boundary can create complex fallback behavior that needs testing.
 
-### Duplicate Locked Splits Collapse
+### Locked Split Scope
 
-- When `setSplitGroupsOf` is called, locked splits from the previous configuration are carried forward. If the new configuration includes a split with the same `(beneficiary, projectId, hook)` tuple as an existing locked split, the locked split is replaced — the new entry takes precedence. This is by design (locked splits protect beneficiaries from removal, not from updates by the project owner within the same tuple). However, it means a project owner can effectively reduce a locked split's percentage by submitting a duplicate with a lower percent before the lock expires.
+- Locked splits are enforced when rewriting the same `(projectId, rulesetId, groupId)` split table. While a split is
+  locked, the replacement table must include an exact matching split with the same percent, beneficiary, project ID,
+  hook, and `preferAddToBalance`, and a `lockedUntil` that is at least as long. This prevents reducing or removing the
+  locked split inside that table. Duplicate locked splits must be preserved with the same multiplicity; one matching
+  replacement split cannot satisfy several identical locked entries.
+- Locks do not automatically carry across different `rulesetId`s. Queueing a successor ruleset can change future split
+  behavior before the old split's `lockedUntil`; applications that need cross-ruleset commitments must preserve those
+  splits at the governance/configuration layer.
 
 ### Other DoS Surfaces
 
@@ -196,7 +228,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 ### Terminal Migration Resets Used Payout Limits
 
-`usedPayoutLimitOf` and `usedSurplusAllowanceOf` are keyed by terminal address. When a project migrates to a new terminal via `migrateBalanceOf`, the used counters on the new terminal start at zero. If a project owner pre-configured payout limits for both the old and new terminal addresses in the same ruleset's `fundAccessLimitGroups`, they could exceed per-cycle payout limits by migrating mid-cycle. This requires the project owner to be the attacker (or collude), since only the owner can configure both fund access limit groups and trigger migration. The 2.5% migration fee on non-feeless terminals provides friction.
+`usedPayoutLimitOf` and `usedSurplusAllowanceOf` are keyed by terminal address. This is intentional terminal-scoped accounting, not a global project-wide cap. When a project migrates to a new terminal via `migrateBalanceOf`, the used counters on the destination terminal start from that terminal's own usage. If a project owner pre-configured payout limits or surplus allowances for both the old and new terminal addresses in the same ruleset's `fundAccessLimitGroups`, migrating mid-cycle lets them use each terminal's configured access independently. This requires the project owner to be the actor (or collude), since only the owner can configure both fund access limit groups and trigger migration. The 2.5% migration fee on non-feeless terminals provides friction.
 
 ## 8. Accepted Behaviors
 

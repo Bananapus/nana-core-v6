@@ -108,7 +108,7 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // mock _isFeeless to return true (skip migration fee for this unit test)
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_newTerminal), _projectId)),
+            feelessCalldata(address(_newTerminal), _projectId, address(this)),
             abi.encode(true)
         );
 
@@ -157,7 +157,7 @@ contract TestMigrateBalanceOf_Local is JBMultiTerminalSetup {
         // mock _isFeeless to return true (skip migration fee for this unit test)
         mockExpect(
             address(feelessAddresses),
-            abi.encodeCall(IJBFeelessAddresses.isFeelessFor, (address(_newTerminal), _projectId)),
+            feelessCalldata(address(_newTerminal), _projectId, address(this)),
             abi.encode(true)
         );
 
