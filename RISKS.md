@@ -46,6 +46,12 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
 - **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
 - **Held fee entries are mutated in place.** If the accounting is off by even one unit in the wrong direction, `_returnHeldFees` can corrupt the entry.
+- **Fee-route failure is fail-open.** If the fee project terminal or fee route reverts, the terminal emits
+  `FeeReverted` and credits the failed fee amount back to the originating project instead of reverting the user's
+  payout, cash out, allowance use, held-fee processing, or terminal migration. This favors project liveness and
+  migration ability over guaranteed fee collection. During migration, a failed migration fee remains as refunded
+  source-terminal balance while the post-fee amount migrates; operators should monitor `FeeReverted` and restore fee
+  routing so refunded residuals can be swept cleanly.
 
 ### Weight Decay
 
@@ -105,7 +111,9 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 ### Migration
 
 - **Controller migration depends on ruleset permission.** `allowSetController` must be active, and migration fails if reserved tokens are still pending.
-- **Terminal migration also depends on ruleset permission.** Held fees are not migrated, and migration into a non-feeless terminal charges the normal protocol fee.
+- **Terminal migration also depends on ruleset permission.** Held fees are not migrated, and migration into a
+  non-feeless terminal attempts the normal protocol fee. Fee-route failure does not block migration; the failed fee is
+  refunded to the source terminal and reported through `FeeReverted`.
 - **Directory updates are high-impact.** `setTerminalsOf` and `setControllerOf` can redirect a project's fund and authority flow.
 
 ### Ruleset Queuing

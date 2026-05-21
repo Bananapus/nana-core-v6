@@ -5,6 +5,7 @@ import {TestBaseWorkflow} from "../helpers/TestBaseWorkflow.sol";
 import {JBMultiTerminal} from "../../src/JBMultiTerminal.sol";
 import {JBDirectory} from "../../src/JBDirectory.sol";
 import {JBTerminalStore} from "../../src/JBTerminalStore.sol";
+import {IJBFeeTerminal} from "../../src/interfaces/IJBFeeTerminal.sol";
 import {IJBController} from "../../src/interfaces/IJBController.sol";
 import {IJBTerminal} from "../../src/interfaces/IJBTerminal.sol";
 import {IJBRulesetApprovalHook} from "../../src/interfaces/IJBRulesetApprovalHook.sol";
@@ -102,7 +103,7 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         });
     }
 
-    function test_migrationFeeFailureRevertsAndPreservesSourceBalance() external {
+    function test_migrationFeeFailureRefundsFeeAndMigratesPostFeeBalance() external {
         uint256 payAmount = 10 ether;
         uint256 expectedFee = JBFees.feeAmountFrom({amountBeforeFee: payAmount, feePercent: JBConstants.STANDARD_FEE});
 
@@ -114,30 +115,30 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         vm.prank(_feeProjectOwner);
         _directory.setTerminalsOf(1, new IJBTerminal[](0));
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                JBMultiTerminal.JBMultiTerminal_FeePaymentFailed.selector,
-                _projectId,
-                JBConstants.NATIVE_TOKEN,
-                expectedFee,
-                abi.encodeWithSelector(
-                    JBMultiTerminal.JBMultiTerminal_FeeTerminalNotFound.selector, JBConstants.NATIVE_TOKEN
-                )
-            )
-        );
+        vm.expectEmit();
+        emit IJBFeeTerminal.FeeReverted({
+            projectId: _projectId,
+            token: JBConstants.NATIVE_TOKEN,
+            feeProjectId: 1,
+            amount: expectedFee,
+            reason: abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_FeeTerminalNotFound.selector, JBConstants.NATIVE_TOKEN
+            ),
+            caller: _projectOwner
+        });
+
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
-        // Migration is atomic: the broken fee route does not create a repeat-migratable fee residue.
         assertEq(
             _store.balanceOf(address(_terminalA), _projectId, JBConstants.NATIVE_TOKEN),
-            payAmount,
-            "source balance is preserved"
+            expectedFee,
+            "failed migration fee is refunded to the source terminal"
         );
         assertEq(
             _store.balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN),
-            0,
-            "destination terminal receives nothing"
+            payAmount - expectedFee,
+            "destination terminal receives the post-fee amount"
         );
         assertEq(
             _store.balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN),
@@ -151,6 +152,9 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         vm.prank(_feeProjectOwner);
         _directory.setTerminalsOf(1, feeTerminals);
 
+        uint256 expectedResidualFee =
+            JBFees.feeAmountFrom({amountBeforeFee: expectedFee, feePercent: JBConstants.STANDARD_FEE});
+
         vm.prank(_projectOwner);
         _terminalA.migrateBalanceOf(_projectId, JBConstants.NATIVE_TOKEN, _terminalB);
 
@@ -161,13 +165,13 @@ contract RegressionMigrationFeeFailure is TestBaseWorkflow {
         );
         assertEq(
             _store.balanceOf(address(_terminalB), _projectId, JBConstants.NATIVE_TOKEN),
-            payAmount - expectedFee,
-            "destination receives the post-fee amount"
+            payAmount - expectedFee + (expectedFee - expectedResidualFee),
+            "destination receives the earlier migration plus the post-fee residual sweep"
         );
         assertEq(
             _store.balanceOf(address(_terminalA), 1, JBConstants.NATIVE_TOKEN),
-            expectedFee,
-            "fee project receives the migration fee"
+            expectedResidualFee,
+            "fee project receives the fee on the residual sweep"
         );
     }
 }
