@@ -42,7 +42,11 @@ contract TestSelfPayRevert_Local is JBMultiTerminalSetup {
         // executePayout requires msg.sender == address(this), so we call it via the terminal.
         // The terminal's try-catch in the split group lib would normally catch this.
         vm.prank(address(_terminal));
-        vm.expectPartialRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector, uint256(_projectId), address(_terminal)
+            )
+        );
         JBMultiTerminal(payable(address(_terminal)))
             .executePayout({
             split: split,
