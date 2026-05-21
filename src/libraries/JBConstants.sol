@@ -25,6 +25,7 @@ library JBConstants {
     /// @notice The accounting-context currency identifier for `NATIVE_TOKEN`. Derived from `NATIVE_TOKEN`'s address
     /// through the same cast (`uint32(uint160(token))`) that `JBAccountingContext.currency` uses, so a comparison
     /// against this constant identifies the native-token currency without recomputing the cast at each call site.
+    // forge-lint: disable-next-line(unsafe-typecast)
     uint32 public constant NATIVE_TOKEN_CURRENCY = uint32(uint160(NATIVE_TOKEN));
 
     /// @notice The denominator for split percentages (9-decimal precision). A split of 1,000,000,000 = 100%.

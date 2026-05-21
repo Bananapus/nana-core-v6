@@ -149,13 +149,16 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice The cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
+    /// @notice The cumulative fee payment amount credited to a referrer as a result of fee-paying calls that
     /// originated through a given terminal.
     /// @dev Written by terminals via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal,
     /// so a malicious caller can only pollute their own slot. Off-chain consumers should filter on known terminal
     /// addresses.
+    /// @dev `referralProjectId` is the packed `(referralChainId << 48) | referralProjectId` pair: upper 32 bits =
+    /// referrer's EIP-155 chain ID, lower 48 bits = project ID on that chain. A bare project ID with `chainId == 0`
+    /// is the "current chain" sentinel. Off-chain indexers decode the pair to attribute credit on the right chain.
     /// @param terminal The terminal that originated the fee-paying call.
-    /// @param referralProjectId The referral project credited.
+    /// @param referralProjectId The encoded referrer reference credited.
     /// @return The cumulative fee amount credited.
     function feeVolumeByReferralOf(address terminal, uint256 referralProjectId) external view returns (uint256);
 

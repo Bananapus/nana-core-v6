@@ -88,7 +88,11 @@ library JBHeldFees {
                 // refunded net and its fee, leaving the slot live so the leftover can be refunded later.
                 feeAmount = JBFees.standardFeeAmountResultingIn(leftoverAmount);
                 unchecked {
-                    heldFeesOf[projectId][token][i].amount -= (leftoverAmount + feeAmount);
+                    // `JBFee.amount` is `uint224`; the subtraction operand is `uint256`. Narrow the operand to
+                    // `uint224` for the in-place update. The held gross amount was itself stored as `uint224`
+                    // and the partial refund is bounded above by it, so the narrowed subtrahend always fits.
+                    // forge-lint: disable-next-line(unsafe-typecast)
+                    heldFeesOf[projectId][token][i].amount -= uint224(leftoverAmount + feeAmount);
                     returnedFees += feeAmount;
                 }
                 // All of the incoming amount has been matched — exit the loop next iteration.
