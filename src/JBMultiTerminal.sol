@@ -64,7 +64,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     error JBMultiTerminal_FeeTerminalNotFound(address token);
-    error JBMultiTerminal_MintNotAllowed();
+    error JBMultiTerminal_MintNotAllowed(uint256 projectId, address terminal);
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
@@ -401,7 +401,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             //     consumption, payout-limit drawdown, fee-free-surplus accounting); routing it
             //     through `sendPayoutsOf` is never the right surface.
             // The try-catch in the split group lib catches this revert and restores the balance.
-            if (split.projectId == projectId) revert JBMultiTerminal_MintNotAllowed();
+            if (split.projectId == projectId) {
+                revert JBMultiTerminal_MintNotAllowed({projectId: projectId, terminal: address(terminal)});
+            }
 
             // Send the `projectId` in the metadata as a referral.
             bytes memory metadata = bytes(abi.encodePacked(projectId));

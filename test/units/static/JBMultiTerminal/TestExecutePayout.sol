@@ -380,7 +380,11 @@ contract TestExecutePayout_Local is JBMultiTerminalSetup {
         });
 
         vm.prank(address(_terminal));
-        vm.expectPartialRevert(JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_MintNotAllowed.selector, _projectId, address(_terminal)
+            )
+        );
         JBMultiTerminal(address(_terminal))
             .executePayout({
             split: _splitMemory,
