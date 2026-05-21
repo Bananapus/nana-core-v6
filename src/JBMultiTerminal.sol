@@ -82,9 +82,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // ------------------------ internal constants ----------------------- //
     //*********************************************************************//
 
-    /// @notice Project ID #1 receives fees. It should be the first project launched during the deployment process.
-    uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
-
     /// @notice The number of seconds fees can be held for.
     uint256 internal constant _FEE_HOLDING_SECONDS = 2_419_200; // 28 days
 
@@ -515,7 +512,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         _efficientPay({
             terminal: feeTerminal,
-            projectId: _FEE_BENEFICIARY_PROJECT_ID,
+            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
             token: token,
             amount: amount,
             beneficiary: beneficiary,
@@ -586,7 +583,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Migration to a non-feeless terminal incurs the standard 2.5% fee, same as any other fund egress.
             // This also settles any fee-free surplus liability that would otherwise be lost on the new terminal.
             uint256 feeAmount;
-            if (!_isFeeless({addr: address(to), projectId: projectId}) && projectId != _FEE_BENEFICIARY_PROJECT_ID) {
+            if (
+                !_isFeeless({addr: address(to), projectId: projectId})
+                    && projectId != JBConstants.FEE_BENEFICIARY_PROJECT_ID
+            ) {
                 // Fee processing failures never block migration. If the fee route is broken, `_processFee` credits
                 // the fee amount back to this source terminal and emits `FeeReverted`; the post-fee amount still
                 // migrates so project funds are not trapped behind project #1 routing issues.
@@ -683,7 +683,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param count The number of fees to process.
     function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override {
         // Keep a reference to the terminal that'll receive the fees.
-        IJBTerminal feeTerminal = _primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
+        IJBTerminal feeTerminal = _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
         // Process each fee. Re-read the index and array length from storage each iteration to account for reentrant
         // calls that may have already advanced the index or cleaned up the array.
@@ -1332,17 +1332,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Set the transient `currentReferralProjectId` slot and return the prior value (for save-restore).
-    /// @dev Returning the prior value lets the caller restore it after the inner call completes, which is required
-    /// to keep nested reentrant fee-paying calls from polluting each other. Per EIP-1153, a revert in the inner
-    /// call also reverts the transient write, so no explicit cleanup on the failure path is needed.
-    /// @param referralProjectId The new value to write into the transient slot.
-    /// @return prior The value previously stored in the slot.
-    function _setReferralProjectId(uint256 referralProjectId) private returns (uint256 prior) {
-        prior = currentReferralProjectId;
-        currentReferralProjectId = referralProjectId;
-    }
-
     /// @notice Revert if a value is less than the specified minimum.
     /// @param value The value to compare against the minimum.
     /// @param min The minimum acceptable value.
@@ -1744,6 +1733,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
         });
 
+        // Credit the originating fee-paying call's referral project. This is only meaningful when this pay is a
+        // protocol-fee payment landing on the fee project AND a referral was set by the outer entry point (or
+        // restored from a held fee by `processHeldFeesOf`). The store handles the no-op case when either input is
+        // zero. Done here (after `recordPaymentFrom`) instead of inside the store so the credit logic stays in the
+        // terminal and the store is never asked to call back into us.
+        if (projectId == JBConstants.FEE_BENEFICIARY_PROJECT_ID && currentReferralProjectId != 0) {
+            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: tokenAmount});
+        }
+
         // Only the value retained in the destination balance needs later cashout fee recovery. Non-feeless pay-hook
         // forwards pay their source-equivalent fee inline before leaving the project.
         if (internalSplitPayProjectId != 0) {
@@ -1843,7 +1841,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             emit FeeReverted({
                 projectId: projectId,
                 token: token,
-                feeProjectId: _FEE_BENEFICIARY_PROJECT_ID,
+                feeProjectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
                 amount: amount,
                 reason: reason,
                 caller: _msgSender()
@@ -1998,7 +1996,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
     }
 
-    /// @notice Takes a fee into the platform's project (with the `_FEE_BENEFICIARY_PROJECT_ID`).
+    /// @notice Takes a fee into the platform's project (with the `JBConstants.FEE_BENEFICIARY_PROJECT_ID`).
     /// @param projectId The ID of the project paying the fee.
     /// @param token The address of the token that the fee is paid in.
     /// @param amount The fee's token amount, as a fixed point number with the same number of decimals as the token's
@@ -2045,7 +2043,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         } else {
             // Resolve the fee project's terminal for this token and process the fee immediately.
-            IJBTerminal feeTerminal = _primaryTerminalOf({projectId: _FEE_BENEFICIARY_PROJECT_ID, token: token});
+            IJBTerminal feeTerminal =
+                _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
             _processFee({
                 projectId: projectId,
@@ -2284,5 +2283,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
         return JBFees.standardFeeAmountFrom(amount);
+    }
+
+    /// @notice Set the transient `currentReferralProjectId` slot and return the prior value (for save-restore).
+    /// @dev Returning the prior value lets the caller restore it after the inner call completes, which is required
+    /// to keep nested reentrant fee-paying calls from polluting each other. Per EIP-1153, a revert in the inner
+    /// call also reverts the transient write, so no explicit cleanup on the failure path is needed.
+    /// @param referralProjectId The new value to write into the transient slot.
+    /// @return prior The value previously stored in the slot.
+    function _setReferralProjectId(uint256 referralProjectId) private returns (uint256 prior) {
+        prior = currentReferralProjectId;
+        currentReferralProjectId = referralProjectId;
     }
 }

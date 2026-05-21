@@ -15,6 +15,13 @@ import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 /// allowances, calculates token issuance per payment, and determines cash-out reclaim amounts via the bonding curve.
 /// Terminals delegate all state-changing accounting to this contract.
 interface IJBTerminalStore {
+    /// @notice Emitted when a referral project is credited with a fee payment amount.
+    /// @param terminal The terminal that originated the fee-paying call (`msg.sender` on `recordFeeReferralCreditOf`).
+    /// @param referralProjectId The referral project credited.
+    /// @param amount The fee amount credited, in the terminal's accounting-context units.
+    /// @param newTotal The new value of `totalFeeVolumeOf[terminal]` after this credit.
+    event ReferralCredit(address indexed terminal, uint256 indexed referralProjectId, uint256 amount, uint256 newTotal);
+
     /// @notice The directory of terminals and controllers for projects.
     function DIRECTORY() external view returns (IJBDirectory);
 
@@ -142,13 +149,6 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice Emitted when a referral project is credited with a fee payment amount.
-    /// @param terminal The terminal that originated the fee-paying call (`msg.sender` on `recordFeeReferralCreditOf`).
-    /// @param referralProjectId The referral project credited.
-    /// @param amount The fee amount credited, in the terminal's accounting-context units.
-    /// @param newTotal The new value of `totalFeeVolumeOf[terminal]` after this credit.
-    event ReferralCredit(address indexed terminal, uint256 indexed referralProjectId, uint256 amount, uint256 newTotal);
-
     /// @notice The cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
     /// originated through a given terminal.
     /// @dev Written by terminals via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal,
@@ -158,13 +158,6 @@ interface IJBTerminalStore {
     /// @param referralProjectId The referral project credited.
     /// @return The cumulative fee amount credited.
     function feeVolumeByReferralOf(address terminal, uint256 referralProjectId) external view returns (uint256);
-
-    /// @notice The cumulative fee payment amount credited across all referral projects for a given terminal.
-    /// @dev Incremented in lockstep with `feeVolumeByReferralOf` so consumers can compute pro-rata shares in a
-    /// single SLOAD pair without enumerating referrers.
-    /// @param terminal The terminal that originated the fee-paying calls.
-    /// @return The cumulative total fee amount credited across all referrers for this terminal.
-    function totalFeeVolumeOf(address terminal) external view returns (uint256);
 
     /// @notice Simulates a cash out without modifying state.
     /// @param terminal The terminal to simulate the cash out from.
@@ -217,6 +210,13 @@ interface IJBTerminalStore {
         external
         view
         returns (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications);
+
+    /// @notice The cumulative fee payment amount credited across all referral projects for a given terminal.
+    /// @dev Incremented in lockstep with `feeVolumeByReferralOf` so consumers can compute pro-rata shares in a
+    /// single SLOAD pair without enumerating referrers.
+    /// @param terminal The terminal that originated the fee-paying calls.
+    /// @return The cumulative total fee amount credited across all referrers for this terminal.
+    function totalFeeVolumeOf(address terminal) external view returns (uint256);
 
     /// @notice Returns the amount of payout limit used by a terminal for a project in a given cycle.
     /// @param terminal The terminal to get the used payout limit of.
@@ -295,10 +295,12 @@ interface IJBTerminalStore {
 
     /// @notice Credit a referral project with a fee payment amount routed through `msg.sender` (the calling terminal).
     /// @dev Permissionless: the write is scoped to `msg.sender`'s slot, so an arbitrary caller can only pollute
-    /// their own bucket. No-op when `amount == 0`.
+    /// their own bucket. The amount is normalized to `JBConstants.NATIVE_TOKEN` units (18 decimals) using the fee
+    /// project's price feeds so credits across different fee tokens (ETH, USDC, USDT, …) are summable. No-op when
+    /// `referralProjectId == 0`, when `amount.value == 0`, or when no price feed exists for the pair.
     /// @param referralProjectId The referral project to credit.
-    /// @param amount The fee amount paid by this fee-take call.
-    function recordFeeReferralCreditOf(uint256 referralProjectId, uint256 amount) external;
+    /// @param amount The fee amount paid by this fee-take call (raw token amount, decimals, and currency).
+    function recordFeeReferralCreditOf(uint256 referralProjectId, JBTokenAmount calldata amount) external;
 
     /// @notice Records a payment to a project.
     /// @param payer The address of the payer.

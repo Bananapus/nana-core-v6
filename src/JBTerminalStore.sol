@@ -6,7 +6,6 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 
 import {IJBController} from "./interfaces/IJBController.sol";
 import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
-import {IJBMultiTerminal} from "./interfaces/IJBMultiTerminal.sol";
 import {IJBPrices} from "./interfaces/IJBPrices.sol";
 import {IJBRulesetDataHook} from "./interfaces/IJBRulesetDataHook.sol";
 import {IJBRulesets} from "./interfaces/IJBRulesets.sol";
@@ -65,17 +64,6 @@ contract JBTerminalStore is IJBTerminalStore {
     /// fidelity.
     uint256 internal constant _MAX_FIXED_POINT_FIDELITY = 18;
 
-    /// @notice The project ID that receives protocol fees. Mirrors `JBMultiTerminal._FEE_BENEFICIARY_PROJECT_ID`.
-    /// @dev Inlined here so the store can detect fee-into-fee-project payments and auto-credit the originating
-    /// call's referral project without an extra cross-contract call.
-    uint256 internal constant _FEE_BENEFICIARY_PROJECT_ID = 1;
-
-    /// @notice The currency identifier for `JBConstants.NATIVE_TOKEN` (ETH). All `feeVolumeByReferralOf` and
-    /// `totalFeeVolumeOf` credits are normalized to this currency at 18 decimals so volumes across different fee
-    /// tokens (USDC, USDT, ETH, …) are summable.
-    // forge-lint: disable-next-line(unsafe-typecast)
-    uint256 internal constant _NATIVE_TOKEN_CURRENCY = uint256(uint32(uint160(JBConstants.NATIVE_TOKEN)));
-
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
     //*********************************************************************//
@@ -102,6 +90,21 @@ contract JBTerminalStore is IJBTerminalStore {
     mapping(address terminal => mapping(uint256 projectId => mapping(address token => uint256)))
         public
         override balanceOf;
+
+    /// @notice Cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
+    /// originated through a given terminal.
+    /// @dev Written by terminals via `recordFeeReferralCreditOf`; the writing terminal is `msg.sender`, so a caller
+    /// can only pollute their own bucket.
+    /// @custom:param terminal The terminal that originated the fee-paying call.
+    /// @custom:param referralProjectId The referral project credited.
+    mapping(address terminal => mapping(uint256 referralProjectId => uint256)) public override feeVolumeByReferralOf;
+
+    /// @notice Cumulative fee payment amount credited across all referral projects for a given terminal.
+    /// @dev Updated in lockstep with `feeVolumeByReferralOf` so consumers can compute a referrer's pro-rata share
+    /// in a single SLOAD pair without enumerating referrers. Used as the denominator by split hooks that distribute
+    /// rewards proportional to attributed fee volume.
+    /// @custom:param terminal The terminal that originated the fee-paying calls.
+    mapping(address terminal => uint256) public override totalFeeVolumeOf;
 
     /// @notice The currency-denominated amount of funds that a project has already paid out from its payout limit
     /// during the current ruleset for each terminal, in terms of the payout limit's currency.
@@ -145,21 +148,6 @@ contract JBTerminalStore is IJBTerminalStore {
     )
         public
         override usedSurplusAllowanceOf;
-
-    /// @notice Cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
-    /// originated through a given terminal.
-    /// @dev Written by terminals via `recordFeeReferralCreditOf`; the writing terminal is `msg.sender`, so a caller
-    /// can only pollute their own bucket.
-    /// @custom:param terminal The terminal that originated the fee-paying call.
-    /// @custom:param referralProjectId The referral project credited.
-    mapping(address terminal => mapping(uint256 referralProjectId => uint256)) public override feeVolumeByReferralOf;
-
-    /// @notice Cumulative fee payment amount credited across all referral projects for a given terminal.
-    /// @dev Updated in lockstep with `feeVolumeByReferralOf` so consumers can compute a referrer's pro-rata share
-    /// in a single SLOAD pair without enumerating referrers. Used as the denominator by split hooks that distribute
-    /// rewards proportional to attributed fee volume.
-    /// @custom:param terminal The terminal that originated the fee-paying calls.
-    mapping(address terminal => uint256) public override totalFeeVolumeOf;
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
@@ -350,13 +338,19 @@ contract JBTerminalStore is IJBTerminalStore {
     }
 
     /// @notice Credit a referral project with a fee payment amount routed through `msg.sender` (the calling terminal).
-    /// @dev Permissionless manual entry point — also auto-credited by `recordPaymentFrom` when a payment lands on the
-    /// fee project. The writes are scoped to `msg.sender`'s slots, so an arbitrary caller can only pollute their
-    /// own buckets — off-chain consumers should filter on known terminal addresses.
+    /// @dev Called by `JBMultiTerminal._pay` after a payment lands on the fee project. Permissionless: writes are
+    /// scoped to `msg.sender`'s slots so an arbitrary caller can only pollute their own buckets — off-chain
+    /// consumers should filter on known terminal addresses. The amount is normalized to `NATIVE_TOKEN` units
+    /// (18 decimals) here in the store (where `PRICES` is available) so all credits share a common denominator.
     /// @param referralProjectId The referral project to credit.
-    /// @param amount The fee amount paid by the originating fee-take call.
-    function recordFeeReferralCreditOf(uint256 referralProjectId, uint256 amount) external override {
-        _creditFeeReferral({referralProjectId: referralProjectId, amount: amount});
+    /// @param amount The fee amount paid by the originating fee-take call (raw value, decimals, currency).
+    function recordFeeReferralCreditOf(uint256 referralProjectId, JBTokenAmount calldata amount) external override {
+        _creditFeeReferral({
+            referralProjectId: referralProjectId,
+            amount: _normalizeToNativeTokenUnits({
+                value: amount.value, decimals: amount.decimals, currency: amount.currency
+            })
+        });
     }
 
     /// @notice Records a payment — calculates how many project tokens to mint based on the payment amount and the
@@ -400,39 +394,6 @@ contract JBTerminalStore is IJBTerminalStore {
             uint256 currentBalance = balanceOf[msg.sender][projectId][amount.token];
             balanceOf[msg.sender][projectId][amount.token] = currentBalance + balanceDiff;
         }
-
-        // If this payment is a fee being paid into the fee project, credit the originating fee-paying call's
-        // referral project. Try the calling terminal's transient slot first (covers the local fee-take path AND the
-        // held-fee path, where `processHeldFeesOf` has restored the transient before calling `_pay`). Then fall
-        // back to `payer` for cross-terminal fee processing: when the fee project's primary terminal is a different
-        // terminal instance, `msg.sender` is the receiver (transient = 0) and `payer` is the originating terminal
-        // (transient is live). Doing this in the store keeps `JBMultiTerminal` bytecode-budget-neutral.
-        //
-        // Amount is normalized to NATIVE_TOKEN units (18 decimals) so that volumes across different fee tokens
-        // (ETH, USDC, USDT, …) are summable into a single denominator. Missing price feeds skip the credit
-        // silently — the payment itself still succeeds.
-        if (projectId == _FEE_BENEFICIARY_PROJECT_ID) {
-            uint256 refId = _readReferral(msg.sender);
-            if (refId == 0 && payer != msg.sender) refId = _readReferral(payer);
-            _creditFeeReferral({
-                referralProjectId: refId,
-                amount: _normalizeToNativeTokenUnits({
-                    value: amount.value, decimals: amount.decimals, currency: amount.currency
-                })
-            });
-        }
-    }
-
-    /// @notice Read a terminal's transient `currentReferralProjectId` if it implements `IJBMultiTerminal`.
-    /// @dev Low-level staticcall so non-terminal callers (EOAs, contracts without the function) harmlessly return 0
-    /// rather than reverting. The selector is hard-coded so the caller need not be a full `IJBMultiTerminal`.
-    /// @param terminal The address to probe.
-    /// @return refId The referral project ID, or 0 if the call failed or returned an empty/short result.
-    function _readReferral(address terminal) private view returns (uint256 refId) {
-        if (terminal.code.length == 0) return 0;
-        (bool ok, bytes memory data) =
-            terminal.staticcall(abi.encodeWithSelector(IJBMultiTerminal.currentReferralProjectId.selector));
-        if (ok && data.length == 32) refId = abi.decode(data, (uint256));
     }
 
     /// @notice Normalize a fee-token amount to `JBConstants.NATIVE_TOKEN` units at 18 decimals.
@@ -459,14 +420,14 @@ contract JBTerminalStore is IJBTerminalStore {
                 value: value, decimals: decimals, targetDecimals: _MAX_FIXED_POINT_FIDELITY
             });
 
-        if (normalized == 0 || currency == _NATIVE_TOKEN_CURRENCY) return normalized;
+        if (normalized == 0 || currency == JBConstants.NATIVE_TOKEN_CURRENCY) return normalized;
 
         // Convert from the source currency to NATIVE_TOKEN via the fee project's price feeds. A missing feed
         // reverts inside `PRICES.pricePerUnitOf` — caught here so the payment is not blocked.
         try PRICES.pricePerUnitOf({
-            projectId: _FEE_BENEFICIARY_PROJECT_ID,
+            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
             pricingCurrency: currency,
-            unitCurrency: _NATIVE_TOKEN_CURRENCY,
+            unitCurrency: JBConstants.NATIVE_TOKEN_CURRENCY,
             decimals: _MAX_FIXED_POINT_FIDELITY
         }) returns (
             uint256 price
