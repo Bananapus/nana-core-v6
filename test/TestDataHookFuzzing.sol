@@ -821,7 +821,8 @@ contract TestDataHookFuzzing_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: expectedReclaimAmount,
             beneficiary: payable(address(this)),
-            metadata: cashOutMetadata
+            metadata: cashOutMetadata,
+            referralProjectId: 0
         });
 
         assertEq(reclaimAmount, expectedReclaimAmount, "cashout should use the data hook pricing values");

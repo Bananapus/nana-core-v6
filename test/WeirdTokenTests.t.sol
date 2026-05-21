@@ -636,7 +636,8 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             tokenToReclaim: address(token),
             minTokensReclaimed: previewReclaimAmount,
             beneficiary: payable(payer),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(reclaimed, previewReclaimAmount);

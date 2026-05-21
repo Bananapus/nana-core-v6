@@ -144,7 +144,8 @@ contract CoreHookCompositionHandler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         }) {
             callCountSendPayouts++;
         } catch {}
@@ -168,7 +169,8 @@ contract CoreHookCompositionHandler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(hook)),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         }) {
             callCountCashOutTarget++;
         } catch {}

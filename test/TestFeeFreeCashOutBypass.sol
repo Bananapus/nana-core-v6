@@ -102,7 +102,8 @@ contract ReenteringSplitPayHook is IJBPayHook {
             token: context.amount.token,
             amount: AMOUNT,
             currency: context.amount.currency,
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         }) {}
             catch {}
     }
@@ -434,7 +435,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         assertEq(hook.receivedValue(), hookAmount - hookFee, "pay hook receives net split amount");
@@ -464,7 +466,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(reclaimAmount, residue - residueFee, "residue pays fee on zero-tax cashout");
@@ -521,7 +524,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         assertTrue(hook.didReenter(), "hook should exercise nested payout path");
@@ -582,7 +586,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         assertEq(
@@ -603,7 +608,8 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(priorHolder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(
