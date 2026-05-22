@@ -154,12 +154,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Caller-originated referrer reference for the duration of the current external fee-paying call.
     /// @dev Encoded as `(referralChainId << 48) | referralProjectId`: bits [79:48] are the referrer's EIP-155 chain
-    /// ID (uint32), bits [47:0] are the referrer's project ID on that chain (uint48). A bare project ID in the low
-    /// 48 bits with `chainId == 0` means "current chain", which is the natural default for callers that don't care
-    /// about cross-chain attribution. The upper bits of the uint256 are reserved for future encoding extensions.
-    /// @dev Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` via the `_setReferralProjectId`
-    /// save-restore wrapper. Read inside `_pay` to credit `feeVolumeByReferralOf` when the fee project's pay call is
-    /// recorded locally.
+    /// ID (uint32), bits [47:0] are the referrer's project ID on that chain (uint48). The upper bits of the
+    /// uint256 are reserved for future encoding extensions.
+    /// @dev The entry points `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` auto-resolve a bare project ID
+    /// (non-zero project, zero chain bits) to the current execution chain via `block.chainid` before writing this
+    /// slot. So storage (and indexers reading `feeVolumeByReferralOf`) always observe a fully-resolved
+    /// `(chainId, projectId)` pair — callers can write `referralProjectId: someProjectId` without manually packing
+    /// their own chain ID.
+    /// @dev Set by the three entry points via the `_setReferralProjectId` save-restore wrapper. Read inside `_pay`
+    /// to credit `feeVolumeByReferralOf` when the fee project's pay call is recorded locally.
     /// @dev Public so pay/cashout/split hooks can introspect which referral originated the in-flight call (e.g. to
     /// apply referral-specific logic). Reads `0` outside any fee-paying call.
     uint256 public transient override currentReferralProjectId;
@@ -289,8 +292,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// applicable.
     /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
     /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits = 0) credits the referrer on the current chain. Pass `0`
-    /// for no referral credit.
+    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
+    /// Pass `0` for no referral credit.
     /// @return reclaimAmount The amount of **terminal tokens** sent to `beneficiary` in exchange for the burned project
     /// tokens, as a fixed point number with the same number of decimals as the terminal token's accounting context.
     function cashOutTokensOf(
@@ -774,8 +777,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// reverted.
     /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
     /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits = 0) credits the referrer on the current chain. Pass `0`
-    /// for no referral credit.
+    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
+    /// Pass `0` for no referral credit.
     /// @return amountPaidOut The total amount paid out.
     function sendPayoutsOf(
         uint256 projectId,
@@ -819,8 +822,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param memo A memo to pass along to the emitted event.
     /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
     /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits = 0) credits the referrer on the current chain. Pass `0`
-    /// for no referral credit.
+    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
+    /// Pass `0` for no referral credit.
     /// @return netAmountPaidOut The number of **terminal tokens** sent to `beneficiary`, net of the protocol fee, as a
     /// fixed point number with the same number of decimals as the terminal token's accounting context.
     function useAllowanceOf(
@@ -2306,9 +2309,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Returning the prior value lets the caller restore it after the inner call completes, which is required
     /// to keep nested reentrant fee-paying calls from polluting each other. Per EIP-1153, a revert in the inner
     /// call also reverts the transient write, so no explicit cleanup on the failure path is needed.
+    /// @dev Backfills `block.chainid` into the chain-bits half of the encoding when the caller passed a bare
+    /// project ID (non-zero project, zero chain). This lets callers write `referralProjectId: someProjectId`
+    /// without manually packing their own chain ID — the entry point resolves it to the current execution chain,
+    /// so storage and indexers always see a fully-resolved `(chainId, projectId)` pair.
     /// @param referralProjectId The new value to write into the transient slot.
     /// @return prior The value previously stored in the slot.
     function _setReferralProjectId(uint256 referralProjectId) private returns (uint256 prior) {
+        if (referralProjectId != 0 && referralProjectId >> 48 == 0) {
+            referralProjectId |= block.chainid << 48;
+        }
         prior = currentReferralProjectId;
         currentReferralProjectId = referralProjectId;
     }
