@@ -160,18 +160,26 @@ interface IJBTerminalStore {
         view
         returns (uint256);
 
-    /// @notice The cumulative fee payment amount credited to a referrer as a result of fee-paying calls that
-    /// originated through a given terminal.
+    /// @notice The cumulative fee payment amount credited to a referrer (chainId, projectId) pair as a result of
+    /// fee-paying calls that originated through a given terminal.
     /// @dev Written by terminals via `recordFeeReferralCreditOf` — `msg.sender` is recorded as the writing terminal,
     /// so a malicious caller can only pollute their own slot. Off-chain consumers should filter on known terminal
     /// addresses.
-    /// @dev `referralProjectId` is the packed `(referralChainId << 48) | referralProjectId` pair: upper 32 bits =
-    /// referrer's EIP-155 chain ID, lower 48 bits = project ID on that chain. A bare project ID with `chainId == 0`
-    /// is the "current chain" sentinel. Off-chain indexers decode the pair to attribute credit on the right chain.
+    /// @dev Nested by chain ID then project ID so consumers can read the credit for a specific
+    /// `(chainId, projectId)` directly without re-packing the encoded form. The encoded `(chainId << 48) | projectId`
+    /// form is used only inside the transient slot and the entry-point parameter; storage exposes the unpacked pair.
     /// @param terminal The terminal that originated the fee-paying call.
-    /// @param referralProjectId The encoded referrer reference credited.
+    /// @param referralChainId The EIP-155 chain ID of the referrer's home chain.
+    /// @param referralProjectId The referrer's bare project ID on `referralChainId`.
     /// @return The cumulative fee amount credited.
-    function feeVolumeByReferralOf(address terminal, uint256 referralProjectId) external view returns (uint256);
+    function feeVolumeByReferralOf(
+        address terminal,
+        uint256 referralChainId,
+        uint256 referralProjectId
+    )
+        external
+        view
+        returns (uint256);
 
     /// @notice Simulates a cash out without modifying state.
     /// @param terminal The terminal to simulate the cash out from.

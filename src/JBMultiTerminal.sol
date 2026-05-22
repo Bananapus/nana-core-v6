@@ -141,16 +141,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     mapping(uint256 projectId => mapping(address token => uint256)) internal _nextHeldFeeIndexOf;
 
     //*********************************************************************//
-    // ------------------- transient stored properties ------------------- //
+    // --------------- public transient stored properties --------------- //
     //*********************************************************************//
-
-    /// @notice Whether this terminal is currently measuring an incoming ERC-20 balance delta.
-    bool transient _acceptingToken;
-
-    /// @notice Source project ID for the same-terminal split pay currently being recorded.
-    /// @dev After `_pay` consumes and clears this value, `_fulfillPayHookSpecificationsFor` reuses the slot to return
-    /// the fee basis to `executePayout`.
-    uint256 transient _internalSplitPayProjectId;
 
     /// @notice Caller-originated referrer reference for the duration of the current external fee-paying call.
     /// @dev Encoded as `(referralChainId << 48) | referralProjectId`: bits [79:48] are the referrer's EIP-155 chain
@@ -166,6 +158,18 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Public so pay/cashout/split hooks can introspect which referral originated the in-flight call (e.g. to
     /// apply referral-specific logic). Reads `0` outside any fee-paying call.
     uint256 public transient override currentReferralProjectId;
+
+    //*********************************************************************//
+    // -------------- internal transient stored properties -------------- //
+    //*********************************************************************//
+
+    /// @notice Whether this terminal is currently measuring an incoming ERC-20 balance delta.
+    bool transient _acceptingToken;
+
+    /// @notice Source project ID for the same-terminal split pay currently being recorded.
+    /// @dev After `_pay` consumes and clears this value, `_fulfillPayHookSpecificationsFor` reuses the slot to return
+    /// the fee basis to `executePayout`.
+    uint256 transient _internalSplitPayProjectId;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //

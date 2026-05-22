@@ -91,13 +91,18 @@ contract JBTerminalStore is IJBTerminalStore {
         public
         override balanceOf;
 
-    /// @notice Cumulative fee payment amount credited to a referral project as a result of fee-paying calls that
-    /// originated through a given terminal.
+    /// @notice Cumulative fee payment amount credited to a referrer (chainId, projectId) pair as a result of
+    /// fee-paying calls that originated through a given terminal.
     /// @dev Written by terminals via `recordFeeReferralCreditOf`; the writing terminal is `msg.sender`, so a caller
     /// can only pollute their own bucket.
+    /// @dev Nested by chain ID then project ID so off-chain consumers can read the credit for a specific
+    /// `(chainId, projectId)` directly without re-packing the encoded form themselves.
     /// @custom:param terminal The terminal that originated the fee-paying call.
-    /// @custom:param referralProjectId The referral project credited.
-    mapping(address terminal => mapping(uint256 referralProjectId => uint256)) public override feeVolumeByReferralOf;
+    /// @custom:param referralChainId The EIP-155 chain ID of the referrer's home chain.
+    /// @custom:param referralProjectId The referrer's bare project ID on `referralChainId`.
+    mapping(address terminal => mapping(uint256 referralChainId => mapping(uint256 referralProjectId => uint256)))
+        public
+        override feeVolumeByReferralOf;
 
     /// @notice Cumulative fee payment amount credited across all referral projects for a given terminal.
     /// @dev Updated in lockstep with `feeVolumeByReferralOf` so consumers can compute a referrer's pro-rata share
@@ -443,22 +448,25 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice Credit a referrer with a fee payment amount. Internal counterpart of `recordFeeReferralCreditOf` —
     /// both write to the same slots and emit the same event.
     /// @dev No-op when `referralProjectId == 0` or `amount == 0`.
-    /// @dev The mapping key stays the fully-packed `(chainId << 48) | projectId` form, but the event splits the
-    /// pair into separate indexed topics so off-chain consumers can filter directly on chain or project.
+    /// @dev Unpacks the encoded `(chainId << 48) | projectId` form into the nested mapping at write-time so the
+    /// public getter exposes `(terminal, chainId, projectId) → cumulative` directly. The event topics carry the
+    /// two halves separately as well.
     /// @param referralProjectId The packed `(chainId << 48) | projectId` referrer reference to credit.
     /// @param amount The fee amount to credit.
     function _creditFeeReferral(uint256 referralProjectId, uint256 amount) private {
         if (referralProjectId == 0 || amount == 0) return;
 
-        feeVolumeByReferralOf[msg.sender][referralProjectId] += amount;
+        uint256 referralChainId = referralProjectId >> 48;
+        uint256 bareProjectId = referralProjectId & ((1 << 48) - 1);
+
+        feeVolumeByReferralOf[msg.sender][referralChainId][bareProjectId] += amount;
         uint256 newTotal = totalFeeVolumeOf[msg.sender] + amount;
         totalFeeVolumeOf[msg.sender] = newTotal;
 
-        // Split the packed pair into its two halves for the event topics.
         emit ReferralCredit({
             terminal: msg.sender,
-            referralChainId: referralProjectId >> 48,
-            referralProjectId: referralProjectId & ((1 << 48) - 1),
+            referralChainId: referralChainId,
+            referralProjectId: bareProjectId,
             amount: amount,
             newTotal: newTotal
         });
