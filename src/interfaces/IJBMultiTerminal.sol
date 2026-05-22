@@ -30,4 +30,17 @@ interface IJBMultiTerminal is IJBTerminal, IJBFeeTerminal, IJBCashOutTerminal, I
 
     /// @notice The contract that manages token minting and burning.
     function TOKENS() external view returns (IJBTokens);
+
+    /// @notice The caller-originated referrer reference for the in-flight fee-paying external call.
+    /// @dev Encoded as `(referralChainId << 48) | referralProjectId`: bits [79:48] are the referrer's EIP-155 chain
+    /// ID (uint32), bits [47:0] are the referrer's project ID on that chain (uint48). Allows a referrer with a
+    /// project on chain X to be credited for activity on chain Y. A bare project ID (chain bits zero) is auto-
+    /// resolved to the current execution chain via `block.chainid` at the entry point, so storage and indexers
+    /// always see a fully-resolved `(chainId, projectId)` pair.
+    /// @dev Backed by transient storage. Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` (save-
+    /// restore wrapper) so hooks invoked during that call (pay hooks, cashout hooks, split hooks) can introspect
+    /// which referrer originated the activity. Reads `0` outside any fee-paying call.
+    /// @dev Per-referrer cumulative fee payment amounts credited via this terminal are stored in
+    /// `JBTerminalStore.feeVolumeByReferralOf(address terminal, uint256 referralProjectId)`.
+    function currentReferralProjectId() external view returns (uint256);
 }

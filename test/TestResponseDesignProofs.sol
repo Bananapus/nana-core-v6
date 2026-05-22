@@ -81,7 +81,7 @@ contract TestRegressionResponseDesignProofs is TestBaseWorkflow {
         // Use the full payout limit in cycle 1.
         vm.prank(_projectOwner);
         IJBPayoutTerminal(address(_terminal))
-            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
+            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0, 0);
 
         // Warp to cycle 2.
         vm.warp(block.timestamp + 30 days + 1);
@@ -89,7 +89,7 @@ contract TestRegressionResponseDesignProofs is TestBaseWorkflow {
         // Should be able to send payouts again — the limit resets.
         vm.prank(_projectOwner);
         IJBPayoutTerminal(address(_terminal))
-            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
+            .sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0, 0);
         // If this doesn't revert, the payout limit reset per cycle is confirmed.
     }
 
@@ -183,7 +183,7 @@ contract TestRegressionResponseDesignProofs is TestBaseWorkflow {
         // Send payouts from project A.
         vm.prank(_projectOwner);
         uint256 amountPaidOut = IJBPayoutTerminal(address(_terminal))
-            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
+            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0, 0);
 
         // Record project B's balance after payout.
         uint256 balanceAfter = jbTerminalStore().balanceOf(address(_terminal), projectB, JBConstants.NATIVE_TOKEN);
@@ -208,7 +208,7 @@ contract TestRegressionResponseDesignProofs is TestBaseWorkflow {
         // Send payouts from project A.
         vm.prank(_projectOwner);
         IJBPayoutTerminal(address(_terminal))
-            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0);
+            .sendPayoutsOf(projectA, JBConstants.NATIVE_TOKEN, 1e18, uint32(uint160(JBConstants.NATIVE_TOKEN)), 0, 0);
 
         uint256 recipientBalanceAfter = recipient.balance;
         uint256 received = recipientBalanceAfter - recipientBalanceBefore;

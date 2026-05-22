@@ -91,6 +91,26 @@ contract JBTerminalStore is IJBTerminalStore {
         public
         override balanceOf;
 
+    /// @notice Cumulative fee payment amount credited to a referrer (chainId, projectId) pair as a result of
+    /// fee-paying calls that originated through a given terminal.
+    /// @dev Written by terminals via `recordFeeReferralCreditOf`; the writing terminal is `msg.sender`, so a caller
+    /// can only pollute their own bucket.
+    /// @dev Nested by chain ID then project ID so off-chain consumers can read the credit for a specific
+    /// `(chainId, projectId)` directly without re-packing the encoded form themselves.
+    /// @custom:param terminal The terminal that originated the fee-paying call.
+    /// @custom:param referralChainId The EIP-155 chain ID of the referrer's home chain.
+    /// @custom:param referralProjectId The referrer's bare project ID on `referralChainId`.
+    mapping(address terminal => mapping(uint256 referralChainId => mapping(uint256 referralProjectId => uint256)))
+        public
+        override feeVolumeByReferralOf;
+
+    /// @notice Cumulative fee payment amount credited across all referral projects for a given terminal.
+    /// @dev Updated in lockstep with `feeVolumeByReferralOf` so consumers can compute a referrer's pro-rata share
+    /// in a single SLOAD pair without enumerating referrers. Used as the denominator by split hooks that distribute
+    /// rewards proportional to attributed fee volume.
+    /// @custom:param terminal The terminal that originated the fee-paying calls.
+    mapping(address terminal => uint256) public override totalFeeVolumeOf;
+
     /// @notice The currency-denominated amount of funds that a project has already paid out from its payout limit
     /// during the current ruleset for each terminal, in terms of the payout limit's currency.
     /// @dev Increases as projects pay out funds.
@@ -320,6 +340,22 @@ contract JBTerminalStore is IJBTerminalStore {
                 balanceOf[msg.sender][projectId][tokenToReclaim] = currentBalance - balanceDiff;
             }
         }
+    }
+
+    /// @notice Credit a referral project with a fee payment amount routed through `msg.sender` (the calling terminal).
+    /// @dev Called by `JBMultiTerminal._pay` after a payment lands on the fee project. Permissionless: writes are
+    /// scoped to `msg.sender`'s slots so an arbitrary caller can only pollute their own buckets — off-chain
+    /// consumers should filter on known terminal addresses. The amount is normalized to `NATIVE_TOKEN` units
+    /// (18 decimals) here in the store (where `PRICES` is available) so all credits share a common denominator.
+    /// @param referralProjectId The referral project to credit.
+    /// @param amount The fee amount paid by the originating fee-take call (raw value, decimals, currency).
+    function recordFeeReferralCreditOf(uint256 referralProjectId, JBTokenAmount calldata amount) external override {
+        _creditFeeReferral({
+            referralProjectId: referralProjectId,
+            amount: _normalizeToNativeTokenUnits({
+                value: amount.value, decimals: amount.decimals, currency: amount.currency
+            })
+        });
     }
 
     /// @notice Records a payment — calculates how many project tokens to mint based on the payment amount and the
@@ -1376,6 +1412,81 @@ contract JBTerminalStore is IJBTerminalStore {
             unchecked {
                 ++i;
             }
+        }
+    }
+
+    //*********************************************************************//
+    // -------------------------- private helpers ------------------------ //
+    //*********************************************************************//
+
+    /// @notice Credit a referrer with a fee payment amount. Internal counterpart of `recordFeeReferralCreditOf` —
+    /// both write to the same slots and emit the same event.
+    /// @dev No-op when `referralProjectId == 0` or `amount == 0`.
+    /// @dev Unpacks the encoded `(chainId << 48) | projectId` form into the nested mapping at write-time so the
+    /// public getter exposes `(terminal, chainId, projectId) → cumulative` directly. The event topics carry the
+    /// two halves separately as well.
+    /// @param referralProjectId The packed `(chainId << 48) | projectId` referrer reference to credit.
+    /// @param amount The fee amount to credit.
+    function _creditFeeReferral(uint256 referralProjectId, uint256 amount) private {
+        if (referralProjectId == 0 || amount == 0) return;
+
+        uint256 referralChainId = referralProjectId >> 48;
+        uint256 bareProjectId = referralProjectId & ((1 << 48) - 1);
+
+        feeVolumeByReferralOf[msg.sender][referralChainId][bareProjectId] += amount;
+        uint256 newTotal = totalFeeVolumeOf[msg.sender] + amount;
+        totalFeeVolumeOf[msg.sender] = newTotal;
+
+        emit ReferralCredit({
+            terminal: msg.sender,
+            referralChainId: referralChainId,
+            referralProjectId: bareProjectId,
+            amount: amount,
+            newTotal: newTotal
+        });
+    }
+
+    /// @notice Normalize a fee-token amount to `JBConstants.NATIVE_TOKEN` units at 18 decimals.
+    /// @dev Two-step: first adjust decimals to 18 via `JBFixedPointNumber.adjustDecimals`, then convert currency
+    /// via `PRICES.pricePerUnitOf` using the fee project's price feeds. If no price feed exists for the pair, the
+    /// `try` block catches the revert and the credit is silently skipped — the payment itself still succeeds.
+    /// @param value The amount in the source token's native decimals.
+    /// @param decimals The source token's decimals.
+    /// @param currency The source token's accounting-context currency (`uint32(uint160(token))`).
+    /// @return normalized The amount expressed in `NATIVE_TOKEN` units (18 decimals), or 0 if conversion failed.
+    function _normalizeToNativeTokenUnits(
+        uint256 value,
+        uint256 decimals,
+        uint256 currency
+    )
+        private
+        view
+        returns (uint256 normalized)
+    {
+        // Adjust the source amount up/down to 18 decimals so all credits share a common precision.
+        normalized = decimals == _MAX_FIXED_POINT_FIDELITY
+            ? value
+            : JBFixedPointNumber.adjustDecimals({
+                value: value, decimals: decimals, targetDecimals: _MAX_FIXED_POINT_FIDELITY
+            });
+
+        if (normalized == 0 || currency == JBConstants.NATIVE_TOKEN_CURRENCY) return normalized;
+
+        // Convert from the source currency to NATIVE_TOKEN via the fee project's price feeds. A missing feed
+        // reverts inside `PRICES.pricePerUnitOf` — caught here so the payment is not blocked.
+        try PRICES.pricePerUnitOf({
+            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+            pricingCurrency: currency,
+            unitCurrency: JBConstants.NATIVE_TOKEN_CURRENCY,
+            decimals: _MAX_FIXED_POINT_FIDELITY
+        }) returns (
+            uint256 price
+        ) {
+            normalized = price == 0
+                ? 0
+                : mulDiv({x: normalized, y: 10 ** _MAX_FIXED_POINT_FIDELITY, denominator: price});
+        } catch {
+            normalized = 0;
         }
     }
 }

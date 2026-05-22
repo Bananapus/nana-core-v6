@@ -134,7 +134,8 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Fee project should have received fees.
@@ -177,7 +178,8 @@ contract TestFeeProcessingFailure_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Fee was deducted from the payout — project balance is now only the surplus (if any).

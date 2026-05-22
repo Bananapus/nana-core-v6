@@ -127,7 +127,8 @@ contract FlashLoanAttacksFuzz is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         }) returns (
             uint256
         ) {}

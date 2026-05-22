@@ -157,7 +157,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
     }
 
@@ -303,7 +304,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertEq(reclaimAmount, 0, "Regression: cashOut(0) must return 0");
@@ -479,7 +481,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
                 tokenToReclaim: JBConstants.NATIVE_TOKEN,
                 minTokensReclaimed: 0,
                 beneficiary: payable(attacker),
-                metadata: new bytes(0)
+                metadata: new bytes(0),
+                referralProjectId: 0
             });
         }
 
@@ -580,7 +583,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0
+            minTokensPaidOut: 0,
+            referralProjectId: 0
         });
 
         // Attacker back-runs: cashes out
@@ -593,7 +597,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         // Attacker should NOT profit
@@ -694,7 +699,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertLe(reclaimAmount, 5 ether, "Cross-terminal cashOut must not profit");
@@ -787,7 +793,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(attacker),
-            metadata: new bytes(0)
+            metadata: new bytes(0),
+            referralProjectId: 0
         });
 
         assertLe(reclaimAmount, payAmount, "FUZZ: Atomic pay+cashOut must never return more than paid");

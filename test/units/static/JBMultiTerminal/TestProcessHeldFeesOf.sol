@@ -60,11 +60,17 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         bytes32 elementSlot = bytes32(uint256(keccak256(abi.encode(arraySlot))) + length * 2);
 
         vm.store(address(_terminal), arraySlot, bytes32(length + 1));
-        vm.store(address(_terminal), elementSlot, bytes32(fee.amount));
+        // Slot 1: uint224 amount (low 224) | uint32 referralChainId (high 32).
+        vm.store(address(_terminal), elementSlot, bytes32(uint256(fee.amount) | (uint256(fee.referralChainId) << 224)));
+        // Slot 2: address beneficiary (low 160) | uint48 unlockTimestamp (next 48) | uint48 referralProjectId (next
+        // 48).
         vm.store(
             address(_terminal),
             bytes32(uint256(elementSlot) + 1),
-            bytes32(uint256(uint160(fee.beneficiary)) | (uint256(fee.unlockTimestamp) << 160))
+            bytes32(
+                uint256(uint160(fee.beneficiary)) | (uint256(fee.unlockTimestamp) << 160)
+                    | (uint256(fee.referralProjectId) << 208)
+            )
         );
     }
 
@@ -86,7 +92,15 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         // Add a held fee with unlockTimestamp in the future
         uint48 futureTimestamp = uint48(block.timestamp + 1000);
         _addHeldFee(
-            _projectId, _mockToken, JBFee({amount: 100, beneficiary: _beneficiary, unlockTimestamp: futureTimestamp})
+            _projectId,
+            _mockToken,
+            JBFee({
+                amount: 100,
+                referralChainId: 0,
+                beneficiary: _beneficiary,
+                unlockTimestamp: futureTimestamp,
+                referralProjectId: 0
+            })
         );
 
         // Mock the directory call to find the fee terminal (project 1 is the fee beneficiary)
@@ -119,7 +133,14 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         _addHeldFee(
             _projectId,
             _mockToken,
-            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
+            // forge-lint: disable-next-line(unsafe-typecast)
+            JBFee({
+                amount: uint224(heldAmount),
+                referralChainId: 0,
+                beneficiary: _beneficiary,
+                unlockTimestamp: pastTimestamp,
+                referralProjectId: 0
+            })
         );
 
         // The fee amount that will be calculated from the held amount
@@ -187,7 +208,14 @@ contract TestProcessHeldFeesOf_Local is JBTest {
         _addHeldFee(
             _projectId,
             _mockToken,
-            JBFee({amount: heldAmount, beneficiary: _beneficiary, unlockTimestamp: pastTimestamp})
+            // forge-lint: disable-next-line(unsafe-typecast)
+            JBFee({
+                amount: uint224(heldAmount),
+                referralChainId: 0,
+                beneficiary: _beneficiary,
+                unlockTimestamp: pastTimestamp,
+                referralProjectId: 0
+            })
         );
 
         // The fee amount that will be calculated from the held amount

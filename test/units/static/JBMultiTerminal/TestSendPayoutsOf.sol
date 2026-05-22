@@ -54,7 +54,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
-        _terminal.sendPayoutsOf(_projectId, address(0), 0, 0, 1);
+        _terminal.sendPayoutsOf(_projectId, address(0), 0, 0, 1, 0);
     }
 
     function test_WhenOwnerMustSendPayoutsButCallerDNEQOwner() external {
@@ -93,7 +93,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
                 JBPermissionIds.SEND_PAYOUTS
             )
         );
-        _terminal.sendPayoutsOf(_projectId, address(0), 1, 0, 0);
+        _terminal.sendPayoutsOf(_projectId, address(0), 1, 0, 0, 0);
     }
 
     function test_WhenExecutePayoutFails() external {
@@ -165,7 +165,7 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
             address(this)
         );
 
-        _terminal.sendPayoutsOf(_projectId, address(0), 100, 0, 0);
+        _terminal.sendPayoutsOf(_projectId, address(0), 100, 0, 0, 0);
     }
 
     // it will revert UNDER_MIN_TOKENS_PAID_OUT
@@ -236,6 +236,6 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
             address(this)
         );
 
-        _terminal.sendPayoutsOf(_projectId, address(0), 0, 100, 100);
+        _terminal.sendPayoutsOf(_projectId, address(0), 0, 100, 100, 0);
     }
 }

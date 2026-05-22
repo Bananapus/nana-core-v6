@@ -63,7 +63,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
-        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "");
+        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "", 0);
     }
 
     function test_WhenOwnerEQFeeless() external {
@@ -113,7 +113,9 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             memo: "",
             caller: address(this)
         });
-        _terminal.useAllowanceOf(_projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "");
+        _terminal.useAllowanceOf(
+            _projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "", 0
+        );
     }
 
     function test_WhenBeneficiaryIsFeeless() external {
@@ -175,7 +177,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 100,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -278,8 +281,13 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         mockExpect(
             address(controller),
             abi.encodeCall(IJBController.mintTokensOf, (_projectId, 1, address(this), "", true)),
-            abi.encode(2)
+            abi.encode(10)
         );
+
+        // Note: previously asserted `recordFeeReferralCreditOf` was invoked from `_pay`. The credit now happens
+        // inside `recordPaymentFrom` (auto-credit via staticcall on `currentReferralProjectId`), which is mocked
+        // here — so the credit's effects aren't observable in this unit-mock setup. End-to-end attribution is
+        // covered by integration tests instead.
 
         vm.expectEmit();
         emit IJBPayoutTerminal.UseAllowance({
@@ -303,7 +311,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -433,7 +442,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 0
         });
     }
 
@@ -558,8 +568,10 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         mockExpect(
             address(controller),
             abi.encodeCall(IJBController.mintTokensOf, (_projectId, 1, address(this), "", true)),
-            abi.encode(2)
+            abi.encode(10)
         );
+
+        // Note: credit-call assertion moved to integration tests — `recordPaymentFrom` auto-credits internally now.
 
         // Expect ProcessFee event (fee is processed immediately, not held)
         vm.expectEmit(true, true, true, true);
@@ -595,7 +607,8 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: ""
+            memo: "",
+            referralProjectId: 123
         });
     }
 
