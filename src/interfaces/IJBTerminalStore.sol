@@ -15,12 +15,23 @@ import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 /// allowances, calculates token issuance per payment, and determines cash-out reclaim amounts via the bonding curve.
 /// Terminals delegate all state-changing accounting to this contract.
 interface IJBTerminalStore {
-    /// @notice Emitted when a referral project is credited with a fee payment amount.
+    /// @notice Emitted when a referrer is credited with a fee payment amount.
+    /// @dev `referralChainId` and `referralProjectId` are emitted as separate indexed topics so off-chain consumers
+    /// can filter directly on either dimension. The `feeVolumeByReferralOf` storage key is the packed
+    /// `(referralChainId << 48) | referralProjectId` form — indexers re-pack the two fields when looking up the
+    /// cumulative balance for a referrer.
     /// @param terminal The terminal that originated the fee-paying call (`msg.sender` on `recordFeeReferralCreditOf`).
-    /// @param referralProjectId The referral project credited.
+    /// @param referralChainId The EIP-155 chain ID of the referrer's home chain.
+    /// @param referralProjectId The referrer's bare project ID on `referralChainId` (no chain bits).
     /// @param amount The fee amount credited, in the terminal's accounting-context units.
     /// @param newTotal The new value of `totalFeeVolumeOf[terminal]` after this credit.
-    event ReferralCredit(address indexed terminal, uint256 indexed referralProjectId, uint256 amount, uint256 newTotal);
+    event ReferralCredit(
+        address indexed terminal,
+        uint256 indexed referralChainId,
+        uint256 indexed referralProjectId,
+        uint256 amount,
+        uint256 newTotal
+    );
 
     /// @notice The directory of terminals and controllers for projects.
     function DIRECTORY() external view returns (IJBDirectory);

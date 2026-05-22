@@ -440,10 +440,12 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
-    /// @notice Credit a referral project with a fee payment amount. Internal counterpart of
-    /// `recordFeeReferralCreditOf` — both write to the same slots and emit the same event.
+    /// @notice Credit a referrer with a fee payment amount. Internal counterpart of `recordFeeReferralCreditOf` —
+    /// both write to the same slots and emit the same event.
     /// @dev No-op when `referralProjectId == 0` or `amount == 0`.
-    /// @param referralProjectId The referral project to credit.
+    /// @dev The mapping key stays the fully-packed `(chainId << 48) | projectId` form, but the event splits the
+    /// pair into separate indexed topics so off-chain consumers can filter directly on chain or project.
+    /// @param referralProjectId The packed `(chainId << 48) | projectId` referrer reference to credit.
     /// @param amount The fee amount to credit.
     function _creditFeeReferral(uint256 referralProjectId, uint256 amount) private {
         if (referralProjectId == 0 || amount == 0) return;
@@ -452,8 +454,13 @@ contract JBTerminalStore is IJBTerminalStore {
         uint256 newTotal = totalFeeVolumeOf[msg.sender] + amount;
         totalFeeVolumeOf[msg.sender] = newTotal;
 
+        // Split the packed pair into its two halves for the event topics.
         emit ReferralCredit({
-            terminal: msg.sender, referralProjectId: referralProjectId, amount: amount, newTotal: newTotal
+            terminal: msg.sender,
+            referralChainId: referralProjectId >> 48,
+            referralProjectId: referralProjectId & ((1 << 48) - 1),
+            amount: amount,
+            newTotal: newTotal
         });
     }
 
