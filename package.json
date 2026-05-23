@@ -1,18 +1,16 @@
 {
   "name": "@bananapus/core-v6",
-  "version": "0.0.59",
+  "version": "0.0.60",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Bananapus/nana-core-v6"
   },
   "files": [
-    "foundry.lock",
     "foundry.toml",
     "references/",
     "remappings.txt",
-    "script/helpers/",
-    "sphinx.lock",
+    "script/",
     "src/",
     "test/helpers/",
     "test/mock/"
