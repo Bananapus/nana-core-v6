@@ -149,6 +149,87 @@ contract TestExecuteProcessFee_Local is JBMultiTerminalSetup {
         });
     }
 
+    function test_GivenBeneficiaryEQZero_ERC20_ExternalFeeTerminal() external {
+        // When `beneficiary == address(0)` the fee is routed via `addToBalanceOf` instead of `pay`.
+        // The fee project still receives the value (no fee bypass), without minting fee-project tokens.
+
+        // mock approval call for forceApprove on the external fee terminal
+        mockExpect(_usdc, abi.encodeCall(IERC20.approve, (address(_feeTerminal), _defaultAmount)), "");
+
+        // Mock the forwarded allowance as fully consumed by the fee terminal.
+        vm.mockCall(_usdc, abi.encodeCall(IERC20.allowance, (address(_terminal), address(_feeTerminal))), abi.encode(0));
+
+        // Critically: expect addToBalanceOf (NOT pay) to be invoked.
+        mockExpect(
+            address(_feeTerminal),
+            abi.encodeCall(
+                IJBTerminal.addToBalanceOf,
+                (_projectId, _usdc, _defaultAmount, false, "", bytes(abi.encodePacked(_projectId)))
+            ),
+            ""
+        );
+
+        vm.prank(address(_terminal));
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+            projectId: _projectId,
+            token: _usdc,
+            amount: _defaultAmount,
+            beneficiary: address(0),
+            feeTerminal: _feeTerminal
+        });
+    }
+
+    function test_GivenBeneficiaryEQZero_Native_ExternalFeeTerminal() external {
+        // Same as above, but with native ETH — must be forwarded as msg.value to addToBalanceOf.
+
+        // Fund the terminal so it can forward native ETH.
+        vm.deal(address(_terminal), _defaultAmount);
+
+        // Expect addToBalanceOf (NOT pay) to be invoked, with native value.
+        mockExpect(
+            address(_feeTerminal),
+            abi.encodeCall(
+                IJBTerminal.addToBalanceOf,
+                (_projectId, _native, _defaultAmount, false, "", bytes(abi.encodePacked(_projectId)))
+            ),
+            ""
+        );
+
+        vm.prank(address(_terminal));
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+            projectId: _projectId,
+            token: _native,
+            amount: _defaultAmount,
+            beneficiary: address(0),
+            feeTerminal: _feeTerminal
+        });
+    }
+
+    function test_GivenBeneficiaryEQZero_FeeTerminalEQItself() external {
+        // When fee terminal is itself AND beneficiary is zero, the internal `_addToBalanceOf` path is taken
+        // (which records added balance against the fee project) — no `recordPaymentFrom`, no token mint.
+
+        // Expect the store's recordAddedBalanceFor (the internal addToBalance path) to be called.
+        // The internal `_addToBalanceOf` calls `STORE.recordAddedBalanceFor` to credit balance.
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordAddedBalanceFor, (_projectId, _native, _defaultAmount)),
+            ""
+        );
+
+        vm.prank(address(_terminal));
+        JBMultiTerminal(address(_terminal))
+            .executeProcessFee({
+            projectId: _projectId,
+            token: _native,
+            amount: _defaultAmount,
+            beneficiary: address(0),
+            feeTerminal: _terminal
+        });
+    }
+
     function test_GivenTokenDNEQNATIVE_TOKENAndPayingItself() external {
         // it will call external pay with zero msgvalue
 
