@@ -25,7 +25,17 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **Accepted tokens are not actively adversarial.** Core does not harden against tokens that reenter or distort balance observations during transfer.
 - **The trusted forwarder is not compromised.** If it is, `_msgSender()` can be spoofed across permission-gated contracts.
 - **Project `#1` fee routing stays live enough.** If fee processing into project `#1` fails, core favors liveness and returns value to the originating project instead of trapping it. That can forgive fees.
-- **`OMNICHAIN_RULESET_OPERATOR` is trusted.** This address can bypass some owner checks for ruleset flows and is a broad trust point.
+- **`OMNICHAIN_RULESET_OPERATOR` is trusted, and binding the correct address is the deployer's responsibility.**
+  The address is immutable on `JBController` and lets its holder bypass owner permission on `launchRulesetsFor` and
+  `queueRulesetsOf` for every project. `DeployPeriphery.s.sol` hardcodes the constant and only nonzero-checks it
+  before constructing the controller — there is no on-chain check inside the periphery script that the address
+  matches the canonical omnichain deployer on the current chain. We accept this: the deploying party is
+  responsible for setting the constant to the correct, deployed `JBOmnichainDeployer` on every chain they bring
+  the protocol to, and a wrong constant is a prerequisite trust failure (the same actor controls the deploy keys).
+  Post-deploy verification in `deploy-all-v6/script/Verify.s.sol` asserts
+  `controller.OMNICHAIN_RULESET_OPERATOR() == address(omnichainDeployer)` at two checkpoints during the canonical
+  ecosystem rollout; integrators relying on the standalone periphery deploy should perform an equivalent
+  post-deploy assertion before treating the controller as canonical.
 
 ## 2. Economic Risks
 
