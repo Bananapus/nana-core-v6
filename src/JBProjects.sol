@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC2771Context} from "@openzeppelin/contracts/metatx/ERC2771Context.sol";
 import {ERC721, Context} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
@@ -14,8 +15,21 @@ import {IJBTokenUriResolver} from "./interfaces/IJBTokenUriResolver.sol";
 /// the project's ID across the entire protocol.
 contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     //*********************************************************************//
+    // --------------------------- custom errors ------------------------- //
+    //*********************************************************************//
+
+    error JBProjects_InvalidCreationFee(uint256 value, uint256 requiredFee);
+    error JBProjects_ZeroCreationFeeReceiver();
+
+    //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
+
+    /// @notice The native-token fee required to create a project.
+    uint256 public override creationFee;
+
+    /// @notice The address that receives project creation fees.
+    address payable public override creationFeeReceiver;
 
     /// @notice The number of projects that have been created using this contract.
     /// @dev The count is incremented with each new project created.
@@ -51,6 +65,21 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
+    /// @notice Set the native-token fee required to create a project and the address that receives it.
+    /// @dev Only this contract's owner can change the fee. A non-zero fee requires a non-zero receiver.
+    /// @param fee The required creation fee. Set to 0 to disable creation fees.
+    /// @param receiver The address that receives project creation fees.
+    function setCreationFee(uint256 fee, address payable receiver) external override onlyOwner {
+        // Non-zero fees need somewhere to go.
+        if (fee != 0 && receiver == address(0)) revert JBProjects_ZeroCreationFeeReceiver();
+
+        // Store the fee configuration.
+        creationFee = fee;
+        creationFeeReceiver = receiver;
+
+        emit SetCreationFee({fee: fee, receiver: receiver, caller: _msgSender()});
+    }
+
     /// @notice Set the contract that resolves project NFT metadata (the `tokenURI`). This controls what artwork and
     /// JSON metadata is returned for each project's ERC-721 token.
     /// @dev Only this contract's owner can change the resolver.
@@ -68,9 +97,14 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
 
     /// @notice Create a new project for the specified owner, which mints an NFT (ERC-721) into their wallet.
     /// @dev Anyone can create a project on an owner's behalf.
+    /// @dev Requires exactly `creationFee` native tokens. The fee is forwarded after the project NFT is minted.
     /// @param owner The address that will be the owner of the project.
     /// @return projectId The token ID of the newly created project.
-    function createFor(address owner) public override returns (uint256 projectId) {
+    function createFor(address owner) public payable override returns (uint256 projectId) {
+        // Keep a reference to the fee. It must be paid exactly to avoid accidental overpayment.
+        uint256 fee = creationFee;
+        if (msg.value != fee) revert JBProjects_InvalidCreationFee({value: msg.value, requiredFee: fee});
+
         // Increment the count, which will be used as the ID.
         projectId = ++count;
 
@@ -78,6 +112,13 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
 
         // Mint the project.
         _safeMint({to: owner, tokenId: projectId});
+
+        // Forward the fee if one is configured.
+        if (fee != 0) {
+            address payable receiver = creationFeeReceiver;
+            if (receiver == address(0)) revert JBProjects_ZeroCreationFeeReceiver();
+            Address.sendValue({recipient: receiver, amount: fee});
+        }
     }
 
     //*********************************************************************//

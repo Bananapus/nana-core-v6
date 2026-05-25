@@ -3,14 +3,14 @@ pragma solidity 0.8.28;
 
 import {JBPrices} from "../../../../src/JBPrices.sol";
 import {IJBDirectory} from "../../../../src/interfaces/IJBDirectory.sol";
+import {IJBPriceFeed} from "../../../../src/interfaces/IJBPriceFeed.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {mulDiv} from "@prb/math/src/Common.sol";
 import {JBPricesSetup} from "./JBPricesSetup.sol";
 import {MockPriceFeed} from "../../../mock/MockPriceFeed.sol";
 
 /// @notice Edge case & bug-hunting tests for JBPrices.
-/// Covers inverse precision, feed immutability, default fallback, and the overly-restrictive
-/// default-blocks-project-specific issue.
+/// Covers inverse precision, append-only feed backups, and default fallback behavior.
 contract TestPrices_Local is JBPricesSetup {
     uint256 constant DEFAULT_PROJECT_ID = 0;
     uint256 constant PROJECT_ID = 1;
@@ -26,10 +26,15 @@ contract TestPrices_Local is JBPricesSetup {
 
     /// @dev Sets a mock price feed directly into storage for a given project.
     function _storeFeed(uint256 projectId, uint256 pricing, uint256 unit_, address feed) internal {
-        bytes32 slot0 = keccak256(abi.encode(projectId, uint256(1)));
-        bytes32 slot1 = keccak256(abi.encode(pricing, uint256(slot0)));
-        bytes32 slot2 = keccak256(abi.encode(unit_, uint256(slot1)));
-        vm.store(address(_prices), slot2, bytes32(uint256(uint160(feed))));
+        if (projectId == DEFAULT_PROJECT_ID) {
+            vm.prank(_owner);
+        } else {
+            vm.mockCall(
+                address(directory), abi.encodeCall(IJBDirectory.controllerOf, (projectId)), abi.encode(address(this))
+            );
+        }
+
+        _prices.addPriceFeedFor(projectId, pricing, unit_, IJBPriceFeed(feed));
     }
 
     // ───────────────────── Inverse precision tests
@@ -127,40 +132,45 @@ contract TestPrices_Local is JBPricesSetup {
         assertApproxEqRel(doubleInverse, originalPrice, 0.01e18, "Double inverse should approximate original within 1%");
     }
 
-    // ───────────────────── Feed immutability tests
+    // ───────────────────── Feed backup tests
     // ─────────────────────
 
-    /// @notice Adding a feed for an existing pair should revert.
-    function test_feedImmutability_cannotReplace() external {
+    /// @notice Adding a feed for an existing pair appends a backup.
+    function test_feedBackups_appendForSamePair() external {
         MockPriceFeed feed1 = new MockPriceFeed(1000e18, 18);
         MockPriceFeed feed2 = new MockPriceFeed(2000e18, 18);
 
-        // Mock controller for project.
-        vm.mockCall(
-            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (PROJECT_ID)), abi.encode(address(this))
-        );
+        _storeFeed(PROJECT_ID, _pricingCurrency, _unitCurrency, address(feed1));
+        _storeFeed(PROJECT_ID, _pricingCurrency, _unitCurrency, address(feed2));
 
-        _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, feed1);
-
-        // Second add for same pair should revert.
-        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, feed1));
-        _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, feed2);
+        assertEq(_prices.priceFeedCountFor(PROJECT_ID, _pricingCurrency, _unitCurrency), 2);
+        assertEq(address(_prices.priceFeedAt(PROJECT_ID, _pricingCurrency, _unitCurrency, 0)), address(feed1));
+        assertEq(address(_prices.priceFeedAt(PROJECT_ID, _pricingCurrency, _unitCurrency, 1)), address(feed2));
+        assertEq(_prices.pricePerUnitOf(PROJECT_ID, _pricingCurrency, _unitCurrency, 18), 1000e18);
     }
 
-    /// @notice Adding A->B should block adding B->A for the same project.
-    function test_feedImmutability_inverseBlocksToo() external {
+    /// @notice Adding the same feed twice for the same pair should revert.
+    function test_feedBackups_duplicateFeedRejected() external {
         MockPriceFeed feed1 = new MockPriceFeed(1000e18, 18);
-        MockPriceFeed feed2 = new MockPriceFeed(2000e18, 18);
 
-        vm.mockCall(
-            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (PROJECT_ID)), abi.encode(address(this))
-        );
+        _storeFeed(PROJECT_ID, _pricingCurrency, _unitCurrency, address(feed1));
 
+        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyAdded.selector, feed1));
         _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, feed1);
+    }
 
-        // Adding inverse pair should revert.
-        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, feed1));
-        _prices.addPriceFeedFor(PROJECT_ID, _unitCurrency, _pricingCurrency, feed2);
+    /// @notice Adding A->B does not block adding B->A for the same project.
+    function test_feedBackups_inversePairCanBeAdded() external {
+        MockPriceFeed feed1 = new MockPriceFeed(1000e18, 18);
+        MockPriceFeed feed2 = new MockPriceFeed(2e18, 18);
+
+        _storeFeed(PROJECT_ID, _pricingCurrency, _unitCurrency, address(feed1));
+        _storeFeed(PROJECT_ID, _unitCurrency, _pricingCurrency, address(feed2));
+
+        assertEq(_prices.priceFeedCountFor(PROJECT_ID, _pricingCurrency, _unitCurrency), 1);
+        assertEq(_prices.priceFeedCountFor(PROJECT_ID, _unitCurrency, _pricingCurrency), 1);
+        assertEq(_prices.pricePerUnitOf(PROJECT_ID, _pricingCurrency, _unitCurrency, 18), 1000e18);
+        assertEq(_prices.pricePerUnitOf(PROJECT_ID, _unitCurrency, _pricingCurrency, 18), 2e18);
     }
 
     // ───────────────────── Default fallback tests
@@ -222,28 +232,19 @@ contract TestPrices_Local is JBPricesSetup {
         _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, _pricingCurrency, 0, feed);
     }
 
-    // ───────────────────── BUG HYPOTHESIS: default blocks project-specific
+    // ───────────────────── Project-specific feeds with defaults
     // ─────────────────────
 
-    /// @notice BUG: Adding a default A->B feed blocks ANY project from adding their own A->B feed.
-    /// This is overly restrictive — projects cannot use a different oracle for the same pair.
-    /// The check at JBPrices.sol:188-197 checks default feeds BEFORE project feeds.
-    function test_addFeedFor_defaultBlocksProjectSpecific() external {
+    /// @notice A default feed does not block a project-specific feed for the same pair.
+    function test_addFeedFor_defaultDoesNotBlockProjectSpecific() external {
         MockPriceFeed defaultFeed = new MockPriceFeed(1000e18, 18);
         MockPriceFeed projectFeed = new MockPriceFeed(2000e18, 18);
 
-        // Add default feed.
-        vm.prank(_owner);
-        _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, _pricingCurrency, _unitCurrency, defaultFeed);
+        _storeFeed(DEFAULT_PROJECT_ID, _pricingCurrency, _unitCurrency, address(defaultFeed));
+        _storeFeed(PROJECT_ID, _pricingCurrency, _unitCurrency, address(projectFeed));
 
-        // Now try to add a project-specific feed for the SAME pair.
-        vm.mockCall(
-            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (PROJECT_ID)), abi.encode(address(this))
-        );
-
-        // This reverts because default feed blocks project-specific feeds.
-        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, defaultFeed));
-        _prices.addPriceFeedFor(PROJECT_ID, _pricingCurrency, _unitCurrency, projectFeed);
+        uint256 price = _prices.pricePerUnitOf(PROJECT_ID, _pricingCurrency, _unitCurrency, 18);
+        assertEq(price, 2000e18, "Project feed should take priority over default");
     }
 
     // ───────────────────── Fuzz: valid feeds never overflow

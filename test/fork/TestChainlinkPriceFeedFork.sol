@@ -187,21 +187,34 @@ contract TestChainlinkPriceFeedFork is Test {
     }
 
     // ------------------------------------------------------------------
-    // Feed immutability
+    // Feed backups
     // ------------------------------------------------------------------
 
-    /// @notice Registering the same currency pair twice should revert.
-    function test_feedImmutability() public {
+    /// @notice Registering another feed for the same currency pair appends a backup.
+    function test_feedBackups() public {
+        vm.prank(owner);
+        prices.addPriceFeedFor(0, CURRENCY_USD, CURRENCY_ETH, IJBPriceFeed(address(ethUsdPriceFeed)));
+
+        vm.prank(owner);
+        prices.addPriceFeedFor(0, CURRENCY_USD, CURRENCY_ETH, IJBPriceFeed(address(btcUsdPriceFeed)));
+
+        assertEq(prices.priceFeedCountFor(0, CURRENCY_USD, CURRENCY_ETH), 2);
+        assertEq(address(prices.priceFeedAt(0, CURRENCY_USD, CURRENCY_ETH, 0)), address(ethUsdPriceFeed));
+        assertEq(address(prices.priceFeedAt(0, CURRENCY_USD, CURRENCY_ETH, 1)), address(btcUsdPriceFeed));
+    }
+
+    /// @notice Registering the same feed for the same currency pair twice should revert.
+    function test_feedDuplicateRejected() public {
         vm.prank(owner);
         prices.addPriceFeedFor(0, CURRENCY_USD, CURRENCY_ETH, IJBPriceFeed(address(ethUsdPriceFeed)));
 
         vm.prank(owner);
         vm.expectRevert(
             abi.encodeWithSelector(
-                JBPrices.JBPrices_PriceFeedAlreadyExists.selector, IJBPriceFeed(address(ethUsdPriceFeed))
+                JBPrices.JBPrices_PriceFeedAlreadyAdded.selector, IJBPriceFeed(address(ethUsdPriceFeed))
             )
         );
-        prices.addPriceFeedFor(0, CURRENCY_USD, CURRENCY_ETH, IJBPriceFeed(address(btcUsdPriceFeed)));
+        prices.addPriceFeedFor(0, CURRENCY_USD, CURRENCY_ETH, IJBPriceFeed(address(ethUsdPriceFeed)));
     }
 
     // ------------------------------------------------------------------

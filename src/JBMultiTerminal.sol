@@ -715,6 +715,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
     function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override {
+        // Preserve any in-flight referral context if this function is reached through reentrancy.
+        uint256 previousReferralProjectId = currentReferralProjectId;
+
         // Keep a reference to the terminal that'll receive the fees.
         IJBTerminal feeTerminal = _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
@@ -749,11 +752,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
             }
 
-            // Restore the originating fee-paying call's referral project for the duration of this fee's processing
-            // so the credit in `_processFee` attributes to the right (chain, project) pair. No save needed:
-            // `processHeldFeesOf` is a top-level keeper call in practice — the incoming transient is 0. Defensive
-            // cleanup happens once after the loop instead of per-iteration. Reconstructs the packed encoding from
-            // the two struct halves: `(chainId << 48) | projectId`.
+            // Restore the originating fee-paying call's referral project for this fee's processing so the credit in
+            // `_processFee` attributes to the right (chain, project) pair. Reconstructs the packed encoding from the
+            // two struct halves: `(chainId << 48) | projectId`.
             currentReferralProjectId = (uint256(heldFee.referralChainId) << 48) | uint256(heldFee.referralProjectId);
 
             // Process the standard fee on the original gross amount recorded when the held fee was created.
@@ -771,10 +772,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
         }
 
-        // Defensive cleanup: zero the transient so any subsequent in-tx work (e.g. hook reentrancy) doesn't
-        // inherit the last processed fee's referral. EIP-1153 would clear it at end-of-tx anyway, but in-tx
-        // reentry is the only case where this matters.
-        currentReferralProjectId = 0;
+        // Restore the previous transient value so reentrant held-fee processing does not erase an outer referral.
+        currentReferralProjectId = previousReferralProjectId;
 
         // If all held fees have been processed, reset the array and index entirely to bound storage growth.
         if (

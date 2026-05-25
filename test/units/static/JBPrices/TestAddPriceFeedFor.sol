@@ -70,28 +70,44 @@ contract TestAddPriceFeedFor_Local is JBPricesSetup {
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _invalidCurrency, _feed);
     }
 
-    function test_WhenADefaultFeedForTheCurrencyPairOrItsInverseAlreadyExists()
-        external
-        whenProjectIsNotDefaultAndHasPermissions
-    {
-        // it should revert with PRICE_FEED_ALREADY_EXISTS
+    function test_WhenFeedIsZero() external whenProjectIsNotDefaultAndHasPermissions {
+        vm.expectPartialRevert(JBPrices.JBPrices_ZeroPriceFeed.selector);
+        _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, IJBPriceFeed(address(0)));
+    }
+
+    function test_WhenADefaultFeedForTheCurrencyPairAlreadyExists() external whenProjectIsNotDefaultAndHasPermissions {
+        // it should still allow a project-specific feed
 
         vm.prank(_owner);
         _prices.addPriceFeedFor(DEFAULT_PROJECT_ID, _pricingCurrency, _unitCurrency, _feed);
 
-        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, _feed));
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, _feed);
+
+        assertEq(address(_prices.priceFeedAt(DEFAULT_PROJECT_ID, _pricingCurrency, _unitCurrency, 0)), address(_feed));
+        assertEq(address(_prices.priceFeedAt(_projectId, _pricingCurrency, _unitCurrency, 0)), address(_feed));
     }
 
-    function test_WhenThisProjectAlreadyHasFeedsForTheCurrencyPairOrItsInverse()
+    function test_WhenThisProjectAlreadyHasFeedsForTheCurrencyPair() external whenProjectIsNotDefaultAndHasPermissions {
+        // it should add another feed as a backup
+
+        IJBPriceFeed backupFeed = IJBPriceFeed(makeAddr("backupFeed"));
+        _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, _feed);
+        _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, backupFeed);
+
+        assertEq(_prices.priceFeedCountFor(_projectId, _pricingCurrency, _unitCurrency), 2);
+        assertEq(address(_prices.priceFeedAt(_projectId, _pricingCurrency, _unitCurrency, 0)), address(_feed));
+        assertEq(address(_prices.priceFeedAt(_projectId, _pricingCurrency, _unitCurrency, 1)), address(backupFeed));
+    }
+
+    function test_WhenThisProjectAlreadyHasTheSameFeedForTheCurrencyPair()
         external
         whenProjectIsNotDefaultAndHasPermissions
     {
-        // it should revert with PRICE_FEED_ALREADY_EXISTS
+        // it should revert with PRICE_FEED_ALREADY_ADDED
 
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, _feed);
 
-        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyExists.selector, _feed));
+        vm.expectRevert(abi.encodeWithSelector(JBPrices.JBPrices_PriceFeedAlreadyAdded.selector, _feed));
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, _feed);
     }
 
@@ -103,5 +119,8 @@ contract TestAddPriceFeedFor_Local is JBPricesSetup {
         emit IJBPrices.AddPriceFeed(_projectId, _pricingCurrency, _unitCurrency, _feed, address(this));
 
         _prices.addPriceFeedFor(_projectId, _pricingCurrency, _unitCurrency, _feed);
+
+        assertEq(address(_prices.priceFeedFor(_projectId, _pricingCurrency, _unitCurrency)), address(_feed));
+        assertEq(_prices.priceFeedCountFor(_projectId, _pricingCurrency, _unitCurrency), 1);
     }
 }
