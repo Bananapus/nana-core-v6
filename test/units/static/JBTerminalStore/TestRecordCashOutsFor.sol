@@ -52,6 +52,20 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         _store.recordAccountingContextOf(_projectId, _ctxs);
     }
 
+    function _mockLocalPayoutLimits(JBCurrencyAmount[] memory payoutLimits) internal {
+        mockExpect(
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+        mockExpect(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitsOf,
+                (_projectId, uint48(block.timestamp), address(this), address(_token))
+            ),
+            abi.encode(payoutLimits)
+        );
+    }
+
     modifier whenCurrentRulesetUseTotalSurplusForCashOutsEqTrue() {
         // Find the storage slot
         bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
@@ -344,6 +358,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
+        _mockLocalPayoutLimits(_payoutLimits);
 
         uint256 _cashOutCount = 6; // within balance bounds
         uint256 expectedCashOuts = mulDiv(3e18, _cashOutCount, _totalSupply);
@@ -375,6 +390,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
 
         JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
         _payoutLimits[0] = JBCurrencyAmount({amount: 1e17, currency: _currency});
+        _mockLocalPayoutLimits(_payoutLimits);
 
         // call params
         JBAccountingContext memory _accountingContexts =
@@ -450,6 +466,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
             abi.encode(_totalTokens)
         );
+        _mockLocalPayoutLimits(new JBCurrencyAmount[](0));
 
         uint256 _cashOutCount = 4e18; // greater than caller balance
 
@@ -482,6 +499,7 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
             abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
             abi.encode(_totalSupply)
         );
+        _mockLocalPayoutLimits(new JBCurrencyAmount[](0));
 
         // call params
         JBAccountingContext memory _accountingContexts =
@@ -534,6 +552,38 @@ contract TestRecordCashOutsFor_Local is JBTerminalStoreSetup {
         });
 
         assertEq(expectedCashOuts, reclaimed);
+    }
+
+    function test_GivenGlobalSurplusIncludesOtherTokens_CannotReclaimPastLocalTokenSurplus()
+        external
+        whenCurrentRulesetUseTotalSurplusForCashOutsEqTrue
+    {
+        mockExpect(
+            address(_controller),
+            abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
+            abi.encode(_totalSupply)
+        );
+
+        JBCurrencyAmount[] memory _payoutLimits = new JBCurrencyAmount[](1);
+        _payoutLimits[0] = JBCurrencyAmount({amount: 10e18, currency: _currency});
+        _mockLocalPayoutLimits(_payoutLimits);
+
+        uint256 _cashOutCount = _totalSupply / 2;
+        uint256 reclaimAmount = mulDiv(3e18, _cashOutCount, _totalSupply);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBTerminalStore.JBTerminalStore_InadequateTerminalStoreBalance.selector, reclaimAmount, 0
+            )
+        );
+        _store.recordCashOutFor({
+            holder: address(this),
+            projectId: _projectId,
+            cashOutCount: _cashOutCount,
+            tokenToReclaim: address(_token),
+            beneficiaryIsFeeless: false,
+            metadata: ""
+        });
     }
 
     function test_GivenTheHookReturnsANoopSpecWithAmount()
