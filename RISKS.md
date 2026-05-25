@@ -68,6 +68,16 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
 - **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
+- **Split fee aggregation can round above per-split withholding.** Split payouts deduct the standard fee from each
+  non-feeless split independently, but `_sendPayoutsOf` aggregates the fee-eligible bases and calls `_takeFeeFrom`
+  once after all splits complete. Because each calculation floors independently, the aggregate fee can exceed the sum
+  of fees actually withheld from individual splits by at most `fee-bearing split count - 1` smallest token units. With
+  many dust-sized splits, the terminal can therefore process or hold a small fee amount that was not deducted from any
+  recipient; if the fee route then fails open, that rounded-up amount is credited back to the source project as though
+  it had been collected. The correct per-split accounting shape requires taking or holding each split's fee against
+  that split's own gross basis so held-fee repayment remains accurate, but that code path does not currently fit
+  within the terminal's runtime-size budget. Project owners should avoid highly fragmented dust non-feeless payout
+  splits, and operators should treat repeated dust-split fee drift as configuration debt.
 - **Held fee entries are mutated in place.** If the accounting is off by even one unit in the wrong direction, `_returnHeldFees` can corrupt the entry.
 - **Fee-route failure is fail-open.** If the fee project terminal or fee route reverts, the terminal emits
   `FeeReverted` and credits the failed fee amount back to the originating project instead of reverting the user's
