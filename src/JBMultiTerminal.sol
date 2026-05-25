@@ -115,13 +115,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     /// @notice The cumulative amount of fee-free intra-terminal payouts a project has received for a given token.
-    /// @dev Incremented each time a fee-free payout lands (same terminal, no fee charged). During cashout with
+    /// @dev Incremented each time a fee-free payout lands (same terminal, no fee charged). During cash out with
     /// `cashOutTaxRate == 0`, fees are applied only up to this amount, then decremented. This prevents a round-trip
-    /// fee bypass (intra-terminal payout → zero-tax cashout) while scoping the fee precisely to the fee-free inflow
-    /// — legitimate cashouts beyond this amount remain fee-free.
+    /// fee bypass (intra-terminal payout -> zero-tax cash out) while scoping the fee precisely to the fee-free inflow
+    /// — legitimate cash outs beyond this amount remain fee-free.
     /// @dev Lifecycle: incremented on fee-free intra-terminal payouts. After any outflow (payouts, useAllowanceOf,
-    /// non-zero-tax or feeless cashouts), capped at remaining balance — non-fee-free funds are considered to leave
-    /// first, preserving the fee-free counter. Consumed during zero-tax cashouts. Cleared on terminal migration.
+    /// non-zero-tax or feeless cash outs), capped at remaining balance — non-fee-free funds are considered to leave
+    /// first, preserving the fee-free counter. Consumed during zero-tax cash outs. Cleared on terminal migration.
     /// @dev Persists across rulesets — projects switching from zero-tax to non-zero-tax carry forward any
     /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
@@ -155,8 +155,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// their own chain ID.
     /// @dev Set by the three entry points via the `_setReferralProjectId` save-restore wrapper. Read inside `_pay`
     /// to credit `feeVolumeByReferralOf` when the fee project's pay call is recorded locally.
-    /// @dev Public so pay/cashout/split hooks can introspect which referral originated the in-flight call (e.g. to
-    /// apply referral-specific logic). Reads `0` outside any fee-paying call.
+    /// @dev Public so pay, cash out, and split hooks can introspect which referral originated the in-flight call (e.g.
+    /// to apply referral-specific logic). Reads `0` outside any fee-paying call.
     uint256 public transient override currentReferralProjectId;
 
     //*********************************************************************//
@@ -291,8 +291,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// call to succeed, as a fixed point number with the same number of decimals as the terminal token's accounting
     /// context. If fewer terminal tokens would be reclaimed, the cash out is reverted.
     /// @param beneficiary The address to send the reclaimed terminal tokens to, and to pass along to the ruleset's
-    /// data hook and cash out hook if applicable.
-    /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hook if
+    /// data hook and cash out hooks if applicable.
+    /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hooks if
     /// applicable.
     /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
     /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
@@ -1338,13 +1338,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // Cap fee-free surplus at remaining balance.
-        // Why: this single call replaces per-branch calls so that EVERY cashout path (non-zero tax,
-        // zero tax, and feeless beneficiary) gets the cap. Without it, the zero-tax path would use
-        // a stale _feeFreeSurplusOf that may exceed STORE.balanceOf (e.g. if pay hooks reduced the
-        // balance during a prior inbound payout), overcharging fees on round-trip prevention.
-        // Placed after hook fulfillment so any further balance reductions from cashout hooks are
-        // also accounted for.
+        // Cap fee-free surplus after every cash-out path so stale `_feeFreeSurplusOf` cannot survive after
+        // associated surplus leaves. Do this after hook fulfillment so hook-driven balance reductions are included.
         _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
         // Take the fee from all outbound reclaimings.

@@ -38,9 +38,9 @@ interface IJBMultiTerminal is IJBTerminal, IJBFeeTerminal, IJBCashOutTerminal, I
     /// resolved to the current execution chain via `block.chainid` at the entry point, so storage and indexers
     /// always see a fully-resolved `(chainId, projectId)` pair.
     /// @dev Backed by transient storage. Set by `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` (save-
-    /// restore wrapper) so hooks invoked during that call (pay hooks, cashout hooks, split hooks) can introspect
+    /// restore wrapper) so hooks invoked during that call (pay hooks, cash out hooks, split hooks) can introspect
     /// which referrer originated the activity. Reads `0` outside any fee-paying call.
     /// @dev Per-referrer cumulative fee payment amounts credited via this terminal are stored in
-    /// `JBTerminalStore.feeVolumeByReferralOf(address terminal, uint256 referralProjectId)`.
+    /// `JBTerminalStore.feeVolumeByReferralOf(address terminal, uint256 referralChainId, uint256 referralProjectId)`.
     function currentReferralProjectId() external view returns (uint256);
 }

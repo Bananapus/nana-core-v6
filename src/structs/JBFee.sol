@@ -11,9 +11,9 @@ pragma solidity ^0.8.0;
 /// @custom:member beneficiary The address that will receive the tokens that are minted as a result of the fee payment.
 /// @custom:member unlockTimestamp The timestamp at which the fee is unlocked and can be processed.
 /// @custom:member referralProjectId The referrer's project ID on `referralChainId`. Captured from the lower bits of
-/// `currentReferralProjectId` at fee-take time so held-fee attribution survives the 28-day hold window. The on-chain
-/// transient slot, function argument, and `feeVolumeByReferralOf` mapping key all use the packed `uint256` form
-/// `(referralChainId << 48) | referralProjectId`; this struct stores the two halves separately for cheap storage.
+/// `currentReferralProjectId` at fee-take time so held-fee attribution survives the 28-day hold window. The transient
+/// slot and terminal entry-point arguments use the packed `(referralChainId << 48) | referralProjectId` form; this
+/// struct stores the two halves separately for cheap storage.
 struct JBFee {
     uint224 amount;
     uint32 referralChainId;

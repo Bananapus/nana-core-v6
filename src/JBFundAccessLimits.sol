@@ -7,9 +7,9 @@ import {IJBFundAccessLimits} from "./interfaces/IJBFundAccessLimits.sol";
 import {JBCurrencyAmount} from "./structs/JBCurrencyAmount.sol";
 import {JBFundAccessLimitGroup} from "./structs/JBFundAccessLimitGroup.sol";
 
-/// @notice Controls how much a project can withdraw from its terminals each funding cycle. Two types of limits:
-/// **Payout limits** cap how much can be distributed to splits and the project owner. **Surplus allowances** cap how
-/// much the project owner can pull from the surplus (funds above payout limits). Both reset each ruleset cycle.
+/// @notice Controls how much a project can withdraw from its terminals during each ruleset. Two types of limits:
+/// **Payout limits** cap distributions to splits and the project owner. **Surplus allowances** cap how much the
+/// project owner can pull from surplus (funds above payout limits).
 /// @dev Limits are denominated in a currency (which may differ from the held token) and resolved at withdrawal time
 /// via `JBPrices`. An empty `fundAccessLimitGroups` array means zero access (not unlimited) — use `type(uint224).max`
 /// for unlimited.
@@ -74,7 +74,7 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
 
     /// @notice Configure how much a project can withdraw from each of its terminals during a ruleset. Payout limits
     /// cap how much can be distributed to splits/owner; surplus allowances cap how much extra the owner can pull from
-    /// surplus. Both reset each funding cycle.
+    /// surplus. Payout usage resets by ruleset cycle number; surplus-allowance usage resets by ruleset ID.
     /// @dev Only a project's controller can set fund access limits (called during `queueRulesetsOf`).
     /// @dev Limits within each group must be sorted by currency in strictly increasing order to prevent duplicates.
     /// @param projectId The ID of the project to set fund access limits for.

@@ -289,8 +289,8 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @param beneficiaryIsFeeless Whether the cash out's beneficiary is a feeless address. Passed through to data
     /// hooks so they can skip their own fees when value stays in the protocol (e.g. project-to-project routing).
     /// @param metadata Bytes to send to the data hook, if the project's current ruleset specifies one.
-    /// @return ruleset The ruleset during the cash out was made during, as a `JBRuleset` struct. This ruleset will
-    /// have a cash out tax rate provided by the cash out hook if applicable.
+    /// @return ruleset The ruleset during the cash out was made during, as a `JBRuleset` struct. Its cash out tax
+    /// rate may be overridden by the data hook.
     /// @return reclaimAmount The amount of tokens reclaimed from the terminal, as a fixed point number with 18
     /// decimals.
     /// @return cashOutTaxRate The cash out tax rate influencing the reclaim amount.
@@ -563,6 +563,11 @@ contract JBTerminalStore is IJBTerminalStore {
                     decimals: _MAX_FIXED_POINT_FIDELITY
                 })
             });
+
+        // If cross-currency conversion rounded to zero, return without consuming any surplus allowance.
+        if (usedAmount == 0) {
+            return (ruleset, 0);
+        }
 
         // Set the token being used as the only one to look for surplus within.
         JBAccountingContext[] memory accountingContexts = new JBAccountingContext[](1);
@@ -1378,7 +1383,7 @@ contract JBTerminalStore is IJBTerminalStore {
             {
                 // Saturating subtraction: if a new ruleset activates with a lower payout limit than
                 // what was already used under the previous limit, `used` can exceed `amount`. Clamping
-                // to zero prevents an underflow revert that would DOS cashouts and surplus views.
+                // to zero prevents an underflow revert that would DoS cash outs and surplus views.
                 uint256 used = usedPayoutLimitOf[
                     terminal
                 ][projectId][accountingContext.token][ruleset.cycleNumber][payoutLimit.currency];

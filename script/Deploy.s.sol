@@ -25,11 +25,11 @@ contract Deploy is Script, Sphinx {
     /// @notice The universal PERMIT2 address.
     IPermit2 private constant _PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
-    /// @notice The address that is allowed to forward calls to the terminal and controller on a users behalf.
+    /// @notice The address that is allowed to forward calls to the terminal and controller on behalf of users.
     string private constant _TRUSTED_FORWARDER_NAME = "Juicebox";
     address private trustedForwarder;
 
-    /// @notice The address that will manage the few privileged functions of the protocol.
+    /// @notice The address that will manage privileged protocol functions.
     address private manager;
 
     /// @notice The address that will own the fee-project.

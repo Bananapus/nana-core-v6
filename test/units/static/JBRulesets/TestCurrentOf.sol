@@ -106,7 +106,7 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
 
         mockExpect(address(directory), _encodedCall, _willReturn);
 
-        // First queue a base funding cycle
+        // First queue a base ruleset.
 
         // Setup: expect ruleset event (RulesetQueued) is emitted
         vm.expectEmit();
@@ -235,7 +235,7 @@ contract TestCurrentOf_Local is JBRulesetsSetup {
         assertEq(_current.id, _firstRulesetId);
     }
 
-    // covered above - tree had typo
+    // Covered above.
     /* function test_WhenBaseOfTheCurrentlyApprovableRulesetIdOfDurationDNEQZero() external {
         // it will return simulateCycledRulesetBasedOn with allowMidRuleset true
     } */

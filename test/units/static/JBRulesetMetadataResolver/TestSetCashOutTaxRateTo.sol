@@ -69,7 +69,7 @@ contract TestSetCashOutTaxRateTo_Local is JBTest {
             assertEq(_flag, 1);
         }
 
-        // Data source address
+        // Data hook address.
         // forge-lint: disable-next-line(unsafe-typecast)
         address _packedDataHook = address(uint160(_packed >> 82));
         assertEq(_packedDataHook, _hookAddress);

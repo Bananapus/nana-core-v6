@@ -75,8 +75,8 @@ contract TestMetadataResolverEdgeCases is JBTest {
     //*********************************************************************//
 
     /// @notice Verifies that addToMetadata preserves all entries when adding to metadata with
-    /// multiple existing entries. The _sliceBytes call at line 129 uses start > 0, which on
-    /// the buggy code would over-copy and corrupt subsequent memory operations.
+    /// multiple existing entries. The `_sliceBytes` call uses `start > 0`, which on the buggy
+    /// code would over-copy and corrupt subsequent memory operations.
     function test_addToMetadataPreservesAllEntries() external view {
         bytes4 id1 = bytes4(0x11111111);
         bytes4 id2 = bytes4(0x22222222);
