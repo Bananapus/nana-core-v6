@@ -574,8 +574,8 @@ contract JBTerminalStore is IJBTerminalStore {
                 })
             });
 
-        // If cross-currency conversion rounded to zero, return without consuming any surplus allowance.
-        if (usedAmount == 0) {
+        // If a non-zero cross-currency conversion rounded to zero, return without consuming any surplus allowance.
+        if (amount != 0 && currency != accountingContext.currency && usedAmount == 0) {
             return (ruleset, 0);
         }
 
