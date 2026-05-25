@@ -207,7 +207,8 @@ library JBPayoutSplitGroupLib {
                 uint256 sentAmount, uint256 feeEligible
             ) {
                 netPayoutAmount = sentAmount;
-                amountEligibleForFees += feeEligible;
+                // Keep aggregate fee processing from rounding above what individual splits actually withheld.
+                amountEligibleForFees += feeEligible - (feeEligible % 40);
             } catch (bytes memory failureReason) {
                 emit PayoutReverted({
                     projectId: projectId, split: split, amount: payoutAmount, reason: failureReason, caller: caller
