@@ -344,6 +344,151 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         );
     }
 
+    function test_GivenSameCurrencyZeroAmountAndNoAllowance_Reverts() external {
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: _currency,
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            scopeCashOutsToLocalBalances: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        vm.mockCall(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller)
+        );
+        vm.mockCall(
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+
+        JBCurrencyAmount[] memory _limits = new JBCurrencyAmount[](1);
+        _limits[0] = JBCurrencyAmount({amount: 0, currency: _currency});
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(this), address(_token))
+            ),
+            abi.encode(_limits)
+        );
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.surplusAllowanceOf,
+                (_projectId, block.timestamp, address(this), address(_token), _currency)
+            ),
+            abi.encode(0)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_InadequateControllerAllowance.selector, 0, 0)
+        );
+        _store.recordUsedAllowanceOf(_projectId, address(_token), 0, _currency);
+    }
+
+    function test_GivenCrossCurrencyZeroAmountAndNoAllowance_Reverts() external {
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: _currency,
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowSetTerminals: false,
+            allowTerminalMigration: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            scopeCashOutsToLocalBalances: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+        mockExpect(
+            address(prices),
+            abi.encodeCall(IJBPrices.pricePerUnitOf, (_projectId, _nativeCurrency, _currency, 18)),
+            abi.encode(2e18)
+        );
+
+        vm.mockCall(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller)
+        );
+        vm.mockCall(
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+
+        JBCurrencyAmount[] memory _limits = new JBCurrencyAmount[](1);
+        _limits[0] = JBCurrencyAmount({amount: 0, currency: _currency});
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(this), address(_token))
+            ),
+            abi.encode(_limits)
+        );
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.surplusAllowanceOf,
+                (_projectId, block.timestamp, address(this), address(_token), _nativeCurrency)
+            ),
+            abi.encode(0)
+        );
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBTerminalStore.JBTerminalStore_InadequateControllerAllowance.selector, 0, 0)
+        );
+        _store.recordUsedAllowanceOf(_projectId, address(_token), 0, _nativeCurrency);
+    }
+
     function test_GivenThereIsInadequateBalance() external {
         // it will revert INADEQUATE_TERMINAL_STORE_BALANCE
 
