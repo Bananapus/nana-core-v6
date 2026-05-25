@@ -21,11 +21,34 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **Hooks are not exploiting reentrancy.** Core does not use `ReentrancyGuard`. Safety depends on call ordering and the `JBTerminalStore_InadequateTerminalStoreBalance` backstop.
 - **Data hooks are highly trusted.** A data hook can change payment weight, cash-out tax rate, `effectiveTotalSupply`, `effectiveCashOutCount`, and hook-forwarding amounts. The protocol only bounds the final amounts.
 - **Price feeds are honest enough.** Surplus, payout conversions, and allowance math depend on `JBPrices`. Stale or manipulated feeds misprice the system. Registered feeds must return nonzero prices; zero prices now fail closed in `JBPrices` before downstream conversion math can divide by zero or silently treat an asset as worthless.
+- **Price feeds are immutable once registered, and projects own that trust choice.** `JBPrices.addPriceFeedFor`
+  rejects replacement of any existing direct or inverse feed for a `(projectId, pricingCurrency, unitCurrency)`
+  triple. This is intentional: the project that registers a feed is committing on-chain to that exact oracle for
+  every downstream conversion involving the pair. The registering party — a project owner or, for project `0`
+  defaults, the `JBPrices` owner — is responsible for selecting a feed they're willing to trust permanently for
+  that pair. `DeployPeriphery.s.sol` registers default feeds with a `try { addPriceFeedFor } catch { require
+  existing != 0 }` pattern; a wrong default already installed by a prior deploy attempt will be silently accepted
+  by the standalone script. The canonical `deploy-all-v6` deploy enforces equality with the expected feed
+  (`_ensureDefaultPriceFeed`) on top of the immutability rule, so a deploy that finds a mismatched pre-existing
+  feed reverts loudly. Projects that want post-deploy oracle flexibility (e.g. fail-over between two upstream
+  oracles, or a guarded swap of the data source under a governance condition) should register a wrapper feed that
+  implements `IJBPriceFeed` and routes through whatever upstream provider the wrapper chooses — that wrapper's
+  governance becomes the project's flexibility surface while `JBPrices`'s immutability remains intact.
 - **Accepted ERC-20s behave like standard tokens.** Inbound fee-on-transfer handling is safer than outbound handling. Rebasing or nonstandard outbound behavior can still break accounting assumptions.
 - **Accepted tokens are not actively adversarial.** Core does not harden against tokens that reenter or distort balance observations during transfer.
 - **The trusted forwarder is not compromised.** If it is, `_msgSender()` can be spoofed across permission-gated contracts.
 - **Project `#1` fee routing stays live enough.** If fee processing into project `#1` fails, core favors liveness and returns value to the originating project instead of trapping it. That can forgive fees.
-- **`OMNICHAIN_RULESET_OPERATOR` is trusted.** This address can bypass some owner checks for ruleset flows and is a broad trust point.
+- **`OMNICHAIN_RULESET_OPERATOR` is trusted, and binding the correct address is the deployer's responsibility.**
+  The address is immutable on `JBController` and lets its holder bypass owner permission on `launchRulesetsFor` and
+  `queueRulesetsOf` for every project. `DeployPeriphery.s.sol` hardcodes the constant and only nonzero-checks it
+  before constructing the controller — there is no on-chain check inside the periphery script that the address
+  matches the canonical omnichain deployer on the current chain. We accept this: the deploying party is
+  responsible for setting the constant to the correct, deployed `JBOmnichainDeployer` on every chain they bring
+  the protocol to, and a wrong constant is a prerequisite trust failure (the same actor controls the deploy keys).
+  Post-deploy verification in `deploy-all-v6/script/Verify.s.sol` asserts
+  `controller.OMNICHAIN_RULESET_OPERATOR() == address(omnichainDeployer)` at two checkpoints during the canonical
+  ecosystem rollout; integrators relying on the standalone periphery deploy should perform an equivalent
+  post-deploy assertion before treating the controller as canonical.
 
 ## 2. Economic Risks
 

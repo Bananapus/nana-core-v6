@@ -102,7 +102,8 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param projectId The ID of the project.
     /// @param hook The split hook that reverted.
     /// @param reason The revert reason.
-    event SplitHookReverted(uint256 indexed projectId, address hook, bytes reason);
+    /// @param caller The address that called the distribution function.
+    event SplitHookReverted(uint256 indexed projectId, address hook, bytes reason, address caller);
 
     /// @notice Reserved tokens were sent to a specific split.
     /// @param projectId The ID of the project.

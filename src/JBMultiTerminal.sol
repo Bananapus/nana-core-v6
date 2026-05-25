@@ -501,8 +501,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token the fee is paid in.
     /// @param amount The fee amount, as a fixed point number with the same number of decimals as the token's
     /// accounting context.
-    /// @param beneficiary The address to mint tokens to (from the project which receives fees), and pass along to the
-    /// ruleset's data hook and pay hook if applicable.
+    /// @param beneficiary The address to mint fee-project tokens to (and pass along to the fee project's
+    /// data/pay hooks). If `address(0)`, the fee is routed via `addToBalanceOf` instead of `pay`, crediting the
+    /// fee project's balance directly without minting fee-project tokens. This honors the protocol-fee intent
+    /// (the fee project still receives the value) when no beneficiary is specified, instead of letting `pay`
+    /// revert inside `mintTokensOf` and having the catch path forgive the fee.
     /// @param feeTerminal The terminal that'll receive the fees.
     function executeProcessFee(
         uint256 projectId,
@@ -523,14 +526,24 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send the projectId in the metadata.
         bytes memory metadata = bytes(abi.encodePacked(projectId));
 
-        _efficientPay({
-            terminal: feeTerminal,
-            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
-            token: token,
-            amount: amount,
-            beneficiary: beneficiary,
-            metadata: metadata
-        });
+        if (beneficiary == address(0)) {
+            _efficientAddToBalance({
+                terminal: feeTerminal,
+                projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+                token: token,
+                amount: amount,
+                metadata: metadata
+            });
+        } else {
+            _efficientPay({
+                terminal: feeTerminal,
+                projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+                token: token,
+                amount: amount,
+                beneficiary: beneficiary,
+                metadata: metadata
+            });
+        }
     }
 
     /// @notice Transfer funds to an address.
@@ -2158,7 +2171,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         projectId: projectId,
                         token: token,
                         amount: amountPaidOut,
-                        // The project owner will receive tokens minted by paying the platform fee.
+                        // The `feeBeneficiary` will receive the fee-project tokens minted in exchange for the
+                        // platform fee paid in terminal tokens.
                         beneficiary: feeBeneficiary,
                         shouldHoldFees: ruleset.holdFees()
                     }));

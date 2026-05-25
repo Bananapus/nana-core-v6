@@ -1442,7 +1442,8 @@ contract JBTerminalStore is IJBTerminalStore {
             referralChainId: referralChainId,
             referralProjectId: bareProjectId,
             amount: amount,
-            newTotal: newTotal
+            newTotal: newTotal,
+            caller: msg.sender
         });
     }
 
