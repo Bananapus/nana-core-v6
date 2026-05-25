@@ -13,6 +13,7 @@ import {IJBSplits} from "../../../../src/interfaces/IJBSplits.sol";
 import {IJBTerminalStore} from "../../../../src/interfaces/IJBTerminalStore.sol";
 import {JBConstants} from "../../../../src/libraries/JBConstants.sol";
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
+import {JBFee} from "../../../../src/structs/JBFee.sol";
 import {JBPayHookSpecification} from "../../../../src/structs/JBPayHookSpecification.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBSplit} from "../../../../src/structs/JBSplit.sol";
@@ -240,6 +241,69 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         );
 
         _terminal.sendPayoutsOf(_projectId, address(0), 0, 100, 100, 0);
+    }
+
+    function test_WhenDustSplitFeesRoundToZeroDoNotAggregateIntoFee() external {
+        JBRuleset memory returnedRuleset = generateUnfriendlyRuleset();
+
+        uint256 payoutAmount = 78;
+        address payable firstBeneficiary = payable(makeAddr("firstBeneficiary"));
+        address payable secondBeneficiary = payable(makeAddr("secondBeneficiary"));
+
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (_projectId, JBConstants.NATIVE_TOKEN, payoutAmount, 0)),
+            abi.encode(returnedRuleset, payoutAmount)
+        );
+        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(this)));
+
+        JBSplit[] memory returnedSplits = new JBSplit[](2);
+        returnedSplits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT / 2,
+            projectId: 0,
+            beneficiary: firstBeneficiary,
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+        returnedSplits[1] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT / 2,
+            projectId: 0,
+            beneficiary: secondBeneficiary,
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+
+        mockExpect(
+            address(splits),
+            abi.encodeCall(
+                IJBSplits.splitsOf, (_projectId, returnedRuleset.id, uint256(uint160(JBConstants.NATIVE_TOKEN)))
+            ),
+            abi.encode(returnedSplits)
+        );
+        mockExpect(
+            address(feelessAddresses),
+            feelessCalldata(firstBeneficiary, _projectId, address(_terminal)),
+            abi.encode(false)
+        );
+        mockExpect(
+            address(feelessAddresses),
+            feelessCalldata(secondBeneficiary, _projectId, address(_terminal)),
+            abi.encode(false)
+        );
+
+        vm.deal(address(_terminal), payoutAmount);
+
+        uint256 amountPaidOut = _terminal.sendPayoutsOf(_projectId, JBConstants.NATIVE_TOKEN, payoutAmount, 0, 0, 0);
+
+        assertEq(amountPaidOut, payoutAmount);
+        assertEq(firstBeneficiary.balance, 39);
+        assertEq(secondBeneficiary.balance, 39);
+        assertEq(address(_terminal).balance, 0);
+
+        JBFee[] memory heldFees = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 10);
+        if (heldFees.length != 0) assertEq(heldFees[0].amount, 0);
     }
 
     function test_GivenPayoutRecipientReentersHeldFeeProcessing_ReferralIsPreserved() external {

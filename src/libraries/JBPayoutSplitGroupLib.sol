@@ -207,7 +207,10 @@ library JBPayoutSplitGroupLib {
                 uint256 sentAmount, uint256 feeEligible
             ) {
                 netPayoutAmount = sentAmount;
-                amountEligibleForFees += feeEligible;
+                // The standard fee is `STANDARD_FEE / MAX_FEE`, currently 25 / 1000 = 1 / 40. The `40` below is
+                // that reduced denominator, not an independent fee parameter. Round each split's fee basis down to
+                // it so aggregation cannot charge more than per-split floors.
+                amountEligibleForFees += feeEligible - (feeEligible % 40);
             } catch (bytes memory failureReason) {
                 emit PayoutReverted({
                     projectId: projectId, split: split, amount: payoutAmount, reason: failureReason, caller: caller

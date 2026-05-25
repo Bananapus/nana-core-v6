@@ -68,6 +68,12 @@ This file covers the main accounting, permission, and liveness risks in the core
 
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
 - **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
+- **Split fee aggregation is capped to per-split withholding.** Split payouts deduct the standard fee from each
+  non-feeless split independently. `JBPayoutSplitGroupLib` rounds each split's fee-eligible basis down to the
+  reduced standard-fee denominator before adding it to the aggregate fee basis, so `_sendPayoutsOf` cannot process or
+  hold more fees than the individual splits actually withheld. The tradeoff is ordinary floor-rounding
+  undercollection below one smallest token unit per fee-bearing split; highly fragmented dust payouts can avoid tiny
+  fees, but they cannot create a pooled terminal shortfall through aggregate fee overcollection.
 - **Held fee entries are mutated in place.** If the accounting is off by even one unit in the wrong direction, `_returnHeldFees` can corrupt the entry.
 - **Fee-route failure is fail-open.** If the fee project terminal or fee route reverts, the terminal emits
   `FeeReverted` and credits the failed fee amount back to the originating project instead of reverting the user's
