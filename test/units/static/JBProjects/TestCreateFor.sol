@@ -5,12 +5,15 @@ import {StdStorage, stdStorage} from "forge-std/StdStorage.sol";
 import {stdError} from "forge-std/StdError.sol";
 import {IJBProjects} from "../../../../src/interfaces/IJBProjects.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {JBProjects} from "../../../../src/JBProjects.sol";
 import {JBProjectsSetup} from "./JBProjectsSetup.sol";
 
 contract TestCreateFor_Local is JBProjectsSetup {
     using stdStorage for StdStorage;
 
     address _user = makeAddr("sudoer");
+    address payable _feeReceiver = payable(makeAddr("feeReceiver"));
+    uint256 _creationFee = 1 ether;
 
     function setUp() public {
         super.projectsSetup();
@@ -67,5 +70,47 @@ contract TestCreateFor_Local is JBProjectsSetup {
 
         vm.expectRevert(expectedError);
         _projects.createFor(address(this));
+    }
+
+    function test_GivenCreationFeeIsNotPaid() external whenProjectIdPlusOneIsLtOrEqToUint256Max {
+        // it will revert
+
+        vm.prank(_owner);
+        _projects.setCreationFee({fee: _creationFee, receiver: _feeReceiver});
+
+        vm.expectRevert(abi.encodeWithSelector(JBProjects.JBProjects_InvalidCreationFee.selector, 0, _creationFee));
+        _projects.createFor(_user);
+    }
+
+    function test_GivenCreationFeeIsOverpaid() external whenProjectIdPlusOneIsLtOrEqToUint256Max {
+        // it will revert
+
+        vm.prank(_owner);
+        _projects.setCreationFee({fee: _creationFee, receiver: _feeReceiver});
+
+        vm.deal(address(this), _creationFee + 1);
+        vm.expectRevert(
+            abi.encodeWithSelector(JBProjects.JBProjects_InvalidCreationFee.selector, _creationFee + 1, _creationFee)
+        );
+        _projects.createFor{value: _creationFee + 1}(_user);
+    }
+
+    function test_GivenCreationFeeIsPaid() external whenProjectIdPlusOneIsLtOrEqToUint256Max {
+        // it will mint and forward the fee
+
+        vm.prank(_owner);
+        _projects.setCreationFee({fee: _creationFee, receiver: _feeReceiver});
+
+        vm.deal(address(this), _creationFee);
+
+        vm.expectEmit();
+        emit IJBProjects.Create(1, _user, address(this));
+
+        uint256 projectId = _projects.createFor{value: _creationFee}(_user);
+
+        assertEq(projectId, 1);
+        assertEq(_projects.count(), 1);
+        assertEq(_feeReceiver.balance, _creationFee);
+        assertEq(address(_projects).balance, 0);
     }
 }

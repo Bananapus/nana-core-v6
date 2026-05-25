@@ -62,6 +62,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     error JBController_AddingPriceFeedNotAllowed(uint256 projectId);
     error JBController_CreditTransfersPaused(uint256 projectId, uint256 rulesetId);
     error JBController_InvalidCashOutTaxRate(uint256 rate, uint256 limit);
+    error JBController_InvalidCreationFee(uint256 value, uint256 requiredFee);
     error JBController_InvalidReservedPercent(uint256 percent, uint256 limit);
     error JBController_MintNotAllowedAndNotTerminalOrHook(address caller);
     error JBController_NoReservedTokens(uint256 projectId);
@@ -402,11 +403,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         string calldata memo
     )
         external
+        payable
         override
         returns (uint256 projectId)
     {
+        // Forward the exact project creation fee to `JBProjects`.
+        uint256 creationFee = PROJECTS.creationFee();
+        if (msg.value != creationFee) {
+            revert JBController_InvalidCreationFee({value: msg.value, requiredFee: creationFee});
+        }
+
         // Mint the project ERC-721 into the owner's wallet.
-        projectId = PROJECTS.createFor(owner);
+        projectId = PROJECTS.createFor{value: creationFee}(owner);
 
         // If provided, set the project's metadata URI.
         if (bytes(projectUri).length > 0) {

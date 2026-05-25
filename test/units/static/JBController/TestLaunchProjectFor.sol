@@ -38,6 +38,10 @@ contract TestLaunchProjectFor_Local is JBControllerSetup {
     modifier whenCalledDefault() {
         // we must mock calls to Projects, Directory, Rulesets, possibly Splits, and possibly a second call to directory
 
+        bytes memory creationFeeCall = abi.encodeCall(IJBProjects.creationFee, ());
+        bytes memory creationFeeReturn = abi.encode(0);
+        mockExpect(address(projects), creationFeeCall, creationFeeReturn);
+
         bytes memory projectsCall = abi.encodeCall(IJBProjects.createFor, (address(this)));
         bytes memory projectsReturn = abi.encode(1);
         mockExpect(address(projects), projectsCall, projectsReturn);
@@ -297,6 +301,47 @@ contract TestLaunchProjectFor_Local is JBControllerSetup {
         vm.expectEmit();
         emit IJBController.LaunchProject(0, 1, _metadata, _memo, address(this));
 
+        _controller.launchProjectFor(address(this), _metadata, _rulesets, _terminals, _memo);
+    }
+
+    function test_GivenCreationFeeIsRequired() external {
+        // it will forward the fee to JBProjects
+
+        uint256 creationFee = 1 ether;
+
+        bytes memory creationFeeCall = abi.encodeCall(IJBProjects.creationFee, ());
+        bytes memory creationFeeReturn = abi.encode(creationFee);
+        mockExpect(address(projects), creationFeeCall, creationFeeReturn);
+
+        bytes memory projectsCall = abi.encodeCall(IJBProjects.createFor, (address(this)));
+        vm.expectCall(address(projects), creationFee, projectsCall);
+        vm.mockCall(address(projects), projectsCall, abi.encode(1));
+
+        bytes memory setControllerCall =
+            abi.encodeCall(IJBDirectory.setControllerOf, (1, IERC165(address(_controller))));
+        bytes memory setControllerReturn = "";
+        mockExpect(address(directory), setControllerCall, setControllerReturn);
+
+        JBRulesetConfig[] memory _rulesets = new JBRulesetConfig[](0);
+        JBTerminalConfig[] memory _terminals = new JBTerminalConfig[](0);
+
+        vm.deal(address(this), creationFee);
+        _controller.launchProjectFor{value: creationFee}(address(this), _metadata, _rulesets, _terminals, _memo);
+    }
+
+    function test_GivenCreationFeeIsRequiredAndMsgValueDoesNotMatch() external {
+        // it will revert
+
+        uint256 creationFee = 1 ether;
+
+        bytes memory creationFeeCall = abi.encodeCall(IJBProjects.creationFee, ());
+        bytes memory creationFeeReturn = abi.encode(creationFee);
+        mockExpect(address(projects), creationFeeCall, creationFeeReturn);
+
+        JBRulesetConfig[] memory _rulesets = new JBRulesetConfig[](0);
+        JBTerminalConfig[] memory _terminals = new JBTerminalConfig[](0);
+
+        vm.expectRevert(abi.encodeWithSelector(JBController.JBController_InvalidCreationFee.selector, 0, creationFee));
         _controller.launchProjectFor(address(this), _metadata, _rulesets, _terminals, _memo);
     }
 }

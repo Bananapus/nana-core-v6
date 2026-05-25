@@ -305,6 +305,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
         string calldata memo
     )
         external
+        payable
         returns (uint256 projectId);
 
     /// @notice Queues a project's initial rulesets and sets up terminals for it.

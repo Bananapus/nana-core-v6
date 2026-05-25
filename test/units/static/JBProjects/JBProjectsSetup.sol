@@ -13,7 +13,7 @@ contract JBProjectsSetup is JBTest {
     address _owner = makeAddr("owner");
 
     // Target Contract
-    IJBProjects public _projects;
+    JBProjects public _projects;
 
     function projectsSetup() public virtual {
         // Instantiate the contract being tested
