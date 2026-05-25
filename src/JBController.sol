@@ -1108,7 +1108,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             })
                         ) {}
                     catch (bytes memory reason) {
-                        emit SplitHookReverted({projectId: projectId, hook: address(split.hook), reason: reason});
+                        emit SplitHookReverted({
+                            projectId: projectId, hook: address(split.hook), reason: reason, caller: messageSender
+                        });
                     }
 
                     // For ERC-20 tokens, burn any tokens the hook did not consume.
