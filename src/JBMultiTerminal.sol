@@ -1122,7 +1122,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Set the allowance to `spend` tokens for the user.
             try PERMIT2.permit({owner: _msgSender(), permitSingle: permitSingle, signature: allowance.signature}) {}
             catch (bytes memory reason) {
-                emit Permit2AllowanceFailed({token: token, owner: _msgSender(), reason: reason, caller: _msgSender()});
+                emit Permit2AllowanceFailed({token: token, owner: _msgSender(), reason: reason});
             }
         }
 

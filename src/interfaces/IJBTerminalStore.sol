@@ -25,14 +25,12 @@ interface IJBTerminalStore {
     /// @param referralProjectId The referrer's bare project ID on `referralChainId` (no chain bits).
     /// @param amount The fee amount credited, in the terminal's accounting-context units.
     /// @param newTotal The new value of `totalFeeVolumeOf[terminal]` after this credit.
-    /// @param caller The address that recorded the credit.
     event ReferralCredit(
         address indexed terminal,
         uint256 indexed referralChainId,
         uint256 indexed referralProjectId,
         uint256 amount,
-        uint256 newTotal,
-        address caller
+        uint256 newTotal
     );
 
     /// @notice The directory of terminals and controllers for projects.
