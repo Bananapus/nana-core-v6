@@ -43,6 +43,7 @@ contract JBTerminalStore is IJBTerminalStore {
     error JBTerminalStore_AccountingContextDecimalsMismatch(
         address token, uint256 providedDecimals, uint256 expectedDecimals
     );
+    error JBTerminalStore_AccountingContextDecimalsOutOfRange(address token, uint256 decimals);
     error JBTerminalStore_AddingAccountingContextNotAllowed(uint256 projectId, uint256 rulesetId, address terminal);
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
 
@@ -212,6 +213,12 @@ contract JBTerminalStore is IJBTerminalStore {
                 revert JBTerminalStore_AccountingContextAlreadySet({token: context.token});
             }
 
+            if (context.decimals > 36) {
+                revert JBTerminalStore_AccountingContextDecimalsOutOfRange({
+                    token: context.token, decimals: context.decimals
+                });
+            }
+
             // Keep track of a flag indicating if we know the provided decimals are incorrect.
             bool knownInvalidDecimals;
             uint256 expectedDecimals;
@@ -222,16 +229,22 @@ contract JBTerminalStore is IJBTerminalStore {
                 expectedDecimals = 18;
             } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
                 try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
-                    if (context.decimals != decimals) {
-                        knownInvalidDecimals = true;
-                        expectedDecimals = decimals;
-                    }
+                    expectedDecimals = decimals;
                 } catch {
                     // The token didn't support `decimals`.
                     // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
                     // The caller is responsible for providing the correct decimals for such tokens.
                     knownInvalidDecimals = false;
+                    expectedDecimals = context.decimals;
                 }
+
+                if (expectedDecimals > 36) {
+                    revert JBTerminalStore_AccountingContextDecimalsOutOfRange({
+                        token: context.token, decimals: expectedDecimals
+                    });
+                }
+
+                if (context.decimals != expectedDecimals) knownInvalidDecimals = true;
             }
 
             // Make sure the decimals are correct.
@@ -1442,7 +1455,8 @@ contract JBTerminalStore is IJBTerminalStore {
             referralChainId: referralChainId,
             referralProjectId: bareProjectId,
             amount: amount,
-            newTotal: newTotal
+            newTotal: newTotal,
+            caller: msg.sender
         });
     }
 

@@ -173,8 +173,10 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     //*********************************************************************//
 
     /// @notice Registers a price feed so the project can use a new currency for payout limits or surplus allowances.
-    /// @dev Can only be called by the project's owner or an operator with `ADD_PRICE_FEED` permission. The current
-    /// ruleset must have `allowAddPriceFeed` enabled.
+    /// @dev Can only be called by the project's owner or an operator with `ADD_PRICE_FEED` permission. When a current
+    /// ruleset exists, it must have `allowAddPriceFeed` enabled. If no current ruleset exists (`ruleset.id == 0`),
+    /// the call is allowed unconditionally — this is the symmetric counterpart to `setTokenFor`, which mirrors the
+    /// gap-state allowance so projects can configure prerequisites before their first ruleset activates.
     /// @param projectId The ID of the project to add the feed for.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency the feed prices.
@@ -195,8 +197,12 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
         JBRuleset memory ruleset = _currentRulesetOf(projectId);
 
-        // Make sure the project's ruleset allows adding price feeds.
-        if (!ruleset.allowAddPriceFeed()) revert JBController_AddingPriceFeedNotAllowed(projectId);
+        // When a current ruleset exists, it must allow adding price feeds. If no current ruleset exists
+        // (`ruleset.id == 0`), the call is allowed unconditionally so projects can register feeds during the
+        // pre-launch or gap state — matching the gap-state semantics of `setTokenFor`.
+        if (ruleset.id != 0 && !ruleset.allowAddPriceFeed()) {
+            revert JBController_AddingPriceFeedNotAllowed(projectId);
+        }
 
         PRICES.addPriceFeedFor({
             projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
@@ -1110,7 +1116,9 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                             })
                         ) {}
                     catch (bytes memory reason) {
-                        emit SplitHookReverted({projectId: projectId, hook: address(split.hook), reason: reason});
+                        emit SplitHookReverted({
+                            projectId: projectId, hook: address(split.hook), reason: reason, caller: messageSender
+                        });
                     }
 
                     // For ERC-20 tokens, burn any tokens the hook did not consume.

@@ -501,8 +501,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token the fee is paid in.
     /// @param amount The fee amount, as a fixed point number with the same number of decimals as the token's
     /// accounting context.
-    /// @param beneficiary The address to mint tokens to (from the project which receives fees), and pass along to the
-    /// ruleset's data hook and pay hook if applicable.
+    /// @param beneficiary The address to mint fee-project tokens to (and pass along to the fee project's
+    /// data/pay hooks). If `address(0)`, the fee is routed via `addToBalanceOf` instead of `pay`, crediting the
+    /// fee project's balance directly without minting fee-project tokens. This honors the protocol-fee intent
+    /// (the fee project still receives the value) when no beneficiary is specified, instead of letting `pay`
+    /// revert inside `mintTokensOf` and having the catch path forgive the fee.
     /// @param feeTerminal The terminal that'll receive the fees.
     function executeProcessFee(
         uint256 projectId,
@@ -523,14 +526,24 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Send the projectId in the metadata.
         bytes memory metadata = bytes(abi.encodePacked(projectId));
 
-        _efficientPay({
-            terminal: feeTerminal,
-            projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
-            token: token,
-            amount: amount,
-            beneficiary: beneficiary,
-            metadata: metadata
-        });
+        if (beneficiary == address(0)) {
+            _efficientAddToBalance({
+                terminal: feeTerminal,
+                projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+                token: token,
+                amount: amount,
+                metadata: metadata
+            });
+        } else {
+            _efficientPay({
+                terminal: feeTerminal,
+                projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+                token: token,
+                amount: amount,
+                beneficiary: beneficiary,
+                metadata: metadata
+            });
+        }
     }
 
     /// @notice Transfer funds to an address.
@@ -613,7 +626,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             // Transfer the balance minus the fee to the new terminal.
-            uint256 migrationAmount = balance - feeAmount;
+            uint256 migrationAmount;
+            // `_takeFeeFrom` calculated `feeAmount` from `balance`, so it cannot exceed `balance`.
+            unchecked {
+                migrationAmount = balance - feeAmount;
+            }
 
             _externalAddToBalance({
                 terminal: to, projectId: projectId, token: token, amount: migrationAmount, metadata: bytes("")
@@ -677,7 +694,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Set the beneficiary token count.
         if (beneficiaryBalanceAfter > beneficiaryBalanceBefore) {
-            beneficiaryTokenCount = beneficiaryBalanceAfter - beneficiaryBalanceBefore;
+            // Guarded by the comparison above.
+            unchecked {
+                beneficiaryTokenCount = beneficiaryBalanceAfter - beneficiaryBalanceBefore;
+            }
         }
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
@@ -724,7 +744,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // reverting.
             //    A `FeeReverted` event is emitted so the forgiveness is observable off-chain.
             delete _heldFeesOf[projectId][token][currentIndex];
-            _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
+            // `currentIndex` was proven to be within the held-fee array.
+            unchecked {
+                _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
+            }
 
             // Restore the originating fee-paying call's referral project for the duration of this fee's processing
             // so the credit in `_processFee` attributes to the right (chain, project) pair. No save needed:
@@ -1866,6 +1889,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
 
             _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
+            // The store balance was credited first; this mirrors that bounded increase for fee recovery.
+            unchecked {
+                _feeFreeSurplusOf[projectId][token] += amount;
+            }
         }
     }
 
@@ -1874,7 +1901,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token to record the added balance for.
     /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
     /// this terminal.
-    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
+    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) private {
         STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
@@ -2158,7 +2185,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                         projectId: projectId,
                         token: token,
                         amount: amountPaidOut,
-                        // The project owner will receive tokens minted by paying the platform fee.
+                        // The `feeBeneficiary` will receive the fee-project tokens minted in exchange for the
+                        // platform fee paid in terminal tokens.
                         beneficiary: feeBeneficiary,
                         shouldHoldFees: ruleset.holdFees()
                     }));

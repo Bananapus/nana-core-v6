@@ -92,7 +92,10 @@ library JBRulesetMetadataResolver {
 
     /// @notice Pack the funding cycle metadata.
     /// @param rulesetMetadata The ruleset metadata to validate and pack.
-    /// @return packed The packed uint256 of all metadata params. The first 8 bits specify the version.
+    /// @return packed The packed uint256 of all metadata params. The first 4 bits (bits 0-3) specify the version;
+    /// supported values are 0-15. A future protocol version that needs more than 16 distinct metadata layouts must
+    /// widen this field before assigning a new version number, otherwise the high bits will silently spill into
+    /// the `reservedPercent` field that begins at bit 4.
     function packRulesetMetadata(JBRulesetMetadata memory rulesetMetadata) internal pure returns (uint256 packed) {
         // version 1 in the bits 0-3 (4 bits).
         packed = 1;
