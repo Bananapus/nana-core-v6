@@ -183,8 +183,10 @@ library CoreDeploymentLib {
     {
         string memory filePath = string.concat(path, projectName, "/", networkName, "/", contractName, ".json");
         // forge-lint: disable-next-line(unsafe-cheatcode)
-        if (!vm.exists(filePath)) return address(0);
-        // forge-lint: disable-next-line(unsafe-cheatcode)
-        return stdJson.readAddress({json: vm.readFile(filePath), key: ".address"});
+        try vm.readFile(filePath) returns (string memory deploymentJson) {
+            return stdJson.readAddress({json: deploymentJson, key: ".address"});
+        } catch {
+            return address(0);
+        }
     }
 }
