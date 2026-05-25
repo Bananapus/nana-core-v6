@@ -97,8 +97,11 @@ library CoreDeploymentLib {
             })
         );
 
+        // Controller is loaded best-effort so the periphery deploy script can bootstrap on a fresh chain that
+        // hasn't yet produced `JBController.json` — that script is the one that creates the controller. Other
+        // core artifacts are still required.
         deployment.controller = JBController(
-            _getDeploymentAddress({
+            _tryGetDeploymentAddress({
                 path: path, projectName: PROJECT_NAME, networkName: networkName, contractName: "JBController"
             })
         );
@@ -163,5 +166,25 @@ library CoreDeploymentLib {
         // forge-lint: disable-next-line(unsafe-cheatcode)
         vm.readFile(string.concat(path, projectName, "/", networkName, "/", contractName, ".json"));
         return stdJson.readAddress({json: deploymentJson, key: ".address"});
+    }
+
+    /// @notice Best-effort variant of `_getDeploymentAddress`. Returns `address(0)` when the artifact file does
+    /// not exist on disk, rather than reverting. Used for fields that may legitimately be absent during a
+    /// fresh-chain bootstrap (e.g. the controller artifact when the periphery script is the one creating it).
+    function _tryGetDeploymentAddress(
+        string memory path,
+        string memory projectName,
+        string memory networkName,
+        string memory contractName
+    )
+        internal
+        view
+        returns (address)
+    {
+        string memory filePath = string.concat(path, projectName, "/", networkName, "/", contractName, ".json");
+        // forge-lint: disable-next-line(unsafe-cheatcode)
+        if (!vm.exists(filePath)) return address(0);
+        // forge-lint: disable-next-line(unsafe-cheatcode)
+        return stdJson.readAddress({json: vm.readFile(filePath), key: ".address"});
     }
 }
