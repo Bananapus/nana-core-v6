@@ -16,18 +16,18 @@ import {IJBProjects} from "./interfaces/IJBProjects.sol";
 /// @notice Provides currency conversion for the protocol. When a project's payout limits or surplus allowances are
 /// denominated in a currency different from the token held in its terminal (e.g. USD limits with ETH held), this
 /// contract resolves the exchange rate via registered price feeds (typically Chainlink oracles).
-/// @dev Price feeds are immutable once set — they cannot be replaced or removed. This protects against oracle
-/// manipulation via admin-key attacks. If a feed is misconfigured, operations using that pair will revert (DoS, not
-/// fund loss). The inverse of any registered feed is auto-calculated. Projects can have their own feeds; project ID 0
-/// holds protocol-wide defaults.
+/// @dev Price feeds are append-only. Existing feeds cannot be replaced or removed, and later feeds act as backups if
+/// earlier feeds fail or return zero. If no configured feed returns a non-zero price, operations using that pair revert
+/// instead of guessing a price. The inverse of any registered feed is auto-calculated. Projects can have their own
+/// feeds; project ID 0 holds protocol-wide defaults.
 contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBPrices {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
-    error JBPrices_PriceFeedAlreadyExists(IJBPriceFeed feed);
     error JBPrices_PriceFeedNotFound(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency);
-    error JBPrices_ZeroPrice(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed);
+    error JBPrices_PriceFeedAlreadyAdded(IJBPriceFeed feed);
+    error JBPrices_ZeroPriceFeed();
     error JBPrices_ZeroPricingCurrency(uint256 projectId, uint256 pricingCurrency);
     error JBPrices_ZeroUnitCurrency(uint256 projectId, uint256 unitCurrency);
 
@@ -55,9 +55,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     /// all projects.
     /// @custom:param pricingCurrency The currency the feed's resulting price is in terms of.
     /// @custom:param unitCurrency The currency the feed prices.
-    mapping(uint256 projectId => mapping(uint256 pricingCurrency => mapping(uint256 unitCurrency => IJBPriceFeed)))
-        public
-        override priceFeedFor;
+    mapping(
+        uint256 projectId => mapping(uint256 pricingCurrency => mapping(uint256 unitCurrency => IJBPriceFeed[]))
+    ) internal _priceFeedsFor;
 
     //*********************************************************************//
     // ---------------------------- constructor -------------------------- //
@@ -89,11 +89,10 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
 
     /// @notice Register a price feed that provides the exchange rate between two currencies. For example, registering
     /// an ETH/USD feed allows payout limits denominated in USD to be enforced against ETH balances.
-    /// @dev Price feeds are immutable — once set for a currency pair, they cannot be replaced or removed. This
-    /// prevents
-    /// admin-key oracle manipulation. The inverse rate is auto-calculated, so registering A→B also provides B→A.
+    /// @dev Price feeds are immutable — once set for a currency pair, they cannot be replaced or removed. Later feeds
+    /// for the same pair are backups. The inverse rate is auto-calculated, so registering A→B also provides B→A.
     /// @dev Pass `projectId` = 0 to set a protocol-wide default (owner only). Non-zero project IDs require controller
-    /// authorization. A default feed for a pair blocks per-project overrides for that same pair.
+    /// authorization.
     /// @param projectId The ID of the project to add a feed for. Pass 0 for a protocol-wide default.
     /// @param pricingCurrency The currency the feed's output price is in terms of.
     /// @param unitCurrency The currency the feed prices.
@@ -119,36 +118,18 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         // Make sure the unit currency isn't 0.
         if (unitCurrency == 0) revert JBPrices_ZeroUnitCurrency({projectId: projectId, unitCurrency: unitCurrency});
 
-        // Make sure there isn't already a default price feed for the pair or its inverse.
-        if (
-            priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                || priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
-        ) {
-            revert JBPrices_PriceFeedAlreadyExists({
-                feed: priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                    ? priceFeedFor[DEFAULT_PROJECT_ID][pricingCurrency][unitCurrency]
-                    : priceFeedFor[DEFAULT_PROJECT_ID][unitCurrency][pricingCurrency]
-            });
-        }
+        // Make sure the feed isn't 0.
+        if (feed == IJBPriceFeed(address(0))) revert JBPrices_ZeroPriceFeed();
 
-        // Make sure this project doesn't already have a price feed for the pair or its inverse.
-        if (
-            priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                || priceFeedFor[projectId][unitCurrency][pricingCurrency] != IJBPriceFeed(address(0))
-        ) {
-            revert JBPrices_PriceFeedAlreadyExists({
-                feed: priceFeedFor[projectId][pricingCurrency][unitCurrency] != IJBPriceFeed(address(0))
-                    ? priceFeedFor[projectId][pricingCurrency][unitCurrency]
-                    : priceFeedFor[projectId][unitCurrency][pricingCurrency]
-            });
-        }
+        // Make sure this exact feed isn't already configured for the pair.
+        _requireNewPriceFeed({
+            projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
+        });
 
         // Price feed immutability is by design to prevent admin-key attacks on price oracles.
-        // If a feed fails, operations using that currency pair revert (DoS but not fund loss). Projects can use
-        // alternative currency pairs. A default feed for a currency pair prevents per-project overrides to ensure
-        // price consistency; projects should use unused currency IDs for custom pricing.
+        // Feeds are append-only; new feeds are used as backups if earlier feeds fail.
         // Store the feed.
-        priceFeedFor[projectId][pricingCurrency][unitCurrency] = feed;
+        _priceFeedsFor[projectId][pricingCurrency][unitCurrency].push(feed);
 
         emit AddPriceFeed({
             projectId: projectId,
@@ -189,45 +170,19 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         // desired number of decimals.
         if (pricingCurrency == unitCurrency) return 10 ** decimals;
 
-        // Get a reference to the price feed.
-        IJBPriceFeed feed = priceFeedFor[projectId][pricingCurrency][unitCurrency];
+        (uint256 price, bool found) = _pricePerUnitOf({
+            projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, decimals: decimals
+        });
+        if (found) return price;
 
-        // If the feed exists, return its non-zero price.
-        if (feed != IJBPriceFeed(address(0))) {
-            uint256 price = feed.currentUnitPrice(decimals);
-            if (price == 0) {
-                revert JBPrices_ZeroPrice({
-                    projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
-                });
-            }
-            return price;
-        }
-
-        // Try getting the inverse feed.
-        feed = priceFeedFor[projectId][unitCurrency][pricingCurrency];
-
-        // If it exists, return the inverse of its price.
-        // @dev The inverse calculation `(10^d * 10^d) / price` has acceptable precision when the feed price
-        // is in the range of ~1e9 to ~1e27 (for 18 decimals). Extreme prices outside this range may lose
-        // significant precision due to fixed-point division truncation.
-        if (feed != IJBPriceFeed(address(0))) {
-            uint256 inversePrice = feed.currentUnitPrice(decimals);
-            if (inversePrice == 0) {
-                revert JBPrices_ZeroPrice({
-                    projectId: projectId, pricingCurrency: unitCurrency, unitCurrency: pricingCurrency, feed: feed
-                });
-            }
-            return mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: inversePrice});
-        }
-
-        // Check for a default feed (project ID 0) if not found.
         if (projectId != DEFAULT_PROJECT_ID) {
-            return pricePerUnitOf({
+            (price, found) = _pricePerUnitOf({
                 projectId: DEFAULT_PROJECT_ID,
                 pricingCurrency: pricingCurrency,
                 unitCurrency: unitCurrency,
                 decimals: decimals
             });
+            if (found) return price;
         }
 
         // No price feed available, revert.
@@ -236,9 +191,153 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
         });
     }
 
+    /// @notice Return the first price feed for a pair, or zero if none is configured.
+    /// @param projectId The ID of the project to get the price feed of.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency the feed prices.
+    /// @return The first configured price feed for the currency pair.
+    function priceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency
+    )
+        external
+        view
+        override
+        returns (IJBPriceFeed)
+    {
+        return _priceFeedsFor[projectId][pricingCurrency][unitCurrency].length == 0
+            ? IJBPriceFeed(address(0))
+            : _priceFeedsFor[projectId][pricingCurrency][unitCurrency][0];
+    }
+
+    /// @notice Return a price feed for a pair at the requested index.
+    /// @param projectId The ID of the project to get the price feed of.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency the feed prices.
+    /// @param index The index of the feed to return.
+    /// @return The configured price feed for the currency pair at `index`.
+    function priceFeedAt(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        uint256 index
+    )
+        external
+        view
+        override
+        returns (IJBPriceFeed)
+    {
+        return _priceFeedsFor[projectId][pricingCurrency][unitCurrency][index];
+    }
+
+    /// @notice Return the number of feeds configured for a pair.
+    /// @param projectId The ID of the project to get the price feed count of.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency the feed prices.
+    /// @return The number of configured price feeds for the currency pair.
+    function priceFeedCountFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency
+    )
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _priceFeedsFor[projectId][pricingCurrency][unitCurrency].length;
+    }
+
     //*********************************************************************//
     // -------------------------- internal views ------------------------- //
     //*********************************************************************//
+
+    /// @notice Try to get a non-zero price from a project's direct or inverse feeds.
+    function _pricePerUnitOf(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        uint256 decimals
+    )
+        internal
+        view
+        returns (uint256 price, bool found)
+    {
+        (price, found) =
+            _priceFrom({feeds: _priceFeedsFor[projectId][pricingCurrency][unitCurrency], decimals: decimals});
+        if (found) return (price, true);
+
+        (price, found) =
+            _priceFromInverse({feeds: _priceFeedsFor[projectId][unitCurrency][pricingCurrency], decimals: decimals});
+    }
+
+    /// @notice Try to get a non-zero direct price from a list of feeds.
+    function _priceFrom(
+        IJBPriceFeed[] storage feeds,
+        uint256 decimals
+    )
+        internal
+        view
+        returns (uint256 price, bool found)
+    {
+        uint256 numberOfFeeds = feeds.length;
+        for (uint256 i; i < numberOfFeeds;) {
+            try feeds[i].currentUnitPrice(decimals) returns (uint256 returnedPrice) {
+                if (returnedPrice != 0) return (returnedPrice, true);
+            } catch {}
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @notice Try to get a non-zero inverse price from a list of feeds.
+    function _priceFromInverse(
+        IJBPriceFeed[] storage feeds,
+        uint256 decimals
+    )
+        internal
+        view
+        returns (uint256 price, bool found)
+    {
+        uint256 numberOfFeeds = feeds.length;
+        for (uint256 i; i < numberOfFeeds;) {
+            try feeds[i].currentUnitPrice(decimals) returns (uint256 inversePrice) {
+                if (inversePrice != 0) {
+                    uint256 invertedPrice = mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: inversePrice});
+                    if (invertedPrice != 0) return (invertedPrice, true);
+                }
+            } catch {}
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @notice Revert if the feed is already configured for this pair.
+    function _requireNewPriceFeed(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        internal
+        view
+    {
+        IJBPriceFeed[] storage feeds = _priceFeedsFor[projectId][pricingCurrency][unitCurrency];
+        uint256 numberOfFeeds = feeds.length;
+
+        for (uint256 i; i < numberOfFeeds;) {
+            if (feeds[i] == feed) revert JBPrices_PriceFeedAlreadyAdded({feed: feed});
+
+            unchecked {
+                ++i;
+            }
+        }
+    }
 
     /// @dev `ERC-2771` specifies the context as being a single address (20 bytes).
     function _contextSuffixLength() internal view override(ERC2771Context, Context) returns (uint256) {
