@@ -19,9 +19,9 @@ import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
-/// @notice PoC for F-MTT-10 — `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
-/// but does NOT increment `_feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance
-/// that can exit fee-free on the next zero-tax cashout — silently bypassing the protocol fee.
+/// @notice Regression test for F-MTT-10 — `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
+/// and increments `_feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance, but cannot exit
+/// fee-free on the next zero-tax cashout.
 ///
 /// Mechanism:
 ///   1. Project P with cashOutTaxRate=0, no inflow goes through fee-free tracking initially
@@ -31,10 +31,9 @@ import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 ///   4. We force the fee terminal to be address(0) via vm.mockCall on the directory.
 ///      This causes `executeProcessFee` to revert with JBMultiTerminal_FeeTerminalNotFound.
 ///   5. `_processFee` catches and calls `_recordAddedBalanceFor` to refund the fee to project balance.
-///   6. Crucially: `_feeFreeSurplusOf[projectId][token]` remains 0.
-///   7. The owner / holder cashes out the refunded amount at tax=0 — no fee is taken because
-///      `_feeFreeSurplusOf` reads 0, so the round-trip-prevention does NOT apply.
-///   8. Net effect: the project owner has extracted what should have been a 2.5% protocol fee.
+///   6. `_feeFreeSurplusOf[projectId][token]` is incremented by the credited-back amount.
+///   7. The owner / holder cashes out the refunded amount at tax=0 — a fee is taken from the tracked fee-free
+///      surplus, so round-trip prevention applies.
 contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
     IJBController private _controller;
     JBMultiTerminal private _terminal;
@@ -125,13 +124,9 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
         });
     }
 
-    /// @notice PoC — demonstrates the silent fee bypass. After a forgiven fee, the credited-back
-    /// amount is not tracked in `_feeFreeSurplusOf`, so it exits the project's balance fee-free.
-    ///
-    /// The current code only credits back via `_recordAddedBalanceFor` (line 1884 of JBMultiTerminal).
-    /// The fix would also increment `_feeFreeSurplusOf[projectId][token] += amount` so the next
-    /// zero-tax cashout properly takes the protocol fee on the credited-back portion.
-    function test_PoC_F_MTT_10_silentFeeBypassOnFeeRouteFailure() external {
+    /// @notice After a forgiven fee, the credited-back amount is tracked in `_feeFreeSurplusOf`, so it pays a fee on
+    /// a later zero-tax cashout.
+    function test_F_MTT_10_chargesFeeOnCreditedBackFeeRouteFailure() external {
         // 1. Pay the project — balance increments, no fee on inflow.
         _terminal.pay{value: PAY_AMOUNT}({
             projectId: _projectId,
@@ -177,20 +172,9 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
             "after fee forgiveness, project balance should equal the credited-back fee amount"
         );
 
-        // 5. Read `_feeFreeSurplusOf[projectId][NATIVE_TOKEN]` from storage. It should be 0
-        //    pre-fix (proving the silent bypass), and equal to `expectedFee` post-fix.
-        //    Mapping `_feeFreeSurplusOf` is at slot 18 in JBMultiTerminal (after preceding storage
-        //    layout). Compute the slot deterministically.
-        //
-        //    NOTE: To avoid coupling to storage-layout literals, we instead observe the BEHAVIORAL
-        //    consequence — does a cashout of the credited-back amount take a fee or not?
-        //    See sub-test below.
-
-        // 6. The behavioral evidence — try to cash out the credited-back amount at tax=0.
-        //    Pre-fix: cashout exits fee-free because `_feeFreeSurplusOf == 0`.
-        //    Post-fix: cashout takes the protocol fee on the round-trip-prevention amount.
-        //
-        //    We mock the directory back to the real terminal for this cashout so the fee CAN be charged.
+        // 5. Try to cash out the credited-back amount at tax=0. The credited-back fee must be tracked as fee-free
+        //    surplus, so the cashout charges the protocol fee on the round-trip-prevention amount.
+        //    We mock the directory back to the real terminal for this cashout so the fee can be charged.
         vm.clearMockedCalls();
 
         // Snapshot the fee project's balance pre-cashout.
@@ -212,31 +196,19 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
             referralProjectId: 0
         });
 
-        // The PoC observation: the cashout reclaims the FULL credited-back amount (no fee).
-        // The fee project receives 0 from this cashout — proving the silent bypass.
         uint256 feeProjectBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);
+        uint256 expectedRecoveryFee =
+            JBFees.feeAmountFrom({amountBeforeFee: expectedFee, feePercent: JBConstants.STANDARD_FEE});
 
         emit log_named_uint("reclaim", reclaim);
         emit log_named_uint("expectedFee", expectedFee);
+        emit log_named_uint("expectedRecoveryFee", expectedRecoveryFee);
         emit log_named_uint("feeProjectBalanceBefore", feeProjectBalanceBefore);
         emit log_named_uint("feeProjectBalanceAfter", feeProjectBalanceAfter);
 
-        // The fee project's balance gain on this cashout is the proof.
-        // CURRENT (pre-fix) behavior: fee project gets 0 on this cashout (silent bypass).
-        // POST-fix behavior: fee project gets ~`expectedFee * something` (the refund is fee-eligible).
         uint256 feeProjectGain = feeProjectBalanceAfter - feeProjectBalanceBefore;
-        if (feeProjectGain == 0) {
-            // PoC confirmed: bypass is live.
-            emit log("F-MTT-10 confirmed: forgiven fee was extracted by owner without protocol fee.");
-        } else {
-            // Post-fix behavior: protocol fee charged on the refund's exit.
-            emit log("F-MTT-10 mitigated: protocol fee charged on the credited-back amount.");
-        }
 
-        // Assert that the bypass is observable in the current build (this assert will need to flip
-        // when the fix lands — it serves as the regression marker).
-        assertEq(
-            feeProjectGain, 0, "F-MTT-10 PoC: pre-fix expectation is that the forgiven fee bypasses protocol revenue"
-        );
+        assertEq(reclaim, expectedFee - expectedRecoveryFee, "cashout should return the credited-back fee net of fee");
+        assertEq(feeProjectGain, expectedRecoveryFee, "forgiven fee must pay protocol fee on zero-tax cashout");
     }
 }

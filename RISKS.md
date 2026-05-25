@@ -137,6 +137,11 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Terminal migration also depends on ruleset permission.** Held fees are not migrated, and migration into a
   non-feeless terminal attempts the normal protocol fee. Fee-route failure does not block migration; the failed fee is
   refunded to the source terminal and reported through `FeeReverted`.
+- **Migrate balances before removing a terminal.** The store records migration for the calling terminal address and
+  clears that terminal's ledger balance. If a terminal is removed while it still has a ledger balance, later calls from
+  that terminal are no longer coupled to the directory's canonical terminal set. Operators should migrate through
+  `JBMultiTerminal.migrateBalanceOf` before removal and confirm token custody and `JBTerminalStore.balanceOf`
+  afterwards.
 - **Directory updates are high-impact.** `setTerminalsOf` and `setControllerOf` can redirect a project's fund and authority flow.
 
 ### Ruleset Queuing

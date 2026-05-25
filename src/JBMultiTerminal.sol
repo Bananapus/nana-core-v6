@@ -626,7 +626,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             }
 
             // Transfer the balance minus the fee to the new terminal.
-            uint256 migrationAmount = balance - feeAmount;
+            uint256 migrationAmount;
+            // `_takeFeeFrom` calculated `feeAmount` from `balance`, so it cannot exceed `balance`.
+            unchecked {
+                migrationAmount = balance - feeAmount;
+            }
 
             _externalAddToBalance({
                 terminal: to, projectId: projectId, token: token, amount: migrationAmount, metadata: bytes("")
@@ -690,7 +694,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Set the beneficiary token count.
         if (beneficiaryBalanceAfter > beneficiaryBalanceBefore) {
-            beneficiaryTokenCount = beneficiaryBalanceAfter - beneficiaryBalanceBefore;
+            // Guarded by the comparison above.
+            unchecked {
+                beneficiaryTokenCount = beneficiaryBalanceAfter - beneficiaryBalanceBefore;
+            }
         }
 
         // The token count for the beneficiary must be greater than or equal to the specified minimum.
@@ -737,7 +744,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // reverting.
             //    A `FeeReverted` event is emitted so the forgiveness is observable off-chain.
             delete _heldFeesOf[projectId][token][currentIndex];
-            _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
+            // `currentIndex` was proven to be within the held-fee array.
+            unchecked {
+                _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
+            }
 
             // Restore the originating fee-paying call's referral project for the duration of this fee's processing
             // so the credit in `_processFee` attributes to the right (chain, project) pair. No save needed:
@@ -1879,6 +1889,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
 
             _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
+            // The store balance was credited first; this mirrors that bounded increase for fee recovery.
+            unchecked {
+                _feeFreeSurplusOf[projectId][token] += amount;
+            }
         }
     }
 
@@ -1887,7 +1901,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token to record the added balance for.
     /// @param amount The amount of the token to record, as a fixed point number with the same number of decimals as
     /// this terminal.
-    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) internal {
+    function _recordAddedBalanceFor(uint256 projectId, address token, uint256 amount) private {
         STORE.recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
     }
 
