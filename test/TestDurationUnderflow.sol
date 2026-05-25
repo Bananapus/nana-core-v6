@@ -39,7 +39,7 @@ contract JBRulesetsHarness is JBRulesets {
 /// Without the fix, `block.timestamp - baseRuleset.duration + 1` wraps around to ~2^256,
 /// causing `deriveStartFrom` to loop or revert.
 ///
-/// NOTE: Through `currentOf`, the vulnerable code path (line 229) is structurally unreachable
+/// NOTE: Through `currentOf`, the underflow-prone branch is structurally unreachable
 /// with `duration >= block.timestamp` because:
 ///   - A queued successor starts at `base.start + k * base.duration` (k >= 1)
 ///   - So `block.timestamp >= base.start + base.duration > base.duration`
@@ -75,7 +75,7 @@ contract TestDurationUnderflow is TestBaseWorkflow {
     }
 
     // ──────────────────────────────────────────────────────────────────────
-    // Direct harness tests — exercise the fix at line 606.
+    // Direct harness tests — exercise `_simulateCycledRulesetBasedOn` directly.
     //
     // foundry.toml sets block_timestamp = 1643802347 (~1.64 billion).
     // A duration > 1643802347 triggers the underflow guard.
@@ -147,8 +147,8 @@ contract TestDurationUnderflow is TestBaseWorkflow {
     // ──────────────────────────────────────────────────────────────────────
     // Integration tests — currentOf with large durations
     //
-    // These exercise the normal `currentOf` path (early return at line 191).
-    // The underflow path (line 229) is not reachable here, but these tests
+    // These exercise the normal `currentOf` early-return path.
+    // The crafted-parameter underflow path is not reachable here, but these tests
     // verify the protocol works correctly with large durations end-to-end.
     // ──────────────────────────────────────────────────────────────────────
 

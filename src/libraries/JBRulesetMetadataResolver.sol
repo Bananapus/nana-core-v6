@@ -90,7 +90,7 @@ library JBRulesetMetadataResolver {
         return uint16(ruleset.metadata >> 242);
     }
 
-    /// @notice Pack the funding cycle metadata.
+    /// @notice Pack ruleset metadata.
     /// @param rulesetMetadata The ruleset metadata to validate and pack.
     /// @return packed The packed uint256 of all metadata params. The first 4 bits (bits 0-3) specify the version;
     /// supported values are 0-15. A future protocol version that needs more than 16 distinct metadata layouts must
@@ -131,18 +131,18 @@ library JBRulesetMetadataResolver {
         if (rulesetMetadata.holdFees) packed |= 1 << 78;
         // scopeCashOutsToLocalBalances in bit 79.
         if (rulesetMetadata.scopeCashOutsToLocalBalances) packed |= 1 << 79;
-        // use pay data source in bit 80.
+        // use pay data hook in bit 80.
         if (rulesetMetadata.useDataHookForPay) packed |= 1 << 80;
-        // use cash out data source in bit 81.
+        // use cash out data hook in bit 81.
         if (rulesetMetadata.useDataHookForCashOut) packed |= 1 << 81;
-        // data source address in bits 82-241.
+        // data hook address in bits 82-241.
         packed |= uint256(uint160(address(rulesetMetadata.dataHook))) << 82;
         // metadata in bits 242-255 (14 bits).
         packed |= (uint256(rulesetMetadata.metadata) & 0x3FFF) << 242;
     }
 
-    /// @notice Expand the funding cycle metadata.
-    /// @param ruleset The funding cycle having its metadata expanded.
+    /// @notice Expand ruleset metadata.
+    /// @param ruleset The ruleset whose metadata is expanded.
     /// @return rulesetMetadata The ruleset's metadata object.
     function expandMetadata(JBRuleset memory ruleset) internal pure returns (JBRulesetMetadata memory) {
         return JBRulesetMetadata({

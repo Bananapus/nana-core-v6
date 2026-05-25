@@ -20,7 +20,7 @@ import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {ComprehensiveHandler} from "./invariants/handlers/ComprehensiveHandler.sol";
 import {JBAccountingContext} from "../src/structs/JBAccountingContext.sol";
 
-/// @notice Comprehensive invariant tests for JB V5 fund conservation.
+/// @notice Comprehensive invariant tests for Juicebox fund conservation.
 /// @dev Tests 8 invariants across 10 operations: pay, cashOut, sendPayouts, addToBalance,
 ///      sendReservedTokens, useAllowance, burnTokens, claimCredits, advanceTime, processHeldFees.
 contract ComprehensiveInvariant_Local is StdInvariant, TestBaseWorkflow {

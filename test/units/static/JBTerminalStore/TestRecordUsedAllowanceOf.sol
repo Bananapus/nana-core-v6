@@ -252,6 +252,98 @@ contract TestRecordUsedAllowanceOf_Local is JBTerminalStoreSetup {
         assertEq(usedAmount, _defaultAmount);
     }
 
+    function test_GivenCrossCurrencyConversionRoundsToZero_DoesNotUseAllowanceOrBalance() external {
+        // Find the storage slot.
+        bytes32 balanceOfSlot = keccak256(abi.encode(address(this), uint256(0)));
+        bytes32 projectSlot = keccak256(abi.encode(_projectId, uint256(balanceOfSlot)));
+        bytes32 slot = keccak256(abi.encode(address(_token), uint256(projectSlot)));
+
+        // Set balance.
+        vm.store(address(_store), slot, bytes32(_balance));
+
+        JBRulesetMetadata memory _metadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: JBConstants.MAX_CASH_OUT_TAX_RATE,
+            baseCurrency: _nativeCurrency,
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: false,
+            scopeCashOutsToLocalBalances: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 _packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_metadata);
+
+        JBRuleset memory _returnedRuleset = JBRuleset({
+            cycleNumber: uint48(block.timestamp),
+            id: uint48(block.timestamp),
+            basedOnId: 0,
+            start: uint48(block.timestamp),
+            duration: uint32(block.timestamp + 1000),
+            weight: 1e18,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: _packedMetadata
+        });
+
+        mockExpect(address(rulesets), abi.encodeCall(IJBRulesets.currentOf, (_projectId)), abi.encode(_returnedRuleset));
+
+        // A 1-unit withdrawal in `_nativeCurrency` converts to zero units of `_currency`.
+        mockExpect(
+            address(prices),
+            abi.encodeCall(IJBPrices.pricePerUnitOf, (_projectId, _nativeCurrency, _currency, 18)),
+            abi.encode(2e18)
+        );
+
+        // These mocks let the pre-fix path complete and consume allowance even though no terminal tokens move.
+        vm.mockCall(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(_controller)
+        );
+        vm.mockCall(
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.surplusAllowanceOf,
+                (_projectId, block.timestamp, address(this), address(_token), _nativeCurrency)
+            ),
+            abi.encode(1e19)
+        );
+
+        JBCurrencyAmount[] memory _limits = new JBCurrencyAmount[](1);
+        _limits[0] = JBCurrencyAmount({amount: 0, currency: _currency});
+        vm.mockCall(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitsOf, (_projectId, block.timestamp, address(this), address(_token))
+            ),
+            abi.encode(_limits)
+        );
+
+        (, uint256 usedAmount) = _store.recordUsedAllowanceOf(_projectId, address(_token), 1, _nativeCurrency);
+
+        assertEq(usedAmount, 0);
+        assertEq(_store.balanceOf(address(this), _projectId, address(_token)), _balance);
+        assertEq(
+            _store.usedSurplusAllowanceOf(
+                address(this), _projectId, address(_token), _returnedRuleset.id, _nativeCurrency
+            ),
+            0
+        );
+    }
+
     function test_GivenThereIsInadequateBalance() external {
         // it will revert INADEQUATE_TERMINAL_STORE_BALANCE
 

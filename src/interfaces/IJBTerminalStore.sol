@@ -17,9 +17,8 @@ import {JBTokenAmount} from "../structs/JBTokenAmount.sol";
 interface IJBTerminalStore {
     /// @notice Emitted when a referrer is credited with a fee payment amount.
     /// @dev `referralChainId` and `referralProjectId` are emitted as separate indexed topics so off-chain consumers
-    /// can filter directly on either dimension. The `feeVolumeByReferralOf` storage key is the packed
-    /// `(referralChainId << 48) | referralProjectId` form — indexers re-pack the two fields when looking up the
-    /// cumulative balance for a referrer.
+    /// can filter directly on either dimension. The public `feeVolumeByReferralOf` getter exposes the same unpacked
+    /// `(terminal, referralChainId, referralProjectId)` tuple.
     /// @param terminal The terminal that originated the fee-paying call (`msg.sender` on `recordFeeReferralCreditOf`).
     /// @param referralChainId The EIP-155 chain ID of the referrer's home chain.
     /// @param referralProjectId The referrer's bare project ID on `referralChainId` (no chain bits).

@@ -42,9 +42,8 @@ import {JBSplitHookContext} from "./structs/JBSplitHookContext.sol";
 import {JBTerminalConfig} from "./structs/JBTerminalConfig.sol";
 
 /// @notice The orchestrator for every Juicebox project's lifecycle. Use the controller to launch a project, queue new
-/// rulesets (funding cycles), mint or burn tokens, deploy an ERC-20, distribute reserved tokens, and manage
-/// permissions. The controller coordinates between the terminal (money), rulesets (rules), tokens (issuance), and
-/// splits (distribution).
+/// rulesets, mint or burn tokens, deploy an ERC-20, distribute reserved tokens, and manage permissions. The controller
+/// coordinates between the terminal (money), rulesets (rules), tokens (issuance), and splits (distribution).
 /// @dev Supports ERC-2771 meta-transactions. Implements `IJBMigratable` for controller-to-controller migration.
 /// An omnichain deployer address is trusted to launch and queue rulesets on behalf of any project for cross-chain
 /// coordination.

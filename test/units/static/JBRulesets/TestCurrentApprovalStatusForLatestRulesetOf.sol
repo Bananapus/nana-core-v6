@@ -192,7 +192,7 @@ contract TestCurrentApprovalStatusForLatestRulesetOf_Local is JBRulesetsSetup {
 
         mockExpect(address(directory), _encodedCall, _willReturn);
 
-        // First queue a base funding cycle
+        // First queue a base ruleset.
 
         // Setup: expect ruleset event (RulesetQueued) is emitted
         vm.expectEmit();

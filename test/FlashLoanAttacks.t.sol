@@ -276,10 +276,8 @@ contract FlashLoanAttacks_Local is TestBaseWorkflow {
     // ═══════════════════════════════════════════════════════════════════
 
     /// @notice Regression test: cashOut(0) with totalSupply==0 previously returned the entire surplus.
-    /// @dev In V5, `cashOutCount >= totalSupply` (0 >= 0) was true and returned the full surplus before
-    /// checking for zero cashOutCount. Fixed since V5.1: `JBCashOuts.cashOutFrom` returns 0 when
-    /// cashOutCount==0 (line 31) before reaching the `cashOutCount >= totalSupply` check (line 37).
-    /// This test verifies the fix holds.
+    /// @dev `JBCashOuts.cashOutFrom` returns 0 when `cashOutCount == 0` before checking whether
+    /// `cashOutCount >= totalSupply`. This test verifies the fix holds.
     function test_variant_addToBalance_zeroCashOut() public {
         // Add to balance when no tokens exist
         vm.deal(address(0xD000), 5 ether);

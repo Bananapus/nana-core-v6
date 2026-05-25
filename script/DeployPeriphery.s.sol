@@ -69,11 +69,10 @@ contract DeployPeriphery is Script, Sphinx {
         IJBPriceFeed matchingPriceFeed;
         matchingPriceFeed = new JBMatchingPriceFeed();
 
-        // Same as the chainlink example grace period.
+        // Same grace period used in Chainlink sequencer-feed examples.
         uint256 l2GracePeriod = 3600 seconds;
 
-        // NOTE: Feeds come from this url `https://data.chain.link/feeds/ethereum/mainnet/eth-usd`.
-        // Sequencer feeds come from this url `https://docs.chain.link/data-feeds/l2-sequencer-feeds`.
+        // Feed addresses come from Chainlink price-feed and L2 sequencer-feed docs.
 
         // Perform the deploy for L1(s).
         if (block.chainid == 1) {
@@ -162,8 +161,7 @@ contract DeployPeriphery is Script, Sphinx {
             "Unexpected USD/native price feed"
         );
 
-        // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
-        // chains where Ether is the native asset. We *NEED* to update this when we deploy to a non-ether chain!
+        // This feed also prices USD/ETH, which is valid only on ETH-native chains.
         try core.prices
             .addPriceFeedFor({
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
@@ -179,9 +177,7 @@ contract DeployPeriphery is Script, Sphinx {
             "Unexpected USD/ETH price feed"
         );
 
-        // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
-        // NOTE: We need to refactor this the moment we add a chain where its native token is *NOT* ether.
-        // As otherwise prices for the `NATIVE_TOKEN` will be incorrect!
+        // ETH/native is 1:1 only on ETH-native chains. Add a separate feed before deploying elsewhere.
         try core.prices
             .addPriceFeedFor({
                 projectId: 0,
