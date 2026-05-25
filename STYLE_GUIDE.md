@@ -563,7 +563,7 @@ CI checks formatting via `forge fmt --check`.
 - `forge-std` as a git submodule in `lib/`
 - Sphinx plugins as a devDependency
 - Cross-repo references use `file:../sibling-repo` in local development
-- Published npm dependencies are pinned to exact versions
+- Published npm dependencies are pinned to exact versions unless a repo intentionally tracks a compatible release range and the lockfile pins CI installs
 - GitHub dependency refs are pinned to a commit and used only when the needed Solidity sources are not published to npm
 
 ### Contract Size Checks

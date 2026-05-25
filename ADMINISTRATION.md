@@ -6,7 +6,7 @@
 | --- | --- |
 | Scope | Core Juicebox V6 control plane: directory, controller, terminals, permissions, prices, and global protocol switches |
 | Control posture | Mixed protocol-owner, project-owner, delegated-operator, controller, and terminal control |
-| Highest-risk actions | Controller migration, terminal migration, token binding, price-feed installation, and broad permission grants |
+| Highest-risk actions | Controller migration, terminal migration, token binding, price-feed fallback installation, feeless-list changes, and broad permission grants |
 | Recovery posture | Project-local mistakes may be fixable if rulesets allow it; immutable infra mistakes usually require replacement and migration |
 
 ## Purpose
@@ -40,9 +40,10 @@ High-value admin functions include:
 - `JBController.queueRulesetsOf(...)`, `launchRulesetsFor(...)`, `setSplitGroupsOf(...)`, `deployERC20For(...)`, `setTokenFor(...)`, `setUriOf(...)`, `addPriceFeedFor(...)`
 - `JBMultiTerminal.useAllowanceOf(...)`, `migrateBalanceOf(...)`, `cashOutTokensOf(...)` when permission-gated by the holder or delegated authority
 - `JBPermissions.setPermissionsFor(...)`
-- `JBPrices.addPriceFeedFor(...)` for protocol defaults or project-local feeds
-- `JBFeelessAddresses.setFeelessAddress(...)`, `setFeelessAddressFor(...)`
+- `JBPrices.addPriceFeedFor(...)` for protocol defaults or project-local feed fallbacks
+- `JBFeelessAddresses.setFeelessAddress(...)`, `setFeelessAddressFor(...)`, `setFeelessHook(...)`
 - `JBProjects.setTokenUriResolver(...)`
+- `JBProjects.setCreationFee(...)`
 
 The practical split is simple:
 
@@ -52,7 +53,7 @@ The practical split is simple:
 
 ## Immutable And One-Way Decisions
 
-- Default or project-specific price feeds are write-once for a given pair.
+- Price feeds are append-only. Existing feeds cannot be edited or removed; later feeds are backups after the current primary feed.
 - ERC-20 token binding for a project is effectively one-time.
 - The fee beneficiary project ID inside `JBMultiTerminal` is hardcoded.
 - Constructor immutables on controller, directory, terminal, store, prices, and tokens cannot be patched.
@@ -61,7 +62,7 @@ The practical split is simple:
 
 - Use narrow project-scoped permissions instead of wildcard or ROOT permissions when possible.
 - Check whether the active ruleset allows the change before assuming the owner or operator can make it.
-- Treat controller migration, terminal migration, token deployment, and price-feed installation as high-blast-radius control-plane changes.
+- Treat controller migration, terminal migration, token deployment, fee-exemption changes, and price-feed installation as high-blast-radius control-plane changes.
 - Read both the permission check and the current ruleset flags before concluding an action is allowed.
 - Keep fee-route and payout-path failure semantics in mind. Some failures restore project balance instead of trapping funds.
 
@@ -83,7 +84,7 @@ The practical split is simple:
 ## Admin Boundaries
 
 - Protocol owners cannot directly rewrite project economics without going through the contracts and ruleset constraints that enforce those changes.
-- Project owners cannot bypass immutable constructor references or rewrite existing price-feed entries.
+- Project owners cannot bypass immutable constructor references or rewrite existing price-feed entries; if rulesets allow it, they can append fallback feeds.
 - Controllers and terminals only have the authority given by the directory and core contracts.
 - Nobody can change the hardcoded fee beneficiary or patch immutable deployment mistakes in place.
 
