@@ -19,21 +19,17 @@ This file covers the main accounting, permission, and liveness risks in the core
 ## 1. Trust Assumptions
 
 - **Hooks are not exploiting reentrancy.** Core does not use `ReentrancyGuard`. Safety depends on call ordering and the `JBTerminalStore_InadequateTerminalStoreBalance` backstop.
-- **Data hooks are highly trusted.** A data hook can change payment weight, cash-out tax rate, `effectiveTotalSupply`, `effectiveCashOutCount`, and hook-forwarding amounts. The protocol only bounds the final amounts.
-- **Price feeds are honest enough.** Surplus, payout conversions, and allowance math depend on `JBPrices`. Stale or manipulated feeds misprice the system. Registered feeds must return nonzero prices; zero prices now fail closed in `JBPrices` before downstream conversion math can divide by zero or silently treat an asset as worthless.
-- **Price feeds are immutable once registered, and projects own that trust choice.** `JBPrices.addPriceFeedFor`
-  rejects replacement of any existing direct or inverse feed for a `(projectId, pricingCurrency, unitCurrency)`
-  triple. This is intentional: the project that registers a feed is committing on-chain to that exact oracle for
-  every downstream conversion involving the pair. The registering party — a project owner or, for project `0`
-  defaults, the `JBPrices` owner — is responsible for selecting a feed they're willing to trust permanently for
-  that pair. `DeployPeriphery.s.sol` registers default feeds with a `try { addPriceFeedFor } catch { require
-  existing != 0 }` pattern; a wrong default already installed by a prior deploy attempt will be silently accepted
-  by the standalone script. The canonical `deploy-all-v6` deploy enforces equality with the expected feed
-  (`_ensureDefaultPriceFeed`) on top of the immutability rule, so a deploy that finds a mismatched pre-existing
-  feed reverts loudly. Projects that want post-deploy oracle flexibility (e.g. fail-over between two upstream
-  oracles, or a guarded swap of the data source under a governance condition) should register a wrapper feed that
-  implements `IJBPriceFeed` and routes through whatever upstream provider the wrapper chooses — that wrapper's
-  governance becomes the project's flexibility surface while `JBPrices`'s immutability remains intact.
+- **Data hooks are highly trusted.** A data hook can change payment weight, cash-out tax rate, `effectiveTotalSupply`, `effectiveCashOutCount`, `effectiveSurplusValue`, and hook-forwarding amounts. The protocol only bounds the final amounts.
+- **Price feeds are honest enough.** Surplus, payout conversions, and allowance math depend on `JBPrices`. Stale or manipulated feeds misprice the system. `pricePerUnitOf` skips feeds that revert or return zero, then fails closed if no direct, inverse, project, or default feed can produce a nonzero price.
+- **Price feeds are append-only, and projects own that trust choice.** `JBPrices.addPriceFeedFor`
+  appends feeds for an exact `(projectId, pricingCurrency, unitCurrency)` pair and rejects duplicate feed addresses
+  for that exact pair. Existing entries cannot be edited, removed, or reprioritized: index `0` remains the primary
+  feed, and later feeds are backups if earlier feeds are unavailable. The registering party, a project owner or the
+  `JBPrices` owner for project `0` defaults, is responsible for selecting both the primary feed and any
+  fallbacks. `DeployPeriphery.s.sol` and the canonical `deploy-all-v6` deploy both require the expected default
+  feed to remain the primary feed, so a mismatched pre-existing default reverts loudly instead of being accepted as
+  a backup. Projects that need governed oracle replacement should register a wrapper `IJBPriceFeed`; the wrapper's
+  governance becomes the flexibility surface while `JBPrices` keeps append-only history.
 - **Accepted ERC-20s behave like standard tokens.** Inbound fee-on-transfer handling is safer than outbound handling. Rebasing or nonstandard outbound behavior can still break accounting assumptions.
 - **Accepted tokens are not actively adversarial.** Core does not harden against tokens that reenter or distort balance observations during transfer.
 - **The trusted forwarder is not compromised.** If it is, `_msgSender()` can be spoofed across permission-gated contracts.
@@ -81,6 +77,10 @@ This file covers the main accounting, permission, and liveness risks in the core
   migration ability over guaranteed fee collection. During migration, a failed migration fee remains as refunded
   source-terminal balance while the post-fee amount migrates; operators should monitor `FeeReverted` and restore fee
   routing so refunded residuals can be swept cleanly.
+- **Fee referral attribution is accounting metadata, not fee custody.** `cashOutTokensOf`, `sendPayoutsOf`, and
+  `useAllowanceOf` can carry a packed `(chainId << 48) | projectId` referrer. A bare project ID is resolved to the
+  current chain. Held fees store that referral pair until processing, and `JBTerminalStore` records fee volume per
+  terminal/referrer. Bad encoding misattributes volume but does not redirect the fee payment itself.
 
 ### Weight Decay
 
@@ -186,7 +186,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - Stale or incomplete Chainlink data can block multi-currency operations.
 - L2 sequencer downtime can also block feeds behind a sequencer-check wrapper.
 - Single-currency projects are unaffected when they do not need conversion.
-- Price feeds are immutable once set in `JBPrices`.
+- Price feeds are append-only in `JBPrices`; the primary feed cannot be changed, but backups can be appended.
 
 ### Approval Hook Griefing
 
@@ -306,3 +306,4 @@ Core can be deployed before project `#1` is fully ready. During that period, fee
 - **Ruleset existence:** after launch, `RULESETS.currentOf(projectId)` should not accidentally go empty.
 - **No flash-loan profit:** `pay()` followed by `cashOutTokensOf()` in one transaction should not be profitable after fees.
 - **Held-fee integrity:** active held-fee entries plus processed fees should equal all fees ever taken under held-fee mode.
+- **Referral integrity:** fee volume credited by `recordFeeReferralCreditOf` should match successful fee payments and preserved held-fee referral context.

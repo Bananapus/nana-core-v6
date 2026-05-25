@@ -11,7 +11,7 @@
 |---|---|
 | Repo overview and protocol framing | [`README.md`](./README.md), [`ARCHITECTURE.md`](./ARCHITECTURE.md) |
 | Controller and project lifecycle behavior | [`src/JBController.sol`](./src/JBController.sol), [`src/JBProjects.sol`](./src/JBProjects.sol), [`src/JBTokens.sol`](./src/JBTokens.sol) |
-| Payment, cash-out, surplus, and fee accounting | [`src/JBMultiTerminal.sol`](./src/JBMultiTerminal.sol), [`src/JBTerminalStore.sol`](./src/JBTerminalStore.sol), [`src/JBFundAccessLimits.sol`](./src/JBFundAccessLimits.sol) |
+| Payment, cash-out, surplus, fee, and referral accounting | [`src/JBMultiTerminal.sol`](./src/JBMultiTerminal.sol), [`src/JBTerminalStore.sol`](./src/JBTerminalStore.sol), [`src/JBFundAccessLimits.sol`](./src/JBFundAccessLimits.sol) |
 | Rulesets, permissions, directory, and prices | [`src/JBRulesets.sol`](./src/JBRulesets.sol), [`src/JBPermissions.sol`](./src/JBPermissions.sol), [`src/JBDirectory.sol`](./src/JBDirectory.sol), [`src/JBPrices.sol`](./src/JBPrices.sol) |
 | Shared math, metadata parsing, and constants | [`src/libraries/`](./src/libraries/), [`src/structs/`](./src/structs/), [`src/enums/`](./src/enums/) |
 | Periphery helpers and deployment | [`src/periphery/`](./src/periphery/), [`script/Deploy.s.sol`](./script/Deploy.s.sol), [`script/DeployPeriphery.s.sol`](./script/DeployPeriphery.s.sol) |
@@ -49,6 +49,7 @@ This is the core Juicebox V6 protocol on EVM. It lets projects launch treasury-b
 - Payment and cash-out previews are part of the protocol surface. Keep them aligned with execution.
 - Payout limits reset by ruleset cycle number. Surplus allowances are keyed by `ruleset.id`. They do not always reset together.
 - Fee handling is subtle. Re-check held fees, fee-free surplus tracking, and feeless-address behavior before changing payout or cash-out logic.
+- Fee-referral volume is attribution metadata. Re-check `currentReferralProjectId`, held-fee referral fields, and `JBTerminalStore.recordFeeReferralCreditOf` when changing fee-bearing outflows.
 - Fee-free surplus is a bounded anti-bypass mechanism, not a general exemption bucket.
 - For config or metadata-shape issues, open `references/types-errors-events.md` before changing structs or packed metadata.
 - If previews, accounting, or fee behavior change, verify the other two as well.

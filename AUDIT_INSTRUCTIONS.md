@@ -13,6 +13,7 @@ Suggestions of where to look:
 - miscompute payment minting, reserved tokens, or cash-out reclaim amounts
 - corrupt ruleset transitions, approvals, or decay behavior
 - bypass the permission model, migrations, or fee lifecycle
+- misattribute protocol fee volume through referral IDs or held-fee processing
 
 ## Scope
 
@@ -75,7 +76,9 @@ Ordering to keep in mind:
 
 - the store records accounting before terminal fulfillment is finished
 - controller mint and burn operations happen inside terminal flows, not in a separate settlement layer
+- cash-out data hooks can override tax rate, pricing cash-out count, pricing total supply, and pricing surplus value; local reclaim is still capped by available funds
 - hooks can turn a simple pay or cash-out into a multi-contract flow
+- fee-bearing cash-out, payout, and allowance calls carry transient referral context that is persisted into held fees
 
 ## Roles And Privileges
 
@@ -91,6 +94,7 @@ Ordering to keep in mind:
 | Dependency | Assumption | What breaks if wrong |
 |------------|------------|----------------------|
 | Price feeds | Currency conversions are fresh and coherent | Cross-currency flows misprice |
+| Fee referrals | Fee volume is credited to the intended `(chainId, projectId)` pair | Referral rewards or analytics misattribute volume |
 | Hook ecosystem | External hooks obey documented interfaces | Settlement becomes unsafe after control transfer |
 | Directory and migration surfaces | Canonical routing changes are authentic | Funds or permissions shift to the wrong place |
 
@@ -118,6 +122,7 @@ Ordering to keep in mind:
 - `pay`, `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf`
 - `preview*` paths when downstream repos treat them as execution truth
 - held-fee lifecycle and `_processFee`
+- `currentReferralProjectId`, `recordFeeReferralCreditOf`, and held-fee referral restoration
 - surplus aggregation across terminals
 - controller migration and terminal migration
 - `setPermissionsFor` and wildcard semantics
@@ -128,7 +133,8 @@ Replay these sequences:
 2. `cashOutTokensOf` when cross-terminal surplus and `scopeCashOutsToLocalBalances` matter
 3. `sendPayoutsOf` into splits that route to another project, hook, or failing beneficiary
 4. held-fee accumulation followed by migration or balance depletion
-5. permission grants involving operators, wildcard project IDs, or later controller changes
+5. referral-bearing payouts or allowances followed by held-fee processing
+6. permission grants involving operators, wildcard project IDs, or later controller changes
 
 ## Accepted Risks Or Behaviors
 

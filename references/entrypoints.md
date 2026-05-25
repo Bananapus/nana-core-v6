@@ -20,9 +20,9 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBTokens` | Dual-balance system: credits (internal) + ERC-20. Credits burned first on burn. |
 | `JBSplits` | Split configurations per project/ruleset/group. Packed storage for gas efficiency. |
 | `JBFundAccessLimits` | Payout limits and surplus allowances per project/ruleset/terminal/token. |
-| `JBPrices` | Price feed registry with project-specific and protocol-wide default feeds. Immutable once set. |
+| `JBPrices` | Append-only price feed registry with project-specific feeds, protocol defaults, inverse lookup, and backup feeds. |
 | `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271. Controlled by `JBTokens` via `onlyTokens`. Deployed via `Clones.clone()`. |
-| `JBFeelessAddresses` | Allowlist for fee-exempt addresses. |
+| `JBFeelessAddresses` | Static and hook-driven fee-exemption registry. |
 | `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
 | `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
 | `JBDeadline` | Approval hook: rejects rulesets queued within `DURATION` seconds of start. Ships as `JBDeadline3Hours`, `JBDeadline1Day`, `JBDeadline3Days`, `JBDeadline7Days`. |
@@ -61,9 +61,9 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Function | What it does |
 |----------|--------------|
 | `pay(uint256 projectId, address token, uint256 amount, address beneficiary, uint256 minReturnedTokens, string memo, bytes metadata)` | Pays a project. Mints project tokens to beneficiary based on ruleset weight. Returns token count. |
-| `cashOutTokensOf(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, uint256 minTokensReclaimed, address payable beneficiary, bytes metadata)` | Burns project tokens and reclaims surplus terminal tokens via bonding curve. |
-| `sendPayoutsOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut)` | Distributes payouts from the project's balance to its payout split group, up to the payout limit. |
-| `useAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut, address payable beneficiary, address payable feeBeneficiary, string memo)` | Withdraws from the project's surplus allowance to a beneficiary. The `feeBeneficiary` receives tokens minted by the fee payment. |
+| `cashOutTokensOf(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, uint256 minTokensReclaimed, address payable beneficiary, bytes metadata, uint256 referralProjectId)` | Burns project tokens and reclaims surplus terminal tokens via bonding curve. Optional referral credits protocol fee volume. |
+| `sendPayoutsOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut, uint256 referralProjectId)` | Distributes payouts from the project's balance to its payout split group, up to the payout limit. Optional referral credits protocol fee volume. |
+| `useAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut, address payable beneficiary, address payable feeBeneficiary, string memo, uint256 referralProjectId)` | Withdraws from the project's surplus allowance to a beneficiary. The `feeBeneficiary` receives tokens minted by the fee payment. Optional referral credits protocol fee volume. |
 | `addToBalanceOf(uint256 projectId, address token, uint256 amount, bool shouldReturnHeldFees, string memo, bytes metadata)` | Adds funds to a project's balance without minting tokens. Can unlock held fees. |
 | `migrateBalanceOf(uint256 projectId, address token, IJBTerminal to)` | Migrates a project's token balance to another terminal. Requires `allowTerminalMigration`. |
 | `processHeldFeesOf(uint256 projectId, address token, uint256 count)` | Processes up to `count` held fees for a project, sending them to the fee beneficiary project. |
@@ -74,6 +74,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `previewPayFor(uint256 projectId, address token, uint256 amount, address beneficiary, bytes metadata)` | Simulates a full payment including the reserved/beneficiary token split. Returns `(ruleset, beneficiaryTokenCount, reservedTokenCount, hookSpecifications)`. Composes `STORE.previewPayFrom` + `controller.previewMintOf`. |
 | `previewCashOutFrom(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, address payable beneficiary, bytes metadata)` | Simulates a full cash out including bonding curve and data hook effects. Cash-out data hooks may alter pricing inputs, but not the caller-supplied burn count. Returns `(ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications)`. Delegates to `STORE.previewCashOutFrom`. |
 | `heldFeesOf(uint256 projectId, address token, uint256 count)` | Returns up to `count` held fees for a project/token. |
+| `currentReferralProjectId()` | Returns the in-flight packed referral `(chainId << 48) | projectId`, or 0 outside a fee-bearing call. |
 
 ### JBTerminalStore
 
@@ -93,8 +94,11 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals and all tokens. |
 | `currentSurplusOf(uint256 projectId, IJBTerminal[] terminals, address[] tokens, uint256 decimals, uint256 currency)` | Returns the current surplus across specified terminals and tokens. Empty arrays default to all. |
 | `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Convenience view: total surplus across all terminals and all tokens. |
+| `feeVolumeByReferralOf(address terminal, uint256 referralChainId, uint256 referralProjectId)` | Returns cumulative protocol fee volume credited to a referrer through a terminal. |
 | `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
 | `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured, including any pricing-only adjustments they return. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `recordFeeReferralCreditOf(uint256 referralProjectId, JBTokenAmount amount)` | Credits normalized fee volume to a packed referral project for the calling terminal. No-ops for zero referral, zero amount, or missing price feed. |
+| `totalFeeVolumeOf(address terminal)` | Returns total referral-creditable fee volume recorded for a terminal. |
 
 ### JBRulesets
 
@@ -130,8 +134,11 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 
 | Function | What it does |
 |----------|--------------|
-| `pricePerUnitOf(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, uint256 decimals)` | Returns the price of 1 `unitCurrency` in `pricingCurrency`. Checks project-specific, inverse, then default feeds. |
-| `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed. Project ID 0 sets protocol-wide defaults (owner-only). Immutable once set. |
+| `pricePerUnitOf(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, uint256 decimals)` | Returns the price of 1 `unitCurrency` in `pricingCurrency`. Checks project direct, project inverse, default direct, then default inverse feeds; skips feeds that revert or return zero. |
+| `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Appends a feed for an exact pair. Project ID 0 sets protocol-wide defaults (owner-only); nonzero project IDs are controller-only. |
+| `priceFeedAt(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, uint256 index)` | Returns the feed at an exact pair's index. |
+| `priceFeedCountFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency)` | Returns how many feeds are configured for an exact pair. |
+| `priceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency)` | Returns the primary feed for an exact pair, or zero if none is configured. |
 
 ### JBTokens
 
@@ -141,6 +148,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `totalBalanceOf(address holder, uint256 projectId)` | Returns combined credit + ERC-20 balance. |
 | `creditBalanceOf(address holder, uint256 projectId)` | Returns the holder's credit balance. |
 | `tokenOf(uint256 projectId)` | Returns the ERC-20 token for a project (`IJBToken`). |
+| `projectIdOf(IJBToken token)` | Returns the project ID associated with an ERC-20 token. |
+| `totalCreditSupplyOf(uint256 projectId)` | Returns the internal credit supply for a project. |
 | `setTokenMetadataFor(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's token. Controller-only. |
 
 ### JBSplits
@@ -157,6 +166,9 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |----------|--------------|
 | `setFeelessAddress(address addr, bool flag)` | Adds or removes an address from the global (all-project) fee exemption list. Owner-only. (`JBFeelessAddresses`) |
 | `setFeelessAddressFor(uint256 projectId, address addr, bool flag)` | Adds or removes an address from a project's fee exemption list. `projectId = 0` = global wildcard. Owner-only. (`JBFeelessAddresses`) |
-| `isFeelessFor(address addr, uint256 projectId)` | Returns whether an address is feeless for a project (checks both wildcard and project-specific). (`JBFeelessAddresses`) |
+| `setFeelessHook(IJBFeelessHook hook)` | Sets or clears the optional hook consulted by `isFeelessFor`. Owner-only. (`JBFeelessAddresses`) |
+| `isFeelessFor(address addr, uint256 projectId, address caller)` | Returns whether an address is feeless for a project, checking static grants and the optional caller-aware hook. (`JBFeelessAddresses`) |
+| `creationFee()` / `creationFeeReceiver()` | Return the current project creation fee and receiver. (`JBProjects`) |
+| `setCreationFee(uint256 fee, address payable receiver)` | Sets the native-token project creation fee. Owner-only. (`JBProjects`) |
 | `setControllerAllowed(uint256 projectId)` | Returns whether a project's controller can currently be set. (`IJBDirectoryAccessControl`) |
 | `setTerminalsAllowed(uint256 projectId)` | Returns whether a project's terminals can currently be set. (`IJBDirectoryAccessControl`) |

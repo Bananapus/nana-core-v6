@@ -17,7 +17,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 | `JBCurrencyAmount` | `amount (uint224)`, `currency (uint32)` | Payout limits and surplus allowances |
 | `JBFundAccessLimitGroup` | `terminal (address)`, `token (address)`, `payoutLimits (JBCurrencyAmount[])`, `surplusAllowances (JBCurrencyAmount[])` | `JBRulesetConfig.fundAccessLimitGroups` |
 | `JBPermissionsData` | `operator (address)`, `projectId (uint64)`, `permissionIds (uint8[])` | `setPermissionsFor()` input |
-| `JBFee` | `amount (uint256)`, `beneficiary (address)`, `unlockTimestamp (uint48)` | Held fees in `JBMultiTerminal` |
+| `JBFee` | `amount (uint224)`, `referralChainId (uint32)`, `beneficiary (address)`, `unlockTimestamp (uint48)`, `referralProjectId (uint48)` | Held fees in `JBMultiTerminal`; referral fields preserve fee attribution until processing |
 | `JBSingleAllowance` | `sigDeadline (uint256)`, `amount (uint160)`, `expiration (uint48)`, `nonce (uint48)`, `signature (bytes)` | Permit2 allowance in terminal payments |
 | `JBRulesetWithMetadata` | `ruleset (JBRuleset)`, `metadata (JBRulesetMetadata)` | `allRulesetsOf()`, `currentRulesetOf()` return values |
 | `JBRulesetWeightCache` | `weight (uint112)`, `weightCutMultiple (uint168)` | Weight caching for long-running rulesets in `JBRulesets` |
@@ -69,7 +69,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 | `projectId = 0` | `JBPermissionsData` | Wildcard: permission applies to ALL projects. Cannot be combined with ROOT (1). |
 | `permissionId = 1` | `JBPermissions` | ROOT: grants all permissions for the scoped project. |
 | `rulesetId = 0` | `JBSplits.splitsOf()` | Fallback split group used when no splits are set for a specific ruleset. |
-| `projectId = 0` | `JBPrices.addPriceFeedFor()` | Sets a protocol-wide default price feed (owner-only). |
+| `projectId = 0` | `JBPrices.addPriceFeedFor()` | Appends a protocol-wide default price feed (owner-only). |
 
 ## Gotchas
 
@@ -92,8 +92,10 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - **Fee-free cashout exemption is scoped to fee-free intra-terminal payout amounts.** `_feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free payouts. After any outflow (payouts, `useAllowanceOf`, non-zero-tax or feeless cashouts), the counter is capped at the remaining balance — non-fee-free funds leave first, preserving the fee-free counter. During cashout with `cashOutTaxRate=0`, the 2.5% fee applies only up to this surplus, then depletes. Once consumed, subsequent cashouts are fee-free again. Cleared on terminal migration. This prevents a round-trip fee bypass (intra-terminal payout → zero-tax cashout) while scoping fees precisely to the fee-free inflow.
 - `JBProjects` constructor optionally mints project #1 to `feeProjectOwner` -- if `address(0)`, no fee project is created
 - `JBMultiTerminal` derives `DIRECTORY` from the provided `store` in its constructor -- not passed directly
-- `JBPrices.pricePerUnitOf()` checks project-specific feed, then inverse, then falls back to `DEFAULT_PROJECT_ID = 0`
-- `useAllowanceOf()` takes 8 args including `address payable feeBeneficiary` -- do NOT omit it
+- `JBPrices.pricePerUnitOf()` checks project direct feeds, project inverse feeds, default direct feeds, then default inverse feeds. It skips feeds that revert or return zero.
+- `useAllowanceOf()` takes 9 args including `address payable feeBeneficiary` and `uint256 referralProjectId` -- do NOT omit them
+- `sendPayoutsOf()` and `cashOutTokensOf()` also take `uint256 referralProjectId`; pass `0` for no referral credit
+- `JBFeelessAddresses.isFeelessFor()` takes 3 args: `(addr, projectId, caller)`. The optional hook can use `caller` to scope dynamic grants.
 - Cash out tax rate of 0% = proportional (1:1) redemption; 100% = nothing reclaimable (all surplus locked). Do NOT confuse with a "cash out rate" where 100% means full redemption.
 - `cashOutTaxRate` in `JBRulesetMetadata` is `uint16` (max 10,000 basis points), NOT 9-decimal precision
 - `reservedPercent` in `JBRulesetMetadata` is `uint16` (max 10,000 basis points), NOT 9-decimal precision
@@ -103,7 +105,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - `JBController`, `JBMultiTerminal`, `JBProjects`, `JBPrices`, `JBPermissions` all support ERC-2771 meta-transactions
 - `JBRulesetMetadataResolver` bit layout: version (4 bits), reservedPercent (16), cashOutTaxRate (16), baseCurrency (32), 14 boolean flags (1 bit each), dataHook address (160), metadata (14)
 - `IJBDirectoryAccessControl` has `setControllerAllowed()` and `setTerminalsAllowed()` -- NOT `setControllerAllowedFor()`
-- Price feeds are immutable once set in `JBPrices` -- they cannot be replaced or removed
+- Price feeds are append-only in `JBPrices`. Existing feeds cannot be replaced or removed; later feeds are fallbacks after the primary feed.
 - `JBFundAccessLimits` requires payout limits and surplus allowances to be in strictly increasing currency order to prevent duplicates
 - **Empty `fundAccessLimitGroups` = zero payouts, NOT unlimited.** If a ruleset's `fundAccessLimitGroups` array is empty (or has no entry for the terminal/token), `payoutLimitsOf()` returns an empty array → cumulative limit is 0 → `sendPayoutsOf()` caps to 0 and returns 0. To allow unlimited payouts, explicitly set a payout limit with `amount: type(uint224).max`.
 - **`groupId` (uint256) vs `currency` (uint32) are different types for the same address.** `JBSplitGroup.groupId` is `uint256(uint160(tokenAddress))` while `JBAccountingContext.currency` is `uint32(uint160(tokenAddress))`. These truncate differently — only `NATIVE_TOKEN` (0x000000000000000000000000000000000000EEEe) matches by coincidence. Don't confuse them.
@@ -180,7 +182,7 @@ Errors an agent is most likely to encounter. All are custom errors (revert with 
 | `JBTokens_InsufficientCredits` | `JBTokens` | `claimTokensFor` count exceeds credit balance. |
 | `JBTokens_TokensMustHave18Decimals` | `JBTokens` | Custom token does not use 18 decimals. |
 | `JBSplits_TotalPercentExceeds100` | `JBSplits` | Split percentages sum exceeds `SPLITS_TOTAL_PERCENT`. |
-| `JBPrices_PriceFeedAlreadyExists` | `JBPrices` | Feed already set for that currency pair (immutable). |
+| `JBPrices_PriceFeedAlreadyAdded` | `JBPrices` | The same feed address is already configured for that exact pair. Other backup feeds can still be appended. |
 | `JBPrices_PriceFeedNotFound` | `JBPrices` | No feed found for the requested currency pair. |
 | `JBRulesets_InvalidWeight` | `JBRulesets` | Weight exceeds `uint112.max`. |
 | `JBRulesets_InvalidWeightCutPercent` | `JBRulesets` | `weightCutPercent` exceeds `MAX_WEIGHT_CUT_PERCENT`. |
@@ -211,7 +213,10 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `HoldFee` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `fee`, `beneficiary` |
 | `ProcessFee` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `wasHeld`, `beneficiary` |
 | `ReturnHeldFees` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `returnedFees`, `leftoverAmount` |
+| `FeeReverted` | `IJBFeeTerminal` | `projectId*`, `token*`, `feeProjectId*`, `amount`, `reason` |
+| `ReferralCredit` | `IJBTerminalStore` | `terminal*`, `referralChainId*`, `referralProjectId*`, `amount`, `newTotal` |
 | `Create` | `IJBProjects` | `projectId*`, `owner*` |
+| `SetTokenMetadata` | `IJBTokens` | `projectId*`, `name`, `symbol` |
 | `OperatorPermissionsSet` | `IJBPermissions` | (operator, account, projectId, permissionIds, packed, caller) |
 | `RulesetQueued` | `IJBRulesets` | (rulesetId, projectId, duration, weight, weightCutPercent, approvalHook, metadata, mustStartAtOrAfter, caller) |
 | `SetSplit` | `IJBSplits` | (projectId, rulesetId, groupId, split, caller) |
@@ -241,11 +246,12 @@ function beforeCashOutRecordedWith(JBBeforeCashOutRecordedContext calldata conte
         uint256 cashOutTaxRate,                               // Overrides the ruleset's cash out tax rate
         uint256 effectiveCashOutCount,                        // Overrides the token count used for pricing only
         uint256 effectiveTotalSupply,                         // Overrides total supply used for bonding curve calc
+        uint256 effectiveSurplusValue,                        // Overrides surplus used for bonding curve calc
         JBCashOutHookSpecification[] memory hookSpecifications // Cash out hooks to call + amounts to forward
     );
 ```
 
-The data hook can override `cashOutTaxRate` (0 = proportional, 10000 = nothing reclaimable), `effectiveCashOutCount`, and `effectiveTotalSupply` to shift cash-out pricing, and return `hookSpecifications` to redirect reclaimed funds to cash out hooks. The terminal still burns the caller-supplied `cashOutCount`.
+The data hook can override `cashOutTaxRate` (0 = proportional, 10000 = nothing reclaimable), `effectiveCashOutCount`, `effectiveTotalSupply`, and `effectiveSurplusValue` to shift cash-out pricing, and return `hookSpecifications` to redirect reclaimed funds to cash out hooks. The terminal still burns the caller-supplied `cashOutCount` and caps the reclaim at locally available funds.
 
 ### `IJBRulesetDataHook.hasMintPermissionFor()`
 

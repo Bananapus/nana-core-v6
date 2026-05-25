@@ -10,13 +10,13 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 - supporters paying projects in assets that a terminal accepts
 - token holders cashing out against project surplus
 - operators managing permissions, splits, fund access limits, and rulesets
-- integrators wiring hooks, terminals, price feeds, and migrations into core
+- integrators wiring hooks, terminals, price feeds, fee referrals, and migrations into core
 
 ## Key Surfaces
 
 - `JBController`: project launch, ruleset queueing, token setup, splits, and controller migration
 - `JBMultiTerminal`: pay, payout, allowance, preview, and cash-out entrypoints
-- `JBTerminalStore`: balance, surplus, fee, and reclaim accounting
+- `JBTerminalStore`: balance, surplus, fee, referral-volume, and reclaim accounting
 - `JBDirectory`: controller and terminal routing
 - `JBPermissions`: packed operator-permission registry
 - `JBProjects`, `JBRulesets`, `JBPrices`, `JBFundAccessLimits`, `JBSplits`, `JBTokens`: core state and helper surfaces
@@ -104,6 +104,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 2. `JBFundAccessLimits` bounds how much may leave for the current ruleset cycle.
 3. `JBSplits` routes value to beneficiaries, projects, hooks, or fee recipients as configured.
 4. `JBTerminalStore` updates balances and fee accounting so later previews and cash outs stay consistent.
+5. If the call provides a nonzero referral project ID, fee volume is credited for attribution when protocol fees are processed.
 
 **Failure Modes**
 - splits or access limits no longer match operator expectations
@@ -203,11 +204,34 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - permissions are narrow, auditable, and scoped to the actions the operator actually needs
 
+## Journey 9: Attribute Protocol Fee Volume
+
+**Actor:** router, frontend, hook, or integrator.
+
+**Intent:** credit protocol fee volume to a referral project without changing fee custody.
+
+**Preconditions**
+- the action is fee-bearing: cash out, payout distribution, or surplus allowance use
+- the referrer has a project ID on the current chain or an encoded `(chainId, projectId)` pair
+
+**Main Flow**
+1. The caller passes `referralProjectId` into `cashOutTokensOf(...)`, `sendPayoutsOf(...)`, or `useAllowanceOf(...)`.
+2. `JBMultiTerminal` stores the referral in transient context for the duration of the call.
+3. If fees are held, the referral pair is stored in `JBFee` and restored when `processHeldFeesOf(...)` runs.
+4. When the fee project receives the fee payment, `JBTerminalStore` records fee volume for `(terminal, referralChainId, referralProjectId)`.
+
+**Failure Modes**
+- a bare project ID is credited on the current chain, which may be wrong for a cross-chain referrer
+- missing price feeds can make normalized referral-volume credit a no-op
+
+**Postconditions**
+- referral accounting is updated for analytics or rewards; protocol fees still route to the fee project
+
 ## Trust Boundaries
 
 - `JBTerminalStore` is the accounting source of truth for balances, surplus, fees, and reclaim behavior
 - hooks, approval hooks, pay hooks, and cash-out hooks are trusted extension surfaces
-- price feeds and directory routing are critical shared-context surfaces
+- price feeds, fee-referral attribution, and directory routing are critical shared-context surfaces
 
 ## Hand-Offs
 
