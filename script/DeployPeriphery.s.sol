@@ -148,8 +148,8 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: feed
             }) {}
             catch {}
-        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
-        // different failure mode can't silently skip this required deployment step.
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require this feed to be the
+        // authoritative default so a different existing feed can't silently satisfy this deployment step.
         require(
             address(
                 core.prices
@@ -158,8 +158,8 @@ contract DeployPeriphery is Script, Sphinx {
                         pricingCurrency: JBCurrencyIds.USD,
                         unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN))
                     })
-            ) != address(0),
-            "Missing USD/native price feed"
+            ) == address(feed),
+            "Unexpected USD/native price feed"
         );
 
         // WARN: We are using the same price feed as the native token for the USD price feed. Which is only valid on
@@ -169,14 +169,14 @@ contract DeployPeriphery is Script, Sphinx {
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH, feed: feed
             }) {}
             catch {}
-        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
-        // different failure mode can't silently skip this required deployment step.
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require this feed to be the
+        // authoritative default so a different existing feed can't silently satisfy this deployment step.
         require(
             address(
                 core.prices
                 .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: JBCurrencyIds.ETH})
-            ) != address(0),
-            "Missing USD/ETH price feed"
+            ) == address(feed),
+            "Unexpected USD/ETH price feed"
         );
 
         // If the native asset for this chain is ether, then the conversion from native asset to ether is 1:1.
@@ -190,8 +190,8 @@ contract DeployPeriphery is Script, Sphinx {
                 feed: matchingPriceFeed
             }) {}
             catch {}
-        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
-        // different failure mode can't silently skip this required deployment step.
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require this feed to be the
+        // authoritative default so a different existing feed can't silently satisfy this deployment step.
         require(
             address(
                 core.prices
@@ -200,8 +200,8 @@ contract DeployPeriphery is Script, Sphinx {
                         pricingCurrency: JBCurrencyIds.ETH,
                         unitCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN))
                     })
-            ) != address(0),
-            "Missing ETH/native price feed"
+            ) == address(matchingPriceFeed),
+            "Unexpected ETH/native price feed"
         );
 
         // Deploy the USDC/USD price feed.
@@ -318,14 +318,14 @@ contract DeployPeriphery is Script, Sphinx {
                 projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId, feed: usdcFeed
             }) {}
             catch {}
-        // `addPriceFeedFor` can revert if this feed was already registered. Still require the feed to exist so a
-        // different failure mode can't silently skip this required deployment step.
+        // `addPriceFeedFor` can revert if this feed was already registered. Still require this feed to be the
+        // authoritative default so a different existing feed can't silently satisfy this deployment step.
         require(
             address(
                 core.prices
                 .priceFeedFor({projectId: 0, pricingCurrency: JBCurrencyIds.USD, unitCurrency: usdcCurrencyId})
-            ) != address(0),
-            "Missing USD/USDC price feed"
+            ) == address(usdcFeed),
+            "Unexpected USD/USDC price feed"
         );
     }
 
