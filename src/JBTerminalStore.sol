@@ -339,18 +339,28 @@ contract JBTerminalStore is IJBTerminalStore {
             }
         }
 
-        // Cache the balance slot to avoid redundant storage reads.
-        uint256 currentBalance = balanceOf[msg.sender][projectId][tokenToReclaim];
+        // The selected terminal token can only pay out its own local surplus. Cash-out pricing may use shared surplus
+        // across terminals/tokens, but settlement must not dip into this token's payout-limit reserve.
+        JBAccountingContext memory accountingContext =
+            _accountingContextForTokenOf[msg.sender][projectId][tokenToReclaim];
+        uint256 localSurplus = _tokenSurplusFrom({
+            terminal: msg.sender,
+            projectId: projectId,
+            accountingContext: accountingContext,
+            ruleset: ruleset,
+            targetDecimals: accountingContext.decimals,
+            targetCurrency: accountingContext.currency
+        });
 
-        // The amount being reclaimed must be within the project's balance.
-        if (balanceDiff > currentBalance) {
-            revert JBTerminalStore_InadequateTerminalStoreBalance({amount: balanceDiff, balance: currentBalance});
+        // The amount being reclaimed must be within the project's local surplus.
+        if (balanceDiff > localSurplus) {
+            revert JBTerminalStore_InadequateTerminalStoreBalance({amount: balanceDiff, balance: localSurplus});
         }
 
         // Remove the reclaimed funds from the project's balance.
         if (balanceDiff != 0) {
             unchecked {
-                balanceOf[msg.sender][projectId][tokenToReclaim] = currentBalance - balanceDiff;
+                balanceOf[msg.sender][projectId][tokenToReclaim] -= balanceDiff;
             }
         }
     }

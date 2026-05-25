@@ -16,6 +16,7 @@ import {JBRulesetMetadataResolver} from "../../../../src/libraries/JBRulesetMeta
 import {JBAccountingContext} from "../../../../src/structs/JBAccountingContext.sol";
 import {JBBeforeCashOutRecordedContext} from "../../../../src/structs/JBBeforeCashOutRecordedContext.sol";
 import {JBCashOutHookSpecification} from "../../../../src/structs/JBCashOutHookSpecification.sol";
+import {JBCurrencyAmount} from "../../../../src/structs/JBCurrencyAmount.sol";
 import {JBRuleset} from "../../../../src/structs/JBRuleset.sol";
 import {JBRulesetMetadata} from "../../../../src/structs/JBRulesetMetadata.sol";
 import {JBTokenAmount} from "../../../../src/structs/JBTokenAmount.sol";
@@ -72,6 +73,20 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             address(_terminal2),
             abi.encodeCall(IJBTerminal.currentSurplusOf, (_projectId, new address[](0), _decimals, _currency)),
             abi.encode(2e18)
+        );
+    }
+
+    function _mockLocalPayoutLimits(JBCurrencyAmount[] memory payoutLimits) internal {
+        mockExpect(
+            address(_controller), abi.encodeCall(IJBController.FUND_ACCESS_LIMITS, ()), abi.encode(_accessLimits)
+        );
+        mockExpect(
+            address(_accessLimits),
+            abi.encodeCall(
+                IJBFundAccessLimits.payoutLimitsOf,
+                (_projectId, uint48(block.timestamp), address(this), address(_token))
+            ),
+            abi.encode(payoutLimits)
         );
     }
 
@@ -151,6 +166,7 @@ contract TestPreviewCashOutFor_Local is JBTerminalStoreSetup {
             abi.encodeCall(IJBController.totalTokenSupplyWithReservedTokensOf, (_projectId)),
             abi.encode(_totalSupply)
         );
+        _mockLocalPayoutLimits(new JBCurrencyAmount[](0));
 
         (, uint256 recordReclaimAmount, uint256 recordTaxRate, JBCashOutHookSpecification[] memory recordSpecs) = _store.recordCashOutFor({
             holder: address(this),
