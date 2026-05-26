@@ -676,7 +676,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         returns (uint256 beneficiaryTokenCount)
     {
         // Get a reference to the beneficiary's balance before the payment.
-        uint256 beneficiaryBalanceBefore = TOKENS.totalBalanceOf({holder: beneficiary, projectId: projectId});
+        uint256 beneficiaryBalanceBefore = _totalBalanceOf({holder: beneficiary, projectId: projectId});
 
         // Accept the funds.
         uint256 acceptedAmount =
@@ -694,7 +694,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         });
 
         // Get a reference to the beneficiary's balance after the payment.
-        uint256 beneficiaryBalanceAfter = TOKENS.totalBalanceOf({holder: beneficiary, projectId: projectId});
+        uint256 beneficiaryBalanceAfter = _totalBalanceOf({holder: beneficiary, projectId: projectId});
 
         // Set the beneficiary token count.
         if (beneficiaryBalanceAfter > beneficiaryBalanceBefore) {
@@ -2322,6 +2322,14 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Bundle the amount info into a `JBTokenAmount` struct.
         tokenAmount =
             JBTokenAmount({token: token, decimals: context.decimals, currency: context.currency, value: value});
+    }
+
+    /// @notice Returns a holder's total token balance for a project.
+    /// @param holder The holder to get a balance for.
+    /// @param projectId The ID of the project to get a balance for.
+    /// @return balance The holder's total project token balance.
+    function _totalBalanceOf(address holder, uint256 projectId) internal view returns (uint256 balance) {
+        return TOKENS.totalBalanceOf({holder: holder, projectId: projectId});
     }
 
     //*********************************************************************//
