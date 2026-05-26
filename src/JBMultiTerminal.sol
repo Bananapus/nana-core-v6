@@ -126,7 +126,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
-    mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
+    mapping(uint256 projectId => mapping(address token => uint256)) public _feeFreeSurplusOf;
 
     /// @notice Fees currently held for each project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
