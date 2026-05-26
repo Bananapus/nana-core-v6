@@ -16,9 +16,9 @@ import {JBSplit} from "../../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 
-/// @notice Same-project `preferAddToBalance` splits must not inflate `_feeFreeSurplusOf`.
+/// @notice Same-project `preferAddToBalance` splits must not inflate `feeFreeSurplusOf`.
 /// @dev A split that routes a project's payout back to itself on the same terminal does not move funds outside the
-/// project, so crediting `_feeFreeSurplusOf` would charge fees against the project's own future zero-tax cashouts
+/// project, so crediting `feeFreeSurplusOf` would charge fees against the project's own future zero-tax cashouts
 /// for value that never left.
 contract FeeFreeSurplusSameProjectTest is TestBaseWorkflow {
     // --- State ---
@@ -34,7 +34,7 @@ contract FeeFreeSurplusSameProjectTest is TestBaseWorkflow {
     uint256 private constant PAY_AMOUNT = 10 ether;
     uint32 private constant CYCLE_DURATION = 1 days;
 
-    // Storage slot index for _feeFreeSurplusOf in JBMultiTerminal (verified via FeeFreeSurplusLifecycle.t.sol).
+    // Storage slot index for feeFreeSurplusOf in JBMultiTerminal (verified via FeeFreeSurplusLifecycle.t.sol).
     uint256 private constant FEE_FREE_SURPLUS_SLOT = 0;
 
     function setUp() public override {
@@ -111,7 +111,7 @@ contract FeeFreeSurplusSameProjectTest is TestBaseWorkflow {
         _controller.queueRulesetsOf(_projectId, selfSplitRuleset, "");
     }
 
-    /// @notice After a same-project preferAddToBalance payout, `_feeFreeSurplusOf` stays at zero because funds never
+    /// @notice After a same-project preferAddToBalance payout, `feeFreeSurplusOf` stays at zero because funds never
     /// left the project balance.
     function test_sameProjectPreferAddToBalanceDoesNotInflateFeeFreeSurplus() external {
         // Fund the project.
@@ -151,10 +151,10 @@ contract FeeFreeSurplusSameProjectTest is TestBaseWorkflow {
         // KEY ASSERTION: same-project preferAddToBalance must not credit fee-free surplus.
         // Without the guard, this would equal `netPayoutAmount` (the full PAY_AMOUNT, since intra-terminal
         // splits pay no fee), permanently inflating the fee-eligible portion of future zero-tax cashouts.
-        assertEq(surplusAfter, 0, "Same-project preferAddToBalance must not inflate _feeFreeSurplusOf");
+        assertEq(surplusAfter, 0, "Same-project preferAddToBalance must not inflate feeFreeSurplusOf");
     }
 
-    /// @notice Read `_feeFreeSurplusOf[projectId][token]` directly from JBMultiTerminal storage.
+    /// @notice Read `feeFreeSurplusOf[projectId][token]` directly from JBMultiTerminal storage.
     function _readFeeFreeSurplus(uint256 projectId, address token) private view returns (uint256) {
         bytes32 innerSlot = keccak256(abi.encode(projectId, FEE_FREE_SURPLUS_SLOT));
         bytes32 finalSlot = keccak256(abi.encode(token, innerSlot));

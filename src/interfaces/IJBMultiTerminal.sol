@@ -43,4 +43,14 @@ interface IJBMultiTerminal is IJBTerminal, IJBFeeTerminal, IJBCashOutTerminal, I
     /// @dev Per-referrer cumulative fee payment amounts credited via this terminal are stored in
     /// `JBTerminalStore.feeVolumeByReferralOf(address terminal, uint256 referralChainId, uint256 referralProjectId)`.
     function currentReferralProjectId() external view returns (uint256);
+
+    /// @notice The cumulative amount of fee-free intra-terminal payouts a project has received for a given token.
+    /// @dev Incremented each time a fee-free payout lands (same terminal, no fee charged) and consumed during
+    /// zero-tax cash outs to prevent a round-trip fee bypass (intra-terminal payout -> zero-tax cash out). Exposed
+    /// for off-chain indexers and integrating contracts that need to reason about a project's outstanding fee-free
+    /// exposure before performing related operations.
+    /// @param projectId The ID of the project that received the payout.
+    /// @param token The token that was received.
+    /// @return The cumulative unconsumed fee-free surplus tracked for the (project, token) pair.
+    function feeFreeSurplusOf(uint256 projectId, address token) external view returns (uint256);
 }
