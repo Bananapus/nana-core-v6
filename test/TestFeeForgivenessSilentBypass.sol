@@ -20,18 +20,18 @@ import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
 /// @notice Regression test for F-MTT-10 — `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
-/// and increments `_feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance, but cannot exit
+/// and increments `feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance, but cannot exit
 /// fee-free on the next zero-tax cashout.
 ///
 /// Mechanism:
 ///   1. Project P with cashOutTaxRate=0, no inflow goes through fee-free tracking initially
-///      (only same-terminal split-pay or sucker bridging accumulate `_feeFreeSurplusOf`).
+///      (only same-terminal split-pay or sucker bridging accumulate `feeFreeSurplusOf`).
 ///   2. User pays project; balance increments, no fee on inflow.
 ///   3. Owner calls `sendPayoutsOf` → `_takeFeeFrom` → `_processFee`.
 ///   4. We force the fee terminal to be address(0) via vm.mockCall on the directory.
 ///      This causes `executeProcessFee` to revert with JBMultiTerminal_FeeTerminalNotFound.
 ///   5. `_processFee` catches and calls `_recordAddedBalanceFor` to refund the fee to project balance.
-///   6. `_feeFreeSurplusOf[projectId][token]` is incremented by the credited-back amount.
+///   6. `feeFreeSurplusOf[projectId][token]` is incremented by the credited-back amount.
 ///   7. The owner / holder cashes out the refunded amount at tax=0 — a fee is taken from the tracked fee-free
 ///      surplus, so round-trip prevention applies.
 contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
@@ -56,7 +56,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
 
         JBRulesetMetadata memory metadata = JBRulesetMetadata({
             reservedPercent: 0,
-            cashOutTaxRate: 0, // CRITICAL: zero tax — only `_feeFreeSurplusOf` triggers fees on cashout.
+            cashOutTaxRate: 0, // CRITICAL: zero tax — only `feeFreeSurplusOf` triggers fees on cashout.
             baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             pausePay: false,
             pauseCreditTransfers: false,
@@ -124,7 +124,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
         });
     }
 
-    /// @notice After a forgiven fee, the credited-back amount is tracked in `_feeFreeSurplusOf`, so it pays a fee on
+    /// @notice After a forgiven fee, the credited-back amount is tracked in `feeFreeSurplusOf`, so it pays a fee on
     /// a later zero-tax cashout.
     function test_F_MTT_10_chargesFeeOnCreditedBackFeeRouteFailure() external {
         // 1. Pay the project — balance increments, no fee on inflow.

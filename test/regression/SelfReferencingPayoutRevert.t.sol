@@ -33,9 +33,9 @@ import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 ///     configuring two terminals and routing the split between them.
 ///   - addToBalance branch: the payout pipeline credits balance on the destination terminal
 ///     without going through `addToBalanceOf` directly. Side effects (locked-split consumption,
-///     payout-limit drawdown, `_feeFreeSurplusOf` accounting) all fire on what is, semantically,
+///     payout-limit drawdown, `feeFreeSurplusOf` accounting) all fire on what is, semantically,
 ///     the project moving its own funds. Same-terminal add-balance round-trips inflate
-///     `_feeFreeSurplusOf` and overcharge zero-tax cashouts on value that never left.
+///     `feeFreeSurplusOf` and overcharge zero-tax cashouts on value that never left.
 /// The split-group try/catch in core swallows the revert and restores the project's balance, so
 /// the original payment is not lost — the split just fails-loud.
 contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {

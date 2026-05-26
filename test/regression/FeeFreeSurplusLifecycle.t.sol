@@ -17,7 +17,7 @@ import {JBSplit} from "../../src/structs/JBSplit.sol";
 import {JBSplitGroup} from "../../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 
-/// @notice Regression tests for the `_feeFreeSurplusOf` lifecycle: cap on repeated payout-to-self and clear on
+/// @notice Regression tests for the `feeFreeSurplusOf` lifecycle: cap on repeated payout-to-self and clear on
 /// migration.
 contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
     // --- State ---
@@ -45,7 +45,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
     // Duration of each ruleset cycle (enables payout limit reset per cycle).
     uint32 private constant CYCLE_DURATION = 1 days;
 
-    // Storage slot index for _feeFreeSurplusOf in JBMultiTerminal (verified via `forge inspect`).
+    // Storage slot index for feeFreeSurplusOf in JBMultiTerminal (verified via `forge inspect`).
     uint256 private constant FEE_FREE_SURPLUS_SLOT = 0;
 
     function setUp() public override {
@@ -161,7 +161,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
         });
     }
 
-    /// @notice After repeated payout-to-self cycles, _feeFreeSurplusOf must never exceed the recipient's recorded
+    /// @notice After repeated payout-to-self cycles, feeFreeSurplusOf must never exceed the recipient's recorded
     /// balance.
     /// @dev This proves the cap added in `_executePayout`: `min(newFeeFreeSurplus, balanceAfterPayout)`.
     function test_feeFreeSurplusCappedOnRepeatedPayoutToSelf() external {
@@ -269,7 +269,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
     }
 
     /// @notice After accumulating fee-free surplus via payout-to-self, migrating the terminal clears it to zero.
-    /// @dev This proves the `delete _feeFreeSurplusOf[projectId][token]` in `migrateBalanceOf`.
+    /// @dev This proves the `delete feeFreeSurplusOf[projectId][token]` in `migrateBalanceOf`.
     function test_feeFreeSurplusClearedOnMigration() external {
         // Fund the payer project so it can execute a payout.
         address payer = makeAddr("payer");
@@ -333,7 +333,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
 
     // --- Helpers ---
 
-    /// @notice Read `_feeFreeSurplusOf[projectId][token]` directly from JBMultiTerminal storage.
+    /// @notice Read `feeFreeSurplusOf[projectId][token]` directly from JBMultiTerminal storage.
     /// @dev Uses `vm.load` to read the internal mapping at slot 0. Slot computation:
     ///      `keccak256(abi.encode(token, keccak256(abi.encode(projectId, FEE_FREE_SURPLUS_SLOT))))`.
     /// @param projectId The project ID to look up.

@@ -38,7 +38,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
     // Token issuance weight: 1000 tokens per ETH.
     uint112 private constant WEIGHT = 1000 * 10 ** 18;
 
-    // Storage slot index for _feeFreeSurplusOf in JBMultiTerminal.
+    // Storage slot index for feeFreeSurplusOf in JBMultiTerminal.
     // This is the first state variable in the contract (slot 0).
     uint256 private constant FEE_FREE_SURPLUS_SLOT = 0;
 
@@ -251,11 +251,11 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
     /// @notice When project A pays out to project B via a same-terminal split (not addToBalance), and project B has
     /// a data hook that diverts some of the payment to pay hooks, the store only records a partial balance increase.
-    /// The fix ensures _feeFreeSurplusOf[B] is capped at STORE.balanceOf[B] after the pay.
+    /// The fix ensures feeFreeSurplusOf[B] is capped at STORE.balanceOf[B] after the pay.
     /// @dev Setup:
     ///   1. Project B: has a data hook that returns a pay hook specification diverting 50% of the payment.
     ///   2. Project A: has 100% split paying project B (same terminal, preferAddToBalance=false).
-    ///   3. After sendPayoutsOf, verify _feeFreeSurplusOf[B] <= STORE.balanceOf[B].
+    ///   3. After sendPayoutsOf, verify feeFreeSurplusOf[B] <= STORE.balanceOf[B].
     ///   4. Verify a subsequent zero-tax cashout from B charges correct fees (not overcharged).
     function test_feeFreeSurplusCappedWhenDataHookDivertsFunds() external {
         // --- Fee project ---
@@ -380,7 +380,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
         // Send payouts from project A: 10 ETH goes to project B via the split.
         // The data hook diverts 5 ETH to the pay hook, so STORE.balanceOf[B] only increases by 5 ETH.
-        // But _feeFreeSurplusOf[B] was incremented by the full 10 ETH before the pay.
+        // But feeFreeSurplusOf[B] was incremented by the full 10 ETH before the pay.
         // After the fix (), _capFeeFreeSurplus caps it at 5 ETH.
         _terminal.sendPayoutsOf({
             projectId: projectIdA,
@@ -391,14 +391,14 @@ contract RegressionFixesTest is TestBaseWorkflow {
             referralProjectId: 0
         });
 
-        // --- Verify invariant: _feeFreeSurplusOf[B] <= STORE.balanceOf[B] ---
+        // --- Verify invariant: feeFreeSurplusOf[B] <= STORE.balanceOf[B] ---
         uint256 feeFreeSurplus = _readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN);
         uint256 storeBalance = _store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN);
 
         assertLe(
             feeFreeSurplus,
             storeBalance,
-            "_feeFreeSurplusOf must not exceed STORE.balanceOf after data hook diverts funds"
+            "feeFreeSurplusOf must not exceed STORE.balanceOf after data hook diverts funds"
         );
 
         // The store should have recorded only the portion not diverted to the pay hook.
@@ -447,12 +447,12 @@ contract RegressionFixesTest is TestBaseWorkflow {
     // _capFeeFreeSurplus after hook fulfillment in _cashOutTokensOf
     // ==========================================
 
-    /// @notice After a cashout, _feeFreeSurplusOf is capped at the remaining STORE.balanceOf.
-    /// This prevents stale _feeFreeSurplusOf from overcharging fees on subsequent zero-tax cashouts.
+    /// @notice After a cashout, feeFreeSurplusOf is capped at the remaining STORE.balanceOf.
+    /// This prevents stale feeFreeSurplusOf from overcharging fees on subsequent zero-tax cashouts.
     /// @dev Setup:
-    ///   1. Project A pays out to project B (same terminal) to build up _feeFreeSurplusOf[B].
+    ///   1. Project A pays out to project B (same terminal) to build up feeFreeSurplusOf[B].
     ///   2. Some users pay B directly (increasing balance but not fee-free surplus).
-    ///   3. Cash out from B. After the cashout, _feeFreeSurplusOf[B] should be capped at remaining balance.
+    ///   3. Cash out from B. After the cashout, feeFreeSurplusOf[B] should be capped at remaining balance.
     ///   4. Subsequent direct-pay cashout should be fee-free (no remaining fee-free surplus).
     function test_F4_feeFreeSurplusCappedAfterCashOut() external {
         // --- Fee project ---
@@ -464,7 +464,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
         // Step 1: Pay into project A and trigger payout to B.
         _payAndSendPayouts(projectIdA, 10 ether, 10 ether);
 
-        // B now has: balance = 10 ETH, _feeFreeSurplusOf = 10 ETH.
+        // B now has: balance = 10 ETH, feeFreeSurplusOf = 10 ETH.
         assertEq(
             _readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN),
             _store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN),
@@ -474,7 +474,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
         // Step 2: Pay project B directly (increases balance but NOT fee-free surplus).
         _payProject(projectIdB, makeAddr("f4-direct-payer"), 10 ether);
 
-        // B now has: balance = 20 ETH, _feeFreeSurplusOf = 10 ETH.
+        // B now has: balance = 20 ETH, feeFreeSurplusOf = 10 ETH.
         assertEq(
             _store.balanceOf(address(_terminal), projectIdB, JBConstants.NATIVE_TOKEN),
             20 ether,
@@ -508,7 +508,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
         assertLe(
             _readFeeFreeSurplus(projectId, JBConstants.NATIVE_TOKEN),
             _store.balanceOf(address(_terminal), projectId, JBConstants.NATIVE_TOKEN),
-            "_feeFreeSurplusOf must be <= STORE.balanceOf after partial cashout"
+            "feeFreeSurplusOf must be <= STORE.balanceOf after partial cashout"
         );
         assertGt(reclaim, 0, "Partial cashout should reclaim something");
     }
@@ -533,12 +533,12 @@ contract RegressionFixesTest is TestBaseWorkflow {
         assertLe(
             _readFeeFreeSurplus(projectId, JBConstants.NATIVE_TOKEN),
             _store.balanceOf(address(_terminal), projectId, JBConstants.NATIVE_TOKEN),
-            "_feeFreeSurplusOf must be <= STORE.balanceOf after second cashout"
+            "feeFreeSurplusOf must be <= STORE.balanceOf after second cashout"
         );
         assertGt(reclaim, 0, "Second cashout should reclaim something");
     }
 
-    /// @notice After a cashout that fully drains a project's balance, _feeFreeSurplusOf should be zero.
+    /// @notice After a cashout that fully drains a project's balance, feeFreeSurplusOf should be zero.
     /// This prevents overcharging fees on subsequent direct payments.
     function test_F4_feeFreeSurplusZeroAfterFullDrain() external {
         // Fee project.
@@ -706,7 +706,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
         assertEq(reclaimAmount, expectedAmount, "Direct payment cashout should be fee-free");
     }
 
-    /// @notice Read `_feeFreeSurplusOf[projectId][token]` from JBMultiTerminal storage via vm.load.
+    /// @notice Read `feeFreeSurplusOf[projectId][token]` from JBMultiTerminal storage via vm.load.
     function _readFeeFreeSurplus(uint256 projectId, address token) private view returns (uint256) {
         bytes32 innerSlot = keccak256(abi.encode(projectId, FEE_FREE_SURPLUS_SLOT));
         bytes32 finalSlot = keccak256(abi.encode(token, innerSlot));

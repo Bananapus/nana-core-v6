@@ -111,7 +111,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     IJBTokens public immutable override TOKENS;
 
     //*********************************************************************//
-    // --------------------- internal stored properties ------------------ //
+    // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
     /// @notice The cumulative amount of fee-free intra-terminal payouts a project has received for a given token.
@@ -126,7 +126,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// unconsumed balance. There is no admin function to reset it.
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
-    mapping(uint256 projectId => mapping(address token => uint256)) internal _feeFreeSurplusOf;
+    mapping(uint256 projectId => mapping(address token => uint256)) public override feeFreeSurplusOf;
+
+    //*********************************************************************//
+    // --------------------- internal stored properties ------------------ //
+    //*********************************************************************//
 
     /// @notice Fees currently held for each project.
     /// @dev Projects can temporarily hold fees and unlock them later by adding funds to the project's balance.
@@ -447,7 +451,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
                 // Same-terminal adds never invoke destination pay hooks, so the full amount remains in the
                 // destination project's balance and must be fee-liable on its later zero-tax cashout.
-                if (isThisTerminal) _feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
+                if (isThisTerminal) feeFreeSurplusOf[split.projectId][token] += netPayoutAmount;
             } else {
                 // Keep a reference to the beneficiary of the payment.
                 address beneficiary = split.beneficiary != address(0) ? split.beneficiary : originalMessageSender;
@@ -592,7 +596,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // Clear fee-free surplus tracking — the fee-free liability is settled by the migration fee below.
-        delete _feeFreeSurplusOf[projectId][token];
+        delete feeFreeSurplusOf[projectId][token];
 
         // Terminal migration intentionally does not transfer held fees. Held fees belong to the
         // fee beneficiary (project #1), not the migrating project. They unlock after 28 days regardless of terminal.
@@ -1213,7 +1217,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token whose fee-free surplus to cap.
     function _capFeeFreeSurplus(uint256 projectId, address token) internal {
         // Get the current fee-free surplus for this project/token pair.
-        uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][token];
+        uint256 feeFreeSurplus = feeFreeSurplusOf[projectId][token];
 
         // Nothing to cap if there's no fee-free surplus tracked.
         if (feeFreeSurplus == 0) return;
@@ -1223,7 +1227,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
         // Cap fee-free surplus at the remaining balance.
         if (feeFreeSurplus > remainingBalance) {
-            _feeFreeSurplusOf[projectId][token] = remainingBalance;
+            feeFreeSurplusOf[projectId][token] = remainingBalance;
         }
     }
 
@@ -1300,11 +1304,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     }
                 } else {
                     // Zero tax: fees apply only up to the fee-free surplus (round-trip prevention).
-                    uint256 feeFreeSurplus = _feeFreeSurplusOf[projectId][tokenToReclaim];
+                    uint256 feeFreeSurplus = feeFreeSurplusOf[projectId][tokenToReclaim];
                     if (feeFreeSurplus != 0) {
                         uint256 feeableAmount = reclaimAmount < feeFreeSurplus ? reclaimAmount : feeFreeSurplus;
                         unchecked {
-                            _feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
+                            feeFreeSurplusOf[projectId][tokenToReclaim] = feeFreeSurplus - feeableAmount;
                         }
                         amountEligibleForFees += feeableAmount;
                         unchecked {
@@ -1338,7 +1342,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             });
         }
 
-        // Cap fee-free surplus after every cash-out path so stale `_feeFreeSurplusOf` cannot survive after
+        // Cap fee-free surplus after every cash-out path so stale `feeFreeSurplusOf` cannot survive after
         // associated surplus leaves. Do this after hook fulfillment so hook-driven balance reductions are included.
         _capFeeFreeSurplus({projectId: projectId, token: tokenToReclaim});
 
@@ -1788,7 +1792,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                     ++i;
                 }
             }
-            _feeFreeSurplusOf[projectId][token] += feeFreeAmount;
+            feeFreeSurplusOf[projectId][token] += feeFreeAmount;
         }
 
         // Keep a reference to the number of tokens issued for the beneficiary.
@@ -1885,7 +1889,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
             // The store balance was credited first; this mirrors that bounded increase for fee recovery.
             unchecked {
-                _feeFreeSurplusOf[projectId][token] += amount;
+                feeFreeSurplusOf[projectId][token] += amount;
             }
         }
     }
