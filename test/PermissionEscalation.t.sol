@@ -682,7 +682,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
         address forwarder = trustedForwarder();
 
         // Verify the forwarder is set up correctly
-        assertTrue(forwarder != address(0), "Trusted forwarder should be set");
+        assertNotEq(forwarder, address(0), "Trusted forwarder should be set");
 
         // Direct call should return true
         bool hasPerm = jbPermissions()
