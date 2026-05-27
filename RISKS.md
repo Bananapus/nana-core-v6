@@ -280,6 +280,8 @@ Core can be deployed before project `#1` is fully ready. During that period, fee
 
 `_returnHeldFees` does not check `unlockTimestamp`. A project can erase a held fee that has matured past the 28-day holding window by calling `addToBalanceOf` (or any path that triggers a return) before someone calls `processHeldFeesOf`. This is intentional: the held fee is a contingent claim against funds that left the project, and the project can always rescind that claim by putting the funds back. Holding fee replenishment costs the project the full amount it withdrew, so the project must keep the funds in the protocol to avoid the fee — which is the same trade-off held fees were designed to express. The only difference between pre-maturity and post-maturity return is that anyone can call `processHeldFeesOf` after 28 days to force collection, so projects that want to keep delaying the fee must repeatedly front-run that processing.
 
+The return path doesn't care where the returning funds come from — the project owner can rebate a payout's held fee using funds from any wallet, not just funds the original payout recipient returned. This stays consistent with the proof-of-custody framing: whoever pays the protocol back the same amount the project sent out has demonstrated that the project's accounting position is unchanged. The owner subsidizing a vendor's payout doesn't extract value either way, since they spend the full payout amount back into the protocol to do it.
+
 ## 9. Invariants To Verify
 
 - **Balance conservation:** `terminal.balance(token) >= sum(store.balanceOf(projectId, terminal, token))` for projects sharing a terminal.
