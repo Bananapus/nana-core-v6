@@ -168,12 +168,15 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
 
     /// @notice Whether this terminal is currently measuring an incoming ERC-20 balance delta.
-    bool transient _acceptingToken;
+    bool internal transient _acceptingToken;
 
     /// @notice Source project ID for the same-terminal split pay currently being recorded.
     /// @dev After `_pay` consumes and clears this value, `_fulfillPayHookSpecificationsFor` reuses the slot to return
     /// the fee basis to `executePayout`.
-    uint256 transient _internalSplitPayProjectId;
+    uint256 internal transient _internalSplitPayProjectId;
+
+    /// @notice The in-flight fee amount that can credit `currentReferralProjectId`.
+    uint256 internal transient _feeReferralCreditAmount;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -1764,6 +1767,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the token amount to forward to the store.
         JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
 
+        // Credit only the one pay call currently being made by `_processFee`. Ordinary split pays to project #1 can
+        // happen while `currentReferralProjectId` is set, but they are not protocol-fee payments. Consume this before
+        // recording the payment so fee-project data hooks cannot reenter and use the in-flight credit.
+        if (
+            projectId == JBConstants.FEE_BENEFICIARY_PROJECT_ID && currentReferralProjectId != 0
+                && _feeReferralCreditAmount != 0
+        ) {
+            delete _feeReferralCreditAmount;
+            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: tokenAmount});
+        }
+
         // Record the payment.
         // Keep a reference to the ruleset the payment is being made during.
         // Keep a reference to the pay hook specifications.
@@ -1771,15 +1785,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         (JBRuleset memory ruleset, uint256 tokenCount, JBPayHookSpecification[] memory hookSpecifications) = STORE.recordPaymentFrom({
             payer: payer, amount: tokenAmount, projectId: projectId, beneficiary: beneficiary, metadata: metadata
         });
-
-        // Credit the originating fee-paying call's referral project. This is only meaningful when this pay is a
-        // protocol-fee payment landing on the fee project AND a referral was set by the outer entry point (or
-        // restored from a held fee by `processHeldFeesOf`). The store handles the no-op case when either input is
-        // zero. Done here (after `recordPaymentFrom`) instead of inside the store so the credit logic stays in the
-        // terminal and the store is never asked to call back into us.
-        if (projectId == JBConstants.FEE_BENEFICIARY_PROJECT_ID && currentReferralProjectId != 0) {
-            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: tokenAmount});
-        }
 
         // Only the value retained in the destination balance needs later cashout fee recovery. Non-feeless pay-hook
         // forwards pay their source-equivalent fee inline before leaving the project.
@@ -1862,9 +1867,11 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
+        if (feeTerminal == IJBTerminal(address(this))) _feeReferralCreditAmount = amount;
         try this.executeProcessFee({
             projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
+            delete _feeReferralCreditAmount;
             emit ProcessFee({
                 projectId: projectId,
                 token: token,
@@ -1874,6 +1881,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 caller: _msgSender()
             });
         } catch (bytes memory reason) {
+            delete _feeReferralCreditAmount;
             // Fee processing is fail-open for project liveness: a broken project #1 terminal or fee route must not
             // trap payouts, cash outs, allowances, held-fee processing, or terminal migration. The fee is forgiven,
             // credited back to the originating project on this terminal, and surfaced through `FeeReverted`.
