@@ -306,6 +306,110 @@ contract TestSendPayoutsOf_Local is JBMultiTerminalSetup {
         if (heldFees.length != 0) assertEq(heldFees[0].amount, 0);
     }
 
+    function test_GivenSplitPaysFeeProject_ReferralCreditIsNotRecordedForTheSplitPay() external {
+        uint256 projectId = 2;
+        uint256 referralProjectId = 7;
+        uint256 payoutAmount = 80;
+        address projectOwner = makeAddr("projectOwner");
+        address beneficiary = makeAddr("beneficiary");
+
+        JBRuleset memory returnedRuleset = generateFriendlyRuleset();
+        JBAccountingContext memory feeTokenContext = JBAccountingContext({
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
+        });
+        JBTokenAmount memory splitAmount = JBTokenAmount({
+            token: JBConstants.NATIVE_TOKEN,
+            decimals: 18,
+            currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            value: 80
+        });
+        JBTokenAmount memory zeroFeeAmount = JBTokenAmount({
+            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN)), value: 0
+        });
+
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordPayoutFor, (projectId, JBConstants.NATIVE_TOKEN, payoutAmount, 0)),
+            abi.encode(returnedRuleset, payoutAmount)
+        );
+        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (projectId)), abi.encode(projectOwner));
+
+        JBSplit[] memory returnedSplits = new JBSplit[](1);
+        returnedSplits[0] = JBSplit({
+            preferAddToBalance: false,
+            percent: JBConstants.SPLITS_TOTAL_PERCENT,
+            projectId: uint64(JBConstants.FEE_BENEFICIARY_PROJECT_ID),
+            beneficiary: payable(beneficiary),
+            lockedUntil: 0,
+            hook: IJBSplitHook(address(0))
+        });
+
+        mockExpect(
+            address(splits),
+            abi.encodeCall(
+                IJBSplits.splitsOf, (projectId, returnedRuleset.id, uint256(uint160(JBConstants.NATIVE_TOKEN)))
+            ),
+            abi.encode(returnedSplits)
+        );
+        vm.mockCall(
+            address(directory),
+            abi.encodeCall(IJBDirectory.primaryTerminalOf, (1, JBConstants.NATIVE_TOKEN)),
+            abi.encode(address(_terminal))
+        );
+        vm.expectCall(
+            address(directory), abi.encodeCall(IJBDirectory.primaryTerminalOf, (1, JBConstants.NATIVE_TOKEN)), 2
+        );
+        vm.mockCall(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), 1, JBConstants.NATIVE_TOKEN)),
+            abi.encode(feeTokenContext)
+        );
+        vm.expectCall(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.accountingContextOf, (address(_terminal), 1, JBConstants.NATIVE_TOKEN)),
+            2
+        );
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.recordPaymentFrom,
+                (
+                    address(_terminal),
+                    splitAmount,
+                    uint256(JBConstants.FEE_BENEFICIARY_PROJECT_ID),
+                    beneficiary,
+                    bytes(abi.encodePacked(projectId))
+                )
+            ),
+            abi.encode(returnedRuleset, uint256(0), new JBPayHookSpecification[](0))
+        );
+        mockExpect(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.recordPaymentFrom,
+                (
+                    address(_terminal),
+                    zeroFeeAmount,
+                    uint256(JBConstants.FEE_BENEFICIARY_PROJECT_ID),
+                    projectOwner,
+                    bytes(abi.encodePacked(projectId))
+                )
+            ),
+            abi.encode(returnedRuleset, uint256(0), new JBPayHookSpecification[](0))
+        );
+        vm.expectCall(
+            address(store),
+            abi.encodeCall(
+                IJBTerminalStore.recordFeeReferralCreditOf, (((block.chainid << 48) | referralProjectId), splitAmount)
+            ),
+            0
+        );
+
+        vm.deal(address(_terminal), payoutAmount);
+
+        _terminal.sendPayoutsOf(projectId, JBConstants.NATIVE_TOKEN, payoutAmount, 0, 0, referralProjectId);
+    }
+
     function test_GivenPayoutRecipientReentersHeldFeeProcessing_ReferralIsPreserved() external {
         uint256 projectId = 2;
         uint256 referralProjectId = 7;
