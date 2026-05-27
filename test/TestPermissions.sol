@@ -208,7 +208,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
 
         // Should be true given root check
         bool _check = _permissions.hasPermission(address(this), zeroOwner, _projectZero, 2, true, true);
-        assertEq(_check, true);
+        assertTrue(_check);
 
         // Will revert attempting to set another projects token
         vm.expectRevert(
@@ -244,7 +244,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
 
         // Should be true given root check
         bool _check = _permissions.hasPermission(address(this), zeroOwner, _projectZero, 2, true, true);
-        assertEq(_check, true);
+        assertTrue(_check);
 
         // Pack up our non-root permission data.
         JBPermissionsData[] memory permData2 = new JBPermissionsData[](1);
@@ -304,7 +304,7 @@ contract TestPermissions_Local is TestBaseWorkflow {
 
         // Should be true given root check
         bool _check = _permissions.hasPermission(address(this), zeroOwner, _projectZero, 2, true, true);
-        assertEq(_check, true);
+        assertTrue(_check);
 
         // Pack up our non-root wildcard permission data.
         JBPermissionsData[] memory permData2 = new JBPermissionsData[](1);
