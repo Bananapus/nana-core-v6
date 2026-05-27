@@ -19,7 +19,7 @@ contract TestGetDataFor_Local is JBTest {
         (bool _found, bytes memory _data) = JBMetadataResolver.getDataFor(_id1, _malformed);
 
         // check
-        assertEq(_found, false);
+        assertFalse(_found);
         assertEq("", _data);
     }
 
@@ -53,7 +53,7 @@ contract TestGetDataFor_Local is JBTest {
         (bool _found, bytes memory _returnedData) = JBMetadataResolver.getDataFor(_id1, _metadata);
 
         // check
-        assertEq(_found, true);
+        assertTrue(_found);
         assertEq(abi.decode(_returnedData, (uint256)), _data1);
     }
 
@@ -84,7 +84,7 @@ contract TestGetDataFor_Local is JBTest {
         (bool _found, bytes memory _returnedData) = JBMetadataResolver.getDataFor(_invalidId, _metadata);
 
         // check
-        assertEq(_found, false);
+        assertFalse(_found);
         assertEq("", _returnedData);
     }
 }

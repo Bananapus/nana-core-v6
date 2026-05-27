@@ -39,12 +39,12 @@ contract TestHasPermissions_Local is JBPermissionsSetup {
         vm.store(address(_permissions), slot, bytes32(permissions));
 
         bool has = _permissions.hasPermission(_op, _account, _projectId, 1, true, true);
-        assertEq(has, true);
+        assertTrue(has);
     }
 
     function test_GivenOperatorDoesntHavePermissionForAccountOfProject() external whenPermissionIdLt255 {
         // it will return false
         bool has = _permissions.hasPermission(_op, _account, _projectId, 1, true, true);
-        assertEq(has, false);
+        assertFalse(has);
     }
 }

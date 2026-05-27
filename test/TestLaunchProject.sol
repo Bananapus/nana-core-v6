@@ -132,7 +132,7 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
 
         bool same = equals(queued, ruleset);
 
-        assertEq(same, true);
+        assertTrue(same);
     }
 
     function testLaunchProjectFuzzWeight(uint112 _weight) public {
@@ -183,6 +183,6 @@ contract TestLaunchProject_Local is TestBaseWorkflow {
 
         bool same = equals(queued, ruleset);
 
-        assertEq(same, true);
+        assertTrue(same);
     }
 }
