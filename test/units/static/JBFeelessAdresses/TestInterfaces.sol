@@ -13,18 +13,18 @@ contract TestSupportsInterface_Local is JBFeelessSetup {
     function test_WhenItSupportsEitherIJBFeelessAddressesOrIERC165() external view {
         // it should return true
         bool result1 = IERC165(address(_feelessAddresses)).supportsInterface(type(IJBFeelessAddresses).interfaceId);
-        assertEq(result1, true);
+        assertTrue(result1);
 
         bool result2 = IERC165(address(_feelessAddresses)).supportsInterface(type(IERC165).interfaceId);
-        assertEq(result2, true);
+        assertTrue(result2);
     }
 
     function test_WhenAskedIfSupportsNonIJBFeelessAddressesOrIERC165() external view {
         // it should return false
         bool result1 = IERC165(address(_feelessAddresses)).supportsInterface(0x12345678);
-        assertEq(result1, false);
+        assertFalse(result1);
 
         bool result2 = IERC165(address(_feelessAddresses)).supportsInterface(0x12345679);
-        assertEq(result2, false);
+        assertFalse(result2);
     }
 }
