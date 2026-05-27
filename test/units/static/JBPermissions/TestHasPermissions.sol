@@ -37,8 +37,7 @@ contract TestHasPermissions_Local is JBPermissionsSetup {
         // Set storage
         vm.store(address(_permissions), slot, bytes32(permissions));
 
-        bool hasAll = _permissions.hasPermissions(_op, _account, _projectId, _permissionsArray, false, true);
-        assertFalse(hasAll);
+        assertFalse(_permissions.hasPermissions(_op, _account, _projectId, _permissionsArray, false, true));
     }
 
     function test_GivenOperatorHasAllPermissionsSpecified() external whenAllPermissionIdsLt255 {
@@ -55,8 +54,7 @@ contract TestHasPermissions_Local is JBPermissionsSetup {
         // Set storage
         vm.store(address(_permissions), slot, bytes32(permissions));
 
-        bool hasAll = _permissions.hasPermissions(_op, _account, _projectId, _permissionsArray, false, false);
-        assertTrue(hasAll);
+        assertTrue(_permissions.hasPermissions(_op, _account, _projectId, _permissionsArray, false, false));
     }
 
     function test_GivenOperatorHasAllPermissionsSpecifiedCounterCase() external whenAllPermissionIdsLt255 {
