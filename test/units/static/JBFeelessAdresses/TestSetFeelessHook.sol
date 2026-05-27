@@ -93,7 +93,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
     //*********************************************************************//
 
     function test_IsFeelessFor_ReturnsFalse_WhenNoHookAndNoStatic() external view {
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 1, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 1, caller: address(0)}));
     }
 
     function test_IsFeelessFor_ReturnsTrue_WhenHookSaysTrue() external {
@@ -101,7 +101,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), true);
+        assertTrue(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_ReturnsFalse_WhenHookSaysFalse() external {
@@ -109,7 +109,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_HookCannotShrinkStaticFeelessSet() external {
@@ -122,7 +122,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), true);
+        assertTrue(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_HookCanGrantPerProjectFeeless() external {
@@ -132,9 +132,9 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 42, caller: address(0)}), true);
+        assertTrue(_feelessAddresses.isFeelessFor({addr: _user, projectId: 42, caller: address(0)}));
         // Different project: hook says no, static says no.
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 43, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 43, caller: address(0)}));
     }
 
     function test_IsFeelessFor_RevertingHookTreatedAsFalse_CustomError() external {
@@ -143,7 +143,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         _feelessAddresses.setFeelessHook(_hook);
 
         // Should not bubble up — try/catch swallows the revert and returns false.
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_RevertingHookTreatedAsFalse_RequireString() external {
@@ -151,7 +151,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_RevertingHookDoesNotShrinkStatic() external {
@@ -163,7 +163,7 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), true);
+        assertTrue(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     function test_IsFeelessFor_ClearingHookRestoresStaticOnlyBehavior() external {
@@ -171,13 +171,13 @@ contract TestSetFeelessHook_Local is JBFeelessSetup {
         _hook.setDefaultResult(true);
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(_hook);
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), true);
+        assertTrue(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
 
         // Clear the hook.
         vm.prank(_owner);
         _feelessAddresses.setFeelessHook(IJBFeelessHook(address(0)));
 
-        assertEq(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}), false);
+        assertFalse(_feelessAddresses.isFeelessFor({addr: _user, projectId: 7, caller: address(0)}));
     }
 
     //*********************************************************************//
