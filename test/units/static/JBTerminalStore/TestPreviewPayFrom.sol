@@ -488,7 +488,7 @@ contract TestPreviewPayFrom_Local is JBTerminalStoreSetup {
         assertEq(tokenCount, 1e18 / 2);
         assertEq(hookSpecifications.length, 1);
         assertEq(hookSpecifications[0].amount, 0);
-        assertEq(hookSpecifications[0].noop, true);
+        assertTrue(hookSpecifications[0].noop);
         assertEq(hookSpecifications[0].metadata, bytes("info"));
     }
 }

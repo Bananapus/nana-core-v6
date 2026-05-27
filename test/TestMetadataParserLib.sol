@@ -356,7 +356,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
     }
 
     /**
-     * @notice Test behaviour if the ID is not found in the lookup table.
+     * @notice Test behavior if the ID is not found in the lookup table.
      */
     function test_idNotFound(uint256 _numberOfIds) public view {
         _numberOfIds = bound(_numberOfIds, 1, 100);
@@ -366,7 +366,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
 
         for (uint256 _i; _i < _ids.length; _i++) {
             // forge-lint: disable-next-line(unsafe-typecast)
-            _ids[_i] = bytes4(uint32(_i + 1 * 1000));
+            _ids[_i] = bytes4(uint32(_i + 1000));
             _datas[_i] = abi.encode(_i * 4);
         }
 
@@ -379,7 +379,7 @@ contract JBDelegateMetadataLib_Test_Local is Test {
     }
 
     /**
-     * @notice Test behaviour if the metadata is empty or less than one ID long.
+     * @notice Test behavior if the metadata is empty or less than one ID long.
      */
     function test_emptyMetadata(uint256 _length) public view {
         _length = bound(_length, 0, 37);

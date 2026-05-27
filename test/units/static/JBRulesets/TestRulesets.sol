@@ -176,8 +176,7 @@ contract TestJBRulesetsUnits_Local is JBTest {
         });
 
         // Check: structs are the same.
-        bool same = equals(queued, configuredRuleset);
-        assertEq(same, true);
+        assertTrue(equals(queued, configuredRuleset));
     }
 
     function testQueueForPastMustStart() public {
@@ -231,8 +230,7 @@ contract TestJBRulesetsUnits_Local is JBTest {
         });
 
         // Check: structs are the same.
-        bool same = equals(queued, configuredRuleset);
-        assertEq(same, true);
+        assertTrue(equals(queued, configuredRuleset));
     }
 
     function testQueueForInvalidDuration() public {

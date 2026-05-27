@@ -176,7 +176,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
         );
 
         JBRuleset memory _upcoming = _rulesets.upcomingOf(_projectId);
-        assertEq(_upcoming.id, block.timestamp + 1); // timestamp + 1 = second queued, since the preceeding ruleset is
+        assertEq(_upcoming.id, block.timestamp + 1); // timestamp + 1 = second queued, since the preceding ruleset is
         // in
     }
 
@@ -193,7 +193,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
         );
 
         JBRuleset memory _upcoming = _rulesets.upcomingOf(_projectId);
-        assertEq(_upcoming.id, block.timestamp); // first queued, since the preceeding ruleset approval hook is still
+        assertEq(_upcoming.id, block.timestamp); // first queued, since the preceding ruleset approval hook is still
         // "Active"
     }
 
@@ -300,7 +300,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
         // Setup: expect ruleset event (RulesetQueued) is emitted
         vm.expectEmit();
         emit IJBRulesets.RulesetQueued(
-            block.timestamp + 1, // incremented by one since queued in the same block and we cant have duplicate ids
+            block.timestamp + 1, // incremented by one since queued in the same block and we can't have duplicate ids
             _projectId,
             0, // duration zero
             _weight,
@@ -414,7 +414,7 @@ contract TestUpcomingOf_Local is JBRulesetsSetup {
         // Setup: expect ruleset event (RulesetQueued) is emitted
         vm.expectEmit();
         emit IJBRulesets.RulesetQueued(
-            block.timestamp + 1, // incremented by one since queued in the same block and we cant have duplicate ids
+            block.timestamp + 1, // incremented by one since queued in the same block and we can't have duplicate ids
             _projectId,
             _duration,
             _weight,

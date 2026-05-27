@@ -523,7 +523,7 @@ contract TestFees_Local is TestBaseWorkflow {
         assertEq(_projectOwner.balance, _afterFee);
         assertEq(address(_terminal).balance, _nativeDistLimit + _feeAmount);
 
-        // Check: Heldfee unlock timestamp
+        // Check: Held fee unlock timestamp
         JBFee[] memory _checkOgFee = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
         assertEq(_checkOgFee[0].unlockTimestamp, block.timestamp + 2_419_200);
 
@@ -536,7 +536,7 @@ contract TestFees_Local is TestBaseWorkflow {
         // Check: Fee persists in terminal
         JBFee[] memory _persistingFee = _terminal.heldFeesOf(_projectId, JBConstants.NATIVE_TOKEN, 100);
 
-        // Wher go fee..?
+        // Check: Fee still exists.
         assertEq(_persistingFee.length, 1);
     }
 

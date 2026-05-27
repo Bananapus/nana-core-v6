@@ -257,7 +257,7 @@ contract TestSetSplitGroupsOf_Local is JBSplitsSetup {
 
         JBSplit[] memory _current = _splits.splitsOf(_projectId, block.timestamp, 0);
 
-        assertEq(_current[0].preferAddToBalance, true);
+        assertTrue(_current[0].preferAddToBalance);
     }
 
     function test_GivenAddingNewLockedSplitsIncludingPreviouslyLocked() external whenCallerIsController {
@@ -382,6 +382,6 @@ contract TestSetSplitGroupsOf_Local is JBSplitsSetup {
 
         JBSplit[] memory _current = _splits.splitsOf(_projectId, block.timestamp, 0);
 
-        assertEq(_current[0].preferAddToBalance, false);
+        assertFalse(_current[0].preferAddToBalance);
     }
 }

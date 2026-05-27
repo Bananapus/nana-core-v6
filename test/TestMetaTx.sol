@@ -147,7 +147,7 @@ contract TestMetaTx_Local is TestBaseWorkflow {
 
     function testForwarderDeployed() public view {
         // Check: forwarder deployed to address
-        assertEq(_erc2771Forwarder.deployed(), true);
+        assertTrue(_erc2771Forwarder.deployed());
     }
 
     function testMetaPayAndMetaCashOut() public {

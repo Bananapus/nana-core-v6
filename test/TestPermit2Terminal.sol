@@ -200,7 +200,7 @@ contract TestPermit2Terminal_Local is TestBaseWorkflow {
         });
 
         if (_coins < uint256(type(uint160).max) + 1) {
-            // Check: that tokens were transfered.
+            // Check: Tokens were transferred.
             assertEq(_usdc.balanceOf(address(_terminal)), _coins);
 
             // Check: that payer receives project token/balance.

@@ -193,7 +193,7 @@ contract TestRulesetViews_Local is JBControllerSetup {
         (bool allowed) = _controller.setTerminalsAllowed(1);
 
         // check: return makes sense
-        assertEq(allowed, true);
+        assertTrue(allowed);
     }
 
     function testSetControllerAllowed() public {
@@ -220,6 +220,6 @@ contract TestRulesetViews_Local is JBControllerSetup {
         (bool allowed) = _controller.setControllerAllowed(1);
 
         // check: return makes sense
-        assertEq(allowed, true);
+        assertTrue(allowed);
     }
 }
