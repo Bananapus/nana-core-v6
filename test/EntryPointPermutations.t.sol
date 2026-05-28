@@ -176,7 +176,14 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
     }
 
     /// @notice cashOut more than balance should revert.
+    /// @dev `projectStandard` has reservedPercent=2000 and no split group, so its pending reserves
+    /// would otherwise be leftover-minted to the owner during the lazy-settle inside `cashOutTokensOf`.
+    /// We force-settle them up-front so the balance we measure reflects the holder's true post-settle
+    /// position; the assertion (cashing out balance+1 must revert) then exercises the real overflow case.
     function test_cashOut_moreThanBalance() public {
+        if (jbController().pendingReservedTokenBalanceOf(projectStandard) != 0) {
+            jbController().sendReservedTokensToSplitsOf(projectStandard);
+        }
         uint256 balance = jbTokens().totalBalanceOf(owner, projectStandard);
 
         vm.prank(owner);

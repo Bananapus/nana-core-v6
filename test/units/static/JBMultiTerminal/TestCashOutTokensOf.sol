@@ -155,6 +155,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
         );
 
+        // Mock the lazy reserved-token settle guard: terminal staticcalls
+        // `controller.pendingReservedTokenBalanceOf(projectId)` before recordCashOutFor and skips
+        // the settle when zero. Returning zero here keeps the existing test expectations intact.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
+        );
+
         // mock controller burn call
         mockExpect(
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
@@ -207,6 +216,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock call to find the controller (we'll just use this contracts address for simplicity)
         mockExpect(
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
+
+        // Mock the lazy reserved-token settle guard: terminal staticcalls
+        // `controller.pendingReservedTokenBalanceOf(projectId)` before recordCashOutFor and skips
+        // the settle when zero. Returning zero here keeps the existing test expectations intact.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
         );
 
         // mock controller burn call
@@ -266,6 +284,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock call to find the controller (we'll just use this contracts address for simplicity)
         mockExpect(
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
+
+        // Mock the lazy reserved-token settle guard: terminal staticcalls
+        // `controller.pendingReservedTokenBalanceOf(projectId)` before recordCashOutFor and skips
+        // the settle when zero. Returning zero here keeps the existing test expectations intact.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
         );
 
         // mock controller burn call
@@ -381,6 +408,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         // mock call to find the controller (we'll just use this contracts address for simplicity)
         mockExpect(
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
+        );
+
+        // Mock the lazy reserved-token settle guard: terminal staticcalls
+        // `controller.pendingReservedTokenBalanceOf(projectId)` before recordCashOutFor and skips
+        // the settle when zero. Returning zero here keeps the existing test expectations intact.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
         );
 
         // mock controller burn call
@@ -499,6 +535,15 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
         );
 
+        // Mock the lazy reserved-token settle guard: terminal staticcalls
+        // `controller.pendingReservedTokenBalanceOf(projectId)` before recordCashOutFor and skips
+        // the settle when zero. Returning zero here keeps the existing test expectations intact.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
+        );
+
         // mock controller burn call
         mockExpect(
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
@@ -607,6 +652,14 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         mockExpect(
             address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(this))
         );
+
+        // Lazy reserved-settle guard: return zero so the new pre-cashout staticcall is a no-op here.
+        vm.mockCall(
+            address(this),
+            abi.encodeCall(IJBController.pendingReservedTokenBalanceOf, (_projectId)),
+            abi.encode(uint256(0))
+        );
+
         mockExpect(
             address(this), abi.encodeCall(IJBController.burnTokensOf, (_holder, _projectId, _defaultAmount, "")), ""
         );

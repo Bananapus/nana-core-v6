@@ -1276,6 +1276,16 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
             IJBController controller = _controllerOf(projectId);
 
+            // Lazy-settle pending reserved tokens BEFORE the cash-out math runs.
+            // Otherwise pending reserves inflate `totalTokenSupplyWithReservedTokensOf` (denominator in
+            // JBCashOuts.cashOutFrom), diluting the holder for tokens that are not yet minted to splits.
+            // Guarded because `sendReservedTokensToSplitsOf` reverts JBController_NoReservedTokens on zero.
+            // Split-hook failures inside `_sendReservedTokensToSplitGroupOf` are already try/catch'd in
+            // the controller, so a hostile reserved-split hook cannot brick this path.
+            if (controller.pendingReservedTokenBalanceOf(projectId) != 0) {
+                controller.sendReservedTokensToSplitsOf(projectId);
+            }
+
             // Record the cash out.
             (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
                 holder: holder,

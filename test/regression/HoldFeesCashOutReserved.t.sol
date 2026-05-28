@@ -262,13 +262,13 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             );
         }
 
-        // ── Step 4: Distribute reserved tokens ──
-        assertGt(
-            _controller.pendingReservedTokenBalanceOf(_projectId), 0, "Should have pending reserves before distribution"
-        );
-        _controller.sendReservedTokensToSplitsOf(_projectId);
+        // ── Step 4: Reserved tokens were auto-settled during cashOutTokensOf (lazy-settle in _cashOutTokensOf). ──
+        // Pre-fix the regression test called `sendReservedTokensToSplitsOf` manually here; that is now redundant
+        // (and would revert JBController_NoReservedTokens since pending is already zero).
         assertEq(
-            _controller.pendingReservedTokenBalanceOf(_projectId), 0, "Pending reserves should be 0 after distribution"
+            _controller.pendingReservedTokenBalanceOf(_projectId),
+            0,
+            "Cashout should have auto-settled pending reserves to splits"
         );
 
         // ── Step 5: Verify accounting invariants ──

@@ -17,8 +17,20 @@ import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 import {JBCashOuts} from "../src/libraries/JBCashOuts.sol";
 
 /// @notice Edge case tests for cross-ruleset cash outs and pending reserves inflation.
-/// Demonstrates that pending reserved tokens inflate totalSupply in cash-out calculations,
-/// systematically undervaluing cash-outs until reserves are distributed.
+/// @dev Historical context: cashout math reads `totalTokenSupplyWithReservedTokensOf`, which
+/// includes pending reserved tokens in the denominator. If those pending reserves were never
+/// minted to splits before a cashout, holders were diluted at pay-time for tokens that hadn't
+/// actually been minted yet — the bonding-curve denominator inflated, the reclaim shrank.
+///
+/// As of the lazy-settle fix in `_cashOutTokensOf` (efficiency/lazy-reserve-settle-on-cashout),
+/// the terminal opportunistically calls `sendReservedTokensToSplitsOf` when pending > 0 before
+/// invoking `STORE.recordCashOutFor`. So the denominator inflation is only observable when
+/// inspecting the library math in isolation; through the actual cashout entry point holders
+/// are NO LONGER shortchanged. These tests pin both behaviors:
+///   - Library still computes the dilutive math if you feed it the inflated supply directly
+///     (unchanged); kept as documentation of the underlying gap.
+///   - The terminal end-to-end flow is exercised in TestCashOutLazyReserveSettlement.sol,
+///     which proves the dilution is closed for real cashout callers.
 contract TestCashOutTimingEdge_Local is TestBaseWorkflow {
     IJBController private _controller;
     IJBMultiTerminal private _terminal;
