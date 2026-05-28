@@ -2,7 +2,6 @@
 
 `@bananapus/core-v6` is the base protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting that the rest of the V6 ecosystem builds on.
 
-External docs: <https://docs.juicebox.money>
 
 ## Documentation
 
