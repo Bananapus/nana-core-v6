@@ -18,8 +18,18 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error JBProjects_CreationFeeExceedsMax(uint256 fee, uint256 max);
     error JBProjects_InvalidCreationFee(uint256 value, uint256 requiredFee);
     error JBProjects_ZeroCreationFeeReceiver();
+
+    //*********************************************************************//
+    // ------------------------- public constants ------------------------ //
+    //*********************************************************************//
+
+    /// @notice The maximum native-token fee the owner can require to create a project.
+    /// @dev Hardcoded as a cap on the owner's `setCreationFee` authority so the fee can never become an effective
+    /// barrier to project creation.
+    uint256 public constant override MAX_CREATION_FEE = 0.001 ether;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
@@ -66,10 +76,14 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     //*********************************************************************//
 
     /// @notice Set the native-token fee required to create a project and the address that receives it.
-    /// @dev Only this contract's owner can change the fee. A non-zero fee requires a non-zero receiver.
-    /// @param fee The required creation fee. Set to 0 to disable creation fees.
+    /// @dev Only this contract's owner can change the fee. A non-zero fee requires a non-zero receiver. The fee may
+    /// not exceed `MAX_CREATION_FEE`.
+    /// @param fee The required creation fee. Set to 0 to disable creation fees. Must be `<= MAX_CREATION_FEE`.
     /// @param receiver The address that receives project creation fees.
     function setCreationFee(uint256 fee, address payable receiver) external override onlyOwner {
+        // Enforce the hardcoded ceiling so the owner can never price project creation out of reach.
+        if (fee > MAX_CREATION_FEE) revert JBProjects_CreationFeeExceedsMax({fee: fee, max: MAX_CREATION_FEE});
+
         // Non-zero fees need somewhere to go.
         if (fee != 0 && receiver == address(0)) revert JBProjects_ZeroCreationFeeReceiver();
 

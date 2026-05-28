@@ -13,7 +13,7 @@ contract TestCreateFor_Local is JBProjectsSetup {
 
     address _user = makeAddr("sudoer");
     address payable _feeReceiver = payable(makeAddr("feeReceiver"));
-    uint256 _creationFee = 1 ether;
+    uint256 _creationFee = 0.0005 ether;
 
     function setUp() public {
         super.projectsSetup();

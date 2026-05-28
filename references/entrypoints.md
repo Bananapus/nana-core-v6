@@ -169,6 +169,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `setFeelessHook(IJBFeelessHook hook)` | Sets or clears the optional hook consulted by `isFeelessFor`. Owner-only. (`JBFeelessAddresses`) |
 | `isFeelessFor(address addr, uint256 projectId, address caller)` | Returns whether an address is feeless for a project, checking static grants and the optional caller-aware hook. (`JBFeelessAddresses`) |
 | `creationFee()` / `creationFeeReceiver()` | Return the current project creation fee and receiver. (`JBProjects`) |
-| `setCreationFee(uint256 fee, address payable receiver)` | Sets the native-token project creation fee. Owner-only. (`JBProjects`) |
+| `MAX_CREATION_FEE()` | Hardcoded ceiling (`0.001 ether`) on the native-token project creation fee the owner can set. (`JBProjects`) |
+| `setCreationFee(uint256 fee, address payable receiver)` | Sets the native-token project creation fee. Reverts if `fee > MAX_CREATION_FEE`. Owner-only. (`JBProjects`) |
 | `setControllerAllowed(uint256 projectId)` | Returns whether a project's controller can currently be set. (`IJBDirectoryAccessControl`) |
 | `setTerminalsAllowed(uint256 projectId)` | Returns whether a project's terminals can currently be set. (`IJBDirectoryAccessControl`) |

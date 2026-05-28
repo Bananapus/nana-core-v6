@@ -7,7 +7,7 @@ import {JBProjectsSetup} from "./JBProjectsSetup.sol";
 
 contract TestSetCreationFee_Local is JBProjectsSetup {
     address payable _receiver = payable(makeAddr("receiver"));
-    uint256 _fee = 1 ether;
+    uint256 _fee = 0.0005 ether;
 
     function setUp() public {
         super.projectsSetup();
@@ -48,6 +48,19 @@ contract TestSetCreationFee_Local is JBProjectsSetup {
         vm.prank(_owner);
         vm.expectRevert(JBProjects.JBProjects_ZeroCreationFeeReceiver.selector);
         _projects.setCreationFee({fee: _fee, receiver: payable(address(0))});
+    }
+
+    function test_WhenFeeExceedsMax() external {
+        // it will revert
+
+        uint256 _max = _projects.MAX_CREATION_FEE();
+        uint256 _exceedingFee = _max + 1;
+
+        vm.expectRevert(
+            abi.encodeWithSelector(JBProjects.JBProjects_CreationFeeExceedsMax.selector, _exceedingFee, _max)
+        );
+        vm.prank(_owner);
+        _projects.setCreationFee({fee: _exceedingFee, receiver: _receiver});
     }
 
     function test_WhenCallerIsNotOwner() external {
