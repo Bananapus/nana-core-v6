@@ -12,16 +12,18 @@ If a change affects accounting, token supply, fees, terminal routing, or permiss
 
 `JBTerminalStore` is terminal-scoped through `msg.sender`, so each terminal tracks its own balances and usage while sharing the same ruleset and price surfaces. Hooks can change economics or add side effects, but they should not create a second ledger.
 
-## Core Invariants
+## Design Principles
 
-- Preview functions should stay aligned with the state-changing functions they mirror.
+- Preview functions stay aligned with the state-changing functions they mirror.
 - Data hooks run before settlement and may change economics. Pay and cash-out hooks run after settlement.
 - Reserved tokens and other pending supply affect supply-sensitive math before distribution.
 - Terminal balances, fee accounting, reclaim math, and surplus calculations must agree.
 - Fee logic taxes value leaving the system, not every internal rebalance.
-- Fee referral credits must track fee volume without changing fee custody.
+- Fee referral credits track fee volume without changing fee custody.
 - Rulesets are time-ordered and approval-aware, and downstream deployers depend on predictable ID progression.
 - Permission checks are protocol safety checks, not just UI hints.
+
+For the formal per-contract invariants and guarantees, see [INVARIANTS.md](./INVARIANTS.md).
 
 ## Modules
 

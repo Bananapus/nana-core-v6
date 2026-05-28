@@ -100,6 +100,8 @@ Ordering to keep in mind:
 
 ## Critical Invariants
 
+See [INVARIANTS.md](./INVARIANTS.md) for the full per-contract guarantees. The short list below is the auditor's prioritized checklist:
+
 1. Terminal solvency  
    Internal balances and held-fee obligations must reconcile with actual terminal token balances.
 2. No over-withdrawal  
