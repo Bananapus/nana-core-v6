@@ -8,7 +8,7 @@ import {JBChainlinkV3PriceFeed} from "./JBChainlinkV3PriceFeed.sol";
 
 /// @notice Extends `JBChainlinkV3PriceFeed` with L2 sequencer uptime checks (for Optimism, Arbitrum, etc.). Reverts if
 /// the sequencer is down or has not been back online for at least `GRACE_PERIOD_TIME` seconds — preventing stale
-/// prices from to use immediately after an outage.
+/// prices from being used immediately after an outage.
 contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
