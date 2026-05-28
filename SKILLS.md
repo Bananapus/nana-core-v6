@@ -34,12 +34,7 @@
 
 This is the core Juicebox V6 protocol on EVM. It lets projects launch treasury-backed tokens with configurable rulesets for payments, payouts, cash outs, and token issuance.
 
-## Reference Files
-
-| If you need... | Open this next |
-|---|---|
-| Contract map and callable entrypoints | [`references/entrypoints.md`](./references/entrypoints.md) |
-| Types, constants, gotchas, permissions, common errors, events, and hook return shapes | [`references/types-errors-events.md`](./references/types-errors-events.md) |
+For the canonical list of every doc in this repo (architecture, invariants, risks, admin, audit, changelog, style, references), see the README "Documentation" section.
 
 ## Working Rules
 

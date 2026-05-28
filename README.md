@@ -2,13 +2,23 @@
 
 `@bananapus/core-v6` is the base protocol package for Juicebox on EVM chains. It defines projects, rulesets, terminals, permissions, token issuance, cash outs, splits, price feeds, and the accounting that the rest of the V6 ecosystem builds on.
 
-Docs: <https://docs.juicebox.money>
-Architecture: [ARCHITECTURE.md](./ARCHITECTURE.md)  
-User journeys: [USER_JOURNEYS.md](./USER_JOURNEYS.md)  
-Skills: [SKILLS.md](./SKILLS.md)  
-Risks: [RISKS.md](./RISKS.md)  
-Administration: [ADMINISTRATION.md](./ADMINISTRATION.md)  
-Audit instructions: [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md)
+External docs: <https://docs.juicebox.money>
+
+## Documentation
+
+In-repo docs (entry points for this repo):
+
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — module layout, data flow, critical-flow diagrams, and accounting model.
+- [INVARIANTS.md](./INVARIANTS.md) — per-contract operation inventory and the guarantees core makes to users, owners, and integrators.
+- [ADMINISTRATION.md](./ADMINISTRATION.md) — admin surfaces, role matrix, immutable decisions, and recovery posture.
+- [RISKS.md](./RISKS.md) — threat model, accepted risks, and invariants to verify.
+- [USER_JOURNEYS.md](./USER_JOURNEYS.md) — example end-to-end flows (launch, pay, cash out, payout, migrate, delegate).
+- [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md) — what to focus on for a security audit and how to start.
+- [SKILLS.md](./SKILLS.md) — implementation nuances, gotchas, and reading order for working on this codebase.
+- [STYLE_GUIDE.md](./STYLE_GUIDE.md) — Solidity conventions and repo layout used across the V6 ecosystem.
+- [CHANGELOG.md](./CHANGELOG.md) — v5 → v6 ABI and behavior deltas.
+- [references/entrypoints.md](./references/entrypoints.md) — callable entrypoints by contract.
+- [references/types-errors-events.md](./references/types-errors-events.md) — packed metadata, errors, events, and hook return shapes.
 
 ## Overview
 
@@ -133,6 +143,8 @@ script/
 ```
 
 ## Risks And Notes
+
+See [RISKS.md](./RISKS.md) for the full risk register. In short:
 
 - Hooks can materially change payment and cash-out behavior.
 - Permissions are flexible, which makes broad or wildcard grants risky.

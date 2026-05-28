@@ -1,7 +1,5 @@
 # Invariants of `@bananapus/core-v6`
 
-Last updated: 2026-05-28.
-
 Scope: the Juicebox V6 core protocol — `JBController`, `JBMultiTerminal`, `JBTerminalStore`, `JBDirectory`,
 `JBRulesets`, `JBSplits`, `JBPermissions`, `JBPrices`, `JBProjects`, `JBTokens`, `JBERC20`,
 `JBFundAccessLimits`, `JBFeelessAddresses`, and the Chainlink price-feed adapters. This is the foundational
