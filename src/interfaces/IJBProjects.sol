@@ -24,6 +24,9 @@ interface IJBProjects is IERC721 {
     /// @param caller The address that set the resolver.
     event SetTokenUriResolver(IJBTokenUriResolver indexed resolver, address caller);
 
+    /// @notice Returns the maximum native-token fee the owner can require to create a project.
+    function MAX_CREATION_FEE() external view returns (uint256);
+
     /// @notice Returns the native-token fee required to create a project.
     function creationFee() external view returns (uint256);
 
@@ -42,7 +45,7 @@ interface IJBProjects is IERC721 {
     function createFor(address owner) external payable returns (uint256 projectId);
 
     /// @notice Sets the native-token fee required to create a project and the address that receives it.
-    /// @param fee The required creation fee. Set to 0 to disable creation fees.
+    /// @param fee The required creation fee. Set to 0 to disable creation fees. Must be `<= MAX_CREATION_FEE`.
     /// @param receiver The address that receives creation fees. Must be non-zero when `fee` is non-zero.
     function setCreationFee(uint256 fee, address payable receiver) external;
 

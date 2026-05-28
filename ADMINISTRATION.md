@@ -57,6 +57,7 @@ The practical split is simple:
 - ERC-20 token binding for a project is effectively one-time.
 - The fee beneficiary project ID inside `JBMultiTerminal` is hardcoded.
 - Constructor immutables on controller, directory, terminal, store, prices, and tokens cannot be patched.
+- The project creation fee owner can set in `JBProjects` is bounded by the hardcoded `MAX_CREATION_FEE` (`0.001 ether`). The owner cannot lift this ceiling.
 
 ## Operational Notes
 
