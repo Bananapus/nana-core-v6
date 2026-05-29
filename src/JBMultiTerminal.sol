@@ -52,7 +52,9 @@ import {JBTokenAmount} from "./structs/JBTokenAmount.sol";
 /// ERC-20 approvals.
 /// @dev Each project can have multiple terminals for different tokens. The terminal delegates accounting to
 /// `JBTerminalStore` and splits distribution to `JBSplits`. Fees are sent to project #1 (the fee beneficiary).
-/// All external hook calls (pay hooks, cash-out hooks, split hooks) are wrapped in try-catch to prevent griefing.
+/// Split-hook calls, fee processing, and the leftover-payout transfer to the project owner are wrapped in
+/// try-catch to prevent griefing. Pay and cash-out data-hook calls are NOT wrapped: a project's own data hook is
+/// trusted to fail open, so a reverting pay/cash-out hook is the project's responsibility, not the terminal's.
 contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // A library that parses the packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;
