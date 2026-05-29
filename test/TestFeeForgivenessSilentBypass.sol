@@ -19,7 +19,7 @@ import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
-/// @notice Regression test for F-MTT-10 — `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
+/// @notice Regression test: `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
 /// and increments `feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance, but cannot exit
 /// fee-free on the next zero-tax cashout.
 ///

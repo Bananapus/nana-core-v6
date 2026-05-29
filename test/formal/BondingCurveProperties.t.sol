@@ -25,14 +25,14 @@ contract BondingCurveProperties is Test {
     // =========================================================================
     // Boundary table: exact tax-rate edges that fuzzing rarely samples
     // =========================================================================
-    /// @notice Pins cash-out values at audit-selected tax-rate boundaries.
+    /// @notice Pins cash-out values at selected tax-rate boundaries.
     /// @dev Mirrors `test_cashOut_boundaryTaxRateTable` for Halmos-compatible entrypoint discovery.
     // forge-lint: disable-next-line(mixed-case-function)
     function check_cashOut_boundaryTaxRateTable() public pure {
         _assertCashOutBoundaryTaxRateTable();
     }
 
-    /// @notice Pins cash-out values at audit-selected tax-rate boundaries.
+    /// @notice Pins cash-out values at selected tax-rate boundaries.
     /// @dev The table catches accidental formula or branch changes at `{0, 1, 2500, 5000, 7500, 9999, 10000}`.
     function test_cashOut_boundaryTaxRateTable() public pure {
         _assertCashOutBoundaryTaxRateTable();
