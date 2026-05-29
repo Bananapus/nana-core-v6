@@ -19,7 +19,7 @@ import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
-/// @notice Regression test for F-MTT-10 — `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
+/// @notice Regression test: `_processFee` fail-open credits balance back via `_recordAddedBalanceFor`
 /// and increments `feeFreeSurplusOf`. The forgiven fee amount becomes part of project balance, but cannot exit
 /// fee-free on the next zero-tax cashout.
 ///
@@ -126,7 +126,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
 
     /// @notice After a forgiven fee, the credited-back amount is tracked in `feeFreeSurplusOf`, so it pays a fee on
     /// a later zero-tax cashout.
-    function test_F_MTT_10_chargesFeeOnCreditedBackFeeRouteFailure() external {
+    function test_chargesFeeOnCreditedBackFeeRouteFailure() external {
         // 1. Pay the project — balance increments, no fee on inflow.
         _terminal.pay{value: PAY_AMOUNT}({
             projectId: _projectId,

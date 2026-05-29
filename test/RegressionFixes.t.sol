@@ -73,7 +73,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
     ///   - For duration=0 rulesets, queueing a replacement takes effect immediately with cycleNumber=1.
     ///   The saturating subtraction is defensive coding that prevents edge cases from DOS-ing the view function.
     ///   This test verifies the view function works correctly under normal conditions and does not revert.
-    function test_F5_currentSurplusOfDoesNotRevertWithLowerPayoutLimit() external {
+    function test_currentSurplusOfDoesNotRevertWithLowerPayoutLimit() external {
         // --- Fee project (project #1) ---
         _launchFeeProject();
 
@@ -95,14 +95,14 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
         uint256 projectId = _controller.launchProjectFor({
             owner: _projectOwner,
-            projectUri: "f5-project",
+            projectUri: "project",
             rulesetConfigurations: rulesetConfig,
             terminalConfigurations: termConfigs,
             memo: ""
         });
 
         // Pay 20 ETH into the project.
-        address payer = makeAddr("f5-payer");
+        address payer = makeAddr("payer");
         vm.deal(payer, 20 ether);
         vm.prank(payer);
         _terminal.pay{value: 20 ether}({
@@ -165,7 +165,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
     /// @notice Verify that currentSurplusOf does not revert when the project has zero payout limits in the new ruleset
     /// (meaning all balance is surplus). This is a simpler version of the scenario.
-    function test_F5_currentSurplusOfWithZeroPayoutLimit() external {
+    function test_currentSurplusOfWithZeroPayoutLimit() external {
         // Fee project.
         _launchFeeProject();
 
@@ -183,14 +183,14 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
         uint256 projectId = _controller.launchProjectFor({
             owner: _projectOwner,
-            projectUri: "f5-zero-limit",
+            projectUri: "zero-limit",
             rulesetConfigurations: rulesetConfig,
             terminalConfigurations: _makeTerminalConfig(),
             memo: ""
         });
 
         // Pay in and use the full payout limit.
-        address payer = makeAddr("f5-payer2");
+        address payer = makeAddr("payer2");
         vm.deal(payer, 10 ether);
         vm.prank(payer);
         _terminal.pay{value: 10 ether}({
@@ -454,12 +454,12 @@ contract RegressionFixesTest is TestBaseWorkflow {
     ///   2. Some users pay B directly (increasing balance but not fee-free surplus).
     ///   3. Cash out from B. After the cashout, feeFreeSurplusOf[B] should be capped at remaining balance.
     ///   4. Subsequent direct-pay cashout should be fee-free (no remaining fee-free surplus).
-    function test_F4_feeFreeSurplusCappedAfterCashOut() external {
+    function test_feeFreeSurplusCappedAfterCashOut() external {
         // --- Fee project ---
         _launchFeeProject();
 
         // Launch project B and project A with payout split to B.
-        (uint256 projectIdA, uint256 projectIdB) = _launchPayoutPairForF4("f4-cap");
+        (uint256 projectIdA, uint256 projectIdB) = _launchPayoutPair("cap");
 
         // Step 1: Pay into project A and trigger payout to B.
         _payAndSendPayouts(projectIdA, 10 ether, 10 ether);
@@ -472,7 +472,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
         );
 
         // Step 2: Pay project B directly (increases balance but NOT fee-free surplus).
-        _payProject(projectIdB, makeAddr("f4-direct-payer"), 10 ether);
+        _payProject(projectIdB, makeAddr("direct-payer"), 10 ether);
 
         // B now has: balance = 20 ETH, feeFreeSurplusOf = 10 ETH.
         assertEq(
@@ -482,10 +482,10 @@ contract RegressionFixesTest is TestBaseWorkflow {
         );
 
         // Step 3: Cash out half of the direct payer's tokens and verify the invariant.
-        _cashOutHalfAndVerifyInvariant(projectIdB, makeAddr("f4-direct-payer"));
+        _cashOutHalfAndVerifyInvariant(projectIdB, makeAddr("direct-payer"));
 
         // Step 4: Cash out remaining tokens and verify again.
-        _cashOutRemainingAndVerifyInvariant(projectIdB, makeAddr("f4-direct-payer"));
+        _cashOutRemainingAndVerifyInvariant(projectIdB, makeAddr("direct-payer"));
     }
 
     /// @dev Cash out half of a holder's tokens and assert the fee-free surplus invariant.
@@ -540,23 +540,23 @@ contract RegressionFixesTest is TestBaseWorkflow {
 
     /// @notice After a cashout that fully drains a project's balance, feeFreeSurplusOf should be zero.
     /// This prevents overcharging fees on subsequent direct payments.
-    function test_F4_feeFreeSurplusZeroAfterFullDrain() external {
+    function test_feeFreeSurplusZeroAfterFullDrain() external {
         // Fee project.
         _launchFeeProject();
 
         // Launch project B and project A with payout split to B.
-        (uint256 projectIdA, uint256 projectIdB) = _launchPayoutPairForF4("f4-drain");
+        (uint256 projectIdA, uint256 projectIdB) = _launchPayoutPair("drain");
 
         // Pay project A, send payouts to B.
         _payAndSendPayouts(projectIdA, 10 ether, 10 ether);
 
         // B: balance = 10 ETH, feeFreeSurplus = 10 ETH. No token holders in B (addToBalance doesn't mint).
         // To cash out, we need someone to pay B directly first so they get tokens.
-        _payProject(projectIdB, makeAddr("f4-casher"), 10 ether);
+        _payProject(projectIdB, makeAddr("casher"), 10 ether);
 
         // B: balance = 20 ETH, feeFreeSurplus = 10 ETH.
         // Cash out ALL tokens (this is the only holder, so they get the full balance).
-        _cashOutAll(projectIdB, makeAddr("f4-casher"));
+        _cashOutAll(projectIdB, makeAddr("casher"));
 
         // After full drain, fee-free surplus should be capped at 0 (or whatever balance remains after fees).
         uint256 feeFreeSurplusAfterDrain = _readFeeFreeSurplus(projectIdB, JBConstants.NATIVE_TOKEN);
@@ -565,10 +565,10 @@ contract RegressionFixesTest is TestBaseWorkflow {
         assertLe(feeFreeSurplusAfterDrain, balanceAfterDrain, "fee-free surplus must be <= balance after full drain");
 
         // Now pay B again directly. This should be fee-free since fee-free surplus was cleared.
-        _payProject(projectIdB, makeAddr("f4-fresh-user"), 5 ether);
+        _payProject(projectIdB, makeAddr("fresh-user"), 5 ether);
 
         // Cash out and verify it's fee-free.
-        _verifyFeeFreeCashOut(projectIdB, makeAddr("f4-fresh-user"), 5 ether);
+        _verifyFeeFreeCashOut(projectIdB, makeAddr("fresh-user"), 5 ether);
     }
 
     // ==========================================
@@ -576,7 +576,7 @@ contract RegressionFixesTest is TestBaseWorkflow {
     // ==========================================
 
     /// @dev Launch a pair of projects for the drain test: project B (zero tax) and project A (100% split to B).
-    function _launchPayoutPairForF4(string memory label) private returns (uint256 projectIdA, uint256 projectIdB) {
+    function _launchPayoutPair(string memory label) private returns (uint256 projectIdA, uint256 projectIdB) {
         // Project B: zero tax.
         JBRulesetConfig[] memory rulesetConfigB = new JBRulesetConfig[](1);
         rulesetConfigB[0] = _makeRulesetConfig({

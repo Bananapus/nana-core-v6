@@ -56,7 +56,7 @@ contract HalmosSmoke {
         assert(amount - fee + fee == amount);
     }
 
-    /// @notice Proves an audit-selected bonding-curve boundary table stays stable.
+    /// @notice Proves a selected bonding-curve boundary table stays stable.
     /// @dev Symbolic cash-out domains were too expensive for the CI smoke target, so this pins the exact branch edges.
     function check_cashOutBoundaryTaxRateTable() public pure {
         // Partial cash-out case: 2,500 out of 10,000 project tokens against 10,000 surplus.
