@@ -126,7 +126,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
 
     /// @notice After a forgiven fee, the credited-back amount is tracked in `feeFreeSurplusOf`, so it pays a fee on
     /// a later zero-tax cashout.
-    function test_F_MTT_10_chargesFeeOnCreditedBackFeeRouteFailure() external {
+    function test_chargesFeeOnCreditedBackFeeRouteFailure() external {
         // 1. Pay the project — balance increments, no fee on inflow.
         _terminal.pay{value: PAY_AMOUNT}({
             projectId: _projectId,
