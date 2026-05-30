@@ -97,6 +97,23 @@ This repo owns the canonical ledger for balances, fees, fee-referral volume, sup
 
 If a duration-based ruleset auto-cycles without a new ruleset ID, payout-limit usage resets but allowance usage does not.
 
+### Currency model: base currency vs accounting-context currency
+
+Two distinct currency systems coexist; conflating them is a common integration error.
+
+- `ruleset.baseCurrency` is a *standard* currency ID from `JBCurrencyIds` (`ETH = 1`, `USD = 2`). It is the unit the ruleset `weight` is denominated in — the denominator issuance is priced against. It is never a token address.
+- `JBAccountingContext.currency` is *token-keyed*: `uint32(uint160(tokenAddress))` (including the native-token sentinel). It identifies the actual asset a terminal accounts for, and also keys fund access limits and surplus allowances.
+
+Why the split exists — chain portability. The same ruleset must be deployable, byte-identical, on every chain: its encoded configuration is hashed into the cross-chain identity that keys deterministic CREATE addresses and lets suckers peer. But the concrete asset is chain-specific — USDC has a different address on each chain, and a chain's native/gas token need not be ETH. So a ruleset may only denominate its `weight` in a chain-independent *standard* unit (`USD`/`ETH`); each chain then binds its local token address in a per-chain accounting context and registers a local `JBPrices` feed that resolves that token to the ruleset's standard unit. Baking a token address into the ruleset would make the "same" revnet a different configuration on each chain, breaking deterministic addresses and sucker peering.
+
+`JBPrices` feeds bridge the two. On every `pay`/cash-out, `JBTerminalStore` derives `weightRatio`: if `amount.currency == ruleset.baseCurrency` it is `10**decimals` (no feed read); otherwise it is `PRICES.pricePerUnitOf({pricingCurrency: amount.currency, unitCurrency: baseCurrency})`. So a USD-base revnet accepting USDC (`baseCurrency = USD(2)`, context `currency = uint32(uint160(usdc))`) prices issuance through the registered USDC↔USD feed, and an ETH-base revnet accepting the native token prices through the registered native↔ETH identity feed.
+
+Implications:
+- Any project whose accepted token's currency differs from its `baseCurrency` unit (every USD-denominated revnet, and native-token ETH revnets via the identity feed) reads a price feed on every pay/cash-out for that pair; that pair's feed must stay live for those operations to succeed. `JBPrices` wraps each feed in try/catch and falls through to project→default and their inverses, so register a backup feed for any pair you cannot afford to have a single point of failure on.
+- Do not set an accounting-context `currency` to a bare `JBCurrencyIds` value to "skip" the feed unless you genuinely want that asset accounted as the well-known unit at 1:1 — it changes accounting/limit keying and forgoes price-accurate issuance. Conversely, never pass a token-address currency where a `baseCurrency` is expected. Either mismatch makes the price-feed lookup miss and reverts the operation.
+
+See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`.
+
 ## Security Model
 
 - Review `JBMultiTerminal`, `JBTerminalStore`, and `JBController` as one pipeline.
