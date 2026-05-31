@@ -49,6 +49,10 @@ contract JBTriangularPriceFeed is IJBPriceFeed {
     /// @dev Returns `numerator / denominator` at the requested precision, which cancels the shared pivot unit and
     /// yields "pricing currency per 1 unit currency".
     function currentUnitPrice(uint256 decimals) external view override returns (uint256) {
-        return mulDiv(NUMERATOR.currentUnitPrice(decimals), 10 ** decimals, DENOMINATOR.currentUnitPrice(decimals));
+        return mulDiv({
+            x: NUMERATOR.currentUnitPrice(decimals),
+            y: 10 ** decimals,
+            denominator: DENOMINATOR.currentUnitPrice(decimals)
+        });
     }
 }
