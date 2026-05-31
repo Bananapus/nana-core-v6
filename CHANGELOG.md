@@ -35,6 +35,7 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - `IJBCashOutTerminal.cashOutTokensOf(...)`, `IJBPayoutTerminal.sendPayoutsOf(...)`, and `IJBPayoutTerminal.useAllowanceOf(...)` now take `uint256 referralProjectId`.
 - `IJBTerminalStore` adds `feeVolumeByReferralOf(...)`, `totalFeeVolumeOf(...)`, and `recordFeeReferralCreditOf(...)`.
 - `IJBPrices` adds feed-list views and append-only backup feed behavior.
+- `src/periphery/JBTriangularPriceFeed` is new: a composite `IJBPriceFeed` that triangulates two existing feeds sharing a common quote ("pivot") currency to price a pair that has no direct feed (e.g. ETH↔USDC through USD), without baking any pivot into `JBPrices`. It inherits each leg's staleness/validity reverts.
 - `IJBProjects.MAX_CREATION_FEE()` is new: a hardcoded ceiling (`0.001 ether`) that bounds the project creation fee the owner can set via `setCreationFee(...)`. Passing a fee above the ceiling now reverts with `JBProjects_CreationFeeExceedsMax`.
 
 ## Breaking ABI changes
