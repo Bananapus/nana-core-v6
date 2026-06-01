@@ -1274,24 +1274,21 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Cache whether the beneficiary is feeless.
         bool beneficiaryIsFeeless = _isFeeless({addr: beneficiary, projectId: projectId});
 
-        {
-            // Cache the controller to avoid a redundant external call (also used inside STORE.recordCashOutFor).
-            IJBController controller = _controllerOf(projectId);
+        // Record the cash out.
+        (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
+            holder: holder,
+            projectId: projectId,
+            cashOutCount: cashOutCount,
+            tokenToReclaim: tokenToReclaim,
+            beneficiaryIsFeeless: beneficiaryIsFeeless,
+            metadata: metadata
+        });
 
-            // Record the cash out.
-            (ruleset, reclaimAmount, cashOutTaxRate, hookSpecifications) = STORE.recordCashOutFor({
-                holder: holder,
-                projectId: projectId,
-                cashOutCount: cashOutCount,
-                tokenToReclaim: tokenToReclaim,
-                beneficiaryIsFeeless: beneficiaryIsFeeless,
-                metadata: metadata
-            });
-
-            // Burn the project tokens.
-            if (cashOutCount != 0) {
-                controller.burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
-            }
+        // Burn the project tokens. The controller is only needed for this burn, so it is fetched once and only when
+        // there are tokens to burn.
+        if (cashOutCount != 0) {
+            _controllerOf(projectId)
+                .burnTokensOf({holder: holder, projectId: projectId, tokenCount: cashOutCount, memo: ""});
         }
 
         // Keep a reference to the amount being reclaimed that is subject to fees.
@@ -2072,6 +2069,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         feeAmount = _feeAmountFrom(amount);
 
         if (shouldHoldFees) {
+            // The held-fee record stores the basis amount in a `uint224`. Reject a basis that wouldn't fit so it
+            // can't silently truncate and corrupt the eventual fee processing/refund.
+            _checkFitsIn({value: amount, max: type(uint224).max});
+
             // Store the gross amount so future repayments can recover the corresponding fee.
             // Capture the in-flight `currentReferralProjectId` so attribution survives the 28-day hold window —
             // by the time `processHeldFeesOf` runs, the transient slot has been cleared. The encoded
@@ -2136,7 +2137,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
 
         // Make sure the amount being paid is less than the maximum permit2 allowance.
-        if (amount > type(uint160).max) revert JBMultiTerminal_OverflowAlert(amount, type(uint160).max);
+        _checkFitsIn({value: amount, max: type(uint160).max});
 
         // Otherwise we attempt to use the PERMIT2 method.
         // forge-lint: disable-next-line(unsafe-typecast)
@@ -2345,6 +2346,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     //*********************************************************************//
     // -------------------------- private helpers ------------------------ //
     //*********************************************************************//
+
+    /// @notice Revert if a value doesn't fit within a maximum, so a later narrowing cast can't silently truncate it.
+    /// @param value The value to bound.
+    /// @param max The largest value that fits the target width.
+    function _checkFitsIn(uint256 value, uint256 max) private pure {
+        if (value > max) revert JBMultiTerminal_OverflowAlert(value, max);
+    }
 
     /// @notice The terminal fee charged from a pre-fee `amount`.
     /// @param amount The amount before the fee is applied.

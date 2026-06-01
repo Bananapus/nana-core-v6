@@ -612,6 +612,112 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         });
     }
 
+    function test_WhenHeldFeeBasisGTType_uint224Max() external whenMsgSenderDNEQFeeless {
+        // it will revert OverflowAlert instead of silently truncating the held-fee basis
+        address mockToken = makeAddr("token");
+        address beneficiary = makeAddr("bene");
+        address controller = makeAddr("controller");
+
+        // A payout whose basis exceeds the `uint224` width used by the held-fee record. Casting this to `uint224`
+        // would silently truncate the stored basis, corrupting the eventual fee processing/refund.
+        uint256 oversizedAmount = uint256(type(uint224).max) + 1;
+
+        // forge-lint: disable-next-line(unsafe-typecast)
+        uint32 currencyId = uint32(uint160(mockToken));
+
+        // Mock controllerOf for addAccountingContextsFor permission check
+        mockExpect(
+            address(directory), abi.encodeCall(IJBDirectory.controllerOf, (_projectId)), abi.encode(address(controller))
+        );
+
+        // mock owner call
+        mockExpect(address(projects), abi.encodeCall(IERC721.ownerOf, (_projectId)), abi.encode(address(this)));
+
+        // Build a ruleset with holdFees=true via packed metadata so the fee is recorded as a held fee.
+        JBRulesetMetadata memory _rulesMetadata = JBRulesetMetadata({
+            reservedPercent: 0,
+            cashOutTaxRate: 0,
+            baseCurrency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
+            pausePay: false,
+            pauseCreditTransfers: false,
+            allowOwnerMinting: false,
+            allowSetCustomToken: false,
+            allowTerminalMigration: false,
+            allowSetTerminals: false,
+            ownerMustSendPayouts: false,
+            allowSetController: false,
+            allowAddAccountingContext: true,
+            allowAddPriceFeed: false,
+            holdFees: true,
+            scopeCashOutsToLocalBalances: false,
+            useDataHookForPay: false,
+            useDataHookForCashOut: false,
+            dataHook: address(0),
+            metadata: 0
+        });
+
+        uint256 packedMetadata = JBRulesetMetadataResolver.packRulesetMetadata(_rulesMetadata);
+
+        JBRuleset memory returnedRuleset = JBRuleset({
+            cycleNumber: 1,
+            id: 1,
+            basedOnId: 0,
+            start: 0,
+            duration: 0,
+            weight: 0,
+            weightCutPercent: 0,
+            approvalHook: IJBRulesetApprovalHook(address(0)),
+            metadata: packedMetadata
+        });
+
+        // Set up accounting context so the token is recognized
+        JBAccountingContext[] memory _tokens = new JBAccountingContext[](1);
+        _tokens[0] = JBAccountingContext({token: mockToken, decimals: 18, currency: currencyId});
+
+        // Mock recordAccountingContextOf in the store (validation now happens there)
+        mockExpect(
+            address(store), abi.encodeCall(IJBTerminalStore.recordAccountingContextOf, (_projectId, _tokens)), ""
+        );
+
+        _terminal.addAccountingContextsFor(_projectId, _tokens);
+
+        // recordUsedAllowance returns the oversized amount as the amount paid out.
+        mockExpect(
+            address(store),
+            abi.encodeCall(IJBTerminalStore.recordUsedAllowanceOf, (_projectId, _tokens[0].token, oversizedAmount, 0)),
+            abi.encode(returnedRuleset, oversizedAmount)
+        );
+
+        // first feeless check: owner is NOT feeless
+        mockExpect(
+            address(feelessAddresses), feelessCalldata(address(this), _projectId, address(this)), abi.encode(false)
+        );
+
+        // second feeless check: beneficiary is NOT feeless
+        mockExpect(
+            address(feelessAddresses), feelessCalldata(beneficiary, _projectId, address(this)), abi.encode(false)
+        );
+
+        // The held-fee basis exceeds `uint224`, so recording it must revert cleanly rather than truncate.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                JBMultiTerminal.JBMultiTerminal_OverflowAlert.selector, oversizedAmount, uint256(type(uint224).max)
+            )
+        );
+
+        _terminal.useAllowanceOf({
+            projectId: _projectId,
+            token: mockToken,
+            amount: oversizedAmount,
+            currency: 0,
+            minTokensPaidOut: 0,
+            beneficiary: payable(beneficiary),
+            feeBeneficiary: payable(address(this)),
+            memo: "",
+            referralProjectId: 0
+        });
+    }
+
     function test_WhenTokenEQNATIVE_TOKEN() external {
         // it will send ETH via sendValue
     }

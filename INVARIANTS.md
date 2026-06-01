@@ -218,9 +218,9 @@ remain authoritative. There is no path to mint without `tokenCount > 0`
 ## B.7 Directory routing — `setControllerOf`, `setTerminalsOf`, `setPrimaryTerminalOf`
 
 - `JBDirectory.setControllerOf` allows:
-  - owner / `SET_CONTROLLER` operator if the project's current ruleset has `allowSetController`,
-  - the current controller (a controller can hand off without ruleset gating — typical for
-    migrations),
+  - owner / `SET_CONTROLLER` operator if the current controller permits the change (the controller's
+    `setControllerAllowed(projectId)` is consulted, which checks the current ruleset's
+    `allowSetController` flag),
   - any address in `isAllowedToSetFirstController` if the project has no controller yet
     (`controllerOf[projectId] == address(0)`).
   Migration ordering: `beforeReceiveMigrationFrom` → old `migrate` (called while directory still

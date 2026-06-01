@@ -282,6 +282,8 @@ Cash outs always aggregate surplus across all registered terminals (shared treas
 
 If project `#1` cannot accept a fee payment, core prefers liveness over strict fee collection. For held fees, a failed processing attempt can forgive the fee permanently.
 
+The held-fee record stores the fee basis amount in a `uint224`. Recording a held fee whose basis exceeds `uint224` reverts (`JBMultiTerminal_OverflowAlert`) rather than silently truncating the stored basis, so the eventual fee processing/refund can never be computed against a corrupted amount. The bound sits far above any realistic outflow (`~2.7e49` at 18 decimals).
+
 ### 8.3 Surplus allowance is keyed by ruleset, not by an abstract cycle
 
 `usedSurplusAllowanceOf` is keyed by `ruleset.id`. If a ruleset auto-rolls without a new ID, allowance usage carries forward.
