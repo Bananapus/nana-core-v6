@@ -24,6 +24,10 @@ This file describes the verified change from `nana-core-v5` to the current `nana
 - The repo carries much broader test coverage than the v5 tree, including dedicated review, invariant, fork, and formal-style suites.
 - The implementation baseline moved from the v5 `0.8.23` world to `0.8.28`.
 
+## Maintenance
+
+- Raise dependency floors to the latest published versions; document NatSpec, comment, and lint conventions in `STYLE_GUIDE.md`.
+
 ## Verified deltas
 
 - `IJBTerminal.previewPayFor(...)` is new.
