@@ -91,7 +91,6 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// @dev Can only be called if:
     /// - The ruleset's metadata has `allowSetController` enabled, and the caller is the project's owner or has
     /// `SET_CONTROLLER` permission.
-    /// - OR the caller is the project's current controller.
     /// - OR the caller `isAllowedToSetFirstController` and the project has no controller yet.
     /// @param projectId The ID of the project to set the controller for.
     /// @param controller The address of the controller to set.
@@ -112,7 +111,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
 
         // Get a reference to a flag indicating whether the project is allowed to set its controller.
         // Setting the controller is allowed if the project doesn't have a controller,
-        // OR if the caller is the current controller,
+        // OR if the current controller doesn't enforce access control,
         // OR if the project's ruleset allows setting the controller.
         bool allowSetController = address(currentController) == address(0)
             || !currentController.supportsInterface(type(IJBDirectoryAccessControl).interfaceId)
