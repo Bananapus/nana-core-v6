@@ -199,8 +199,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // Reclaim amount should be > 0.
@@ -244,8 +243,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
     }
 
@@ -309,8 +307,7 @@ contract TestMultiTerminalSurplus_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         assertGt(reclaimed, 0, "should reclaim something for 1% cash out");

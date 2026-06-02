@@ -98,7 +98,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
             )
         );
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
     }
 
     modifier whenCallerHasPermission() {
@@ -166,7 +166,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
     }
 
     function test_GivenCashOutCountGtZero() external whenCallerHasPermission {
@@ -221,7 +221,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, reclaimAmount, 1e18));
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, "", 0); // minReclaimAmount
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, 1e18, _bene, ""); // minReclaimAmount
         // = 1e18 but only 1e9 reclaimed
     }
 
@@ -300,7 +300,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         );
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
     }
 
     // covered above / in other units that test transfers
@@ -432,9 +432,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(
-            _holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0
-        );
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "");
     }
 
     /* function test_GivenDataHookReturnsCashOutHookSpecsHookIsNotFeelessAndTokenIsNative()
@@ -568,9 +566,7 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(address(_mockToken2), 18, uint32(uint160(address(_mockToken2))));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(
-            _holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "", 0
-        );
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, address(_mockToken2), _minReclaimed, _bene, "");
     }
 
     function test_GivenTheCashOutHookSpecIsNoop() external whenCallerHasPermission {
@@ -615,6 +611,6 @@ contract TestCashOutTokensOf_Local is JBMultiTerminalSetup {
         _acceptToken(_mockToken, 18, uint32(uint160(_mockToken)));
 
         vm.prank(_bene);
-        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "", 0);
+        _terminal.cashOutTokensOf(_holder, _projectId, _defaultAmount, _mockToken, _minReclaimed, _bene, "");
     }
 }

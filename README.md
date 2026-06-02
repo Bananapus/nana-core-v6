@@ -81,7 +81,6 @@ The shortest reading path is:
 - Data hooks and cash-out hooks can change economics and side effects. They are part of the protocol surface.
 - Permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
 - Preview and execution are intentionally close, but callers should still treat them as separate surfaces when hooks or routing can change behavior.
-- Fee-bearing cash-out, payout, and allowance calls can carry a referral project ID. This credits fee volume; it does not redirect the fee itself.
 
 ## Where State Lives
 
@@ -89,7 +88,6 @@ The shortest reading path is:
 - controller and terminal routing: `JBDirectory`
 - ruleset history and activation: `JBRulesets`
 - balances, surplus, fees, and reclaim accounting: `JBTerminalStore`
-- referral fee-volume accounting: `JBTerminalStore`
 - operator authority: `JBPermissions`
 
 When a flow is unclear, read the contract that owns the state before the contract that forwards into it.

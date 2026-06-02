@@ -224,8 +224,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             token: address(usdt),
             amount: 500e6,
             currency: uint32(uint160(address(usdt))),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Calculate how much USDT the beneficiary actually received.
@@ -286,8 +285,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             tokenToReclaim: address(usdt),
             minTokensReclaimed: 0,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // Calculate how much USDT the payer actually received back.
@@ -347,8 +345,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             token: address(usdt),
             amount: 500e6,
             currency: uint32(uint160(address(usdt))),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // Verify the split beneficiary received USDT.
         assertTrue(usdt.balanceOf(splitBeneficiary) > 0, "Step 2: Split beneficiary should have USDT");
@@ -363,8 +360,7 @@ contract USDTVoidReturnCompat is TestBaseWorkflow {
             tokenToReclaim: address(usdt),
             minTokensReclaimed: 0,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // Verify the payer got USDT back from cashing out.
         assertTrue(reclaimAmount > 0, "Step 3: CashOut should return USDT to payer");

@@ -147,8 +147,7 @@ contract ComprehensiveHandler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         ghost_totalCashedOut += reclaimAmount;
@@ -171,8 +170,7 @@ contract ComprehensiveHandler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) returns (
             uint256 amountPaidOut
         ) {
@@ -231,8 +229,7 @@ contract ComprehensiveHandler is Test {
             minTokensPaidOut: 0,
             beneficiary: payable(projectOwner),
             feeBeneficiary: payable(projectOwner),
-            memo: "allowance",
-            referralProjectId: 0
+            memo: "allowance"
         }) returns (
             uint256 netAmountPaidOut
         ) {

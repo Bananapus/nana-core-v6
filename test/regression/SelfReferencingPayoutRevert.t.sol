@@ -169,8 +169,7 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAYOUT_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Cross-project pay credited the recipient project's balance on the same terminal,
@@ -192,8 +191,7 @@ contract SelfReferencingPayoutRevertTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAYOUT_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         assertEq(address(_terminalA).balance, terminalABefore, "balance restored after self-split revert");
     }

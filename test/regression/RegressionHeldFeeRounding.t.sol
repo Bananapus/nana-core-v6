@@ -121,8 +121,7 @@ contract RegressionHeldFeeRoundingTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 40,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // 40 gross produces a 1 wei fee (40/40=1) and 39 wei net payout.

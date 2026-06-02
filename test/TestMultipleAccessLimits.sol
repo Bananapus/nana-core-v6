@@ -178,8 +178,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: _nativePayoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN, // Unused.
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Make sure the balance has changed, accounting for the fee that stays.
@@ -214,8 +213,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: _usdAmountAvailableToPayout,
             currency: uint32(uint160(address(usdcToken()))),
             token: JBConstants.NATIVE_TOKEN, // token
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Pay in another allotment.
@@ -243,8 +241,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: _usdAmountAvailableToPayout,
             currency: uint32(uint160(address(usdcToken()))),
             token: JBConstants.NATIVE_TOKEN, //token (unused)
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
     }
 
@@ -512,8 +509,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: 1_800_000_000,
             currency: JBCurrencyIds.USD,
             token: JBConstants.NATIVE_TOKEN, // Unused.
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Nothing should have been paid out.
@@ -602,8 +598,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: 3_000_000_000,
             currency: uint32(uint160(address(usdcToken()))),
             token: JBConstants.NATIVE_TOKEN, // Unused.
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         uint256 _amountPaidOut = mulDiv(
@@ -638,8 +633,7 @@ contract TestMultipleAccessLimits_Local is TestBaseWorkflow {
             amount: 1 ether,
             currency: _nativeCurrency,
             token: JBConstants.NATIVE_TOKEN, // Unused.
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Funds leaving the ecosystem -> fee taken.

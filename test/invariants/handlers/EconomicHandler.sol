@@ -202,8 +202,7 @@ contract EconomicHandler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         }) returns (
             uint256 reclaimAmount
         ) {
@@ -230,8 +229,7 @@ contract EconomicHandler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         }) returns (
             uint256 reclaimAmount
         ) {
@@ -257,8 +255,7 @@ contract EconomicHandler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         }) returns (
             uint256 reclaimAmount
         ) {
@@ -283,8 +280,7 @@ contract EconomicHandler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) returns (
             uint256 amountPaidOut
         ) {
@@ -312,8 +308,7 @@ contract EconomicHandler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) returns (
             uint256 amountPaidOut
         ) {
@@ -335,8 +330,7 @@ contract EconomicHandler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) returns (
             uint256 amountPaidOut
         ) {

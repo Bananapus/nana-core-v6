@@ -138,8 +138,7 @@ contract FeeFreeSurplusSameProjectTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         uint256 balanceAfter = jbTerminalStore().balanceOf(address(_terminal), _projectId, JBConstants.NATIVE_TOKEN);

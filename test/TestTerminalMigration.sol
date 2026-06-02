@@ -126,8 +126,7 @@ contract TestTerminalMigration_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_beneficiary),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
 
         assertGt(reclaimedAmount, 0, "should reclaim tokens");

@@ -146,8 +146,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(owner),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
         assertEq(reclaimed, 0, "Zero count cash out should return 0");
     }
@@ -167,8 +166,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(owner),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
 
         assertGt(reclaimed, 0, "Should reclaim something for entire supply cash out");
@@ -189,8 +187,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(owner),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
     }
 
@@ -208,8 +205,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(owner),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
 
         assertEq(reclaimed, 0, "Max tax rate should return 0 reclaim");
@@ -230,8 +226,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: type(uint256).max,
             beneficiary: payable(owner),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
     }
 
@@ -248,8 +243,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether, // Exact payout limit
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertGt(amountPaidOut, 0, "Should pay out with exact limit");
@@ -264,8 +258,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether + 1, // 1 wei over limit — caps to 5 ether
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // Should have paid out exactly the limit (5 ether), not 5 ether + 1.
         assertEq(amountPaidOut, 5 ether);
@@ -280,8 +273,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 0,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertEq(amountPaidOut, 0, "Zero amount should result in zero payout");
@@ -297,8 +289,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: type(uint256).max,
-            referralProjectId: 0
+            minTokensPaidOut: type(uint256).max
         });
     }
 
@@ -318,8 +309,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(owner),
             feeBeneficiary: payable(owner),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
 
         assertGt(netAmount, 0, "Should use exact allowance successfully");
@@ -339,8 +329,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(unauthorized),
             feeBeneficiary: payable(unauthorized),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 
@@ -354,8 +343,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Now try to use allowance — should fail or return small amount
@@ -369,8 +357,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(owner),
             feeBeneficiary: payable(owner),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         }) returns (
             uint256 netAmount
         ) {
@@ -404,8 +391,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Advance time past unlock period
@@ -426,8 +412,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Don't advance time — fees should still be locked
@@ -464,8 +449,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 2 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Check held fees exist
@@ -496,8 +480,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         JBFee[] memory feesBefore = jbMultiTerminal().heldFeesOf(projectStandard, JBConstants.NATIVE_TOKEN, 100);
@@ -531,8 +514,7 @@ contract EntryPointPermutations_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Get total held fees

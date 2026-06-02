@@ -227,8 +227,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(alice),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // With 90% tax on partial cashout (50% of supply), reclaim is significantly reduced
@@ -521,8 +520,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Try to send more — should cap to 0 (limit exhausted)
@@ -533,8 +531,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         assertEq(secondPayout, 0, "Exhausted limit should cap to 0");
 
@@ -549,8 +546,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // If we got here, limit was successfully reset
@@ -619,8 +615,7 @@ contract RulesetTransitions_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(alice),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // With 90% tax on partial cashout, reclaim is reduced below payment

@@ -187,8 +187,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Read the recipient's recorded balance after cycle 1.
@@ -213,8 +212,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Read the recipient's recorded balance after cycle 2.
@@ -239,8 +237,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Read the recipient's recorded balance after cycle 3.
@@ -293,8 +290,7 @@ contract FeeFreeSurplusLifecycleTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Verify the recipient has accumulated fee-free surplus.

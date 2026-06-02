@@ -103,8 +103,7 @@ contract MockSurplusTerminal is ERC165, IJBCashOutTerminal {
         address,
         uint256,
         address payable,
-        bytes calldata,
-        uint256
+        bytes calldata
     )
         external
         pure

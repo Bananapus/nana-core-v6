@@ -196,8 +196,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             amount: PAYOUT_LIMIT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         {
@@ -245,8 +244,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
                 tokenToReclaim: JBConstants.NATIVE_TOKEN,
                 minTokensReclaimed: 0,
                 beneficiary: payable(_payer),
-                metadata: new bytes(0),
-                referralProjectId: 0
+                metadata: new bytes(0)
             });
 
             assertEq(actualReclaim, expectedNetReclaim, "Actual reclaim should match bonding curve minus fee");
@@ -322,8 +320,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             amount: PAYOUT_LIMIT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // The store balance (surplus base) should NOT include the held fee amount.
@@ -369,8 +366,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             amount: PAYOUT_LIMIT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         uint256 payerTokens = _tokens.totalBalanceOf(_payer, _projectId);
@@ -411,8 +407,7 @@ contract HoldFeesCashOutReserved_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         assertEq(

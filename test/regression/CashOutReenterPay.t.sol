@@ -337,8 +337,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // --- Step 3: Assert the re-entrant pay executed and minted correctly. ---
@@ -419,8 +418,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(address(this)),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // --- Now try to cash out the re-entrant tokens. ---
@@ -446,8 +444,7 @@ contract CashOutReenterPay is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_beneficiary),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // Record terminal balance after the second cashout.
