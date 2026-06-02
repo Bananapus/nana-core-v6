@@ -58,8 +58,7 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(makeAddr("cycle1-beneficiary")),
             feeBeneficiary: payable(multisig()),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
 
         JBRuleset memory cycleOneRuleset = jbRulesets().currentOf(projectId);
@@ -82,8 +81,7 @@ contract CycledSurplusAllowanceResetTest is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(makeAddr("cycle2-beneficiary")),
             feeBeneficiary: payable(multisig()),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 

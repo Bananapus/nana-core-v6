@@ -421,8 +421,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(bob),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
     }
 
@@ -516,8 +515,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Bob (with SEND_PAYOUTS permission) CAN send payouts
@@ -528,8 +526,7 @@ contract PermissionEscalation_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
     }
 

@@ -200,8 +200,7 @@ contract TestTerminalPreviewParity_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_beneficiary),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
 
         assertEq(reclaimAmount, previewReclaimAmount);

@@ -102,8 +102,7 @@ contract ReenteringSplitPayHook is IJBPayHook {
             token: context.amount.token,
             amount: AMOUNT,
             currency: context.amount.currency,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) {}
             catch {}
     }
@@ -254,8 +253,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // The attacker now has tokens in project B (from the pay-in routed by the split).
@@ -271,8 +269,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // With cashOutTaxRate = 0 the gross reclaim equals the full terminal balance (the payout amount).
@@ -317,8 +314,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // With cashOutTaxRate = 0, full cashout returns the entire surplus 1:1.
@@ -350,8 +346,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Cash out all tokens from project B — fee applied against fee-free surplus, which is now depleted.
@@ -364,8 +359,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // First cashout should have had a fee deducted.
         assertLt(firstReclaim, _payoutLimit, "first cashout should have fee deducted");
@@ -394,8 +388,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // After surplus depletion, direct pay-in cashout should be fee-free.
@@ -435,8 +428,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertEq(hook.receivedValue(), hookAmount - hookFee, "pay hook receives net split amount");
@@ -466,8 +458,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         assertEq(reclaimAmount, residue - residueFee, "residue pays fee on zero-tax cashout");
@@ -524,8 +515,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertTrue(hook.didReenter(), "hook should exercise nested payout path");
@@ -586,8 +576,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: payoutAmount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertEq(
@@ -608,8 +597,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(priorHolder),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         assertEq(
@@ -644,8 +632,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Cash out half the tokens — should consume roughly half the fee-free surplus.
@@ -660,8 +647,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // First half-cashout should have fee deducted (fee-free surplus partially consumed).
         assertLt(firstReclaim, _payoutLimit / 2, "partial cashout should have fee deducted");
@@ -676,8 +662,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // Second cashout also has fee deducted from remaining surplus.
         assertLt(secondReclaim, firstReclaim + 1 ether, "second partial cashout should also have fee");
@@ -721,8 +706,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: 1,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Victim cashes out — fee should only apply to 1 wei of surplus, not their full 10 ETH.
@@ -735,8 +719,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(victim),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // Fee on 1 wei is 0 (rounds down). Victim should get essentially their full amount back.
@@ -802,8 +785,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // With non-zero tax, the 2.5% fee applies to the full bonding curve output.
@@ -840,8 +822,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Queue a new ruleset so the payout limit resets for the next cycle.
@@ -895,8 +876,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Cash out all tokens from B — fee should apply to the full 20 ETH surplus.
@@ -909,8 +889,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // The 2.5% fee should apply to the entire reclaim (covered by 20 ETH surplus).
@@ -950,8 +929,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // B: balance = 10 ETH, fee-free = 10 ETH.
 
@@ -976,8 +954,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: 100 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // B: balance = 10 ETH, fee-free = 10 (stays: non-fee-free left first).
         // C: balance = 100 ETH, fee-free = 100 ETH.
@@ -1003,8 +980,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(holder),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // With cashOutTaxRate = 0, gross reclaim = proportional share of balance.
         // Fee-free surplus means a 2.5% fee is applied → net < gross.
@@ -1101,8 +1077,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // B: balance = 10 ETH, fee-free = 10 ETH.
 
@@ -1134,8 +1109,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // Balance dropped significantly. _capFeeFreeSurplus should have capped fee-free at remaining balance.
 
@@ -1152,8 +1126,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
                 tokenToReclaim: JBConstants.NATIVE_TOKEN,
                 minTokensReclaimed: 0,
                 beneficiary: payable(user),
-                metadata: new bytes(0),
-                referralProjectId: 0
+                metadata: new bytes(0)
             });
             // Should NOT revert. Fee-free was capped during the non-zero-tax cashout,
             // so it doesn't exceed the remaining balance.
@@ -1183,8 +1156,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             amount: _payoutLimit,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         // B: balance = 10 ETH, fee-free = 10 ETH. Attacker has tokens.
 
@@ -1202,8 +1174,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_attacker),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // Feeless beneficiary gets full amount — no fee deducted.
         assertEq(reclaim, 10 ether, "feeless beneficiary should get full reclaim");
@@ -1234,8 +1205,7 @@ contract TestFeeFreeCashOutBypass is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(user),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
         // Direct payment → zero fee-free surplus → no fee. User gets full amount.
         assertEq(userReclaim, 10 ether, "direct pay-in should be fee-free after feeless cashout cleared surplus");

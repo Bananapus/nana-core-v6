@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`nana-core-v6` is the root of the V6 stack. It owns project identity, rulesets, permissions, treasury balances, token issuance, fee behavior, fee-referral accounting, payout limits, and the hook interfaces that extension repos use.
+`nana-core-v6` is the root of the V6 stack. It owns project identity, rulesets, permissions, treasury balances, token issuance, fee behavior, payout limits, and the hook interfaces that extension repos use.
 
 If a change affects accounting, token supply, fees, terminal routing, or permission semantics, this repo is the source of truth.
 
@@ -19,7 +19,6 @@ If a change affects accounting, token supply, fees, terminal routing, or permiss
 - Reserved tokens and other pending supply affect supply-sensitive math before distribution.
 - Terminal balances, fee accounting, reclaim math, and surplus calculations must agree.
 - Fee logic taxes value leaving the system, not every internal rebalance.
-- Fee referral credits track fee volume without changing fee custody.
 - Rulesets are time-ordered and approval-aware, and downstream deployers depend on predictable ID progression.
 - Permission checks are protocol safety checks, not just UI hints.
 
@@ -82,13 +81,12 @@ owner, operator, or omnichain ruleset operator
 authorized caller
   -> consumes payout limits or surplus allowances
   -> funds move to splits, projects, hooks, or direct recipients
-  -> optional referral context credits fee volume when protocol fees are processed
   -> same-terminal project payouts stay inside terminal accounting and may add fee-free surplus
 ```
 
 ## Accounting Model
 
-This repo owns the canonical ledger for balances, fees, fee-referral volume, supply-sensitive reclaim math, payout limits, allowances, reserved tokens, and preview calculations. Other repos may wrap or influence these values, but they should not duplicate them.
+This repo owns the canonical ledger for balances, fees, supply-sensitive reclaim math, payout limits, allowances, reserved tokens, and preview calculations. Other repos may wrap or influence these values, but they should not duplicate them.
 
 `JBTerminalStore` keeps terminal balances, payout-limit usage, and surplus-allowance usage. Those reset boundaries are not the same:
 

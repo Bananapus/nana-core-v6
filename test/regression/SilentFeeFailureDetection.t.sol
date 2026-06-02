@@ -23,7 +23,7 @@ import {JBTerminalConfig} from "../../src/structs/JBTerminalConfig.sol";
 /// @notice Silent failure detection: asserts that fee processing takes the SUCCESS path
 ///         (emits `ProcessFee`), not the catch path (emits `FeeReverted`).
 /// @dev References TEST_IMPROVEMENT_PLAN.md Section 6.
-///      The WRONG pattern: `terminal.sendPayoutsOf(..., 0)` succeeds -> test passes.
+///      The WRONG pattern: `terminal.sendPayoutsOf(...)` succeeds -> test passes.
 ///      The RIGHT pattern: record logs and verify `ProcessFee` was emitted and `FeeReverted` was NOT.
 contract SilentFeeFailureDetectionTest is TestBaseWorkflow {
     IJBController private _controller;
@@ -128,8 +128,7 @@ contract SilentFeeFailureDetectionTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -162,8 +161,7 @@ contract SilentFeeFailureDetectionTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_payer),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         });
 
         Vm.Log[] memory logs = vm.getRecordedLogs();
@@ -188,8 +186,7 @@ contract SilentFeeFailureDetectionTest is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         Vm.Log[] memory logs = vm.getRecordedLogs();

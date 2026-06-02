@@ -77,10 +77,6 @@ This file covers the main accounting, permission, and liveness risks in the core
   migration ability over guaranteed fee collection. During migration, a failed migration fee remains as refunded
   source-terminal balance while the post-fee amount migrates; operators should monitor `FeeReverted` and restore fee
   routing so refunded residuals can be swept cleanly.
-- **Fee referral attribution is accounting metadata, not fee custody.** `cashOutTokensOf`, `sendPayoutsOf`, and
-  `useAllowanceOf` can carry a packed `(chainId << 48) | projectId` referrer. A bare project ID is resolved to the
-  current chain. Held fees store that referral pair until processing, and `JBTerminalStore` records fee volume per
-  terminal/referrer. Bad encoding misattributes volume but does not redirect the fee payment itself.
 
 ### Weight Decay
 
@@ -310,4 +306,3 @@ The return path doesn't care where the returning funds come from — the project
 - **Ruleset existence:** after launch, `RULESETS.currentOf(projectId)` should not accidentally go empty.
 - **No flash-loan profit:** `pay()` followed by `cashOutTokensOf()` in one transaction should not be profitable after fees.
 - **Held-fee integrity:** active held-fee entries plus processed fees should equal all fees ever taken under held-fee mode.
-- **Referral integrity:** fee volume credited by `recordFeeReferralCreditOf` should match successful fee payments and preserved held-fee referral context.

@@ -198,8 +198,7 @@ contract TestFees_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 1,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 1,
-            referralProjectId: 0
+            minTokensPaidOut: 1
         });
 
         assertEq(amountPaidOut, 1);
@@ -237,8 +236,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -282,8 +280,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -333,8 +330,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -382,8 +378,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
         // Setup: use allowance so we incur a fee
         vm.startPrank(_projectOwner);
@@ -395,8 +390,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -444,8 +438,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
         // Setup: use allowance so we incur a fee
         vm.startPrank(_projectOwner);
@@ -457,8 +450,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -510,8 +502,7 @@ contract TestFees_Local is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "MEMO",
-            referralProjectId: 0
+            memo: "MEMO"
         });
 
         // Calculate the fee from the allowance use.
@@ -577,8 +568,7 @@ contract TestFees_Local is TestBaseWorkflow {
             JBConstants.NATIVE_TOKEN,
             _nativeDistLimit,
             uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            _nativeDistLimit,
-            0
+            _nativeDistLimit
         );
 
         // Ensure the payout was successful
@@ -645,8 +635,7 @@ contract TestFees_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 2 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Calculate the fee from the allowance use.

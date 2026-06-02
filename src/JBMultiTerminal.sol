@@ -147,25 +147,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     mapping(uint256 projectId => mapping(address token => uint256)) internal _nextHeldFeeIndexOf;
 
     //*********************************************************************//
-    // --------------- public transient stored properties --------------- //
-    //*********************************************************************//
-
-    /// @notice Caller-originated referrer reference for the duration of the current external fee-paying call.
-    /// @dev Encoded as `(referralChainId << 48) | referralProjectId`: bits [79:48] are the referrer's EIP-155 chain
-    /// ID (uint32), bits [47:0] are the referrer's project ID on that chain (uint48). The upper bits of the
-    /// uint256 are reserved for future encoding extensions.
-    /// @dev The entry points `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf` auto-resolve a bare project ID
-    /// (non-zero project, zero chain bits) to the current execution chain via `block.chainid` before writing this
-    /// slot. So storage (and indexers reading `feeVolumeByReferralOf`) always observe a fully-resolved
-    /// `(chainId, projectId)` pair — callers can write `referralProjectId: someProjectId` without manually packing
-    /// their own chain ID.
-    /// @dev Set by the three entry points via the `_setReferralProjectId` save-restore wrapper. Read inside `_pay`
-    /// to credit `feeVolumeByReferralOf` when the fee project's pay call is recorded locally.
-    /// @dev Public so pay, cash out, and split hooks can introspect which referral originated the in-flight call (e.g.
-    /// to apply referral-specific logic). Reads `0` outside any fee-paying call.
-    uint256 public transient override currentReferralProjectId;
-
-    //*********************************************************************//
     // -------------- internal transient stored properties -------------- //
     //*********************************************************************//
 
@@ -176,9 +157,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev After `_pay` consumes and clears this value, `_fulfillPayHookSpecificationsFor` reuses the slot to return
     /// the fee basis to `executePayout`.
     uint256 internal transient _internalSplitPayProjectId;
-
-    /// @notice The in-flight fee amount that can credit `currentReferralProjectId`.
-    uint256 internal transient _feeReferralCreditAmount;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -303,10 +281,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// data hook and cash out hooks if applicable.
     /// @param metadata Bytes to send along to the emitted event, as well as the data hook and cash out hooks if
     /// applicable.
-    /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
-    /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
-    /// Pass `0` for no referral credit.
     /// @return reclaimAmount The amount of **terminal tokens** sent to `beneficiary` in exchange for the burned project
     /// tokens, as a fixed point number with the same number of decimals as the terminal token's accounting context.
     function cashOutTokensOf(
@@ -316,8 +290,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address tokenToReclaim,
         uint256 minTokensReclaimed,
         address payable beneficiary,
-        bytes calldata metadata,
-        uint256 referralProjectId
+        bytes calldata metadata
     )
         external
         override
@@ -325,9 +298,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     {
         // Enforce permissions.
         _requirePermissionFrom({account: holder, projectId: projectId, permissionId: JBPermissionIds.CASH_OUT_TOKENS});
-
-        // Save-restore the transient referral slot so nested reentrant fee-paying calls don't pollute each other.
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
 
         reclaimAmount = _cashOutTokensOf({
             holder: holder,
@@ -337,8 +307,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             beneficiary: beneficiary,
             metadata: metadata
         });
-
-        _setReferralProjectId(priorReferral);
 
         // The amount being reclaimed must be at least as much as was expected.
         _checkMin({value: reclaimAmount, min: minTokensReclaimed});
@@ -441,7 +409,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 revert JBMultiTerminal_MintNotAllowed({projectId: projectId, terminal: address(terminal)});
             }
 
-            // Send the `projectId` in the metadata as a referral.
+            // Send the source `projectId` in the metadata for same-terminal split-pay accounting.
             bytes memory metadata = bytes(abi.encodePacked(projectId));
 
             // Add to balance if preferred.
@@ -724,9 +692,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
     function processHeldFeesOf(uint256 projectId, address token, uint256 count) external override {
-        // Preserve any in-flight referral context if this function is reached through reentrancy.
-        uint256 previousReferralProjectId = currentReferralProjectId;
-
         // Keep a reference to the terminal that'll receive the fees.
         IJBTerminal feeTerminal = _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
@@ -761,11 +726,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
             }
 
-            // Restore the originating fee-paying call's referral project for this fee's processing so the credit in
-            // `_processFee` attributes to the right (chain, project) pair. Reconstructs the packed encoding from the
-            // two struct halves: `(chainId << 48) | projectId`.
-            currentReferralProjectId = (uint256(heldFee.referralChainId) << 48) | uint256(heldFee.referralProjectId);
-
             // Process the standard fee on the original gross amount recorded when the held fee was created.
             _processFee({
                 projectId: projectId,
@@ -780,9 +740,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 ++i;
             }
         }
-
-        // Restore the previous transient value so reentrant held-fee processing does not erase an outer referral.
-        currentReferralProjectId = previousReferralProjectId;
 
         // If all held fees have been processed, reset the array and index entirely to bound storage growth.
         if (
@@ -810,28 +767,19 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// in terms of the token's accounting context currency), as a fixed point number with the same number of decimals
     /// as the token's accounting context. If the amount of tokens paid out would be less than this amount, the send is
     /// reverted.
-    /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
-    /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
-    /// Pass `0` for no referral credit.
     /// @return amountPaidOut The total amount paid out.
     function sendPayoutsOf(
         uint256 projectId,
         address token,
         uint256 amount,
         uint256 currency,
-        uint256 minTokensPaidOut,
-        uint256 referralProjectId
+        uint256 minTokensPaidOut
     )
         external
         override
         returns (uint256 amountPaidOut)
     {
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
-
         amountPaidOut = _sendPayoutsOf({projectId: projectId, token: token, amount: amount, currency: currency});
-
-        _setReferralProjectId(priorReferral);
 
         // The amount being paid out must be at least as much as was expected.
         _checkMin({value: amountPaidOut, min: minTokensPaidOut});
@@ -855,10 +803,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param feeBeneficiary The address that receives the **project tokens** minted by the fee project in exchange
     /// for the protocol fee paid in terminal tokens.
     /// @param memo A memo to pass along to the emitted event.
-    /// @param referralProjectId Optional referrer reference to credit with the protocol fee volume taken by this
-    /// call, encoded as `(referralChainId << 48) | referralProjectId` (chain ID in the upper 32 bits, project ID
-    /// in the lower 48). A bare project ID (chain bits zero) is auto-resolved to the current chain via `block.chainid`.
-    /// Pass `0` for no referral credit.
     /// @return netAmountPaidOut The number of **terminal tokens** sent to `beneficiary`, net of the protocol fee, as a
     /// fixed point number with the same number of decimals as the terminal token's accounting context.
     function useAllowanceOf(
@@ -869,8 +813,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         uint256 minTokensPaidOut,
         address payable beneficiary,
         address payable feeBeneficiary,
-        string calldata memo,
-        uint256 referralProjectId
+        string calldata memo
     )
         external
         override
@@ -882,8 +825,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Enforce permissions.
         _requirePermissionFrom({account: owner, projectId: projectId, permissionId: JBPermissionIds.USE_ALLOWANCE});
 
-        uint256 priorReferral = _setReferralProjectId(referralProjectId);
-
         netAmountPaidOut = _useAllowanceOf({
             projectId: projectId,
             owner: owner,
@@ -894,8 +835,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             feeBeneficiary: feeBeneficiary,
             memo: memo
         });
-
-        _setReferralProjectId(priorReferral);
 
         // The amount being withdrawn must be at least as much as was expected.
         _checkMin({value: netAmountPaidOut, min: minTokensPaidOut});
@@ -1766,17 +1705,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Keep a reference to the token amount to forward to the store.
         JBTokenAmount memory tokenAmount = _tokenAmountOf({projectId: projectId, token: token, value: amount});
 
-        // Credit only the one pay call currently being made by `_processFee`. Ordinary split pays to project #1 can
-        // happen while `currentReferralProjectId` is set, but they are not protocol-fee payments. Consume this before
-        // recording the payment so fee-project data hooks cannot reenter and use the in-flight credit.
-        if (
-            projectId == JBConstants.FEE_BENEFICIARY_PROJECT_ID && currentReferralProjectId != 0
-                && _feeReferralCreditAmount != 0
-        ) {
-            delete _feeReferralCreditAmount;
-            STORE.recordFeeReferralCreditOf({referralProjectId: currentReferralProjectId, amount: tokenAmount});
-        }
-
         // Record the payment.
         // Keep a reference to the ruleset the payment is being made during.
         // Keep a reference to the pay hook specifications.
@@ -1866,11 +1794,9 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
-        if (feeTerminal == IJBTerminal(address(this))) _feeReferralCreditAmount = amount;
         try this.executeProcessFee({
             projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
-            delete _feeReferralCreditAmount;
             emit ProcessFee({
                 projectId: projectId,
                 token: token,
@@ -1880,7 +1806,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 caller: _msgSender()
             });
         } catch (bytes memory reason) {
-            delete _feeReferralCreditAmount;
             // Fee processing is fail-open for project liveness: a broken project #1 terminal or fee route must not
             // trap payouts, cash outs, allowances, held-fee processing, or terminal migration. The fee is forgiven,
             // credited back to the originating project on this terminal, and surfaced through `FeeReverted`.
@@ -2074,22 +1999,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _checkFitsIn({value: amount, max: type(uint224).max});
 
             // Store the gross amount so future repayments can recover the corresponding fee.
-            // Capture the in-flight `currentReferralProjectId` so attribution survives the 28-day hold window —
-            // by the time `processHeldFeesOf` runs, the transient slot has been cleared. The encoded
-            // `(chainId << 48) | projectId` pair in the transient slot is decomposed into its two halves so the
-            // struct stays in 2 storage slots.
-            uint256 encodedReferral = currentReferralProjectId;
             _heldFeesOf[projectId][token].push(
                 JBFee({
                     // forge-lint: disable-next-line(unsafe-typecast)
                     amount: uint224(amount),
-                    // forge-lint: disable-next-line(unsafe-typecast)
-                    referralChainId: uint32(encodedReferral >> 48),
                     beneficiary: beneficiary,
                     // forge-lint: disable-next-line(unsafe-typecast)
-                    unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS),
-                    // forge-lint: disable-next-line(unsafe-typecast)
-                    referralProjectId: uint48(encodedReferral)
+                    unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS)
                 })
             );
 
@@ -2359,23 +2275,5 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @return The fee amount.
     function _feeAmountFrom(uint256 amount) private pure returns (uint256) {
         return JBFees.standardFeeAmountFrom(amount);
-    }
-
-    /// @notice Set the transient `currentReferralProjectId` slot and return the prior value (for save-restore).
-    /// @dev Returning the prior value lets the caller restore it after the inner call completes, which is required
-    /// to keep nested reentrant fee-paying calls from polluting each other. Per EIP-1153, a revert in the inner
-    /// call also reverts the transient write, so no explicit cleanup on the failure path is needed.
-    /// @dev Backfills `block.chainid` into the chain-bits half of the encoding when the caller passed a bare
-    /// project ID (non-zero project, zero chain). This lets callers write `referralProjectId: someProjectId`
-    /// without manually packing their own chain ID — the entry point resolves it to the current execution chain,
-    /// so storage and indexers always see a fully-resolved `(chainId, projectId)` pair.
-    /// @param referralProjectId The new value to write into the transient slot.
-    /// @return prior The value previously stored in the slot.
-    function _setReferralProjectId(uint256 referralProjectId) private returns (uint256 prior) {
-        if (referralProjectId != 0 && referralProjectId >> 48 == 0) {
-            referralProjectId |= block.chainid << 48;
-        }
-        prior = currentReferralProjectId;
-        currentReferralProjectId = referralProjectId;
     }
 }

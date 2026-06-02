@@ -226,8 +226,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // B should have received funds
@@ -274,8 +273,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Should complete without infinite recursion
@@ -314,8 +312,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // If we got here, the system handled reentrancy safely
@@ -367,8 +364,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // If we got here, the system handled cashOut reentrancy safely
@@ -413,8 +409,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         assertTrue(true, "Self-split via addToBalance completes without infinite loop");
@@ -457,8 +452,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
         uint256 gasUsed = gasStart - gasleft();
 
@@ -498,8 +492,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 3 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Check no rounding loss greater than 3 wei (one per split)
@@ -612,8 +605,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // If we get here, the try/catch fallback worked
@@ -649,8 +641,7 @@ contract SplitLoopTests_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: 5 ether,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // Funds should be retained in the project or sent to owner fallback
@@ -726,8 +717,7 @@ contract ReentrantSplitHookCashOut is ERC165, IJBSplitHook {
                     tokenToReclaim: JBConstants.NATIVE_TOKEN,
                     minTokensReclaimed: 0,
                     beneficiary: payable(address(this)),
-                    metadata: new bytes(0),
-                    referralProjectId: 0
+                    metadata: new bytes(0)
                 }) {}
                     catch {}
             }

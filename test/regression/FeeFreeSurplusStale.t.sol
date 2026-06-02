@@ -157,8 +157,7 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
             token: JBConstants.NATIVE_TOKEN,
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         vm.prank(_projectOwner);
@@ -170,8 +169,7 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
             minTokensPaidOut: 0,
             beneficiary: payable(_projectOwner),
             feeBeneficiary: payable(_projectOwner),
-            memo: "drain fee-free payout",
-            referralProjectId: 0
+            memo: "drain fee-free payout"
         });
 
         vm.prank(payerB);
@@ -196,8 +194,7 @@ contract FeeFreeSurplusStaleTest is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(payerB),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // After the fix: useAllowanceOf proportionally reduces the fee-free surplus.

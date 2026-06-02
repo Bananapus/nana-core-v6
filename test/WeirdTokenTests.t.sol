@@ -225,8 +225,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             tokenToReclaim: address(fotToken),
             minTokensReclaimed: 0,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         uint256 payerBalanceAfter = fotToken.balanceOf(payer);
@@ -347,8 +346,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             token: address(fotToken),
             amount: 500e18,
             currency: uint32(uint160(address(fotToken))),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         uint256 beneficiaryBalanceAfter = fotToken.balanceOf(splitBeneficiary);
@@ -416,8 +414,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             tokenToReclaim: address(rebasingToken),
             minTokensReclaimed: 0,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         // Payer only gets back what was recorded, not the rebased surplus
@@ -467,8 +464,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             tokenToReclaim: address(rebasingToken),
             minTokensReclaimed: 0,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
     }
 
@@ -636,8 +632,7 @@ contract WeirdTokenTests_Local is TestBaseWorkflow {
             tokenToReclaim: address(token),
             minTokensReclaimed: previewReclaimAmount,
             beneficiary: payable(payer),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         assertEq(reclaimed, previewReclaimAmount);

@@ -197,8 +197,7 @@ contract Phase3Handler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         }) returns (
             uint256 reclaimAmount
         ) {
@@ -228,8 +227,7 @@ contract Phase3Handler is Test {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(actor),
-            metadata: "",
-            referralProjectId: 0
+            metadata: ""
         }) returns (
             uint256 reclaimAmount
         ) {
@@ -254,8 +252,7 @@ contract Phase3Handler is Test {
             token: JBConstants.NATIVE_TOKEN,
             amount: amount,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         }) returns (
             uint256 amountPaidOut
         ) {
@@ -284,8 +281,7 @@ contract Phase3Handler is Test {
             minTokensPaidOut: 0,
             beneficiary: payable(projectOwner),
             feeBeneficiary: payable(projectOwner),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         }) returns (
             uint256 netAmountPaidOut
         ) {

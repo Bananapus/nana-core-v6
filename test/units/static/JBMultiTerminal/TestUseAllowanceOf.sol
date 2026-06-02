@@ -63,7 +63,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
         );
 
         vm.expectRevert(abi.encodeWithSelector(JBMultiTerminal.JBMultiTerminal_UnderMin.selector, 0, 1));
-        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "", 0);
+        _terminal.useAllowanceOf(_projectId, address(0), 0, 0, 1, payable(address(this)), payable(address(this)), "");
     }
 
     function test_WhenOwnerEQFeeless() external {
@@ -113,9 +113,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             memo: "",
             caller: address(this)
         });
-        _terminal.useAllowanceOf(
-            _projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "", 0
-        );
+        _terminal.useAllowanceOf(_projectId, mockToken, 100, 0, 0, payable(address(this)), payable(address(this)), "");
     }
 
     function test_WhenBeneficiaryIsFeeless() external {
@@ -177,8 +175,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 100,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 
@@ -284,11 +281,6 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             abi.encode(10)
         );
 
-        // Note: previously asserted `recordFeeReferralCreditOf` was invoked from `_pay`. The credit now happens
-        // inside `recordPaymentFrom` (auto-credit via staticcall on `currentReferralProjectId`), which is mocked
-        // here — so the credit's effects aren't observable in this unit-mock setup. End-to-end attribution is
-        // covered by integration tests instead.
-
         vm.expectEmit();
         emit IJBPayoutTerminal.UseAllowance({
             rulesetId: returnedRuleset.id,
@@ -311,8 +303,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 
@@ -442,8 +433,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 
@@ -607,8 +597,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 97,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: "",
-            referralProjectId: 123
+            memo: ""
         });
     }
 
@@ -713,8 +702,7 @@ contract TestUseAllowanceOf_Local is JBMultiTerminalSetup {
             minTokensPaidOut: 0,
             beneficiary: payable(beneficiary),
             feeBeneficiary: payable(address(this)),
-            memo: "",
-            referralProjectId: 0
+            memo: ""
         });
     }
 

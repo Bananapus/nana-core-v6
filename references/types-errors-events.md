@@ -17,7 +17,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 | `JBCurrencyAmount` | `amount (uint224)`, `currency (uint32)` | Payout limits and surplus allowances |
 | `JBFundAccessLimitGroup` | `terminal (address)`, `token (address)`, `payoutLimits (JBCurrencyAmount[])`, `surplusAllowances (JBCurrencyAmount[])` | `JBRulesetConfig.fundAccessLimitGroups` |
 | `JBPermissionsData` | `operator (address)`, `projectId (uint64)`, `permissionIds (uint8[])` | `setPermissionsFor()` input |
-| `JBFee` | `amount (uint224)`, `referralChainId (uint32)`, `beneficiary (address)`, `unlockTimestamp (uint48)`, `referralProjectId (uint48)` | Held fees in `JBMultiTerminal`; referral fields preserve fee attribution until processing |
+| `JBFee` | `amount (uint224)`, `beneficiary (address)`, `unlockTimestamp (uint48)` | Held fees in `JBMultiTerminal` |
 | `JBSingleAllowance` | `sigDeadline (uint256)`, `amount (uint160)`, `expiration (uint48)`, `nonce (uint48)`, `signature (bytes)` | Permit2 allowance in terminal payments |
 | `JBRulesetWithMetadata` | `ruleset (JBRuleset)`, `metadata (JBRulesetMetadata)` | `allRulesetsOf()`, `currentRulesetOf()` return values |
 | `JBRulesetWeightCache` | `weight (uint112)`, `weightCutMultiple (uint168)` | Weight caching for long-running rulesets in `JBRulesets` |
@@ -93,8 +93,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - `JBProjects` constructor optionally mints project #1 to `feeProjectOwner` -- if `address(0)`, no fee project is created
 - `JBMultiTerminal` derives `DIRECTORY` from the provided `store` in its constructor -- not passed directly
 - `JBPrices.pricePerUnitOf()` checks project direct feeds, project inverse feeds, default direct feeds, then default inverse feeds. It skips feeds that revert or return zero.
-- `useAllowanceOf()` takes 9 args including `address payable feeBeneficiary` and `uint256 referralProjectId` -- do NOT omit them
-- `sendPayoutsOf()` and `cashOutTokensOf()` also take `uint256 referralProjectId`; pass `0` for no referral credit
+- `useAllowanceOf()` takes 8 args including `address payable feeBeneficiary` -- do NOT omit it
 - `JBFeelessAddresses.isFeelessFor()` takes 3 args: `(addr, projectId, caller)`. The optional hook can use `caller` to scope dynamic grants.
 - Cash out tax rate of 0% = proportional (1:1) redemption; 100% = nothing reclaimable (all surplus locked). Do NOT confuse with a "cash out rate" where 100% means full redemption.
 - `cashOutTaxRate` in `JBRulesetMetadata` is `uint16` (max 10,000 basis points), NOT 9-decimal precision
@@ -214,7 +213,6 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `ProcessFee` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `wasHeld`, `beneficiary` |
 | `ReturnHeldFees` | `IJBFeeTerminal` | `projectId*`, `token*`, `amount*`, `returnedFees`, `leftoverAmount` |
 | `FeeReverted` | `IJBFeeTerminal` | `projectId*`, `token*`, `feeProjectId*`, `amount`, `reason` |
-| `ReferralCredit` | `IJBTerminalStore` | `terminal*`, `referralChainId*`, `referralProjectId*`, `amount`, `newTotal` |
 | `Create` | `IJBProjects` | `projectId*`, `owner*` |
 | `SetTokenMetadata` | `IJBTokens` | `projectId*`, `name`, `symbol` |
 | `OperatorPermissionsSet` | `IJBPermissions` | (operator, account, projectId, permissionIds, packed, caller) |

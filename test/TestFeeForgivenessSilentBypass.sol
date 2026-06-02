@@ -158,8 +158,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
             token: JBConstants.NATIVE_TOKEN,
             amount: PAY_AMOUNT,
             currency: uint32(uint160(JBConstants.NATIVE_TOKEN)),
-            minTokensPaidOut: 0,
-            referralProjectId: 0
+            minTokensPaidOut: 0
         });
 
         // 4. The fee was forgiven and credited back to the project. The expected fee amount is 2.5% of PAY_AMOUNT.
@@ -192,8 +191,7 @@ contract TestFeeForgivenessSilentBypass_Local is TestBaseWorkflow {
             tokenToReclaim: JBConstants.NATIVE_TOKEN,
             minTokensReclaimed: 0,
             beneficiary: payable(_projectOwner),
-            metadata: new bytes(0),
-            referralProjectId: 0
+            metadata: new bytes(0)
         });
 
         uint256 feeProjectBalanceAfter = _store.balanceOf(address(_terminal), 1, JBConstants.NATIVE_TOKEN);

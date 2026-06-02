@@ -290,12 +290,12 @@ try/catch. Fee = 2.5% on outflows, held 28 days.
 **Token holders / `CASH_OUT_TOKENS` operators:**
 
 - **`cashOutTokensOf(holder, projectId, cashOutCount, tokenToReclaim, minTokensReclaimed,
-  beneficiary, metadata, referralProjectId) → reclaimAmount`** (`L310-343`)
-  - Caller must be `holder` or an operator with `CASH_OUT_TOKENS` on `holder`. Save-restore
-    transient referral slot. Runs data hook (override option) or bonding-curve baseline;
-    `STORE.recordCashOutFor` decrements local-token surplus; `controller.burnTokensOf`; transfers
-    net reclaim to beneficiary; fulfills cashout hooks (try/catch); takes 2.5% fee on
-    fee-eligible portion (held 28 days unless terminal is feeless).
+  beneficiary, metadata) → reclaimAmount`** (`L310-343`)
+  - Caller must be `holder` or an operator with `CASH_OUT_TOKENS` on `holder`. Runs data hook
+    (override option) or bonding-curve baseline; `STORE.recordCashOutFor` decrements local-token
+    surplus; `controller.burnTokensOf`; transfers net reclaim to beneficiary; fulfills cashout
+    hooks (try/catch); takes 2.5% fee on fee-eligible portion (held 28 days unless terminal is
+    feeless).
   - **Invariant:** project tokens burned BEFORE fees taken (no double cashout via reentrancy);
     reclaim ≤ local-token surplus; `reclaimAmount >= minTokensReclaimed`; with
     `cashOutTaxRate=0`, fees still charged up to `feeFreeSurplusOf` to prevent round-trip
@@ -305,7 +305,7 @@ try/catch. Fee = 2.5% on outflows, held 28 days.
 
 **Operators / owner / permissionless:**
 
-- **`sendPayoutsOf(projectId, token, amount, currency, minTokensPaidOut, referralProjectId) →
+- **`sendPayoutsOf(projectId, token, amount, currency, minTokensPaidOut) →
   amountPaidOut`** (`L816-836`) — permissionless.
   - `STORE.recordPayoutFor` caps `amount` at remaining payout limit (no revert if smaller),
     converts via `JBPrices`, decrements `balanceOf`. Splits iterated via `JBPayoutSplitGroupLib`
@@ -319,7 +319,7 @@ try/catch. Fee = 2.5% on outflows, held 28 days.
     payout to mint new tokens.
 
 - **`useAllowanceOf(projectId, token, amount, currency, minTokensPaidOut, beneficiary,
-  feeBeneficiary, memo, referralProjectId) → netAmountPaidOut`** (`L862-900`) — owner /
+  feeBeneficiary, memo) → netAmountPaidOut`** (`L862-900`) — owner /
   `USE_ALLOWANCE` operator.
   - Enforces cumulative used ≤ ruleset surplus allowance via
     `STORE.recordUsedAllowanceOf`; 2.5% fee taken immediately (NOT held). Net amount delivered to
@@ -361,8 +361,7 @@ try/catch. Fee = 2.5% on outflows, held 28 days.
 - **`executeTransferTo(addr, token, amount)`** (`L561-566`) — same.
 
 **Views:** `accountingContextForTokenOf`, `accountingContextsOf`, `currentSurplusOf`,
-`heldFeesOf`, `previewCashOutFrom`, `previewPayFor`, `supportsInterface`,
-`currentReferralProjectId` (transient public).
+`heldFeesOf`, `previewCashOutFrom`, `previewPayFor`, `supportsInterface`.
 
 ## C.2 `JBController` — `src/JBController.sol`
 
@@ -455,9 +454,6 @@ real terminal.
 - **`recordCashOutFor(holder, projectId, cashOutCount, tokenToReclaim, beneficiaryIsFeeless,
   metadata)`** (`L299-...`) — caller-terminal. Runs data hook or bonding curve; enforces
   `balanceDiff ≤ local-token surplus`.
-- **`recordFeeReferralCreditOf(referralProjectId, amount)`** (`L375-382`) — caller-terminal during
-  `_pay` after a fee payment lands. Normalizes to NATIVE-token-unit basis. Off-chain consumers
-  must filter on known terminal addresses.
 - **`recordPaymentFrom(payer, amount, projectId, beneficiary, metadata)`** (`L398-425`) —
   caller-terminal. Runs data hook for token count + pay-hook specs; `balance += diff`.
 - **`recordPayoutFor(projectId, token, amount, currency)`** (`L438-511`) — caller-terminal.
