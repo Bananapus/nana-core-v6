@@ -66,18 +66,43 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when no terminal can be found to pay a fee in the given token.
     error JBMultiTerminal_FeeTerminalNotFound(address token);
+
+    /// @notice Thrown when a payout split routes back into the project that is paying out.
     error JBMultiTerminal_MintNotAllowed(uint256 projectId, address terminal);
+
+    /// @notice Thrown when native value is sent with an operation that does not accept it.
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
+
+    /// @notice Thrown when a value exceeds the allowed maximum.
     error JBMultiTerminal_OverflowAlert(uint256 value, uint256 limit);
+
+    /// @notice Thrown when the Permit2 allowance is less than the amount being paid.
     error JBMultiTerminal_PermitAllowanceNotEnough(uint256 amount, uint256 allowance);
+
+    /// @notice Thrown when no terminal can be found to pay a recipient project's split in the given token.
     error JBMultiTerminal_RecipientProjectTerminalNotFound(uint256 projectId, address token);
+
+    /// @notice Thrown when a token transfer reenters during a balance-delta measurement.
     error JBMultiTerminal_ReentrantTokenTransfer(address token);
+
+    /// @notice Thrown when a split hook does not support the `IJBSplitHook` interface.
     error JBMultiTerminal_SplitHookInvalid(IJBSplitHook hook);
+
+    /// @notice Thrown when an approved temporary allowance was not fully consumed by the spender.
     error JBMultiTerminal_TemporaryAllowanceNotConsumed(address token, address spender, uint256 allowance);
+
+    /// @notice Thrown when migrating a terminal to itself.
     error JBMultiTerminal_TerminalMigrationToSelf(uint256 projectId, address token);
+
+    /// @notice Thrown when the terminal being migrated to does not accept the same token.
     error JBMultiTerminal_TerminalTokensIncompatible(uint256 projectId, address token, IJBTerminal terminal);
+
+    /// @notice Thrown when the terminal does not accept the given token.
     error JBMultiTerminal_TokenNotAccepted(address token);
+
+    /// @notice Thrown when a value is less than the required minimum.
     error JBMultiTerminal_UnderMin(uint256 value, uint256 min);
 
     //*********************************************************************//
@@ -109,7 +134,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @notice The contract that stores and manages the terminal's data.
     IJBTerminalStore public immutable override STORE;
 
-    /// @notice The contract storing and managing project rulesets.
+    /// @notice The contract that manages token minting and burning.
     IJBTokens public immutable override TOKENS;
 
     //*********************************************************************//

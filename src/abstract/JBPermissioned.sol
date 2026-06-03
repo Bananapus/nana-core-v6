@@ -14,6 +14,7 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
     // --------------------------- custom errors -------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the sender lacks the required permission from the account to perform the operation.
     error JBPermissioned_Unauthorized(address account, address sender, uint256 projectId, uint256 permissionId);
 
     //*********************************************************************//

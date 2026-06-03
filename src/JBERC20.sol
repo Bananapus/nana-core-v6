@@ -25,7 +25,10 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when initializing a token that already has a name set, or when the provided name is empty.
     error JBERC20_AlreadyInitialized(uint256 currentNameLength, uint256 newNameLength);
+
+    /// @notice Thrown when the caller is not the JBTokens contract that owns this token.
     error JBERC20_Unauthorized(address caller, address tokens);
 
     //*********************************************************************//

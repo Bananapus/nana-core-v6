@@ -2,17 +2,17 @@
 
 ## Purpose
 
-`nana-core-v6` is the root of the V6 stack. It owns project identity, rulesets, permissions, treasury balances, token issuance, fee behavior, payout limits, and the hook interfaces that extension repos use.
+`nana-core-v6` (npm: `@bananapus/core-v6`) is the root of the V6 stack. It owns project identity, rulesets, permissions, treasury balances, token issuance, fee behavior, payout limits, and the hook interfaces that extension repos use.
 
 If a change affects accounting, token supply, fees, terminal routing, or permission semantics, this repo is the source of truth.
 
-## System Overview
+## System overview
 
 `JBController`, `JBMultiTerminal`, and `JBTerminalStore` form the main execution and accounting path. `JBDirectory`, `JBRulesets`, `JBProjects`, `JBTokens`, `JBPermissions`, `JBSplits`, and related contracts provide routing, identity, and shared state for downstream repos.
 
 `JBTerminalStore` is terminal-scoped through `msg.sender`, so each terminal tracks its own balances and usage while sharing the same ruleset and price surfaces. Hooks can change economics or add side effects, but they should not create a second ledger.
 
-## Design Principles
+## Design principles
 
 - Preview functions stay aligned with the state-changing functions they mirror.
 - Data hooks run before settlement and may change economics. Pay and cash-out hooks run after settlement.
@@ -35,13 +35,13 @@ For the formal per-contract invariants and guarantees, see [INVARIANTS.md](./INV
 | `JBProjects`, `JBTokens`, `JBERC20` | Identity and token surfaces | Ownership and tokenization |
 | `JBPermissions`, `JBSplits`, `JBFundAccessLimits`, `JBPrices` | Shared authorization and configuration state | Cross-repo dependencies; price feeds are append-only with backups |
 
-## Trust Boundaries
+## Trust boundaries
 
 - This repo owns the canonical balance and supply transitions.
 - Hook repos may change inputs and post-settlement behavior, but they should not replace the core ledger.
 - External price feeds, Permit2, and ERC-20 behavior matter, but accounting truth still lives here.
 
-## Critical Flows
+## Critical flows
 
 ### Payment
 
@@ -54,7 +54,7 @@ terminal receives funds
   -> pay hooks run after settlement
 ```
 
-### Cash Out
+### Cash out
 
 ```text
 holder requests redemption
@@ -66,7 +66,7 @@ holder requests redemption
   -> cash-out hooks run after settlement
 ```
 
-### Launch And Queue Rulesets
+### Launch and queue rulesets
 
 ```text
 owner, operator, or omnichain ruleset operator
@@ -75,7 +75,7 @@ owner, operator, or omnichain ruleset operator
   -> rulesets become the source of truth for later pay, cash-out, and admin constraints
 ```
 
-### Payouts And Allowances
+### Payouts and allowances
 
 ```text
 authorized caller
@@ -84,7 +84,7 @@ authorized caller
   -> same-terminal project payouts stay inside terminal accounting and may add fee-free surplus
 ```
 
-## Accounting Model
+## Accounting model
 
 This repo owns the canonical ledger for balances, fees, supply-sensitive reclaim math, payout limits, allowances, reserved tokens, and preview calculations. Other repos may wrap or influence these values, but they should not duplicate them.
 
@@ -114,7 +114,7 @@ Implications:
 
 See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`.
 
-## Security Model
+## Security model
 
 - Review `JBMultiTerminal`, `JBTerminalStore`, and `JBController` as one pipeline.
 - `JBTerminalStore` uses shared logic with terminal-scoped state. Misreading that split leads to bad accounting assumptions.
@@ -123,7 +123,7 @@ See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`
 - `allowOwnerMinting` is not a universal mint kill switch. Other allowed paths can still mint.
 - Hook ordering and preview-execution alignment are ongoing maintenance requirements.
 
-## Safe Change Guide
+## Safe change guide
 
 - Trace both the preview path and the state-changing path for any nontrivial change.
 - Read downstream hook repos before changing hook metadata or interface expectations.
@@ -132,7 +132,7 @@ See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`
 - If you change ruleset rollover semantics, re-check which counters reset on cycle progression versus new ruleset IDs.
 - If permissions change, update shared docs and downstream assumptions at the same time.
 
-## Canonical Checks
+## Canonical checks
 
 - fee-free surplus and same-terminal payout behavior:
   `test/TestFeeFreeCashOutBypass.sol`
@@ -141,7 +141,7 @@ See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`
 - ruleset ordering and transition behavior:
   `test/RulesetTransitions.t.sol`
 
-## Source Map
+## Source map
 
 - `src/JBController.sol`
 - `src/JBMultiTerminal.sol`

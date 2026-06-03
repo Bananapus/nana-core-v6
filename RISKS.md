@@ -2,13 +2,13 @@
 
 This file covers the main accounting, permission, and liveness risks in the core protocol contracts that the rest of V6 builds on.
 
-## How To Use This File
+## How to use this file
 
 - Read `Priority risks` first. Those are the failures with the widest blast radius.
 - Use the later sections when you need detail on accounting, reentrancy, access control, previews, or integrations.
 - Treat `Invariants to verify` as core properties, not optional test ideas.
 
-## Priority Risks
+## Priority risks
 
 | Priority | Risk | Why it matters | Primary controls |
 |----------|------|----------------|------------------|
@@ -16,7 +16,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 | P0 | Permission or migration mistakes | Controllers, terminals, and operators can redirect authority or value if checks or sequencing are wrong. | Permission review, migration tests, and scrutiny of wildcard or root-like authority. |
 | P1 | Preview or settlement drift | Hooks and routers often depend on previews being close to execution. | Preview analysis, regression tests, and downstream composition review. |
 
-## 1. Trust Assumptions
+## 1. Trust assumptions
 
 - **Hooks are not exploiting reentrancy.** Core does not use `ReentrancyGuard`. Safety depends on call ordering and the `JBTerminalStore_InadequateTerminalStoreBalance` backstop.
 - **Data hooks are highly trusted.** A data hook can change payment weight, cash-out tax rate, `effectiveTotalSupply`, `effectiveCashOutCount`, `effectiveSurplusValue`, and hook-forwarding amounts. The protocol only bounds the final amounts.
@@ -46,9 +46,9 @@ This file covers the main accounting, permission, and liveness risks in the core
   ecosystem rollout; integrators relying on the standalone periphery deploy should perform an equivalent
   post-deploy assertion before treating the controller as canonical.
 
-## 2. Economic Risks
+## 2. Economic risks
 
-### Bonding Curve
+### Bonding curve
 
 - **Zero cash-out guard.** `cashOutFrom` returns `0` when `cashOutCount == 0`. Verify no path bypasses that guard.
 - **Pending reserved tokens lower cash-out value.** `totalTokenSupplyWithReservedTokensOf()` includes `pendingReservedTokenBalanceOf`, which can reduce per-token reclaim value until reserves are distributed.
@@ -60,7 +60,7 @@ This file covers the main accounting, permission, and liveness risks in the core
 - **`mulDiv` rounding exists.** Split cash outs can differ slightly from a combined cash out because of floor rounding.
 - **`minCashOutCountFor` uses binary search.** Large supplies increase loop count. Gas should stay bounded.
 
-### Fee Arithmetic
+### Fee arithmetic
 
 - **Forward and backward fee math round differently.** `feeAmountFrom` and `feeAmountResultingIn` are close but not identical under rounding. Their interaction matters in held-fee paths.
 - **Dust amounts below the fee rounding threshold pay zero fee.** For the 2.5% fee (`FEE=25, MAX_FEE=1000`), amounts below 40 wei produce a zero fee via floor division. This is intentional: rounding dust fees up to 1 wei causes a split-payout accounting bug where the fee consumes the entire payout amount, `netPayoutAmount` becomes 0, `JBPayoutSplitGroupLib` excludes the split from `amountEligibleForFees`, and the gross amount is orphaned in the terminal (credited to neither the project nor the fee project). The gas cost of exploiting dust fee bypass far exceeds the bypassed fee value.
@@ -78,25 +78,25 @@ This file covers the main accounting, permission, and liveness risks in the core
   source-terminal balance while the post-fee amount migrates; operators should monitor `FeeReverted` and restore fee
   routing so refunded residuals can be swept cleanly.
 
-### Weight Decay
+### Weight decay
 
 - **Stale weight cache can block a project.** Short-duration rulesets with nonzero `weightCutPercent` can hit `WeightCacheRequired` after 20,000 elapsed cycles (`_WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD`). Projects approaching this limit must call `updateRulesetWeightCache()` to pre-cache decayed weights.
 - **Weight-cache correctness matters more than overflow.** Overflow is already bounded at queue time. The real risk is stale or wrongly-updated cache state.
 
-### Ruleset Duration
+### Ruleset duration
 
 - **Durations greater than `block.timestamp` are not a supported configuration.** `JBRulesets._simulateCycledRulesetBasedOn` clamps `mustStartAtOrAfter` to `1` when `baseRuleset.duration >= block.timestamp`, which is the branch reached only for durations on the order of decades or longer (block.timestamp is Unix seconds). Project owners are expected to choose durations on human-meaningful scales (hours to years), so this edge case never triggers in practice.
 
-### Surplus Manipulation
+### Surplus manipulation
 
 - **Cross-terminal surplus is a trust boundary.** Cash outs always aggregate surplus across all registered terminals, so one terminal can price a cash out using value reported by other terminals.
 - **Cross-terminal price-feed mismatch changes reclaim values.** If feeds differ or go stale across terminals, aggregated surplus can be wrong.
 
-## 3. Reentrancy Surface
+## 3. Reentrancy surface
 
 Core does not use `ReentrancyGuard`. It relies on state ordering plus `InadequateTerminalStoreBalance` as the last balance-extraction backstop.
 
-### External Call Map
+### External call map
 
 | Function | State Changes Before External Call | External Calls | Risk |
 |----------|-----------------------------------|----------------|------|
@@ -108,7 +108,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 | `_useAllowanceOf` | `STORE.recordUsedAllowanceOf` | Fee processing, beneficiary transfer | LOW |
 | `migrateBalanceOf` | `STORE.recordTerminalMigration` | `to.addToBalanceOf` | LOW |
 
-### Cross-Function Reentrancy To Explore
+### Cross-function reentrancy to explore
 
 - **Pay hook -> `cashOutTokensOf`.** The hook sees post-payment balance and post-mint supply.
 - **Cash-out hook -> `pay`.** The hook runs after burn and payout but before fee processing completes.
@@ -116,20 +116,20 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Reserved-token split hook reentry.** Hooks see post-mint state after pending reserved balance is zeroed. For ERC-20 tokens, the hook receives an allowance (not a direct transfer) and can pull tokens during `processSplitWith`; any unconsumed allowance is revoked afterward. For credits, tokens are transferred directly before the hook call.
 - **Fee processing reentry.** `_processFee` makes an external fee payment into project `#1`; hook behavior there still matters.
 
-### Key Backstop
+### Key backstop
 
 `JBTerminalStore_InadequateTerminalStoreBalance` should stop any path from pulling more than the terminal's recorded balance. Reviewers should verify no caller can inflate that recorded balance without the terminal actually holding the funds.
 
-## 4. Access Control
+## 4. Access control
 
-### Permission System
+### Permission system
 
 - **ROOT grants all permissions.** That includes permissions added in the future.
 - **ROOT plus wildcard is allowed only for self-grants.** An account can delegate broad power over its own projects, but third parties should not be able to escalate into it.
 - **Empty permission arrays pass `hasPermissions`.** Callers must check for non-empty arrays if that matters to their logic.
 - **`OMNICHAIN_RULESET_OPERATOR` is a broad bypass.** It can queue or launch rulesets for any project.
 
-### Directory Terminal Addition
+### Directory terminal addition
 
 - **`setPrimaryTerminalOf` can also add a terminal.** When the terminal is not already installed, the call must satisfy `ADD_TERMINALS` as well as the primary-terminal permission.
 
@@ -146,7 +146,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
   afterwards.
 - **Directory updates are high-impact.** `setTerminalsOf` and `setControllerOf` can redirect a project's fund and authority flow.
 
-### Ruleset Queuing
+### Ruleset queuing
 
 - Only the current controller can call `RULESETS.queueFor()`.
 - The controller lets the owner, an allowed operator, or `OMNICHAIN_RULESET_OPERATOR` queue rulesets.
@@ -155,7 +155,7 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
   surplus-allowance currencies must be strictly increasing. This keeps duplicate currencies from being split across
   groups and making surplus views depend on malformed configuration.
 
-### Project Launch Provenance
+### Project launch provenance
 
 - **`launchProjectFor` is permissionless on behalf of an owner.** A third party can mint a project NFT to any address
   and choose that project's initial URI, rulesets, terminals, splits, and fund access limits. This does not grant the
@@ -165,9 +165,9 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
   transaction lands. Operators that need a specific ID should reserve it explicitly with `createFor(...)` and then use
   `launchRulesetsFor(...)`, or verify the returned `projectId` before wiring downstream contracts.
 
-## 5. DoS Vectors
+## 5. DoS vectors
 
-### Unbounded Arrays
+### Unbounded arrays
 
 | Array | Growth Mechanism | Cleanup | Risk |
 |-------|-----------------|---------|------|
@@ -177,20 +177,20 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 | Payout limits / surplus allowances | Set per ruleset | Replaced per ruleset | LOW |
 | `_terminalsOf[projectId]` | `setTerminalsOf` replace-only | Replaced | LOW |
 
-### Price Feed Reverts
+### Price feed reverts
 
 - Stale or incomplete Chainlink data can block multi-currency operations.
 - L2 sequencer downtime can also block feeds behind a sequencer-check wrapper.
 - Single-currency projects are unaffected when they do not need conversion.
 - Price feeds are append-only in `JBPrices`; the primary feed cannot be changed, but backups can be appended.
 
-### Approval Hook Griefing
+### Approval hook griefing
 
 - A reverting approval hook is caught and treated as failed approval.
 - A gas-burning approval hook can still DoS `currentOf()` by exhausting gas.
 - Repeated approval-hook rejection at a ruleset boundary can create complex fallback behavior that needs testing.
 
-### Locked Split Scope
+### Locked split scope
 
 - Locked splits are enforced when rewriting the same `(projectId, rulesetId, groupId)` split table. While a split is
   locked, the replacement table must include an exact matching split with the same percent, beneficiary, project ID,
@@ -201,12 +201,12 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
   behavior before the old split's `lockedUntil`; applications that need cross-ruleset commitments must preserve those
   splits at the governance/configuration layer.
 
-### Other DoS Surfaces
+### Other DoS surfaces
 
 - Failed split payouts consume payout limit even when value is returned to project balance.
 - `addAccountingContextsFor` is append-only, so projects that add many contexts over time can make some loops more expensive.
 
-## 6. Preview Functions
+## 6. Preview functions
 
 `JBMultiTerminal.previewPayFor`, `JBMultiTerminal.previewCashOutFrom`, and `JBController.previewMintOf` are read-only simulations of state-changing operations.
 
@@ -216,9 +216,9 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Preview and execution can still drift.** Shared logic helps, but state can change between calls and hooks can be stateful.
 - **Some read-only surplus views are not hook-aware.** `currentReclaimableSurplusOf` and `currentTotalReclaimableSurplusOf` intentionally skip data hooks.
 
-## 7. Integration Risks
+## 7. Integration risks
 
-### Non-Standard ERC-20s
+### Non-standard ERC-20s
 
 - **Fee-on-transfer tokens.** Inbound handling is safer than outbound handling. Outbound transfer fees can leave store accounting higher than real holdings.
 - **ERC-777 reentrancy in `_acceptFundsFor`.** Tokens with transfer hooks (ERC-777, ERC-1363) can reenter during `_acceptFundsFor`. The balance-delta pattern correctly captures the received amount, but a reentrant call during the transfer could interact with mid-update state. Projects accepting ERC-777 tokens should be aware of this surface.
@@ -227,29 +227,29 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Blocklist tokens.** Beneficiary-specific transfer failures can revert user cash outs or return payout value to the project.
 - **Low-decimal tokens.** Fixed-point conversions can lose meaningful precision. For tokens with very few decimals (e.g., 2), fee calculations via `feeAmountFrom` can round to zero, allowing fee-free transactions below the rounding threshold.
 
-### Permit2 Interactions
+### Permit2 interactions
 
 - Permit2 is only used for inbound transfers.
 - Outbound transfers never rely on Permit2.
 - The `uint160` cast in `_acceptFundsFor` caps Permit2 transfer size.
 
-### Cross-Terminal Surplus Aggregation
+### Cross-terminal surplus aggregation
 
 - `JBSurplus.currentSurplusOf` makes external view calls into each terminal with no gas cap.
 - Aggregated surplus also compounds price-conversion rounding across terminals.
 
-### `addToBalanceOf` Metadata
+### `addToBalanceOf` metadata
 
 - `addToBalanceOf` accepts arbitrary metadata.
 - Core ignores that metadata directly, but hooks may interpret it.
 
-### `recordAddedBalanceFor` Access Control
+### `recordAddedBalanceFor` access control
 
 - `JBTerminalStore.recordAddedBalanceFor` has no explicit access control.
 - The balance key includes `msg.sender`, so only a terminal can inflate its own recorded balance.
 - A buggy or malicious terminal can still lie about funds it received.
 
-### Split And Owner-Payout Failure Semantics
+### Split and owner-payout failure semantics
 
 - Failed split payouts still consume payout limit.
 - Failed owner payouts also still consume payout limit.
@@ -264,11 +264,11 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 - **Split-hook payouts allow partial consumption.** `JBPayoutSplitGroupLib.invokeSplitHookWithPartial` grants the hook an ERC-20 allowance (or pushes ETH via `msg.value`), calls `processSplitWith` inside a try/catch, then revokes any unconsumed allowance. The hook keeps whatever it actually pulled; the unsent portion routes back to the project's balance via `recordAddedBalanceFor`, scaled to include the proportional fee allocation so the held fee is effectively charged only on what the hook consumed. Three outcomes: (1) full consumption — fee held on the full gross intent; (2) full failure (revert or zero pull) — entire gross refunded, no fee held; (3) partial pull — hook keeps `X`, project gets `amount × (net − X) / net` back, fee held on the gross-equivalent of `X`. Hooks observe `msg.sender == terminal` (the library is delegatecalled from `JBMultiTerminal`).
 - Reserved-token split hook reverts: for ERC-20 tokens, the controller uses an allowance model — it approves the hook, calls `processSplitWith`, and if the hook reverts or does not consume the full allowance the controller revokes the approval and burns the remainder. Tokens are not stranded at the hook. **The burn is deliberate, not a fallback gap.** A split routed through a hook treats `split.beneficiary` as a hint passed to the hook, not as a sender-side recipient identity the controller can re-target on failure. Routing the unconsumed allocation to `beneficiary` on hook revert would grow `totalSupply` against a recipient the hook itself never accepted, diluting existing holders toward an unspecified destination. Burning preserves the holder-protection invariant — reserved tokens that fail to land at their declared destination do not enter circulation. This is the opposite design choice from the project-pay-fail path further down the same function (which transfers to `beneficiary` on revert), and the asymmetry is principled: in the project-pay case, `beneficiary` IS the natural sender-side recipient (the address that would have received minted tokens on the recipient project), so the fallback transfer is semantically clean. `SplitHookReverted` is emitted on every failure so operators monitoring events detect and rewire — the failure is loud. Hooks that revert under transient conditions (LP pool not yet initialized, pause states, internal liquidity) should be made fault-tolerant on the hook side rather than relying on a controller-side recovery path. For credit-only projects (no ERC-20 deployed), credits are still transferred directly before the hook call, so a revert can strand credits at the hook — credits have no allowance mechanism, so symmetric recovery is not available; the hook is responsible for accepting the credits it was sent.
 
-### Terminal Migration Resets Used Payout Limits
+### Terminal migration resets used payout limits
 
 `usedPayoutLimitOf` and `usedSurplusAllowanceOf` are keyed by terminal address. This is intentional terminal-scoped accounting, not a global project-wide cap. When a project migrates to a new terminal via `migrateBalanceOf`, the used counters on the destination terminal start from that terminal's own usage. If a project owner pre-configured payout limits or surplus allowances for both the old and new terminal addresses in the same ruleset's `fundAccessLimitGroups`, migrating mid-cycle lets them use each terminal's configured access independently. This requires the project owner to be the actor (or collude), since only the owner can configure both fund access limit groups and trigger migration. The 2.5% migration fee on non-feeless terminals provides friction.
 
-## 8. Accepted Behaviors
+## 8. Accepted behaviors
 
 ### 8.1 Cross-terminal surplus is opt-in shared trust
 
@@ -294,7 +294,7 @@ Core can be deployed before project `#1` is fully ready. During that period, fee
 
 The return path doesn't care where the returning funds come from — the project owner can rebate a payout's held fee using funds from any wallet, not just funds the original payout recipient returned. This stays consistent with the proof-of-custody framing: whoever pays the protocol back the same amount the project sent out has demonstrated that the project's accounting position is unchanged. The owner subsidizing a vendor's payout doesn't extract value either way, since they spend the full payout amount back into the protocol to do it.
 
-## 9. Invariants To Verify
+## 9. Invariants to verify
 
 - **Balance conservation:** `terminal.balance(token) >= sum(store.balanceOf(projectId, terminal, token))` for projects sharing a terminal.
 - **Fund conservation:** project inflows should cover project outflows plus fees, with rounding favoring the protocol.

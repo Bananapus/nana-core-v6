@@ -2,7 +2,7 @@
 
 This is the core Juicebox V6 protocol. Most ecosystem invariants eventually reduce to this repo.
 
-## Audit Objective
+## Audit objective
 
 There is a billion dollars of well-meaning projects' money in the Juicebox Money Engine, growing exponentially. Your job is to hack it before anyone else. Whoever hacks it first saves/steals the money, and you are obsessed with being this winner, while also being a steward of the protocol and wanting it to keep growing safely.
 
@@ -35,7 +35,7 @@ Especially critical contracts:
 - `JBSplits`
 - `JBFundAccessLimits`
 
-## Start Here
+## Start here
 
 For the fastest serious review, read in this order:
 
@@ -53,7 +53,7 @@ That order mirrors how most high-severity issues appear:
 - tokens mint or burn
 - permissions and price context determine whether the move is allowed
 
-## Security Model
+## Security model
 
 Core roles:
 
@@ -79,7 +79,7 @@ Ordering to keep in mind:
 - cash-out data hooks can override tax rate, pricing cash-out count, pricing total supply, and pricing surplus value; local reclaim is still capped by available funds
 - hooks can turn a simple pay or cash-out into a multi-contract flow
 
-## Roles And Privileges
+## Roles and privileges
 
 | Role | Powers | How constrained |
 |------|--------|-----------------|
@@ -88,7 +88,7 @@ Ordering to keep in mind:
 | Controller | Mint, burn, and manage project lifecycle | Must not bypass project-scoped authorization |
 | Hooks and splits | Extend pay and cash-out behavior | Must not make previews and accounting irreconcilable |
 
-## Integration Assumptions
+## Integration assumptions
 
 | Dependency | Assumption | What breaks if wrong |
 |------------|------------|----------------------|
@@ -96,7 +96,7 @@ Ordering to keep in mind:
 | Hook ecosystem | External hooks obey documented interfaces | Settlement becomes unsafe after control transfer |
 | Directory and migration surfaces | Canonical routing changes are authentic | Funds or permissions shift to the wrong place |
 
-## Critical Invariants
+## Critical invariants
 
 See [INVARIANTS.md](./INVARIANTS.md) for the full per-contract guarantees. The short list below is the auditor's prioritized checklist:
 
@@ -117,7 +117,7 @@ See [INVARIANTS.md](./INVARIANTS.md) for the full per-contract guarantees. The s
 8. Preview coherence  
    `previewPayFor` and `previewCashOutFrom` should not drift from execution in ways downstream repos can exploit.
 
-## Attack Surfaces
+## Attack surfaces
 
 - `pay`, `cashOutTokensOf`, `sendPayoutsOf`, and `useAllowanceOf`
 - `preview*` paths when downstream repos treat them as execution truth
@@ -134,7 +134,7 @@ Replay these sequences:
 4. held-fee accumulation followed by migration or balance depletion
 5. permission grants involving operators, wildcard project IDs, or later controller changes
 
-## Accepted Risks Or Behaviors
+## Accepted risks or behaviors
 
 - Hooks are intentionally powerful. Safety comes from clear ordering and bounded trust, not from avoiding composition.
 

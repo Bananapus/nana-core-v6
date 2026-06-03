@@ -23,10 +23,19 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the same terminal appears more than once in the provided terminals list.
     error JBDirectory_DuplicateTerminals(IJBTerminal terminal);
+
+    /// @notice Thrown when the project ID is greater than the number of existing projects.
     error JBDirectory_InvalidProjectIdInDirectory(uint256 projectId, uint256 limit);
+
+    /// @notice Thrown when the project's current controller does not allow setting a new controller.
     error JBDirectory_SetControllerNotAllowed(uint256 projectId);
+
+    /// @notice Thrown when the project's current controller does not allow setting terminals.
     error JBDirectory_SetTerminalsNotAllowed(uint256 projectId);
+
+    /// @notice Thrown when the terminal being set as primary does not accept the given token.
     error JBDirectory_TokenNotAccepted(uint256 projectId, address token, IJBTerminal terminal);
 
     //*********************************************************************//

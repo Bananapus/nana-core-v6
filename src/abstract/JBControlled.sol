@@ -12,6 +12,7 @@ abstract contract JBControlled is IJBControlled {
     // --------------------------- custom errors -------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the caller is not the controller of the specified project.
     error JBControlled_ControllerUnauthorized(address controller);
 
     //*********************************************************************//

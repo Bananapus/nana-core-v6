@@ -58,21 +58,52 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the project's current ruleset does not allow adding price feeds.
     error JBController_AddingPriceFeedNotAllowed(uint256 projectId);
+
+    /// @notice Thrown when transferring credits while the current ruleset pauses credit transfers.
     error JBController_CreditTransfersPaused(uint256 projectId, uint256 rulesetId);
+
+    /// @notice Thrown when the cash out tax rate exceeds the allowed maximum.
     error JBController_InvalidCashOutTaxRate(uint256 rate, uint256 limit);
+
+    /// @notice Thrown when the native value sent does not equal the required creation fee.
     error JBController_InvalidCreationFee(uint256 value, uint256 requiredFee);
+
+    /// @notice Thrown when the reserved percent exceeds the allowed maximum.
     error JBController_InvalidReservedPercent(uint256 percent, uint256 limit);
+
+    /// @notice Thrown when the caller is not allowed to mint and is not a terminal or data hook for the project.
     error JBController_MintNotAllowedAndNotTerminalOrHook(address caller);
+
+    /// @notice Thrown when there are no reserved tokens to send to splits.
     error JBController_NoReservedTokens(uint256 projectId);
+
+    /// @notice Thrown when the caller is not the directory.
     error JBController_OnlyDirectory(address sender, IJBDirectory directory);
+
+    /// @notice Thrown when migrating a project that still has pending reserved tokens.
     error JBController_PendingReservedTokens(uint256 pendingReservedTokenBalance);
+
+    /// @notice Thrown when a reserved token split routes back into the same project via the terminal-payment path.
     error JBController_ReservedTokenSplitProjectSameAsOwner(uint256 projectId);
+
+    /// @notice Thrown when launching rulesets for a project that has already launched.
     error JBController_RulesetsAlreadyLaunched(uint256 projectId);
+
+    /// @notice Thrown when the ruleset configurations array is empty.
     error JBController_RulesetsArrayEmpty(uint256 projectId, uint256 rulesetConfigurationCount);
+
+    /// @notice Thrown when the project's current ruleset does not allow setting a custom token.
     error JBController_RulesetSetTokenNotAllowed(uint256 projectId);
+
+    /// @notice Thrown when the terminal did not pull the full token allowance during a payout.
     error JBController_TerminalTokensNotTransferred(address terminal, address token, uint256 allowance);
+
+    /// @notice Thrown when attempting to burn zero tokens.
     error JBController_ZeroTokensToBurn(uint256 projectId, address holder);
+
+    /// @notice Thrown when attempting to mint zero tokens.
     error JBController_ZeroTokensToMint(uint256 projectId, address beneficiary);
 
     //*********************************************************************//
@@ -707,7 +738,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // If there's no current ruleset, get a reference to the upcoming one.
         if (ruleset.id == 0) ruleset = _upcomingRulesetOf(projectId);
 
-        // If owner minting is disabled for the ruleset, the owner cannot change the token.
+        // If the ruleset doesn't allow setting a custom token, the owner cannot change the token.
         if (!ruleset.allowSetCustomToken()) revert JBController_RulesetSetTokenNotAllowed(projectId);
 
         TOKENS.setTokenFor({projectId: projectId, token: token});
@@ -783,8 +814,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Returns a paginated history of a project's rulesets (with decoded metadata), sorted newest-first.
     /// @param projectId The ID of the project to get the rulesets of.
-    /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result. If the
-    /// `startingId` is 0, passed, the project's latest ruleset will be used.
+    /// @param startingId The ID of the ruleset to begin with. This will be the latest ruleset in the result.
+    /// If 0 is passed, the project's latest ruleset will be used.
     /// @param size The maximum number of rulesets to return.
     /// @return rulesets The array of rulesets with their metadata.
     function allRulesetsOf(
@@ -1320,7 +1351,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         return RULESETS.currentOf(projectId);
     }
 
-    /// @notice Indicates whether the provided address has mint permission for the project byway of the data hook.
+    /// @notice Indicates whether the provided address has mint permission for the project by way of the data hook.
     /// @param projectId The ID of the project to check.
     /// @param ruleset The ruleset to check.
     /// @param addr The address to check.

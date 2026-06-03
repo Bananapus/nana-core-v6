@@ -25,9 +25,16 @@ pragma solidity 0.8.28;
  *            +-----------------------+
  */
 library JBMetadataResolver {
+    /// @notice Thrown when the data to add is not padded to a multiple of 32 bytes.
     error JBMetadataResolver_DataNotPadded(uint256 dataLength);
+
+    /// @notice Thrown when the IDs and datas arrays have mismatched lengths.
     error JBMetadataResolver_LengthMismatch(uint256 idsLength, uint256 datasLength);
+
+    /// @notice Thrown when the metadata offset exceeds the maximum addressable offset of 255.
     error JBMetadataResolver_MetadataTooLong(uint256 offset, uint256 maxOffset);
+
+    /// @notice Thrown when the metadata is shorter than the minimum required length.
     error JBMetadataResolver_MetadataTooShort(uint256 metadataLength, uint256 minMetadataLength);
 
     // Constants alphabetized per STYLE_GUIDE; trailing comments document derivation.
@@ -260,7 +267,7 @@ library JBMetadataResolver {
             if (parsedId == id) {
                 // Are we at the end of the lookup table (either at the start of data's or next offset is 0/in the
                 // padding)
-                // If not, only return until from this offset to the begining of the next offset
+                // If not, only return until from this offset to the beginning of the next offset
                 uint256 end = (i + NEXT_ID_OFFSET >= firstOffset * WORD_SIZE || metadata[i + NEXT_ID_OFFSET] == 0)
                     ? metadata.length
                     : uint256(uint8(metadata[i + NEXT_ID_OFFSET])) * WORD_SIZE;
@@ -295,6 +302,7 @@ library JBMetadataResolver {
     /// @param start The start index to slice at.
     /// @param end The end index to slice at.
     /// @param slicedBytes The sliced array.
+    /// @return slicedBytes The sliced array.
     function _sliceBytes(bytes memory data, uint256 start, uint256 end)
         private
         pure

@@ -8,7 +8,9 @@ import {IJBPriceFeed} from "../interfaces/IJBPriceFeed.sol";
 contract JBMatchingPriceFeed is IJBPriceFeed {
     constructor() {}
 
-    /// @inheritdoc IJBPriceFeed
+    /// @notice Gets the current price (per 1 unit) from the feed.
+    /// @param decimals The number of decimals the return value should use.
+    /// @return The current unit price from the feed, as a fixed point number with the specified number of decimals.
     function currentUnitPrice(uint256 decimals) public view virtual override returns (uint256) {
         return 10 ** decimals;
     }

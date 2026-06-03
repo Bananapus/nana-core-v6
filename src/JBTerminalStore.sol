@@ -39,22 +39,48 @@ contract JBTerminalStore is IJBTerminalStore {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when setting an accounting context for a token that already has one.
     error JBTerminalStore_AccountingContextAlreadySet(address token);
+
+    /// @notice Thrown when a token's provided decimals do not match the decimals it reports.
     error JBTerminalStore_AccountingContextDecimalsMismatch(
         address token, uint256 providedDecimals, uint256 expectedDecimals
     );
+
+    /// @notice Thrown when a token's decimals are outside the supported range.
     error JBTerminalStore_AccountingContextDecimalsOutOfRange(address token, uint256 decimals);
+
+    /// @notice Thrown when the project's current ruleset does not allow adding accounting contexts.
     error JBTerminalStore_AddingAccountingContextNotAllowed(uint256 projectId, uint256 rulesetId, address terminal);
+
+    /// @notice Thrown when the used surplus allowance exceeds the amount the controller granted.
     error JBTerminalStore_InadequateControllerAllowance(uint256 amount, uint256 allowance);
 
+    /// @notice Thrown when the amount to use exceeds the terminal's recorded balance or surplus.
     error JBTerminalStore_InadequateTerminalStoreBalance(uint256 amount, uint256 balance);
+
+    /// @notice Thrown when cashing out more tokens than the effective total supply.
     error JBTerminalStore_InsufficientTokens(uint256 count, uint256 totalSupply);
+
+    /// @notice Thrown when a hook specification asks to forward more than the amount paid.
     error JBTerminalStore_InvalidAmountToForwardHook(uint256 amount, uint256 paidAmount);
+
+    /// @notice Thrown when a hook specification is flagged as a no-op but carries a non-zero amount.
     error JBTerminalStore_NoopHookSpecHasAmount(uint256 amount);
+
+    /// @notice Thrown when the project has no current ruleset.
     error JBTerminalStore_RulesetNotFound(uint256 projectId);
+
+    /// @notice Thrown when paying a project whose current ruleset pauses payments.
     error JBTerminalStore_RulesetPaymentPaused(uint256 projectId, uint256 rulesetId);
+
+    /// @notice Thrown when the project's current ruleset does not allow terminal migration.
     error JBTerminalStore_TerminalMigrationNotAllowed(uint256 projectId, uint256 rulesetId);
+
+    /// @notice Thrown when a value to record exceeds the uint224 maximum.
     error JBTerminalStore_Uint224Overflow(uint256 value);
+
+    /// @notice Thrown when an accounting context's currency is zero.
     error JBTerminalStore_ZeroAccountingContextCurrency(address token);
 
     //*********************************************************************//
@@ -465,7 +491,7 @@ contract JBTerminalStore is IJBTerminalStore {
             revert JBTerminalStore_InadequateTerminalStoreBalance({amount: amountPaidOut, balance: currentBalance});
         }
 
-        // Removed the paid out funds from the project's token balance.
+        // Remove the paid out funds from the project's token balance.
         unchecked {
             balanceOf[msg.sender][projectId][token] = currentBalance - amountPaidOut;
         }
@@ -1137,7 +1163,7 @@ contract JBTerminalStore is IJBTerminalStore {
         if (weight == 0) return (ruleset, 0, hookSpecifications, balanceDiff);
 
         // If the terminal should base its weight on a currency other than the terminal's currency, determine the
-        // factor. The weight is always a fixed point mumber with 18 decimals. To ensure this, the ratio should use the
+        // factor. The weight is always a fixed point number with 18 decimals. To ensure this, the ratio should use the
         // same
         // number of decimals as the `amount`.
         uint256 weightRatio = amount.currency == ruleset.baseCurrency()
@@ -1330,7 +1356,7 @@ contract JBTerminalStore is IJBTerminalStore {
             : mulDiv({
                 x: surplus,
                 y: 10 ** _MAX_FIXED_POINT_FIDELITY, // Use `_MAX_FIXED_POINT_FIDELITY` to keep as much of the
-                // `_payoutLimitRemaining`'s fidelity as possible when converting.
+                // surplus's fidelity as possible when converting.
                 denominator: PRICES.pricePerUnitOf({
                     projectId: projectId,
                     pricingCurrency: accountingContext.currency,

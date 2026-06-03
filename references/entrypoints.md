@@ -28,7 +28,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBDeadline` | Approval hook: rejects rulesets queued within `DURATION` seconds of start. Ships as `JBDeadline3Hours`, `JBDeadline1Day`, `JBDeadline3Days`, `JBDeadline7Days`. |
 | `JBMatchingPriceFeed` | Always returns 1:1. For equivalent currencies (e.g. ETH/NATIVE_TOKEN). |
 
-## Key Functions
+## Key functions
 
 ### JBController
 

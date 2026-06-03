@@ -19,16 +19,37 @@ contract JBTokens is JBControlled, IJBTokens {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when deploying a token with an empty name.
     error JBTokens_EmptyName(uint256 projectId);
+
+    /// @notice Thrown when deploying a token with an empty symbol.
     error JBTokens_EmptySymbol(uint256 projectId);
+
+    /// @notice Thrown when the token to set is the zero address.
     error JBTokens_EmptyToken(uint256 projectId);
+
+    /// @notice Thrown when burning more credits than the holder's credit balance.
     error JBTokens_InsufficientCredits(uint256 count, uint256 creditBalance);
+
+    /// @notice Thrown when burning more tokens than the holder's combined token and credit balance.
     error JBTokens_InsufficientTokensToBurn(uint256 count, uint256 tokenBalance);
+
+    /// @notice Thrown when minting would push the total supply past the uint208 maximum.
     error JBTokens_OverflowAlert(uint256 value, uint256 limit);
+
+    /// @notice Thrown when the project already has a token set.
     error JBTokens_ProjectAlreadyHasToken(IJBToken token);
+
+    /// @notice Thrown when the token is already in use by another project.
     error JBTokens_TokenAlreadyBeingUsed(uint256 projectId);
+
+    /// @notice Thrown when the token reports that it cannot be added to the project.
     error JBTokens_TokenCantBeAdded(uint256 projectId);
+
+    /// @notice Thrown when the project has no token set.
     error JBTokens_TokenNotFound(uint256 projectId);
+
+    /// @notice Thrown when the token does not use 18 decimals.
     error JBTokens_TokensMustHave18Decimals(uint256 decimals);
 
     //*********************************************************************//

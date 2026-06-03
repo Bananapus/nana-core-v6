@@ -18,8 +18,13 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the configured creation fee exceeds the allowed maximum.
     error JBProjects_CreationFeeExceedsMax(uint256 fee, uint256 max);
+
+    /// @notice Thrown when the native value sent does not equal the required creation fee.
     error JBProjects_InvalidCreationFee(uint256 value, uint256 requiredFee);
+
+    /// @notice Thrown when a non-zero creation fee is configured without a fee receiver.
     error JBProjects_ZeroCreationFeeReceiver();
 
     //*********************************************************************//

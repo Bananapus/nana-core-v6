@@ -14,7 +14,10 @@ contract JBChainlinkV3SequencerPriceFeed is JBChainlinkV3PriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the sequencer uptime round is invalid (e.g. the uptime contract is not yet initialized).
     error JBChainlinkV3SequencerPriceFeed_InvalidRound(uint256 startedAt);
+
+    /// @notice Thrown when the L2 sequencer is down or has restarted too recently for the grace period to elapse.
     error JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting(
         uint256 timestamp, uint256 gracePeriodTime, uint256 startedAt
     );

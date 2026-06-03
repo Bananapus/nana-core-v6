@@ -14,9 +14,9 @@ inline because operators may toggle them.
 
 ---
 
-# Section A — Guarantees to Paying Users
+## Section A — Guarantees to paying users
 
-## A.1 Token issuance correctness
+### A.1 Token issuance correctness
 
 - A payment of `amount` of an accepted terminal token mints exactly `weight × amount` project tokens
   (modulo data-hook substitution, fee-on-transfer balance deltas, and currency conversion via
@@ -35,7 +35,7 @@ inline because operators may toggle them.
 - Native-token payments must arrive as `msg.value` matching the accounting context (18 decimals
   enforced for `NATIVE_TOKEN` in `JBTerminalStore.recordAccountingContextOf`).
 
-## A.2 Cash-out availability and floor
+### A.2 Cash-out availability and floor
 
 - `cashOutTokensOf` is always available on a holder's terminal of choice, modulo:
   - the project having a configured accounting context for the requested `tokenToReclaim`,
@@ -58,7 +58,7 @@ inline because operators may toggle them.
   (`JBMultiTerminal._processFee`).
 - The user-supplied `minTokensReclaimed` is enforced via `_checkMin` (`JBMultiTerminal.sol:342`).
 
-## A.3 Bonding-curve floor formula
+### A.3 Bonding-curve floor formula
 
 - `JBCashOuts.cashOutFrom` returns `0` when `cashOutCount == 0`.
 - When `tax == MAX_CASH_OUT_TAX_RATE` (10_000), every holder reclaims their full pro-rata share
@@ -70,7 +70,7 @@ inline because operators may toggle them.
   receives a smaller pro-rata share. Calling the permissionless
   `sendReservedTokensToSplitsOf` first reflects the dilution they already implicitly bear.
 
-## A.4 Protocol fee (2.5%) + 28-day held-fee window
+### A.4 Protocol fee (2.5%) + 28-day held-fee window
 
 - Fee constants: `FEE = 25`, `MAX_FEE = 1000` (`JBMultiTerminal` — JBFees library), giving a 2.5%
   fee on outflows.
@@ -96,7 +96,7 @@ inline because operators may toggle them.
   credited back to the originating project. This is RISKS.md §8.2 — accepted as the cost of
   liveness.
 
-## A.5 Permit2 + ERC-20 deposit accounting (balance-delta safe)
+### A.5 Permit2 + ERC-20 deposit accounting (balance-delta safe)
 
 - `_acceptFundsFor` measures the actual balance delta against the terminal's pre-call ERC-20
   balance and uses that as the accepted amount. Fee-on-transfer tokens are charged inbound at the
@@ -109,7 +109,7 @@ inline because operators may toggle them.
 - Native-token payments require `msg.value == amount`; ERC-20 paths reject non-zero `msg.value`
   (`JBMultiTerminal_NoMsgValueAllowed`).
 
-## A.6 Cashout reclaim ≤ local-token surplus
+### A.6 Cashout reclaim ≤ local-token surplus
 
 - `JBTerminalStore.recordCashOutFor` computes `balanceDiff` as the funds leaving the cashing
   terminal in `tokenToReclaim`. It enforces `balanceDiff ≤ balanceOf[terminal][projectId][token]`
@@ -118,7 +118,7 @@ inline because operators may toggle them.
   reclaimable per project token), not the *source* of payment. A holder cashing out on terminal X
   for token T receives funds from X's recorded balance of T — never from a different terminal.
 
-## A.7 `_acceptingToken` transient reentrancy guard
+### A.7 `_acceptingToken` transient reentrancy guard
 
 - `JBMultiTerminal._acceptFundsFor` sets `_acceptingToken = true` before measuring the inbound
   ERC-20 balance delta and `false` after. A reentrant call landing back inside `_acceptFundsFor`
@@ -129,9 +129,9 @@ inline because operators may toggle them.
 
 ---
 
-# Section B — Guarantees to Project Owners and Operators
+## Section B — Guarantees to project owners and operators
 
-## B.1 Permission system
+### B.1 Permission system
 
 - `JBPermissions.setPermissionsFor(account, data)` is callable in only two cases
   (`JBPermissions.sol:66-101`):
@@ -147,7 +147,7 @@ inline because operators may toggle them.
 - Empty `permissionIds` arrays satisfy `hasPermissions` vacuously (documented in RISKS.md §4).
   Callers must validate non-empty arrays if non-vacuous truth matters.
 
-## B.2 Ruleset queue authority
+### B.2 Ruleset queue authority
 
 - `JBController.launchRulesetsFor` is gated to:
   - `LAUNCH_RULESETS` on the project owner,
@@ -168,7 +168,7 @@ inline because operators may toggle them.
 - Ruleset IDs are strictly increasing: `rulesetId = latestRulesetIdOf > block.timestamp ?
   latestRulesetIdOf + 1 : block.timestamp` (`JBRulesets.sol:160-164`).
 
-## B.3 `mintTokensOf` auth matrix
+### B.3 `mintTokensOf` auth matrix
 
 `JBController.mintTokensOf(projectId, tokenCount, beneficiary, memo, useReservedPercent)` is
 gated as follows (`JBController.sol:550-621`):
@@ -185,7 +185,7 @@ gated as follows (`JBController.sol:550-621`):
 remain authoritative. There is no path to mint without `tokenCount > 0`
 (`JBController_ZeroTokensToMint`).
 
-## B.4 `burnTokensOf` auth
+### B.4 `burnTokensOf` auth
 
 - `JBController.burnTokensOf(holder, projectId, tokenCount, memo)` allows:
   - the holder directly,
@@ -194,7 +194,7 @@ remain authoritative. There is no path to mint without `tokenCount > 0`
 - Reverts `JBController_ZeroTokensToBurn` if `tokenCount == 0`. Credits are burned first, then
   ERC-20 tokens if needed (`JBTokens.burnFrom`).
 
-## B.5 `sendReservedTokensToSplitsOf` is permissionless
+### B.5 `sendReservedTokensToSplitsOf` is permissionless
 
 - `JBController.sendReservedTokensToSplitsOf(projectId)` mints exactly the prior
   `pendingReservedTokenBalanceOf[projectId]` and distributes it per the project's current ruleset's
@@ -207,7 +207,7 @@ remain authoritative. There is no path to mint without `tokenCount > 0`
 - Controller migration requires `pendingReservedTokenBalanceOf[projectId] == 0`
   (`JBController.migrate`).
 
-## B.6 `claimTokensFor` — credits → ERC-20 1:1
+### B.6 `claimTokensFor` — credits → ERC-20 1:1
 
 - `JBController.claimTokensFor(holder, projectId, tokenCount, beneficiary)` requires the holder OR
   a `CLAIM_TOKENS` operator on the holder.
@@ -215,7 +215,7 @@ remain authoritative. There is no path to mint without `tokenCount > 0`
   ERC-20 to `beneficiary`. The project must have a token deployed/attached
   (`JBTokens_TokenNotFound`).
 
-## B.7 Directory routing — `setControllerOf`, `setTerminalsOf`, `setPrimaryTerminalOf`
+### B.7 Directory routing — `setControllerOf`, `setTerminalsOf`, `setPrimaryTerminalOf`
 
 - `JBDirectory.setControllerOf` allows:
   - owner / `SET_CONTROLLER` operator if the current controller permits the change (the controller's
@@ -235,7 +235,7 @@ remain authoritative. There is no path to mint without `tokenCount > 0`
   not already in the project's terminal list, `ADD_TERMINALS`. Terminal must accept the requested
   token (`JBDirectory_TokenNotAccepted`).
 
-## B.8 Operator powers and limits
+### B.8 Operator powers and limits
 
 Powers the owner can delegate via `JBPermissions`:
 
@@ -254,12 +254,12 @@ Powers no one holds on a properly-configured project:
 
 ---
 
-# Section C — Per-Contract Operation Inventory
+## Section C — Per-contract operation inventory
 
 For each contract: external/public functions, caller, effect, invariant preserved, and what the
 caller cannot achieve via that path.
 
-## C.1 `JBMultiTerminal` — `src/JBMultiTerminal.sol`
+### C.1 `JBMultiTerminal` — `src/JBMultiTerminal.sol`
 
 Payment / cashout / payout / fee terminal. Holds funds. All external hook calls wrapped in
 try/catch. Fee = 2.5% on outflows, held 28 days.
@@ -363,7 +363,7 @@ try/catch. Fee = 2.5% on outflows, held 28 days.
 **Views:** `accountingContextForTokenOf`, `accountingContextsOf`, `currentSurplusOf`,
 `heldFeesOf`, `previewCashOutFrom`, `previewPayFor`, `supportsInterface`.
 
-## C.2 `JBController` — `src/JBController.sol`
+### C.2 `JBController` — `src/JBController.sol`
 
 Orchestrator: project lifecycle, ruleset queueing, token mint/burn, reserved-token distribution.
 
@@ -438,7 +438,7 @@ Orchestrator: project lifecycle, ruleset queueing, token mint/burn, reserved-tok
 `previewMintOf`, `setControllerAllowed`, `setTerminalsAllowed`,
 `totalTokenSupplyWithReservedTokensOf`, `upcomingRulesetOf`, `supportsInterface`.
 
-## C.3 `JBTerminalStore` — `src/JBTerminalStore.sol`
+### C.3 `JBTerminalStore` — `src/JBTerminalStore.sol`
 
 Shared accounting. All mutating functions scope by `msg.sender` (the calling terminal). External
 callers can only corrupt their own scoped storage; the directory routing controls who counts as a
@@ -469,7 +469,7 @@ The store cannot mint or burn project tokens, modify rulesets, or directly trans
 funds. Conservation guards: `JBTerminalStore_InadequateTerminalStoreBalance` everywhere balance
 debits occur.
 
-## C.4 `JBDirectory` — `src/JBDirectory.sol`
+### C.4 `JBDirectory` — `src/JBDirectory.sol`
 
 - **`setControllerOf(projectId, controller)`** (`L98-152`) — see B.7.
   - **Invariant:** ruleset gating cannot be bypassed for non-first changes (controller's
@@ -484,7 +484,7 @@ debits occur.
 
 **Views:** `primaryTerminalOf`, `terminalsOf`, `isTerminalOf`, `controllerOf`.
 
-## C.5 `JBTokens` — `src/JBTokens.sol`
+### C.5 `JBTokens` — `src/JBTokens.sol`
 
 All mutating functions gated by `onlyControllerOf(projectId)` — project owners cannot call
 directly.
@@ -509,7 +509,7 @@ directly.
 
 **Views:** `totalBalanceOf`, `totalSupplyOf`.
 
-## C.6 `JBSplits` — `src/JBSplits.sol`
+### C.6 `JBSplits` — `src/JBSplits.sol`
 
 - **`setSplitGroupsOf(projectId, rulesetId, splitGroups)`** (`L92-127`) — either:
   - the project's controller (default path used by `JBController.setSplitGroupsOf`), OR
@@ -523,7 +523,7 @@ directly.
 - **`splitsOf(projectId, rulesetId, groupId)`** falls back to ruleset 0 default group when the
   requested ruleset has none set.
 
-## C.7 `JBRulesets` — `src/JBRulesets.sol`
+### C.7 `JBRulesets` — `src/JBRulesets.sol`
 
 - **`queueFor(projectId, duration, weight, weightCutPercent, approvalHook, metadata,
   mustStartAtOrAfter) → ruleset`** (`L107-205`) — project's controller only.
@@ -538,7 +538,7 @@ directly.
 `currentApprovalStatusForLatestRulesetOf`, `currentOf`, `getRulesetOf`, `latestQueuedOf`,
 `upcomingOf`, `deriveCycleNumberFrom`, `deriveStartFrom`, `deriveWeightFrom`.
 
-## C.8 `JBPermissions` — `src/JBPermissions.sol`
+### C.8 `JBPermissions` — `src/JBPermissions.sol`
 
 - **`setPermissionsFor(account, permissionsData)`** (`L66-114`) — `account` itself
   (unrestricted), OR a non-self caller holding ROOT on `(account, projectId)` AND not granting
@@ -551,7 +551,7 @@ directly.
 
 **Views:** `hasPermission`, `hasPermissions`, `permissionsOf`, `WILDCARD_PROJECT_ID` (= 0).
 
-## C.9 `JBPrices` — `src/JBPrices.sol`
+### C.9 `JBPrices` — `src/JBPrices.sol`
 
 - **`addPriceFeedFor(projectId, pricingCurrency, unitCurrency, feed)`** (`L98-135`) —
   `projectId == 0` → contract owner only; any other project → only that project's controller
@@ -562,7 +562,7 @@ directly.
 
 **Views:** `priceFeedAt`, `priceFeedCountFor`, `priceFeedFor`, `pricePerUnitOf`.
 
-## C.10 `JBProjects` — `src/JBProjects.sol`
+### C.10 `JBProjects` — `src/JBProjects.sol`
 
 ERC-721 of project ownership. Project owner = `ownerOf(projectId)`.
 
@@ -580,7 +580,7 @@ ERC-721 of project ownership. Project owner = `ownerOf(projectId)`.
 **Views:** `count`, `creationFee`, `creationFeeReceiver`, `tokenUriResolver`,
 `MAX_CREATION_FEE`, ERC-721 surface (`ownerOf`, `balanceOf`, `getApproved`, etc.).
 
-## C.11 `JBFundAccessLimits` — `src/JBFundAccessLimits.sol`
+### C.11 `JBFundAccessLimits` — `src/JBFundAccessLimits.sol`
 
 - **`setFundAccessLimitsFor(projectId, rulesetId, fundAccessLimitGroups)`** (`L84-187`) — project's
   controller only.
@@ -591,7 +591,7 @@ ERC-721 of project ownership. Project owner = `ownerOf(projectId)`.
 
 **Views:** `payoutLimitOf`, `payoutLimitsOf`, `surplusAllowanceOf`, `surplusAllowancesOf`.
 
-## C.12 `JBFeelessAddresses` — `src/JBFeelessAddresses.sol`
+### C.12 `JBFeelessAddresses` — `src/JBFeelessAddresses.sol`
 
 - **`setFeelessAddress(addr, flag)`** (`L54-58`) — `onlyOwner`. Equivalent to
   `setFeelessAddressFor(0, addr, flag)` (project-0 wildcard = feeless for ALL projects).
@@ -603,7 +603,7 @@ ERC-721 of project ownership. Project owner = `ownerOf(projectId)`.
 (`try/catch`, reverting hook treated as `false`). `feelessHook`. **Invariant:** the hook can only
 *widen* the feeless set, never shrink it (admin mappings OR'd with hook result).
 
-## C.13 `JBERC20` — `src/JBERC20.sol`
+### C.13 `JBERC20` — `src/JBERC20.sol`
 
 Cloneable governance/permit ERC-20. One per project. Owned exclusively by `JBTokens`.
 
@@ -622,7 +622,7 @@ mediated by `JBTokens` (which is in turn mediated by the project's controller). 
 use `setTokenFor` with an *external* ERC-20 do not have this guarantee — external supply changes
 dilute cashouts (`JBTokens.totalSupplyOf` warning at L412-417).
 
-## C.14 Chainlink price-feed adapters — `src/JBChainlinkV3PriceFeed.sol`, `src/JBChainlinkV3SequencerPriceFeed.sol`
+### C.14 Chainlink price-feed adapters — `src/JBChainlinkV3PriceFeed.sol`, `src/JBChainlinkV3SequencerPriceFeed.sol`
 
 - **`JBChainlinkV3PriceFeed.currentUnitPrice(decimals)`** (`L52-87`) — view. Reverts if:
   - the round is incomplete (`updatedAt == 0` or `answeredInRound < roundId`),
@@ -639,7 +639,7 @@ overwrite existing entries, so once a feed is registered for `(projectId, pricin
 unitCurrency)` at index 0 it is permanent. Adding backups appends — they win only when the
 primary feed reverts or returns zero (`JBPrices._pricePerUnitOf`).
 
-## C.15 `JBDeadline` (and `src/periphery/JBDeadline{1Day,3Days,3Hours,7Days}.sol`)
+### C.15 `JBDeadline` (and `src/periphery/JBDeadline{1Day,3Days,3Hours,7Days}.sol`)
 
 Approval-hook implementations used by projects that want minimum notice between ruleset
 configuration and ruleset start.
@@ -652,7 +652,7 @@ The deadline contracts hold no state and grant no privileges.
 
 ---
 
-# Section D — Cross-Cutting Invariants
+## Section D — Cross-cutting invariants
 
 1. **Token supply identity.** For every project,
    `totalSupplyOf(projectId) = totalCreditSupplyOf[projectId] + token.totalSupply()`
@@ -701,7 +701,7 @@ The deadline contracts hold no state and grant no privileges.
 
 ---
 
-# Section E — Out-of-Scope Centralization Caveats
+## Section E — Out-of-scope centralization caveats
 
 These are powers held by privileged addresses outside any individual project's control. They are
 not third-party attack surface but they bound what "decentralized" means for a project hosted on
@@ -735,7 +735,7 @@ above either appends (never overwrites) or affects fee/feeless routing (never cu
 
 ---
 
-# Section F — Key Code References
+## Section F — Key code references
 
 Ruleset queueing and approval:
 - `src/JBController.sol:453-519` (launchRulesetsFor)
