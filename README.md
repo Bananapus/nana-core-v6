@@ -15,7 +15,7 @@ In-repo docs (entry points for this repo):
 - [AUDIT_INSTRUCTIONS.md](./AUDIT_INSTRUCTIONS.md) — what to focus on for a security audit and how to start.
 - [SKILLS.md](./SKILLS.md) — implementation nuances, gotchas, and reading order for working on this codebase.
 - [STYLE_GUIDE.md](./STYLE_GUIDE.md) — Solidity conventions and repo layout used across the V6 ecosystem.
-- [CHANGELOG.md](./CHANGELOG.md) — v5 → v6 ABI and behavior deltas.
+- [CHANGELOG.md](./CHANGELOG.md) - V5 to V6 ABI and behavior deltas.
 - [references/entrypoints.md](./references/entrypoints.md) — callable entrypoints by contract.
 - [references/types-errors-events.md](./references/types-errors-events.md) — packed metadata, errors, events, and hook return shapes.
 

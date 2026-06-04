@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-/// @notice Describes how a terminal accounts for a specific token — its address, decimal precision, and which
-/// currency
+/// @notice Describes how a terminal accounts for a specific token — its address, decimal precision, and the currency
 /// it's priced in. Used when recording payments, payouts, and cash outs to ensure correct fixed-point arithmetic.
 /// @custom:member token The token address (use `JBConstants.NATIVE_TOKEN` for ETH).
 /// @custom:member decimals The number of decimals for this token's fixed-point amounts (e.g. 18 for ETH, 6 for USDC).

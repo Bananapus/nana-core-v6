@@ -49,8 +49,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
-    /// @notice The specified project's controller, which dictates how its terminals interact with its tokens and
-    /// rulesets.
+    /// @notice The specified project's controller, which dictates how terminals interact with tokens and rulesets.
     /// @custom:param projectId The ID of the project to get the controller of.
     mapping(uint256 projectId => IERC165) public override controllerOf;
 
@@ -98,8 +97,7 @@ contract JBDirectory is JBPermissioned, Ownable, IJBDirectory {
     /// its tokens and rulesets. If the project already has a controller, this triggers a full migration lifecycle
     /// (`beforeReceiveMigrationFrom` → `migrate` → state update → `afterReceiveMigrationFrom`).
     /// @dev Can only be called if:
-    /// - The ruleset's metadata has `allowSetController` enabled, and the caller is the project's owner or has
-    /// `SET_CONTROLLER` permission.
+    /// - The ruleset metadata enables `allowSetController`, and the caller owns the project or has `SET_CONTROLLER`.
     /// - OR the caller `isAllowedToSetFirstController` and the project has no controller yet.
     /// @param projectId The ID of the project to set the controller for.
     /// @param controller The address of the controller to set.

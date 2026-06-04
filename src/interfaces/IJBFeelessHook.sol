@@ -17,8 +17,8 @@ interface IJBFeelessHook is IERC165 {
     /// the terminal (so it gets fee-free cash-outs when zapping, but does NOT get feeless status when it merely
     /// appears as a split recipient of someone else's payout).
     /// @param projectId The ID of the project the fee would be charged on behalf of.
-    /// @param addr The address being checked (typically a payout recipient, surplus allowance beneficiary, or
-    /// cash-out beneficiary).
+    /// @param addr The address being checked, typically a payout recipient, surplus allowance beneficiary, or cash-out
+    /// beneficiary.
     /// @param caller The outer caller that initiated the terminal operation, or `address(0)` if not provided.
     /// @return A flag indicating whether the address is feeless for the project under the hook's custom logic.
     function isFeeless(uint256 projectId, address addr, address caller) external view returns (bool);

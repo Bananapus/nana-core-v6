@@ -15,8 +15,7 @@ import {IJBSplitHook} from "./../interfaces/IJBSplitHook.sol";
 /// `beneficiary`.
 /// @custom:member percent The percent of the total token amount that this split sends. This number is out of
 /// `JBConstants.SPLITS_TOTAL_PERCENT`.
-/// @custom:member projectId The ID of a project to `pay`, if applicable. Resulting tokens will be routed to the
-/// `beneficiary`.
+/// @custom:member projectId The ID of a project to `pay`, if applicable. Resulting tokens are routed to `beneficiary`.
 /// @custom:member beneficiary Receives this split's tokens if the `hook` and `projectId` are zero. If the `projectId`
 /// is specified, the `beneficiary` receives any project tokens minted by this split. If `beneficiary` is `address(0)`,
 /// the application processing the split decides on the recipient. For example, the terminal uses `msg.sender` for

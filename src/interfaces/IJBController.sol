@@ -329,8 +329,8 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @notice Mints new project tokens (or credits) to a beneficiary, optionally reserving a portion for the ruleset's
     /// reserved splits.
     /// @param projectId The ID of the project whose project tokens are being minted.
-    /// @param tokenCount The total number of project tokens to mint (the beneficiary's share plus the reserved share if
-    /// `useReservedPercent` is true).
+    /// @param tokenCount The total number of project tokens to mint, including reserved tokens if
+    /// `useReservedPercent` is true.
     /// @param beneficiary The address that receives the non-reserved portion of the minted project tokens.
     /// @param memo A memo to pass along to the emitted event.
     /// @param useReservedPercent Whether to apply the ruleset's reserved percent.
