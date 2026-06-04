@@ -2,7 +2,7 @@
 
 Use this file when you need deeper protocol reference material after the repo-local `SKILLS.md` has already routed you to `nana-core-v6`.
 
-## Key Types
+## Key types
 
 | Struct/Enum | Key Fields | Used In |
 |-------------|------------|---------|
@@ -23,7 +23,7 @@ Use this file when you need deeper protocol reference material after the repo-lo
 | `JBRulesetWeightCache` | `weight (uint112)`, `weightCutMultiple (uint168)` | Weight caching for long-running rulesets in `JBRulesets` |
 | `JBApprovalStatus` (enum) | `Empty`, `Upcoming`, `Active`, `ApprovalExpected`, `Approved`, `Failed` | Approval hook status for queued rulesets |
 
-### Hook Structs
+### Hook structs
 
 | Struct | Key Fields | Used In |
 |--------|------------|---------|
@@ -53,13 +53,13 @@ Use this file when you need deeper protocol reference material after the repo-lo
 | `1` | ETH |
 | `2` | USD |
 
-### Split Group IDs (`JBSplitGroupIds`)
+### Split group IDs (`JBSplitGroupIds`)
 
 | ID | Group |
 |----|-------|
 | `1` | `RESERVED_TOKENS` -- reserved token distribution |
 
-### Special Values
+### Special values
 
 | Value | Context | Meaning |
 |-------|---------|---------|
@@ -143,7 +143,7 @@ Quick-reference for the most common `JBPermissionIds` values (from `@bananapus/p
 
 IDs 22-33 are used by extension contracts (721 hook, buyback hook, router terminal, suckers).
 
-## Common Errors
+## Common errors
 
 Errors an agent is most likely to encounter. All are custom errors (revert with selector).
 
@@ -187,7 +187,7 @@ Errors an agent is most likely to encounter. All are custom errors (revert with 
 | `JBRulesets_InvalidWeightCutPercent` | `JBRulesets` | `weightCutPercent` exceeds `MAX_WEIGHT_CUT_PERCENT`. |
 | `JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering` | `JBFundAccessLimits` | Payout limit currencies not in strictly increasing order. |
 
-## Key Events
+## Key events
 
 The most important events for indexing and off-chain monitoring. Indexed params marked with `*`.
 
@@ -220,7 +220,7 @@ The most important events for indexing and off-chain monitoring. Indexed params 
 | `SetSplit` | `IJBSplits` | (projectId, rulesetId, groupId, split, caller) |
 | `AddPriceFeed` | `IJBPrices` | (projectId, pricingCurrency, unitCurrency, feed, caller) |
 
-## Hook Interface Return Types
+## Hook interface return types
 
 ### `IJBRulesetDataHook.beforePayRecordedWith()`
 
@@ -260,7 +260,7 @@ function hasMintPermissionFor(uint256 projectId, JBRuleset memory ruleset, addre
 
 Returns whether `addr` is allowed to mint tokens for the project. Called by `JBController.mintTokensOf` when the caller is not the owner and `allowOwnerMinting` is false -- the data hook can grant mint permission to specific addresses (e.g. suckers for omnichain bridging).
 
-## Example Integration
+## Example integration
 
 ```solidity
 // SPDX-License-Identifier: MIT

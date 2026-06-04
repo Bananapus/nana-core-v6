@@ -1,11 +1,11 @@
 # Juicebox Core
 
-## Use This File For
+## Use this file for
 
 - Use this file when the task touches core protocol behavior: payments, cash outs, terminals, controller actions, rulesets, splits, tokens, permissions, or price feeds.
 - Start here when you know the issue is in core. Then narrow it to one state transition before reading more broadly.
 
-## Read This Next
+## Read this next
 
 | If you need... | Open this next |
 |---|---|
@@ -21,7 +21,7 @@
 | Permissions, rulesets, and invariants | [`test/TestPermissions.sol`](./test/TestPermissions.sol), [`test/PermissionEscalation.t.sol`](./test/PermissionEscalation.t.sol), [`test/TestRulesetQueueing.sol`](./test/TestRulesetQueueing.sol), [`test/ComprehensiveInvariant.t.sol`](./test/ComprehensiveInvariant.t.sol), [`test/PermissionsInvariant.t.sol`](./test/PermissionsInvariant.t.sol) |
 | Economic and exploit coverage | [`test/EconomicSimulation.t.sol`](./test/EconomicSimulation.t.sol), [`test/CoreExploitTests.t.sol`](./test/CoreExploitTests.t.sol), [`test/FlashLoanAttacks.t.sol`](./test/FlashLoanAttacks.t.sol), [`test/WeirdTokenTests.t.sol`](./test/WeirdTokenTests.t.sol), [`test/RegressionFixes.t.sol`](./test/RegressionFixes.t.sol) |
 
-## Repo Map
+## Repo map
 
 | Area | Where to look |
 |---|---|
@@ -36,7 +36,7 @@ This is the core Juicebox V6 protocol on EVM. It lets projects launch treasury-b
 
 For the canonical list of every doc in this repo (architecture, invariants, risks, admin, audit, changelog, style, references), see the README "Documentation" section.
 
-## Working Rules
+## Working rules
 
 - Open the source before relying on any summary here.
 - For runtime bugs, start from the terminal, controller, or store contract that owns the state transition.

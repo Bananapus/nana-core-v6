@@ -19,8 +19,13 @@ contract JBSplits is JBControlled, IJBSplits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when a new set of splits omits a still-locked split from the previous set.
     error JBSplits_PreviousLockedSplitsNotIncluded(uint256 projectId, uint256 rulesetId);
+
+    /// @notice Thrown when the splits in a group sum to more than 100%.
     error JBSplits_TotalPercentExceeds100(uint256 projectId, uint256 rulesetId, uint256 groupId, uint256 percentTotal);
+
+    /// @notice Thrown when a split is configured with a percent of zero.
     error JBSplits_ZeroSplitPercent(uint256 projectId, uint256 rulesetId, uint256 groupId, uint256 splitIndex);
 
     //*********************************************************************//

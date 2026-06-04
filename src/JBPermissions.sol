@@ -17,8 +17,13 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when attempting to set the reserved permission ID 0.
     error JBPermissions_NoZeroPermission(address account, address operator, uint256 projectId);
+
+    /// @notice Thrown when a permission ID is greater than the maximum of 255.
     error JBPermissions_PermissionIdOutOfBounds(uint256 permissionId);
+
+    /// @notice Thrown when the caller is not the account and lacks ROOT permission to set permissions on its behalf.
     error JBPermissions_Unauthorized(address account, address operator, uint256 projectId, uint256 permissionId);
 
     //*********************************************************************//

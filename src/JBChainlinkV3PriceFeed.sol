@@ -17,8 +17,13 @@ contract JBChainlinkV3PriceFeed is IJBPriceFeed {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the feed round is not finished or was not answered in the current round.
     error JBChainlinkV3PriceFeed_IncompleteRound(uint80 roundId, uint80 answeredInRound, uint256 updatedAt);
+
+    /// @notice Thrown when the feed reports a non-positive price.
     error JBChainlinkV3PriceFeed_NegativePrice(int256 price);
+
+    /// @notice Thrown when the feed's last update is older than the staleness threshold.
     error JBChainlinkV3PriceFeed_StalePrice(uint256 timestamp, uint256 threshold, uint256 updatedAt);
 
     //*********************************************************************//

@@ -44,8 +44,22 @@ interface IJBPayoutSplitGroupExecutor {
 /// @dev Extracted as an external library to reduce `JBMultiTerminal` bytecode size. Called via DELEGATECALL, so events
 /// are emitted from the terminal's address.
 library JBPayoutSplitGroupLib {
+    /// @notice A payout to a split reverted, so the amount was returned to the project's balance.
+    /// @param projectId The ID of the project whose payout reverted.
+    /// @param split The split that was being paid when the revert occurred.
+    /// @param amount The amount that was being sent to the split.
+    /// @param reason The reason the payout reverted.
+    /// @param caller The address that called the payout function.
     event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
 
+    /// @notice A payout was sent to a split.
+    /// @param projectId The ID of the project that the payout was made from.
+    /// @param rulesetId The ID of the ruleset the split belongs to.
+    /// @param group The group the split belongs to.
+    /// @param split The split that was paid.
+    /// @param amount The amount that was sent to the split.
+    /// @param netAmount The amount that the split recipient actually received, after fees.
+    /// @param caller The address that called the payout function.
     event SendPayoutToSplit(
         uint256 indexed projectId,
         uint256 indexed rulesetId,

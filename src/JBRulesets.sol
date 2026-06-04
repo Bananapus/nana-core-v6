@@ -25,11 +25,23 @@ contract JBRulesets is JBControlled, IJBRulesets {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the approval hook is not a contract or does not support the `IJBRulesetApprovalHook`
+    /// interface.
     error JBRulesets_InvalidRulesetApprovalHook(IJBRulesetApprovalHook hook);
+
+    /// @notice Thrown when the ruleset duration exceeds the uint32 maximum.
     error JBRulesets_InvalidRulesetDuration(uint256 duration, uint256 limit);
+
+    /// @notice Thrown when the ruleset's start plus duration exceeds the uint48 maximum.
     error JBRulesets_InvalidRulesetEndTime(uint256 timestamp, uint256 limit);
+
+    /// @notice Thrown when the ruleset weight exceeds the uint112 maximum.
     error JBRulesets_InvalidWeight(uint256 weight, uint256 limit);
+
+    /// @notice Thrown when the weight cut percent exceeds 100%.
     error JBRulesets_InvalidWeightCutPercent(uint256 percent);
+
+    /// @notice Thrown when too many weight-cut iterations remain and the weight cache must be populated first.
     error JBRulesets_WeightCacheRequired(uint256 projectId);
 
     //*********************************************************************//
@@ -396,8 +408,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // Get a reference to the approval status.
             JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
 
-            // While the ruleset has a approval hook that isn't approved or if it hasn't yet started, get a reference to
-            // the ruleset that the latest is based on, which has the latest approved configuration.
+            // While the ruleset has an approval hook that isn't approved or if it hasn't yet started, get a reference
+            // to the ruleset that the latest is based on, which has the latest approved configuration.
             while (
                 (approvalStatus != JBApprovalStatus.Approved && approvalStatus != JBApprovalStatus.Empty)
                     // forge-lint: disable-next-line(block-timestamp)
@@ -472,7 +484,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Keep a reference to its approval status.
         JBApprovalStatus approvalStatus;
 
-        // If an upcoming approvable ruleset has been queued, and it's approval status is Approved or ApprovalExpected,
+        // If an upcoming approvable ruleset has been queued, and its approval status is Approved or ApprovalExpected,
         // return its ruleset struct
         if (upcomingApprovableRulesetId != 0) {
             ruleset = _getStructFor({projectId: projectId, rulesetId: upcomingApprovableRulesetId, withMetadata: true});
@@ -495,7 +507,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             ruleset = _getStructFor({projectId: projectId, rulesetId: latestRulesetIdOf[projectId], withMetadata: true});
 
             // If the latest ruleset starts in the future, it must start in the distant future
-            // Since its not the upcoming approvable ruleset. In this case, base the upcoming ruleset on the base
+            // Since it's not the upcoming approvable ruleset. In this case, base the upcoming ruleset on the base
             // ruleset.
             // forge-lint: disable-next-line(block-timestamp)
             while (ruleset.start > block.timestamp) {
@@ -723,7 +735,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // Get a reference to the approval status.
         JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: baseRuleset});
 
-        // If the base ruleset has started but wasn't approved if a approval hook exists
+        // If the base ruleset has started but wasn't approved if an approval hook exists
         // OR it hasn't started but is currently approved
         // OR it hasn't started but it is likely to be approved and takes place before the proposed one,
         // set the struct to be the ruleset it's based on, which carries the latest approved ruleset.

@@ -16,6 +16,7 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when the provided feeless hook does not support the `IJBFeelessHook` interface.
     error JBFeelessAddresses_InvalidFeelessHook(IJBFeelessHook hook);
 
     //*********************************************************************//
@@ -33,6 +34,8 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
 
     /// @notice Raw feeless status per project per address.
     /// @dev `projectId = 0` stores the global (all-project) feeless status.
+    /// @custom:param projectId The ID of the project. A `projectId` of 0 is the global (all-project) key.
+    /// @custom:param addr The address whose feeless status is being stored.
     mapping(uint256 projectId => mapping(address addr => bool)) internal _isFeelessFor;
 
     //*********************************************************************//

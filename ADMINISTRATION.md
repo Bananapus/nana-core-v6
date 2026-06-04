@@ -1,6 +1,6 @@
 # Administration
 
-## At A Glance
+## At a glance
 
 | Item | Details |
 | --- | --- |
@@ -13,7 +13,7 @@
 
 `nana-core-v6` is the main control plane in the stack. It mixes protocol-owned contracts, project-local ownership, delegated operators through `JBPermissions`, and ruleset flags that allow or block changes. This file explains who can still change project behavior after core is live.
 
-## Control Model
+## Control model
 
 - Protocol-wide `Ownable` surfaces exist on `JBDirectory`, `JBProjects`, `JBPrices`, and `JBFeelessAddresses`.
 - Project-local control comes from the project NFT owner in `JBProjects`.
@@ -32,7 +32,7 @@
 | Protocol owner | `Ownable(owner)` on protocol-wide contracts | Global | Different contracts can have different owners |
 | Omnichain ruleset operator | `JBController` constructor immutable | Global or broad | Bypasses some owner checks for synchronized ruleset flows |
 
-## Privileged Surfaces
+## Privileged surfaces
 
 High-value admin functions include:
 
@@ -51,7 +51,7 @@ The practical split is simple:
 - project owners and operators change project configuration
 - controllers and terminals act with the authority core gives them
 
-## Immutable And One-Way Decisions
+## Immutable and one-way decisions
 
 - Price feeds are append-only. Existing feeds cannot be edited or removed; later feeds are backups after the current primary feed.
 - ERC-20 token binding for a project is effectively one-time.
@@ -59,7 +59,7 @@ The practical split is simple:
 - Constructor immutables on controller, directory, terminal, store, prices, and tokens cannot be patched.
 - The project creation fee owner can set in `JBProjects` is bounded by the hardcoded `MAX_CREATION_FEE` (`0.001 ether`). The owner cannot lift this ceiling.
 
-## Operational Notes
+## Operational notes
 
 - Use narrow project-scoped permissions instead of wildcard or ROOT permissions when possible.
 - Check whether the active ruleset allows the change before assuming the owner or operator can make it.
@@ -67,7 +67,7 @@ The practical split is simple:
 - Read both the permission check and the current ruleset flags before concluding an action is allowed.
 - Keep fee-route and payout-path failure semantics in mind. Some failures restore project balance instead of trapping funds.
 
-## Machine Notes
+## Machine notes
 
 - Do not infer authority from project ownership alone. Many paths also depend on the active ruleset and permission bitmap.
 - Treat `JBDirectory`, `JBController`, `JBMultiTerminal`, `JBPermissions`, `JBPrices`, `JBFeelessAddresses`, and `JBProjects` as the minimum control-plane source set.
@@ -82,14 +82,14 @@ The practical split is simple:
 - Wrong wildcard permissions are fixed by updating the permission bitmap, but they are dangerous because of what can happen before revocation.
 - Some fee-route and payout-route failures are recoverable in place because core prefers liveness over trapped funds.
 
-## Admin Boundaries
+## Admin boundaries
 
 - Protocol owners cannot directly rewrite project economics without going through the contracts and ruleset constraints that enforce those changes.
 - Project owners cannot bypass immutable constructor references or rewrite existing price-feed entries; if rulesets allow it, they can append fallback feeds.
 - Controllers and terminals only have the authority given by the directory and core contracts.
 - Nobody can change the hardcoded fee beneficiary or patch immutable deployment mistakes in place.
 
-## Source Map
+## Source map
 
 - `src/JBDirectory.sol`
 - `src/JBController.sol`

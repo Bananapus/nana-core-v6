@@ -23,10 +23,19 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when adding a price feed that is already registered for the same currency pair.
     error JBPrices_PriceFeedAlreadyAdded(IJBPriceFeed feed);
+
+    /// @notice Thrown when no configured price feed can be found for the requested currency pair.
     error JBPrices_PriceFeedNotFound(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency);
+
+    /// @notice Thrown when the provided price feed is the zero address.
     error JBPrices_ZeroPriceFeed();
+
+    /// @notice Thrown when the pricing currency provided is zero.
     error JBPrices_ZeroPricingCurrency(uint256 projectId, uint256 pricingCurrency);
+
+    /// @notice Thrown when the unit currency provided is zero.
     error JBPrices_ZeroUnitCurrency(uint256 projectId, uint256 unitCurrency);
 
     //*********************************************************************//

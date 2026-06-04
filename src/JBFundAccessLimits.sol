@@ -18,12 +18,17 @@ contract JBFundAccessLimits is JBControlled, IJBFundAccessLimits {
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    /// @notice Thrown when two fund access limit groups share the same terminal and token.
     error JBFundAccessLimits_DuplicateFundAccessLimitGroup(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, address terminal, address token
     );
+
+    /// @notice Thrown when payout limits within a group are not ordered by ascending currency.
     error JBFundAccessLimits_InvalidPayoutLimitCurrencyOrdering(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 limitIndex
     );
+
+    /// @notice Thrown when surplus allowances within a group are not ordered by ascending currency.
     error JBFundAccessLimits_InvalidSurplusAllowanceCurrencyOrdering(
         uint256 projectId, uint256 rulesetId, uint256 groupIndex, uint256 allowanceIndex
     );

@@ -36,7 +36,7 @@ Use this repo when you need the protocol's canonical accounting and execution lo
 
 If you only read one V6 repo before reading the rest, read this one.
 
-## Mental Model
+## Mental model
 
 It helps to think about core in four layers:
 
@@ -54,7 +54,7 @@ The shortest reading path is:
 3. `JBTerminalStore` for the accounting model
 4. `JBDirectory` and `JBPermissions` for routing and authority
 
-## Read These Files First
+## Read these files first
 
 1. `src/JBController.sol`
 2. `src/JBMultiTerminal.sol`
@@ -63,7 +63,7 @@ The shortest reading path is:
 5. `src/JBRulesets.sol`
 6. `src/JBPermissions.sol`
 
-## Key Contracts
+## Key contracts
 
 | Contract | Role |
 | --- | --- |
@@ -75,14 +75,14 @@ The shortest reading path is:
 | `JBPermissions` | Packed operator-permission registry. |
 | `JBPrices` | Price-feed routing used by terminals and integrations. |
 
-## Integration Traps
+## Integration traps
 
 - `JBMultiTerminal` is multi-token and multi-terminal. Do not assume one token or one balance.
 - Data hooks and cash-out hooks can change economics and side effects. They are part of the protocol surface.
 - Permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
 - Preview and execution are intentionally close, but callers should still treat them as separate surfaces when hooks or routing can change behavior.
 
-## Where State Lives
+## Where state lives
 
 - project identity and ownership: `JBProjects`
 - controller and terminal routing: `JBDirectory`
@@ -92,7 +92,7 @@ The shortest reading path is:
 
 When a flow is unclear, read the contract that owns the state before the contract that forwards into it.
 
-## High-Signal Tests
+## High-signal tests
 
 1. `test/TestPayBurnRedeemFlow.sol`
 2. `test/TestTerminalPreviewParity.sol`
@@ -122,11 +122,11 @@ Useful scripts:
 - `npm run deploy:mainnets:periphery`
 - `npm run deploy:testnets:periphery`
 
-## Deployment Notes
+## Deployment notes
 
 This repo contains the main core deployments and periphery deployment helpers. Most other V6 packages assume these contracts exist first and treat them as the stable base layer.
 
-## Repository Layout
+## Repository layout
 
 ```text
 src/
@@ -139,7 +139,7 @@ script/
   helpers/
 ```
 
-## Risks And Notes
+## Risks and notes
 
 See [RISKS.md](./RISKS.md) for the full risk register. In short:
 
@@ -150,7 +150,7 @@ See [RISKS.md](./RISKS.md) for the full risk register. In short:
 
 The easiest way to misread V6 is to treat core like a simple crowdfunding terminal. It is closer to a configurable accounting and settlement layer.
 
-## For AI Agents
+## For AI agents
 
 - Start with `JBController`, `JBMultiTerminal`, and `JBTerminalStore`.
 - Keep controller configuration, terminal execution, and store accounting separate in your mental model.

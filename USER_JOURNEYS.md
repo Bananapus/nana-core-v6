@@ -1,10 +1,10 @@
 # User Journeys
 
-## Repo Purpose
+## Repo purpose
 
 This repo is the main runtime surface for Juicebox V6. It owns project identity, rulesets, terminal execution, treasury accounting, permissions, price feeds, and migration paths. Most other V6 repos build on this behavior instead of replacing it.
 
-## Primary Actors
+## Primary actors
 
 - founders launching and updating Juicebox projects
 - supporters paying projects in assets that a terminal accepts
@@ -12,7 +12,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 - operators managing permissions, splits, fund access limits, and rulesets
 - integrators wiring hooks, terminals, price feeds, and migrations into core
 
-## Key Surfaces
+## Key surfaces
 
 - `JBController`: project launch, ruleset queueing, token setup, splits, and controller migration
 - `JBMultiTerminal`: pay, payout, allowance, preview, and cash-out entrypoints
@@ -21,7 +21,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 - `JBPermissions`: packed operator-permission registry
 - `JBProjects`, `JBRulesets`, `JBPrices`, `JBFundAccessLimits`, `JBSplits`, `JBTokens`: core state and helper surfaces
 
-## Journey 1: Launch A Project With The Right Initial Setup
+## Journey 1: Launch a project with the right initial setup
 
 **Actor:** founder, deployer, or protocol integrator.
 
@@ -44,7 +44,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - the project NFT exists, the first ruleset is active, accepted terminals are installed, and hooks or splits can start immediately
 
-## Journey 2: Accept A Payment And Issue The Right Token Exposure
+## Journey 2: Accept a payment and issue the right token exposure
 
 **Actor:** payer or integration paying for a user.
 
@@ -67,7 +67,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - treasury balances increase, hooks run in the right order, and the beneficiary receives credits or ERC-20 tokens that match the ruleset
 
-## Journey 3: Turn Credits Into ERC-20 Tokens
+## Journey 3: Turn credits into ERC-20 tokens
 
 **Actor:** holder or operator acting for a holder.
 
@@ -89,7 +89,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - the project has an ERC-20 token and holders can claim credits into transferable balances
 
-## Journey 4: Distribute Treasury Funds Through Governed Paths
+## Journey 4: Distribute treasury funds through governed paths
 
 **Actor:** owner or authorized operator.
 
@@ -113,7 +113,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - value leaves the treasury only through configured limits, recipients, and fee logic
 
-## Journey 5: Let Holders Cash Out Against Surplus
+## Journey 5: Let holders cash out against surplus
 
 **Actor:** holder or integrator acting for a holder.
 
@@ -137,7 +137,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - the holder burns the intended token exposure and receives the reclaim amount allowed by the current ruleset
 
-## Journey 6: Queue New Rulesets Without Migrating The Project
+## Journey 6: Queue new rulesets without migrating the project
 
 **Actor:** owner or authorized operator.
 
@@ -160,7 +160,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - the next ruleset activates on schedule while the project keeps the same identity, treasury, and integrations
 
-## Journey 7: Migrate To New Terminal Or Controller Surfaces
+## Journey 7: Migrate to new terminal or controller surfaces
 
 **Actor:** owner or migration operator.
 
@@ -182,7 +182,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - balances, permissions, and future routing stay coherent after migration
 
-## Journey 8: Hand Off Authority Without Handing Out Root Access
+## Journey 8: Hand off authority without handing out root access
 
 **Actor:** project owner.
 
@@ -203,13 +203,13 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - permissions are narrow, auditable, and scoped to the actions the operator actually needs
 
-## Trust Boundaries
+## Trust boundaries
 
 - `JBTerminalStore` is the accounting source of truth for balances, surplus, fees, and reclaim behavior
 - hooks, approval hooks, pay hooks, and cash-out hooks are trusted extension surfaces
 - price feeds and directory routing are critical shared-context surfaces
 
-## Hand-Offs
+## Hand-offs
 
 - Use [nana-permission-ids-v6](../nana-permission-ids-v6/USER_JOURNEYS.md) for the shared permission vocabulary used by downstream repos.
 - Use [nana-721-hook-v6](../nana-721-hook-v6/USER_JOURNEYS.md), [nana-router-terminal-v6](../nana-router-terminal-v6/USER_JOURNEYS.md), and [nana-buyback-hook-v6](../nana-buyback-hook-v6/USER_JOURNEYS.md) for opinionated layers built on the core terminal and ruleset surfaces.
