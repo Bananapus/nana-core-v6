@@ -135,8 +135,7 @@ inline because operators may toggle them.
 
 - `JBPermissions.setPermissionsFor(account, data)` is callable in only two cases
   (`JBPermissions.sol:66-101`):
-  1. `_msgSender() == account` — an account can set its own operator permissions without
-     restriction.
+  1. `_msgSender() == account` — an account can set its own operator permissions.
   2. `_msgSender()` holds the ROOT permission (ID 1) on `(account, projectId, includeRoot=true,
      includeWildcardProjectId=true)` AND the packed permissions being granted do not include ROOT
      AND `data.projectId != WILDCARD_PROJECT_ID (0)`. This anti-escalation clause prevents a ROOT
@@ -690,9 +689,9 @@ The deadline contracts hold no state and grant no privileges.
     that mutates project ownership.
 11. **Ruleset gating cannot be circumvented for second-and-later controller changes.**
     `JBDirectory.setControllerOf` consults `controller.setControllerAllowed(projectId)` when a
-    controller is already set. First-controller assignment requires either the project owner /
-    `SET_CONTROLLER` operator or an address on `isAllowedToSetFirstController` (a directory-owner
-    allowlist).
+    controller is already set. First-controller assignment requires the project owner, a
+    `SET_CONTROLLER` operator, or an address on the directory-owner `isAllowedToSetFirstController`
+    allowlist.
 12. **Self-payout reverts.** A `sendPayoutsOf` split whose `split.projectId == projectId` (the
     source) reverts unconditionally — both the `pay`-shape and the `addToBalanceOf`-shape are
     disguised owner-mint paths that would bypass `allowOwnerMinting=false`

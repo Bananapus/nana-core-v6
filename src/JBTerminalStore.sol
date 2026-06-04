@@ -121,8 +121,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice The currency-denominated amount of funds that a project has already paid out from its payout limit
     /// during the current ruleset for each terminal, in terms of the payout limit's currency.
     /// @dev Increases as projects pay out funds.
-    /// @dev The used payout limit is represented as a fixed point number with the same amount of decimals as the
-    /// terminal it applies to.
+    /// @dev The used payout limit is a fixed point number with the same decimals as the terminal it applies to.
     /// @custom:param terminal The terminal the payout limit applies to.
     /// @custom:param projectId The ID of the project to get the used payout limit of.
     /// @custom:param token The token the payout limit applies to in the terminal.
@@ -141,8 +140,7 @@ contract JBTerminalStore is IJBTerminalStore {
     /// @notice The currency-denominated amounts of funds that a project has used from its surplus allowance during the
     /// current ruleset for each terminal, in terms of the surplus allowance's currency.
     /// @dev Increases as projects use their allowance.
-    /// @dev The used surplus allowance is represented as a fixed point number with the same amount of decimals as the
-    /// terminal it applies to.
+    /// @dev The used surplus allowance is a fixed point number with the same decimals as the terminal it applies to.
     /// @dev Surplus allowance usage is keyed by `ruleset.id`, not cycle number. Implicit cycle progression
     /// (duration-based auto-cycling) does not reset allowance — this is by design. Projects must queue a new ruleset
     /// to get a fresh allowance.
@@ -414,8 +412,7 @@ contract JBTerminalStore is IJBTerminalStore {
         }
     }
 
-    /// @notice Records a payout — decrements the project's balance and enforces the payout limit. Called by the
-    /// terminal during `sendPayoutsOf`.
+    /// @notice Records a payout during `sendPayoutsOf`, decrementing balance and enforcing the payout limit.
     /// @dev Reverts if the total payouts for this cycle would exceed the ruleset's payout limit. The balance is
     /// decremented before validation (safe because the entire tx reverts atomically on failure).
     /// @param projectId The ID of the project that is paying out funds.
@@ -812,8 +809,7 @@ contract JBTerminalStore is IJBTerminalStore {
     }
 
     /// @notice Simulates a payment without modifying state.
-    /// @dev Invokes data hooks if configured. Returns the same token count and hook specifications that
-    /// `recordPaymentFrom` would produce.
+    /// @dev Invokes data hooks if configured. Returns what `recordPaymentFrom` would produce.
     /// @param terminal The terminal to simulate the payment from.
     /// @param payer The address of the payer.
     /// @param amount The amount to pay.
@@ -1208,8 +1204,7 @@ contract JBTerminalStore is IJBTerminalStore {
         });
     }
 
-    /// @notice Gets the current surplus amount for a project across specified terminals and tokens, using a
-    /// pre-fetched ruleset.
+    /// @notice Gets a project's current surplus across specified terminals and tokens using a pre-fetched ruleset.
     /// @dev Use this overload when the caller already has the current ruleset to avoid a redundant
     /// `RULESETS.currentOf()` call.
     /// @param projectId The ID of the project to get surplus for.

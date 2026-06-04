@@ -3,8 +3,7 @@ pragma solidity ^0.8.0;
 
 import {IJBCashOutHook} from "../interfaces/IJBCashOutHook.sol";
 
-/// @notice A cash out hook specification sent from the ruleset's data hook back to the terminal. This specification is
-/// fulfilled by the terminal.
+/// @notice A cash out hook specification sent from the ruleset's data hook back to the terminal for fulfillment.
 /// @custom:member hook The cash out hook to use when fulfilling this specification.
 /// @custom:member noop A flag indicating if the hook callback should be skipped.
 /// @custom:member amount The amount to send to the hook.

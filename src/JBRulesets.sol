@@ -58,8 +58,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
     /// @notice The ID of the ruleset with the latest start time for a specific project, whether the ruleset has been
     /// approved or not.
-    /// @dev If a project has multiple rulesets queued, the `latestRulesetIdOf` will be the last one. This is the
-    /// "changeable" cycle.
+    /// @dev If a project has multiple rulesets queued, `latestRulesetIdOf` is the last "changeable" cycle.
     /// @custom:param projectId The ID of the project to get the latest ruleset ID of.
     /// @return latestRulesetIdOf The `rulesetId` of the project's latest ruleset.
     mapping(uint256 projectId => uint256) public override latestRulesetIdOf;
@@ -218,9 +217,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
 
     /// @notice Cache the value of the ruleset weight for a specific ruleset.
     /// @dev The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected
-    /// by an approval hook, `currentOf()` falls back to the base ruleset — callers should pass that base ruleset's
-    /// ID,
-    /// not the rejected latest.
+    /// by an approval hook, `currentOf()` falls back to the base ruleset, not the rejected latest.
     /// @param projectId The ID of the project having its ruleset weight cached.
     /// @param rulesetId The ID of the ruleset to update the cache for.
     function updateRulesetWeightCache(uint256 projectId, uint256 rulesetId) external override {
@@ -574,8 +571,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @notice The date that is the nearest multiple of the base ruleset's duration from the start of the next cycle.
     /// @param baseRulesetStart The start time of the base ruleset.
     /// @param baseRulesetDuration The duration of the base ruleset.
-    /// @param mustStartAtOrAfter The earliest time the next ruleset can start. The ruleset cannot start before this
-    /// timestamp.
+    /// @param mustStartAtOrAfter The earliest timestamp the next ruleset can start at.
     /// @return start The next start time.
     function deriveStartFrom(
         uint256 baseRulesetStart,
@@ -703,8 +699,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @param projectId The ID of the project to update the latest ruleset for.
     /// @param rulesetId The timestamp of when the ruleset was queued.
     /// @param weight The weight to store in the queued ruleset.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
+    /// @param mustStartAtOrAfter The earliest timestamp the ruleset can start at.
     function _configureIntrinsicPropertiesFor(
         uint256 projectId,
         uint256 rulesetId,
@@ -791,8 +786,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @param projectId The ID of the project to initialize the ruleset for.
     /// @param baseRuleset The ruleset struct to base the newly initialized one on.
     /// @param rulesetId The `rulesetId` for the ruleset to initialize.
-    /// @param mustStartAtOrAfter The earliest time the ruleset can start. The ruleset cannot start before this
-    /// timestamp.
+    /// @param mustStartAtOrAfter The earliest timestamp the ruleset can start at.
     /// @param weight The weight to give the newly initialized ruleset.
     function _initializeRulesetFor(
         uint256 projectId,

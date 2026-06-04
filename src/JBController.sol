@@ -312,8 +312,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Converts a holder's internal project token credits into the project's ERC-20 representation,
-    /// transferring them to the beneficiary's wallet. Credits and the ERC-20 are equivalent project tokens — this
-    /// just
+    /// transferring them to the beneficiary's wallet. Credits and the ERC-20 are equivalent project tokens; this just
     /// makes them transferable/tradeable.
     /// @dev Can only be called by the credit holder or an operator with `CLAIM_TOKENS` permission.
     /// @param holder The address whose project token credits are being redeemed.
@@ -373,8 +372,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         return TOKENS.deployERC20For({projectId: projectId, name: name, symbol: symbol, salt: saltHash});
     }
 
-    /// @notice When a project receives reserved tokens, if it has a terminal for the token, this is used to pay the
-    /// terminal.
+    /// @notice Pays a project's terminal with reserved tokens when the project has a terminal for that token.
     /// @dev Can only be called by this controller.
     /// @param terminal The terminal to pay.
     /// @param projectId The ID of the project to pay.
@@ -417,9 +415,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         }
     }
 
-    /// @notice Creates a new Juicebox project in one transaction — mints the project NFT, queues initial rulesets,
-    /// and
-    /// configures terminals. This is the primary entry point for launching a project.
+    /// @notice Creates a Juicebox project in one transaction: mints the NFT, queues rulesets, and configures terminals.
     /// @dev Anyone can call this on behalf of any owner. This is a launch convenience, not owner authorization proof:
     /// frontends and operators must use the transaction sender, an explicit owner signature, or their own deployment
     /// flow to decide whether the owner intentionally launched a configuration. Each sub-operation (mint, queue,
@@ -745,8 +741,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Sets the name and symbol of a project's token.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to
-    /// `SET_TOKEN_METADATA`.
+    /// @dev Can only be called by the project's owner or an address with the owner's `SET_TOKEN_METADATA` permission.
     /// @param projectId The ID of the project to update the token for.
     /// @param name The new name.
     /// @param symbol The new symbol.
@@ -761,8 +756,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
     /// @notice Set a project's metadata URI.
     /// @dev This is typically an IPFS hash, optionally with an `ipfs://` prefix.
-    /// @dev Can only be called by the project's owner or an address with the owner's permission to
-    /// `SET_PROJECT_URI`.
+    /// @dev Can only be called by the project's owner or an address with the owner's `SET_PROJECT_URI` permission.
     /// @param projectId The ID of the project to set the metadata URI of.
     /// @param uri The metadata URI to set.
     function setUriOf(uint256 projectId, string calldata uri) external override {
@@ -1246,8 +1240,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Sends pending reserved tokens to the project's reserved token splits.
-    /// @dev If the project has no reserved token splits, or if they don't add up to 100%, leftover tokens are sent to
-    /// the project's owner.
+    /// @dev If the project has no reserved token splits, or if they don't add up to 100%, leftovers go to the owner.
     /// @param projectId The ID of the project to send reserved tokens for.
     /// @return tokenCount The amount of reserved tokens minted and sent.
     function _sendReservedTokensToSplitsOf(uint256 projectId) internal returns (uint256 tokenCount) {

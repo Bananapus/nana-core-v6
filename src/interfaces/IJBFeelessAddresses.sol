@@ -13,8 +13,7 @@ interface IJBFeelessAddresses {
     /// @param caller The address that set the feeless status.
     event SetFeelessAddress(uint256 indexed projectId, address indexed addr, bool indexed isFeeless, address caller);
 
-    /// @notice The optional hook (set by the owner) that can grant feeless status with arbitrary logic. Set to the
-    /// zero address to disable.
+    /// @notice The optional owner-set hook that can grant feeless status. Set to the zero address to disable.
     /// @param hook The new feeless hook. The zero address disables hook consultation.
     /// @param caller The address that set the hook.
     event SetFeelessHook(IJBFeelessHook indexed hook, address caller);

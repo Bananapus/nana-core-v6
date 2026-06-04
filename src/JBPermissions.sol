@@ -30,9 +30,8 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     // ------------------------- public constants ------------------------ //
     //*********************************************************************//
 
-    /// @notice The project ID that acts as a wildcard — granting the operator permissions across all projects owned
-    /// by
-    /// the account. Setting permissions for project ID 0 is powerful and should be done carefully.
+    /// @notice Project ID 0 acts as a wildcard for permissions across all projects owned by the account.
+    /// @dev Setting permissions for project ID 0 is powerful and should be done carefully.
     uint256 public constant override WILDCARD_PROJECT_ID = 0;
 
     //*********************************************************************//
@@ -40,8 +39,7 @@ contract JBPermissions is ERC2771Context, IJBPermissions {
     //*********************************************************************//
 
     /// @notice The packed permission bitmap that an account has granted to an operator for a specific project.
-    /// @dev Each bit in the returned `uint256` corresponds to a permission ID (0–255). A `1` bit means that
-    /// permission
+    /// @dev Each bit in the returned `uint256` corresponds to a permission ID (0–255). A `1` bit means the permission
     /// is granted. See `JBPermissionIds` for the meaning of each ID.
     /// @custom:param operator The address of the operator.
     /// @custom:param account The address of the account operated on behalf of.

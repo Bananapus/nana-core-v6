@@ -75,8 +75,7 @@ interface IJBCashOutTerminal is IJBTerminal {
             JBCashOutHookSpecification[] memory hookSpecifications
         );
 
-    /// @notice Burn a holder's project tokens to reclaim a proportional share of the project's surplus (paid out as a
-    /// terminal token).
+    /// @notice Burn a holder's project tokens to reclaim a proportional share of surplus in a terminal token.
     /// @param holder The address whose project tokens are being burned.
     /// @param projectId The ID of the project whose project tokens are being burned.
     /// @param cashOutCount The number of project tokens to burn.

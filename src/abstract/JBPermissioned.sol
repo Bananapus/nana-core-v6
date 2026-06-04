@@ -85,9 +85,7 @@ abstract contract JBPermissioned is Context, IJBPermissioned {
         ) revert JBPermissioned_Unauthorized(account, sender, projectId, permissionId);
     }
 
-    /// @notice If the 'alsoGrantAccessIf' condition is truthy, proceed. Otherwise, require the message sender to be the
-    /// account or
-    /// have the relevant permission.
+    /// @notice If `alsoGrantAccessIf` is false, require the message sender to be the account or have permission.
     /// @param account The account to allow.
     /// @param projectId The project ID to check the permission under.
     /// @param permissionId The required permission ID. The operator must have this permission within the specified
