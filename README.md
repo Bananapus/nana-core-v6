@@ -72,6 +72,7 @@ The shortest reading path is:
 | `JBTerminalStore` | Shared accounting for balances, surplus, fees, and reclaim math. |
 | `JBDirectory` | Registry for controller and terminal routing. |
 | `JBProjects` | ERC-721 project registry and ownership surface. |
+| `JBERC20` | Cloneable project-token ERC-20 with Votes, Permit, ERC-1271, and active-vote total checkpoints. |
 | `JBPermissions` | Packed operator-permission registry. |
 | `JBPrices` | Price-feed routing used by terminals and integrations. |
 
@@ -81,6 +82,8 @@ The shortest reading path is:
 - Data hooks and cash-out hooks can change economics and side effects. They are part of the protocol surface.
 - Permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
 - Preview and execution are intentionally close, but callers should still treat them as separate surfaces when hooks or routing can change behavior.
+- `JBERC20.getPastTotalSupply(...)` includes undelegated balances. Use `getPastTotalActiveVotes(...)` when an
+  integration must split value only among addresses with checkpointed voting power.
 
 ## Where state lives
 

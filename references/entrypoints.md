@@ -21,7 +21,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBSplits` | Split configurations per project/ruleset/group. Packed storage for gas efficiency. |
 | `JBFundAccessLimits` | Payout limits and surplus allowances per project/ruleset/terminal/token. |
 | `JBPrices` | Append-only price feed registry with project-specific feeds, protocol defaults, inverse lookup, and backup feeds. |
-| `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271. Controlled by `JBTokens` via `onlyTokens`. Deployed via `Clones.clone()`. |
+| `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271 and active-vote total checkpoints. Controlled by `JBTokens` via `onlyTokens`. Deployed via `Clones.clone()`. |
 | `JBFeelessAddresses` | Static and hook-driven fee-exemption registry. |
 | `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
 | `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
@@ -147,6 +147,13 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `projectIdOf(IJBToken token)` | Returns the project ID associated with an ERC-20 token. |
 | `totalCreditSupplyOf(uint256 projectId)` | Returns the internal credit supply for a project. |
 | `setTokenMetadataFor(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's token. Controller-only. |
+
+### JBERC20
+
+| Function | What it does |
+|----------|--------------|
+| `getPastTotalActiveVotes(uint256 timepoint)` | Returns the total voting units delegated to nonzero delegates at a past block. Unlike `getPastTotalSupply`, this excludes undelegated balances such as AMM-held tokens with no delegate. |
+| `getTotalActiveVotes()` | Returns the current total voting units delegated to nonzero delegates. |
 
 ### JBSplits
 
