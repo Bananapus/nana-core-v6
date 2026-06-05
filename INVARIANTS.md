@@ -613,7 +613,7 @@ Cloneable governance/permit ERC-20. One per project. Owned exclusively by `JBTok
 - **`setMetadata(name, symbol)`** — `onlyTokens`.
 - **`isValidSignature(hash, signature)`** — EIP-1271 view delegating to ERC20Permit.
 - **`canBeAddedTo(projectId)`** — returns `false`; project-owned clones are deployed through `JBTokens`.
-- **`getPastTotalActiveVotes(timepoint)`** — total voting units delegated to nonzero delegates at a past block.
+- **`getPastTotalActiveVotes(blockNumber)`** — total voting units delegated to nonzero delegates at a past block.
 - **`getTotalActiveVotes()`** — current total voting units delegated to nonzero delegates.
 - Standard ERC-20 / ERC20Votes / ERC20Permit surface (`transfer`, `approve`, `permit`, `delegate`,
   `nonces`, etc.).

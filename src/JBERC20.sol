@@ -179,10 +179,10 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBActive
     }
 
     /// @notice The total delegated voting units at a past block.
-    /// @param timepoint The past block number to look up.
-    /// @return activeVotes The total voting units delegated to nonzero delegates at `timepoint`.
-    function getPastTotalActiveVotes(uint256 timepoint) public view override returns (uint256 activeVotes) {
-        activeVotes = _activeSupplyCheckpoints.upperLookupRecent(_validateTimepoint(timepoint));
+    /// @param blockNumber The past block number to look up.
+    /// @return activeVotes The total voting units delegated to nonzero delegates at `blockNumber`.
+    function getPastTotalActiveVotes(uint256 blockNumber) public view override returns (uint256 activeVotes) {
+        activeVotes = _activeSupplyCheckpoints.upperLookupRecent(_validateTimepoint(blockNumber));
     }
 
     /// @notice The current total delegated voting units.
