@@ -607,19 +607,26 @@ ERC-721 of project ownership. Project owner = `ownerOf(projectId)`.
 Cloneable governance/permit ERC-20. One per project. Owned exclusively by `JBTokens`.
 
 - **`initialize(name_, symbol_, tokensAddress)`** — clone-factory init, once. Sets
-  `_tokens = tokensAddress`.
+  `tokens = tokensAddress`.
 - **`mint(account, amount)`** — `onlyTokens`. Only `JBTokens` can mint.
 - **`burn(account, amount)`** — `onlyTokens`. Only `JBTokens` can burn.
 - **`setMetadata(name, symbol)`** — `onlyTokens`.
 - **`isValidSignature(hash, signature)`** — EIP-1271 view delegating to ERC20Permit.
-- **`canBeAddedTo(projectId)`** — returns `true` (always allowed when attached via `setTokenFor`).
+- **`canBeAddedTo(projectId)`** — returns `false`; project-owned clones are deployed through `JBTokens`.
+- **`getPastTotalActiveVotes(timepoint)`** — total voting units delegated to nonzero delegates at a past block.
+- **`getTotalActiveVotes()`** — current total voting units delegated to nonzero delegates.
 - Standard ERC-20 / ERC20Votes / ERC20Permit surface (`transfer`, `approve`, `permit`, `delegate`,
   `nonces`, etc.).
 
-**Invariant:** `mint`/`burn` are restricted to `_tokens`, so project-token supply is fully
+**Invariant:** `mint`/`burn` are restricted to `tokens`, so project-token supply is fully
 mediated by `JBTokens` (which is in turn mediated by the project's controller). Projects that
 use `setTokenFor` with an *external* ERC-20 do not have this guarantee — external supply changes
 dilute cashouts (`JBTokens.totalSupplyOf` warning at L412-417).
+
+**Active-vote invariant:** `getPastTotalSupply(...)` remains the ERC20Votes total-supply trace and includes
+undelegated balances. `getPastTotalActiveVotes(...)` is the sum of voting units whose owner had a nonzero delegate at
+the snapshot block. Moving tokens into an undelegated AMM removes those units from the active total; moving them back
+to a holder whose delegate is still set adds them again for later snapshots without another delegation call.
 
 ### C.14 Chainlink price-feed adapters — `src/JBChainlinkV3PriceFeed.sol`, `src/JBChainlinkV3SequencerPriceFeed.sol`
 

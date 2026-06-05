@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit, Nonces} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20Votes} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Votes.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Nonces} from "@openzeppelin/contracts/utils/Nonces.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/structs/Checkpoints.sol";
 
 import {JBPermissionIds} from "@bananapus/permission-ids-v6/src/JBPermissionIds.sol";
 import {JBPermissioned} from "./abstract/JBPermissioned.sol";
+import {IJBActiveVotes} from "./interfaces/IJBActiveVotes.sol";
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
@@ -20,7 +23,9 @@ import {IJBTokens} from "./interfaces/IJBTokens.sol";
 /// holders can claim their internal credits into this transferable token.
 /// @dev Only `JBTokens` can mint and burn. The project owner (via `SET_TOKEN_METADATA` permission) can rename the
 /// token. Supports ERC-1271 signature validation for smart-contract wallets.
-contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken {
+contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBActiveVotes, IJBToken {
+    using Checkpoints for Checkpoints.Trace208;
+
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -49,6 +54,9 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     //*********************************************************************//
     // -------------------- private stored properties -------------------- //
     //*********************************************************************//
+
+    /// @notice The total voting units currently delegated to nonzero delegates.
+    Checkpoints.Trace208 private _activeSupplyCheckpoints;
 
     /// @notice The token's name.
     string private _name;
@@ -170,6 +178,19 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
         return super.decimals();
     }
 
+    /// @notice The total delegated voting units at a past block.
+    /// @param timepoint The past block number to look up.
+    /// @return activeVotes The total voting units delegated to nonzero delegates at `timepoint`.
+    function getPastTotalActiveVotes(uint256 timepoint) public view override returns (uint256 activeVotes) {
+        activeVotes = _activeSupplyCheckpoints.upperLookupRecent(_validateTimepoint(timepoint));
+    }
+
+    /// @notice The current total delegated voting units.
+    /// @return activeVotes The current total voting units delegated to nonzero delegates.
+    function getTotalActiveVotes() public view override returns (uint256 activeVotes) {
+        activeVotes = _activeSupplyCheckpoints.latest();
+    }
+
     /// @notice The token's name, set during initialization.
     function name() public view virtual override returns (string memory) {
         return _name;
@@ -216,8 +237,45 @@ contract JBERC20 is ERC20Votes, ERC20Permit, JBPermissioned, IERC1271, IJBToken 
     // ---------------------- internal transactions ---------------------- //
     //*********************************************************************//
 
+    /// @notice Track active-supply changes when an account moves between undelegated and delegated states.
+    function _delegate(address account, address delegatee) internal virtual override {
+        address oldDelegate = delegates(account);
+        uint256 votingUnits = _getVotingUnits(account);
+
+        super._delegate({account: account, delegatee: delegatee});
+
+        if (oldDelegate == address(0) && delegatee != address(0)) {
+            _updateActiveVotes({amount: votingUnits, increase: true});
+        } else if (oldDelegate != address(0) && delegatee == address(0)) {
+            _updateActiveVotes({amount: votingUnits, increase: false});
+        }
+    }
+
+    /// @notice Track active-supply changes when voting units move between delegated and undelegated accounts.
+    function _transferVotingUnits(address from, address to, uint256 amount) internal virtual override {
+        bool decreaseActiveVotes = from != address(0) && delegates(from) != address(0);
+        bool increaseActiveVotes = to != address(0) && delegates(to) != address(0);
+
+        super._transferVotingUnits({from: from, to: to, amount: amount});
+
+        if (decreaseActiveVotes == increaseActiveVotes) return;
+        _updateActiveVotes({amount: amount, increase: increaseActiveVotes});
+    }
+
     /// @notice Required override.
     function _update(address from, address to, uint256 value) internal virtual override(ERC20, ERC20Votes) {
         super._update({from: from, to: to, value: value});
+    }
+
+    /// @notice Update the checkpointed total of delegated voting units.
+    /// @param amount The amount of voting units to add or remove.
+    /// @param increase Whether to add `amount`; if false, `amount` is removed.
+    function _updateActiveVotes(uint256 amount, bool increase) internal {
+        if (amount == 0) return;
+
+        uint256 updated =
+            increase ? _activeSupplyCheckpoints.latest() + amount : _activeSupplyCheckpoints.latest() - amount;
+
+        _activeSupplyCheckpoints.push({key: clock(), value: SafeCast.toUint208(updated)});
     }
 }

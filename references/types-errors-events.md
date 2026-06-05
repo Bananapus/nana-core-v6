@@ -87,6 +87,8 @@ Use this file when you need deeper protocol reference material after the repo-lo
 - Credits are burned before ERC-20 tokens in `JBTokens.burnFrom()`
 - `JBRuleset.weight` is `uint112` with 18 decimals; `JBRuleset.metadata` is packed -- use `JBRulesetMetadataResolver` to unpack
 - `JBERC20` is cloned via `Clones.clone()` -- its constructor sets invalid name/symbol; real values set in `initialize()`
+- `JBERC20.getPastTotalSupply()` includes undelegated balances; `getPastTotalActiveVotes()` only counts balances whose
+  owner had a nonzero delegate at the queried block.
 - Fee is 2.5% (`FEE = 25` out of `MAX_FEE = 1000`)
 - Project #1 is the fee beneficiary project (receives all protocol fees)
 - **Fee-free cashout exemption is scoped to fee-free intra-terminal payout amounts.** `feeFreeSurplusOf[projectId][token]` accumulates the value of fee-free payouts. After any outflow (payouts, `useAllowanceOf`, non-zero-tax or feeless cashouts), the counter is capped at the remaining balance — non-fee-free funds leave first, preserving the fee-free counter. During cashout with `cashOutTaxRate=0`, the 2.5% fee applies only up to this surplus, then depletes. Once consumed, subsequent cashouts are fee-free again. Cleared on terminal migration. This prevents a round-trip fee bypass (intra-terminal payout → zero-tax cashout) while scoping fees precisely to the fee-free inflow.

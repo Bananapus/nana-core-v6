@@ -81,13 +81,20 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 1. Deploy or set the project's ERC-20 token through `JBController`.
 2. Holders or operators call `claimTokensFor(...)` to convert credits into ERC-20 balances for a beneficiary.
 3. Future issuance can continue under the same project identity while users now interact with a standard token surface.
+4. Holders who want voting or active-voter reward eligibility delegate the ERC-20 votes, usually to themselves.
+   `JBERC20` tracks both total supply and total active votes, where active votes are balances owned by accounts with a
+   nonzero delegate at the snapshot block.
 
 **Failure Modes**
 - the wrong token is installed for the project
 - integrations assume credits automatically become ERC-20 balances after token installation
+- integrations use total supply when they intended to count only delegated voting power
+- holders move tokens into an undelegated AMM before a snapshot, making those tokens inactive until they return to a
+  delegated holder
 
 **Postconditions**
-- the project has an ERC-20 token and holders can claim credits into transferable balances
+- the project has an ERC-20 token, holders can claim credits into transferable balances, and voting integrations can
+  distinguish total supply from active delegated votes
 
 ## Journey 4: Distribute treasury funds through governed paths
 
