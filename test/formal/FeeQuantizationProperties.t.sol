@@ -8,7 +8,7 @@ import {JBFees} from "../../src/libraries/JBFees.sol";
 /// @notice Formalizes WHY the payout path's per-component fee-basis quantization
 ///         (`JBPayoutSplitGroupLib.sol:227` — `amountEligibleForFees += feeEligible - (feeEligible % 40)`)
 ///         is the correct defense against fee-aggregation rounding drift, and bounds the gap that an
-///         un-quantized aggregation (the cash-out path) incurs — the FINAL_AUDIT N-3 finding.
+///         un-quantized aggregation (the cash-out path) incurs — the cash-out fee-aggregation quantization gap.
 /// @dev The standard fee is `STANDARD_FEE/MAX_FEE = 25/1000 = 1/40`, i.e. `standardFeeAmountFrom(x) == x/40`.
 ///      Dual-implemented: `check_` for Halmos (÷40 is a small constant — more tractable than ÷1e12),
 ///      `testFuzz_` for forge.
@@ -39,7 +39,7 @@ contract FeeQuantizationProperties is Test {
     }
 
     // =========================================================================
-    // Property 2 (CORE of N-3): quantized aggregation is EXACTLY additive — the aggregate fee on the
+    // Property 2 (core of the quantization gap): quantized aggregation is EXACTLY additive — the aggregate fee on the
     // sum of quantized bases equals the sum of per-component floored fees (zero drift). This is what the
     // payout path achieves and the cash-out path does NOT.
     // =========================================================================
@@ -65,9 +65,9 @@ contract FeeQuantizationProperties is Test {
     }
 
     // =========================================================================
-    // Property 3 (the N-3 gap, bounded): WITHOUT quantization, the aggregate fee on the raw sum can EXCEED
+    // Property 3 (the gap, bounded): WITHOUT quantization, the aggregate fee on the raw sum can EXCEED
     // the sum of per-component floored fees, but only by at most (N-1) wei (here N=3 ⇒ ≤2). Never undercharges.
-    // This is the exact phenomenon FINAL_AUDIT N-3 describes for the cash-out path.
+    // This is the exact quantization phenomenon the cash-out path exhibits.
     // =========================================================================
     // forge-lint: disable-next-line(mixed-case-function)
     function check_unquantizedAggregation_gapBoundedByNMinus1(uint16 a, uint16 b, uint16 c) public pure {
