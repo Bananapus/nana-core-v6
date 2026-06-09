@@ -61,10 +61,11 @@ inline because operators may toggle them.
 ### A.3 Bonding-curve floor formula
 
 - `JBCashOuts.cashOutFrom` returns `0` when `cashOutCount == 0`.
-- When `tax == MAX_CASH_OUT_TAX_RATE` (10_000), every holder reclaims their full pro-rata share
-  regardless of cashout count.
-- When `tax == 0`, the formula degenerates to `base = surplus × cashOutCount / totalSupply` (no
-  curve premium for early/late cashouts).
+- When `tax == MAX_CASH_OUT_TAX_RATE` (10_000), `cashOutFrom` returns `0` — no surplus is
+  reclaimable and all surplus stays with the project (`JBCashOuts.cashOutFrom` early-returns at
+  `cashOutTaxRate == MAX_CASH_OUT_TAX_RATE`).
+- When `tax == 0`, the formula degenerates to `base = surplus × cashOutCount / totalSupply` — the
+  full pro-rata share, with no curve premium for early/late cashouts.
 - Pending reserved tokens are included in the denominator
   (`totalTokenSupplyWithReservedTokensOf`) — a holder cashing out before reserve distribution
   receives a smaller pro-rata share. Calling the permissionless
