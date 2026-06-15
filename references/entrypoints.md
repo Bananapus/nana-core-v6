@@ -174,5 +174,6 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `creationFee()` / `creationFeeReceiver()` | Return the current project creation fee and receiver. (`JBProjects`) |
 | `MAX_CREATION_FEE()` | Hardcoded ceiling (`0.001 ether`) on the native-token project creation fee the owner can set. (`JBProjects`) |
 | `setCreationFee(uint256 fee, address payable receiver)` | Sets the native-token project creation fee. Reverts if `fee > MAX_CREATION_FEE`. Owner-only. (`JBProjects`) |
+| `originalPayer()` | During a project-creation fee forward, returns the resolved fee payer (the caller, or its upstream payer when the caller is itself an `IJBPayerTracker`) so a `pay`-routing fee receiver credits the payer; `address(0)` otherwise. (`JBProjects`, `JBController`) |
 | `setControllerAllowed(uint256 projectId)` | Returns whether a project's controller can currently be set. (`IJBDirectoryAccessControl`) |
 | `setTerminalsAllowed(uint256 projectId)` | Returns whether a project's terminals can currently be set. (`IJBDirectoryAccessControl`) |
