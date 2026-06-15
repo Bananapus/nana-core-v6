@@ -7,13 +7,14 @@ import {ERC721, Context} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
+import {IJBPayerTracker} from "./interfaces/IJBPayerTracker.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBTokenUriResolver} from "./interfaces/IJBTokenUriResolver.sol";
 
 /// @notice Each Juicebox project is an ERC-721 NFT. Whoever holds the NFT owns the project and can configure its
 /// rulesets, terminals, and permissions. Projects are created with `createFor` and the resulting token ID is used as
 /// the project's ID across the entire protocol.
-contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
+contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects, IJBPayerTracker {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
@@ -53,6 +54,16 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
 
     /// @notice The contract resolving each project ID to its ERC721 URI.
     IJBTokenUriResolver public override tokenUriResolver;
+
+    //*********************************************************************//
+    // ------------------- public transient properties ------------------- //
+    //*********************************************************************//
+
+    /// @notice The owner of the project currently being created, exposed only during the creation-fee forward.
+    /// @dev Set to the new project's `owner` for the duration of the `createFor` fee transfer so a `pay`-routing fee
+    /// receiver (e.g. `JBProjectPayer`) credits the project's owner instead of this contract. Cleared back to
+    /// `address(0)` the moment the fee transfer returns, so it reads `address(0)` outside a fee forward.
+    address public transient override originalPayer;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -136,7 +147,13 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
         if (fee != 0) {
             address payable receiver = creationFeeReceiver;
             if (receiver == address(0)) revert JBProjects_ZeroCreationFeeReceiver();
+
+            // Expose the new project's owner as the original payer for the duration of the forward, so a
+            // `pay`-routing fee receiver (e.g. `JBProjectPayer`) credits the owner rather than this contract.
+            // Cleared immediately after the transfer returns.
+            originalPayer = owner;
             Address.sendValue({recipient: receiver, amount: fee});
+            originalPayer = address(0);
         }
     }
 
@@ -149,7 +166,8 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects {
     /// @param interfaceId The ID of the interface to check for adherence to.
     /// @return A flag indicating if the provided interface ID is supported.
     function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC721) returns (bool) {
-        return interfaceId == type(IJBProjects).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IJBProjects).interfaceId || interfaceId == type(IJBPayerTracker).interfaceId
+            || super.supportsInterface(interfaceId);
     }
 
     /// @notice Returns the URI where the ERC-721 standard JSON of a project is hosted.
