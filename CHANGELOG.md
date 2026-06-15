@@ -34,6 +34,7 @@ This is a V5-to-V6 migration changelog, not a package release log or commit hist
   - `IJBPrices.priceFeedAt(...)`
   - `IJBPrices.priceFeedCountFor(...)`
   - `IJBPrices.priceFeedFor(...)`
+  - `IJBPayerTracker.originalPayer()` (new interface, implemented by `JBProjects` and `JBController`)
   - `IJBProjects.MAX_CREATION_FEE()`
 - Renamed functions:
   - `IJBController.addPriceFeed(...)` -> `addPriceFeedFor(...)`

@@ -16,6 +16,7 @@ import {IJBDirectory} from "./interfaces/IJBDirectory.sol";
 import {IJBDirectoryAccessControl} from "./interfaces/IJBDirectoryAccessControl.sol";
 import {IJBFundAccessLimits} from "./interfaces/IJBFundAccessLimits.sol";
 import {IJBMigratable} from "./interfaces/IJBMigratable.sol";
+import {IJBPayerTracker} from "./interfaces/IJBPayerTracker.sol";
 import {IJBPermissioned} from "./interfaces/IJBPermissioned.sol";
 import {IJBPermissions} from "./interfaces/IJBPermissions.sol";
 import {IJBPriceFeed} from "./interfaces/IJBPriceFeed.sol";
@@ -30,6 +31,7 @@ import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
+import {JBPayerTrackerLib} from "./libraries/JBPayerTrackerLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBSplitGroupIds} from "./libraries/JBSplitGroupIds.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
@@ -47,7 +49,7 @@ import {JBTerminalConfig} from "./structs/JBTerminalConfig.sol";
 /// @dev Supports ERC-2771 meta-transactions. Implements `IJBMigratable` for controller-to-controller migration.
 /// An omnichain deployer address is trusted to launch and queue rulesets on behalf of any project for cross-chain
 /// coordination.
-contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigratable {
+contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigratable, IJBPayerTracker {
     // A library that parses packed ruleset metadata into a friendlier format.
     using JBRulesetMetadataResolver for JBRuleset;
 
@@ -158,6 +160,16 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @notice The metadata URI for each project. This is typically an IPFS hash, optionally with an `ipfs://` prefix.
     /// @custom:param projectId The ID of the project to get the metadata URI of.
     mapping(uint256 projectId => string) public override uriOf;
+
+    //*********************************************************************//
+    // ------------------- public transient properties ------------------- //
+    //*********************************************************************//
+
+    /// @notice The account that paid the creation fee for the project currently being launched.
+    /// @dev Set to the resolved fee payer (this contract's caller, or that caller's upstream payer when the caller is
+    /// itself an `IJBPayerTracker`) while `JBProjects.createFor` runs, so `JBProjects` attributes the fee to the true
+    /// payer. Cleared back to `address(0)` once the call returns.
+    address public transient override originalPayer;
 
     //*********************************************************************//
     // ---------------------------- constructor -------------------------- //
@@ -445,8 +457,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             revert JBController_InvalidCreationFee({value: msg.value, requiredFee: creationFee});
         }
 
+        // Expose the resolved fee payer so `JBProjects` attributes the creation fee to the true payer, not this
+        // contract. Cleared immediately after.
+        originalPayer = JBPayerTrackerLib.resolve(_msgSender());
+
         // Mint the project ERC-721 into the owner's wallet.
         projectId = PROJECTS.createFor{value: creationFee}(owner);
+
+        originalPayer = address(0);
 
         // If provided, set the project's metadata URI.
         if (bytes(projectUri).length > 0) {
@@ -969,7 +987,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         return interfaceId == type(IJBController).interfaceId || interfaceId == type(IJBProjectUriRegistry).interfaceId
             || interfaceId == type(IJBDirectoryAccessControl).interfaceId
             || interfaceId == type(IJBMigratable).interfaceId || interfaceId == type(IJBPermissioned).interfaceId
-            || interfaceId == type(IERC165).interfaceId;
+            || interfaceId == type(IJBPayerTracker).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 
     //*********************************************************************//

@@ -10,6 +10,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IJBPayerTracker} from "./interfaces/IJBPayerTracker.sol";
 import {IJBProjects} from "./interfaces/IJBProjects.sol";
 import {IJBTokenUriResolver} from "./interfaces/IJBTokenUriResolver.sol";
+import {JBPayerTrackerLib} from "./libraries/JBPayerTrackerLib.sol";
 
 /// @notice Each Juicebox project is an ERC-721 NFT. Whoever holds the NFT owns the project and can configure its
 /// rulesets, terminals, and permissions. Projects are created with `createFor` and the resulting token ID is used as
@@ -59,10 +60,12 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects, IJBPayerTra
     // ------------------- public transient properties ------------------- //
     //*********************************************************************//
 
-    /// @notice The owner of the project currently being created, exposed only during the creation-fee forward.
-    /// @dev Set to the new project's `owner` for the duration of the `createFor` fee transfer so a `pay`-routing fee
-    /// receiver (e.g. `JBProjectPayer`) credits the project's owner instead of this contract. Cleared back to
-    /// `address(0)` the moment the fee transfer returns, so it reads `address(0)` outside a fee forward.
+    /// @notice The account that paid the creation fee for the project currently being created.
+    /// @dev Resolved from the `createFor` caller: a caller that itself implements `IJBPayerTracker` (a deployer or
+    /// `JBController` forwarding a user's fee) advertises its upstream payer, so the chain resolves to the true
+    /// originator; a direct caller is the payer itself. Set while the fee transfer runs so a `pay`-routing fee
+    /// receiver (e.g. `JBProjectPayer`) credits the fee payer instead of an intermediary. Cleared back to
+    /// `address(0)` once the transfer returns.
     address public transient override originalPayer;
 
     //*********************************************************************//
@@ -148,10 +151,10 @@ contract JBProjects is ERC721, ERC2771Context, Ownable, IJBProjects, IJBPayerTra
             address payable receiver = creationFeeReceiver;
             if (receiver == address(0)) revert JBProjects_ZeroCreationFeeReceiver();
 
-            // Expose the new project's owner as the original payer for the duration of the forward, so a
-            // `pay`-routing fee receiver (e.g. `JBProjectPayer`) credits the owner rather than this contract.
-            // Cleared immediately after the transfer returns.
-            originalPayer = owner;
+            // Resolve and expose the fee payer so a `pay`-routing fee receiver credits the account that paid the
+            // fee, not an intermediary. The caller may itself be an `IJBPayerTracker` (a deployer/controller
+            // forwarding a user's fee), in which case its upstream payer is used. Cleared immediately after.
+            originalPayer = JBPayerTrackerLib.resolve(_msgSender());
             Address.sendValue({recipient: receiver, amount: fee});
             originalPayer = address(0);
         }
