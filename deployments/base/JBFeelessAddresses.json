@@ -1,0 +1,368 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x657d0e588fca6f8c49394c9ca8a1cf6505b10314",
+	"sourceName": "node_modules/@bananapus/core-v6/src/JBFeelessAddresses.sol",
+	"contractName": "JBFeelessAddresses",
+	"chainId": "0x2105",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [
+				{
+					"name": "owner",
+					"type": "address",
+					"internalType": "address"
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "feelessHook",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract IJBFeelessHook"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "isFeelessFor",
+			"inputs": [
+				{
+					"name": "addr",
+					"type": "address",
+					"internalType": "address"
+				},
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"internalType": "address"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "bool",
+					"internalType": "bool"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "owner",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "address"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "renounceOwnership",
+			"inputs": [],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "setFeelessAddress",
+			"inputs": [
+				{
+					"name": "addr",
+					"type": "address",
+					"internalType": "address"
+				},
+				{
+					"name": "flag",
+					"type": "bool",
+					"internalType": "bool"
+				}
+			],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "setFeelessAddressFor",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "addr",
+					"type": "address",
+					"internalType": "address"
+				},
+				{
+					"name": "flag",
+					"type": "bool",
+					"internalType": "bool"
+				}
+			],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "setFeelessHook",
+			"inputs": [
+				{
+					"name": "hook",
+					"type": "address",
+					"internalType": "contract IJBFeelessHook"
+				}
+			],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "supportsInterface",
+			"inputs": [
+				{
+					"name": "interfaceId",
+					"type": "bytes4",
+					"internalType": "bytes4"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "bool",
+					"internalType": "bool"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "transferOwnership",
+			"inputs": [
+				{
+					"name": "newOwner",
+					"type": "address",
+					"internalType": "address"
+				}
+			],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "event",
+			"name": "OwnershipTransferred",
+			"inputs": [
+				{
+					"name": "previousOwner",
+					"type": "address",
+					"indexed": true,
+					"internalType": "address"
+				},
+				{
+					"name": "newOwner",
+					"type": "address",
+					"indexed": true,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "event",
+			"name": "SetFeelessAddress",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "addr",
+					"type": "address",
+					"indexed": true,
+					"internalType": "address"
+				},
+				{
+					"name": "isFeeless",
+					"type": "bool",
+					"indexed": true,
+					"internalType": "bool"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "event",
+			"name": "SetFeelessHook",
+			"inputs": [
+				{
+					"name": "hook",
+					"type": "address",
+					"indexed": true,
+					"internalType": "contract IJBFeelessHook"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "error",
+			"name": "JBFeelessAddresses_InvalidFeelessHook",
+			"inputs": [
+				{
+					"name": "hook",
+					"type": "address",
+					"internalType": "contract IJBFeelessHook"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "OwnableInvalidOwner",
+			"inputs": [
+				{
+					"name": "owner",
+					"type": "address",
+					"internalType": "address"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "OwnableUnauthorizedAccount",
+			"inputs": [
+				{
+					"name": "account",
+					"type": "address",
+					"internalType": "address"
+				}
+			]
+		}
+	],
+	"args": [
+		"0x4dc161eF837fF1C4485b08DDFcDB182F2157bE18"
+	],
+	"solcInputHash": "8aacf12b3a13cd8f08e12d92b6083b8b",
+	"receipt": {
+		"type": "0x2",
+		"status": "0x1",
+		"cumulativeGasUsed": "0xd9ea3c",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x7862d4214bf5a34cfe45af20d26c3493b09bd69ea87dd9c89f63d31d6d8cb086"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockHash": "0xfd5955261a965c60234ea36cb0dea40f189f860961012f4a0f62b352966489bc",
+				"blockNumber": "0x2d33fb1",
+				"blockTimestamp": "0x6a30dc45",
+				"transactionHash": "0x26d9d96694024acb736a53d018a65ac4485ca8658a55e10e88b858321535c1db",
+				"transactionIndex": "0x4a",
+				"logIndex": "0xfd",
+				"removed": false
+			},
+			{
+				"address": "0x657d0e588fca6f8c49394c9ca8a1cf6505b10314",
+				"topics": [
+					"0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0",
+					"0x0000000000000000000000000000000000000000000000000000000000000000",
+					"0x0000000000000000000000004dc161ef837ff1c4485b08ddfcdb182f2157be18"
+				],
+				"data": "0x",
+				"blockHash": "0xfd5955261a965c60234ea36cb0dea40f189f860961012f4a0f62b352966489bc",
+				"blockNumber": "0x2d33fb1",
+				"blockTimestamp": "0x6a30dc45",
+				"transactionHash": "0x26d9d96694024acb736a53d018a65ac4485ca8658a55e10e88b858321535c1db",
+				"transactionIndex": "0x4a",
+				"logIndex": "0xfe",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockHash": "0xfd5955261a965c60234ea36cb0dea40f189f860961012f4a0f62b352966489bc",
+				"blockNumber": "0x2d33fb1",
+				"blockTimestamp": "0x6a30dc45",
+				"transactionHash": "0x26d9d96694024acb736a53d018a65ac4485ca8658a55e10e88b858321535c1db",
+				"transactionIndex": "0x4a",
+				"logIndex": "0xff",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000019",
+				"blockHash": "0xfd5955261a965c60234ea36cb0dea40f189f860961012f4a0f62b352966489bc",
+				"blockNumber": "0x2d33fb1",
+				"blockTimestamp": "0x6a30dc45",
+				"transactionHash": "0x26d9d96694024acb736a53d018a65ac4485ca8658a55e10e88b858321535c1db",
+				"transactionIndex": "0x4a",
+				"logIndex": "0x100",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000800000000000000000000000000000000800000040004000000000040000000000000000000000000000000000200000000000000000000001000000000040000000000000000040000000020000000000000000000800000000008000000000000010000080408800080000000008000104000000000000000000000000000000000000000000804000040200000000000000000000002200000200000000000000000004000000000002008000000100000000400000000000000000000000000000800020000000000000000900000000000000000200000000000080000000000000000000",
+		"transactionHash": "0x26d9d96694024acb736a53d018a65ac4485ca8658a55e10e88b858321535c1db",
+		"transactionIndex": "0x4a",
+		"blockHash": "0xfd5955261a965c60234ea36cb0dea40f189f860961012f4a0f62b352966489bc",
+		"blockNumber": "0x2d33fb1",
+		"gasUsed": "0x85c04",
+		"effectiveGasPrice": "0x802c80",
+		"blobGasUsed": "0x3c450",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"contractAddress": null,
+		"l1GasPrice": "0xc1770b4",
+		"l1GasUsed": "0x6840",
+		"l1Fee": "0x63a4458c6",
+		"l1BaseFeeScalar": "0x8dd",
+		"l1BlobBaseFee": "0x7d4f95",
+		"l1BlobBaseFeeScalar": "0x101c12",
+		"daFootprintGasScalar": "0x94"
+	},
+	"bytecode": "0x6080604052348015600e575f5ffd5b506040516107b73803806107b7833981016040819052602b9160b4565b806001600160a01b038116605857604051631e4fbdf760e01b81525f600482015260240160405180910390fd5b605f816065565b505060df565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b5f6020828403121560c3575f5ffd5b81516001600160a01b038116811460d8575f5ffd5b9392505050565b6106cb806100ec5f395ff3fe608060405234801561000f575f5ffd5b5060043610610090575f3560e01c80638717d7c2116100635780638717d7c2146101045780638da5cb5b14610117578063c98eb63514610127578063f2fde38b1461013a578063f3fa13c91461014d575f5ffd5b806301ffc9a7146100945780636546346f146100bc578063715018a6146100e75780637258002c146100f1575b5f5ffd5b6100a76100a2366004610596565b610160565b60405190151581526020015b60405180910390f35b6001546100cf906001600160a01b031681565b6040516001600160a01b0390911681526020016100b3565b6100ef610196565b005b6100ef6100ff3660046105de565b6101a9565b6100a7610112366004610615565b610239565b5f546001600160a01b03166100cf565b6100ef610135366004610654565b610354565b6100ef610148366004610654565b610461565b6100ef61015b36600461066f565b61049e565b5f6001600160e01b0319821663aa7d467d60e01b148061019057506001600160e01b031982166301ffc9a760e01b145b92915050565b61019e61051b565b6101a75f610547565b565b6101b161051b565b6001600160a01b0382165f8181527fac33ff75c19e70fe83507db0d683fd3465c996598dc972688b7ace676c89077b60205260408120805460ff191684151590811790915591907ff520af77565614cc01d5174a06a9fedbd99aafbc13791838f31de111b48c790a336040516001600160a01b03909116815260200160405180910390a45050565b6001600160a01b0383165f9081527fac33ff75c19e70fe83507db0d683fd3465c996598dc972688b7ace676c89077b602052604081205460ff168061029f57505f8381526002602090815260408083206001600160a01b038816845290915290205460ff165b156102ac5750600161034d565b6001546001600160a01b0316806102c6575f91505061034d565b604051634384220160e01b8152600481018590526001600160a01b0386811660248301528481166044830152821690634384220190606401602060405180830381865afa925050508015610337575060408051601f3d908101601f19168201909252610334918101906106a3565b60015b610344575f91505061034d565b915061034d9050565b9392505050565b61035c61051b565b6001600160a01b038116158015906103de57506040516301ffc9a760e01b8152634384220160e01b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa1580156103b8573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103dc91906106a3565b155b1561040c5760405163806949db60e01b81526001600160a01b03821660048201526024015b60405180910390fd5b600180546001600160a01b0383166001600160a01b031990911681179091556040805133815290517f66c35cae54328fc3c9620f1c8ef954243db5c2ee518c7bc0307961c2539ff6269181900360200190a250565b61046961051b565b6001600160a01b03811661049257604051631e4fbdf760e01b81525f6004820152602401610403565b61049b81610547565b50565b6104a661051b565b5f8381526002602090815260408083206001600160a01b0386168085529252909120805460ff191683151590811790915590847ff520af77565614cc01d5174a06a9fedbd99aafbc13791838f31de111b48c790a336040516001600160a01b03909116815260200160405180910390a4505050565b5f546001600160a01b031633146101a75760405163118cdaa760e01b8152336004820152602401610403565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b5f602082840312156105a6575f5ffd5b81356001600160e01b03198116811461034d575f5ffd5b6001600160a01b038116811461049b575f5ffd5b801515811461049b575f5ffd5b5f5f604083850312156105ef575f5ffd5b82356105fa816105bd565b9150602083013561060a816105d1565b809150509250929050565b5f5f5f60608486031215610627575f5ffd5b8335610632816105bd565b9250602084013591506040840135610649816105bd565b809150509250925092565b5f60208284031215610664575f5ffd5b813561034d816105bd565b5f5f5f60608486031215610681575f5ffd5b833592506020840135610693816105bd565b91506040840135610649816105d1565b5f602082840312156106b3575f5ffd5b815161034d816105d156fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b5060043610610090575f3560e01c80638717d7c2116100635780638717d7c2146101045780638da5cb5b14610117578063c98eb63514610127578063f2fde38b1461013a578063f3fa13c91461014d575f5ffd5b806301ffc9a7146100945780636546346f146100bc578063715018a6146100e75780637258002c146100f1575b5f5ffd5b6100a76100a2366004610596565b610160565b60405190151581526020015b60405180910390f35b6001546100cf906001600160a01b031681565b6040516001600160a01b0390911681526020016100b3565b6100ef610196565b005b6100ef6100ff3660046105de565b6101a9565b6100a7610112366004610615565b610239565b5f546001600160a01b03166100cf565b6100ef610135366004610654565b610354565b6100ef610148366004610654565b610461565b6100ef61015b36600461066f565b61049e565b5f6001600160e01b0319821663aa7d467d60e01b148061019057506001600160e01b031982166301ffc9a760e01b145b92915050565b61019e61051b565b6101a75f610547565b565b6101b161051b565b6001600160a01b0382165f8181527fac33ff75c19e70fe83507db0d683fd3465c996598dc972688b7ace676c89077b60205260408120805460ff191684151590811790915591907ff520af77565614cc01d5174a06a9fedbd99aafbc13791838f31de111b48c790a336040516001600160a01b03909116815260200160405180910390a45050565b6001600160a01b0383165f9081527fac33ff75c19e70fe83507db0d683fd3465c996598dc972688b7ace676c89077b602052604081205460ff168061029f57505f8381526002602090815260408083206001600160a01b038816845290915290205460ff165b156102ac5750600161034d565b6001546001600160a01b0316806102c6575f91505061034d565b604051634384220160e01b8152600481018590526001600160a01b0386811660248301528481166044830152821690634384220190606401602060405180830381865afa925050508015610337575060408051601f3d908101601f19168201909252610334918101906106a3565b60015b610344575f91505061034d565b915061034d9050565b9392505050565b61035c61051b565b6001600160a01b038116158015906103de57506040516301ffc9a760e01b8152634384220160e01b60048201526001600160a01b038216906301ffc9a790602401602060405180830381865afa1580156103b8573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906103dc91906106a3565b155b1561040c5760405163806949db60e01b81526001600160a01b03821660048201526024015b60405180910390fd5b600180546001600160a01b0383166001600160a01b031990911681179091556040805133815290517f66c35cae54328fc3c9620f1c8ef954243db5c2ee518c7bc0307961c2539ff6269181900360200190a250565b61046961051b565b6001600160a01b03811661049257604051631e4fbdf760e01b81525f6004820152602401610403565b61049b81610547565b50565b6104a661051b565b5f8381526002602090815260408083206001600160a01b0386168085529252909120805460ff191683151590811790915590847ff520af77565614cc01d5174a06a9fedbd99aafbc13791838f31de111b48c790a336040516001600160a01b03909116815260200160405180910390a4505050565b5f546001600160a01b031633146101a75760405163118cdaa760e01b8152336004820152602401610403565b5f80546001600160a01b038381166001600160a01b0319831681178455604051919092169283917f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e09190a35050565b5f602082840312156105a6575f5ffd5b81356001600160e01b03198116811461034d575f5ffd5b6001600160a01b038116811461049b575f5ffd5b801515811461049b575f5ffd5b5f5f604083850312156105ef575f5ffd5b82356105fa816105bd565b9150602083013561060a816105d1565b809150509250929050565b5f5f5f60608486031215610627575f5ffd5b8335610632816105bd565b9250602084013591506040840135610649816105bd565b809150509250925092565b5f60208284031215610664575f5ffd5b813561034d816105bd565b5f5f5f60608486031215610681575f5ffd5b833592506020840135610693816105bd565b91506040840135610649816105d1565b5f602082840312156106b3575f5ffd5b815161034d816105d156fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"contract IJBFeelessHook\",\"name\":\"hook\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"JBFeelessAddresses_InvalidFeelessHook\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"OwnableInvalidOwner\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"OwnableUnauthorizedAccount\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true}],\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\",\"indexed\":true},{\"internalType\":\"bool\",\"name\":\"isFeeless\",\"type\":\"bool\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"SetFeelessAddress\",\"anonymous\":false},{\"inputs\":[{\"internalType\":\"contract IJBFeelessHook\",\"name\":\"hook\",\"type\":\"address\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"SetFeelessHook\",\"anonymous\":false},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"feelessHook\",\"outputs\":[{\"internalType\":\"contract IJBFeelessHook\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"isFeelessFor\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"renounceOwnership\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"flag\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"setFeelessAddress\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"addr\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"flag\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"setFeelessAddressFor\"},{\"inputs\":[{\"internalType\":\"contract IJBFeelessHook\",\"name\":\"hook\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"setFeelessHook\"},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}]},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"transferOwnership\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"constructor\":{\"params\":{\"owner\":\"This contract's owner.\"}},\"isFeelessFor(address,uint256,address)\":{\"details\":\"The static admin-set mappings are caller-agnostic and always apply. The hook (if set) receives `caller` (typically the terminal's `_msgSender()`) and may use it to narrow its grant — e.g. grant an ecosystem router feeless cash-outs only when the router itself is the caller, not when it appears as a split recipient of someone else's payout. Hook is invoked via try/catch — a reverting hook is treated as `false`.\",\"params\":{\"addr\":\"The address to check.\",\"caller\":\"The outer caller (typically the terminal's `_msgSender()`). Pass `address(0)` for lookups without caller context.\",\"projectId\":\"The ID of the project to check.\"},\"returns\":{\"_0\":\"A flag indicating whether the address is feeless.\"}},\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby disabling any functionality that is only available to the owner.\"},\"setFeelessAddress(address,bool)\":{\"details\":\"Equivalent to `setFeelessAddressFor(0, addr, flag)`.Can only be called by this contract's owner (typically the protocol multisig).\",\"params\":{\"addr\":\"The address to set as feeless or not feeless.\",\"flag\":\"Whether the address should be feeless (`true`) or not feeless (`false`).\"}},\"setFeelessAddressFor(uint256,address,bool)\":{\"details\":\"Can only be called by this contract's owner (typically the protocol multisig).Use `projectId = 0` to set the global (all-project) feeless status.\",\"params\":{\"addr\":\"The address to set as feeless or not feeless for the project.\",\"flag\":\"Whether the address should be feeless for the project (`true`) or not (`false`).\",\"projectId\":\"The ID of the project. 0 means all projects.\"}},\"setFeelessHook(address)\":{\"details\":\"Can only be called by this contract's owner (typically the protocol multisig).If `hook` is non-zero, it must report ERC-165 support for `IJBFeelessHook` or this call reverts.\",\"params\":{\"hook\":\"The new hook. Pass `address(0)` to disable hook consultation.\"}},\"supportsInterface(bytes4)\":{\"details\":\"See {IERC165-supportsInterface}.\",\"params\":{\"interfaceId\":\"The ID of the interface to check for adherence to.\"},\"returns\":{\"_0\":\"A flag indicating if the provided interface ID is supported.\"}},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"feelessHook()\":{\"notice\":\"Optional hook consulted (in addition to the static mappings) when computing feeless status.\"},\"isFeelessFor(address,uint256,address)\":{\"notice\":\"Returns whether the specified address is feeless for a specific project, providing the outer caller of the fee-bearing operation so hooks can scope grants by who initiated the action.\"},\"setFeelessAddress(address,bool)\":{\"notice\":\"Add or remove an address from the global (all-project) fee-exempt list.\"},\"setFeelessAddressFor(uint256,address,bool)\":{\"notice\":\"Add or remove an address from a project's fee-exempt list.\"},\"setFeelessHook(address)\":{\"notice\":\"Sets (or clears) the feeless hook consulted by `isFeelessFor`.\"},\"supportsInterface(bytes4)\":{\"notice\":\"Indicates whether this contract adheres to the specified interface.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/JBFeelessAddresses.sol\":\"JBFeelessAddresses\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/JBFeelessAddresses.sol\":{\"keccak256\":\"0xa2e42e95640eec9184f202b37dc7a528984e1d5f93bcbe15bee702a634fc18a1\",\"urls\":[\"bzz-raw://d0ab4907e8c09d3a2f0350db04b3f806c7ca9e01d46296d2ef207af74abdb167\",\"dweb:/ipfs/QmNXR3o6mjwTFj5ao547dnsfiFyhnHiFevjFvBPyn3Jfqs\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBFeelessAddresses.sol\":{\"keccak256\":\"0x13cad5a8ef2daeb7634d93df6c9f6d1681b5344f4cdc89b03bbbd0953802fd8a\",\"urls\":[\"bzz-raw://35f25042894569b5c50a38d39ab3ceb91e4f69e56d448785701a3ffff335fe98\",\"dweb:/ipfs/QmTd6dF5X6L3v9bnfsh2ZKtRjK5ApwvmKipMWHNXfjwjBF\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBFeelessHook.sol\":{\"keccak256\":\"0x39b8d6e9798a90f555ea9ca44ade52f2fec5964df8994494bd5f4cfd42853602\",\"urls\":[\"bzz-raw://18e0a22e15d53db093648f6087280b45cf5a19571cf721ea49e4453f5da1cb98\",\"dweb:/ipfs/QmaRDN58nhCR4EkP3oaHpyG5EPgLtR2DSEDfPw4gRUG5Zd\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/access/Ownable.sol\":{\"keccak256\":\"0xff6d0bb2e285473e5311d9d3caacb525ae3538a80758c10649a4d61029b017bb\",\"urls\":[\"bzz-raw://8ed324d3920bb545059d66ab97d43e43ee85fd3bd52e03e401f020afb0b120f6\",\"dweb:/ipfs/QmfEckWLmZkDDcoWrkEvMWhms66xwTLff9DDhegYpvHo1a\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/Context.sol\":{\"keccak256\":\"0x493033a8d1b176a037b2cc6a04dad01a5c157722049bbecf632ca876224dd4b2\",\"urls\":[\"bzz-raw://6a708e8a5bdb1011c2c381c9a5cfd8a9a956d7d0a9dc1bd8bcdaf52f76ef2f12\",\"dweb:/ipfs/Qmax9WHBnVsZP46ZxEMNRQpLQnrdE4dK8LehML1Py8FowF\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c\",\"urls\":[\"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617\",\"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

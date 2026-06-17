@@ -1,0 +1,965 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x26f2228a4e8b0079ed1c2a3d22f12ff7f83cdfba",
+	"sourceName": "node_modules/@bananapus/core-v6/src/JBRulesets.sol",
+	"contractName": "JBRulesets",
+	"chainId": "0x2105",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [
+				{
+					"name": "directory",
+					"type": "address",
+					"internalType": "contract IJBDirectory"
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "DIRECTORY",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract IJBDirectory"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "allOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "startingId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "size",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "rulesets",
+					"type": "tuple[]",
+					"internalType": "struct JBRuleset[]",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "currentApprovalStatusForLatestRulesetOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint8",
+					"internalType": "enum JBApprovalStatus"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "currentOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "ruleset",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "deriveCycleNumberFrom",
+			"inputs": [
+				{
+					"name": "baseRulesetCycleNumber",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetStart",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetDuration",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "start",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "pure"
+		},
+		{
+			"type": "function",
+			"name": "deriveStartFrom",
+			"inputs": [
+				{
+					"name": "baseRulesetStart",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetDuration",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "mustStartAtOrAfter",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "start",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "pure"
+		},
+		{
+			"type": "function",
+			"name": "deriveWeightFrom",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetStart",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetDuration",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetWeight",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetWeightCutPercent",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "baseRulesetCacheId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "start",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "weight",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "getRulesetOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "rulesetId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "ruleset",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "latestQueuedOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "ruleset",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				},
+				{
+					"name": "approvalStatus",
+					"type": "uint8",
+					"internalType": "enum JBApprovalStatus"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "latestRulesetIdOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "queueFor",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "duration",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "weight",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "weightCutPercent",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "approvalHook",
+					"type": "address",
+					"internalType": "contract IJBRulesetApprovalHook"
+				},
+				{
+					"name": "metadata",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "mustStartAtOrAfter",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "upcomingOf",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "ruleset",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "updateRulesetWeightCache",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "rulesetId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "event",
+			"name": "RulesetInitialized",
+			"inputs": [
+				{
+					"name": "rulesetId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "basedOnId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "event",
+			"name": "RulesetQueued",
+			"inputs": [
+				{
+					"name": "rulesetId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "duration",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "weight",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "weightCutPercent",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "approvalHook",
+					"type": "address",
+					"indexed": false,
+					"internalType": "contract IJBRulesetApprovalHook"
+				},
+				{
+					"name": "metadata",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "mustStartAtOrAfter",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "event",
+			"name": "WeightCacheUpdated",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "weight",
+					"type": "uint112",
+					"indexed": false,
+					"internalType": "uint112"
+				},
+				{
+					"name": "weightCutMultiple",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "error",
+			"name": "JBControlled_ControllerUnauthorized",
+			"inputs": [
+				{
+					"name": "controller",
+					"type": "address",
+					"internalType": "address"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_InvalidRulesetApprovalHook",
+			"inputs": [
+				{
+					"name": "hook",
+					"type": "address",
+					"internalType": "contract IJBRulesetApprovalHook"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_InvalidRulesetDuration",
+			"inputs": [
+				{
+					"name": "duration",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "limit",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_InvalidRulesetEndTime",
+			"inputs": [
+				{
+					"name": "timestamp",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "limit",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_InvalidWeight",
+			"inputs": [
+				{
+					"name": "weight",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "limit",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_InvalidWeightCutPercent",
+			"inputs": [
+				{
+					"name": "percent",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBRulesets_WeightCacheRequired",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "PRBMath_MulDiv_Overflow",
+			"inputs": [
+				{
+					"name": "x",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "y",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "denominator",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		}
+	],
+	"args": [
+		"0x5AfF29060E023e6FB87BE5596652B33c65Af535B"
+	],
+	"solcInputHash": "4397a4dfd435f1143a153abcaffa19a0",
+	"receipt": {
+		"type": "0x2",
+		"status": "0x1",
+		"cumulativeGasUsed": "0x1e7b1be",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0xf0380df3a2bb3ce2d74558f111e0abe45e0b7232f87fe4932bd71c116592c3bb"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockHash": "0xe83e1fd1f874d0e226ce9f422a41f5fa62793dbdff31b2519439203183fca114",
+				"blockNumber": "0x2d33f96",
+				"blockTimestamp": "0x6a30dc0f",
+				"transactionHash": "0xd95b2f4e78a936fcce37026aef05502249835dc190994829b068e898a87659a2",
+				"transactionIndex": "0xec",
+				"logIndex": "0x1f1",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockHash": "0xe83e1fd1f874d0e226ce9f422a41f5fa62793dbdff31b2519439203183fca114",
+				"blockNumber": "0x2d33f96",
+				"blockTimestamp": "0x6a30dc0f",
+				"transactionHash": "0xd95b2f4e78a936fcce37026aef05502249835dc190994829b068e898a87659a2",
+				"transactionIndex": "0xec",
+				"logIndex": "0x1f2",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000014",
+				"blockHash": "0xe83e1fd1f874d0e226ce9f422a41f5fa62793dbdff31b2519439203183fca114",
+				"blockNumber": "0x2d33f96",
+				"blockTimestamp": "0x6a30dc0f",
+				"transactionHash": "0xd95b2f4e78a936fcce37026aef05502249835dc190994829b068e898a87659a2",
+				"transactionIndex": "0xec",
+				"logIndex": "0x1f3",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000240000000000000000000000000000000040000000000000000040000000000000000000000000000000000000008000000000000000000080008800000000000008000104000000004000000000000000000000000000000000004000040000000000000000000000002200000000000000000000000004000000000002208000000000000000400000000000000000000000000000800000000000000000000900000000000000000200000000000080000000000000000000",
+		"transactionHash": "0xd95b2f4e78a936fcce37026aef05502249835dc190994829b068e898a87659a2",
+		"transactionIndex": "0xec",
+		"blockHash": "0xe83e1fd1f874d0e226ce9f422a41f5fa62793dbdff31b2519439203183fca114",
+		"blockNumber": "0x2d33f96",
+		"gasUsed": "0x1c33c5",
+		"effectiveGasPrice": "0x802c80",
+		"blobGasUsed": "0xad41c",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"contractAddress": null,
+		"l1GasPrice": "0xba05804",
+		"l1GasUsed": "0x12bbb",
+		"l1Fee": "0x10f5447d22",
+		"l1BaseFeeScalar": "0x8dd",
+		"l1BlobBaseFee": "0x75278a",
+		"l1BlobBaseFeeScalar": "0x101c12",
+		"daFootprintGasScalar": "0x94"
+	},
+	"bytecode": "0x60a0604052348015600e575f5ffd5b50604051611e47380380611e47833981016040819052602b91603b565b6001600160a01b03166080526066565b5f60208284031215604a575f5ffd5b81516001600160a01b0381168114605f575f5ffd5b9392505050565b608051611dc26100855f395f81816101a601526114420152611dc25ff3fe608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c806370174dcc11610088578063bfc48c9e11610063578063bfc48c9e146101e0578063d7e1ec88146101f3578063f3532c7914610213578063fe81dd8014610228575f5ffd5b806370174dcc1461016d578063855a54ed1461018057806388bc2ef3146101a1575f5ffd5b80631b9b2e5f146100cf57806325a61d5c146100f55780632e6bc58a1461011557806333f5bd0a1461012857806343a266c214610147578063441c0cc51461015a575b5f5ffd5b6100e26100dd366004611963565b610248565b6040519081526020015b60405180910390f35b610108610103366004611992565b61028f565b6040516100ec9190611a76565b610108610123366004611a85565b6102aa565b6100e2610136366004611a85565b5f6020819052908152604090205481565b610108610155366004611a85565b610475565b6100e2610168366004611a9c565b6105f4565b61010861017b366004611afa565b610745565b61019361018e366004611a85565b610a6d565b6040516100ec929190611b88565b6101c87f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100ec565b6100e26101ee366004611ba5565b610aa3565b610206610201366004611a85565b610b14565b6040516100ec9190611bce565b610226610221366004611992565b610b3b565b005b61023b610236366004611ba5565b610d0a565b6040516100ec9190611bdc565b5f825f036102625761025b856001611c3e565b9050610287565b5f61026d8584611c51565b90506102798482611c78565b6102839087611c3e565b9150505b949350505050565b610297611918565b6102a383836001610e53565b9392505050565b6102b2611918565b5f8281526020819052604081205490036102d7576102d15f5f5f610e53565b92915050565b5f6102e183610f28565b90505f811561037b576102f684836001610e53565b9250610302848461102d565b9050600481600581111561031857610318611b54565b14806103355750600381600581111561033357610333611b54565b145b8061035057505f81600581111561034e5761034e611b54565b145b1561035c575050919050565b61037484846040015165ffffffffffff166001610e53565b92506103cc565b5f848152602081905260409020546103969085906001610e53565b92505b42836060015165ffffffffffff1611156103cc576103c584846040015165ffffffffffff166001610e53565b9250610399565b826080015163ffffffff165f036103e8576102875f5f5f610e53565b6103f2848461102d565b9050600481600581111561040857610408611b54565b148061042457505f81600581111561042257610422611b54565b145b156104345761028784845f611105565b61044c84846040015165ffffffffffff166001610e53565b9250826080015163ffffffff165f0361046a576102875f5f5f610e53565b61028784845f611105565b61047d611918565b5f82815260208190526040812054900361049c576102d15f5f5f610e53565b5f6104a68361129d565b90508015610528576104ba83826001610e53565b91505f6104c7848461102d565b905060048160058111156104dd576104dd611b54565b14806104f957505f8160058111156104f7576104f7611b54565b145b15610505575050919050565b826040015165ffffffffffff16915061052084836001610e53565b9250506105d1565b505f8281526020819052604090205461054383826001610e53565b91505f610550848461102d565b90505b600481600581111561056757610567611b54565b1415801561058657505f81600581111561058357610583611b54565b14155b8061059c5750826060015165ffffffffffff1642105b156105cf57826040015165ffffffffffff1691506105bc84836001610e53565b92506105c8848461102d565b9050610553565b505b816080015163ffffffff165f036105e85750919050565b6102a383836001611105565b5f855f0361061f576106188561060e86633b9aca00611c51565b633b9aca0061135b565b905061073a565b5083831561073a575f6106328884611c51565b90505f87828161064457610644611c64565b0490505f851180156106575750614e2081115b156106ce575f8a8152600460209081526040808320888452825291829020825180840190935280546001600160701b03168352600101546001600160a81b0316908201819052156106cc57805160208201516001600160701b0390911694506106c9906001600160a81b031683611c51565b91505b505b614e208111156106f95760405163421a685360e01b8152600481018b90526024015b60405180910390fd5b5f61070887633b9aca00611c51565b9050633b9aca005f5b838110156107345761072486848461135b565b9550851561073457600101610711565b50505050505b979650505050505050565b61074d611918565b876107578161142a565b63ffffffff88111561078957604051638444f64b60e01b81526004810189905263ffffffff60248201526044016106f0565b633b9aca008611156107b1576040516321e5c74960e21b8152600481018790526024016106f0565b6001600160701b038711156107e957604051632dd7f24160e01b8152600481018890526001600160701b0360248201526044016106f0565b825f036107f4574292505b65ffffffffffff6108058985611c3e565b111561083e576108158884611c3e565b604051632ce261d560e21b8152600481019190915265ffffffffffff60248201526044016106f0565b6001600160a01b0385161561093c57846001600160a01b03163b5f036108825760405163045b9cdd60e31b81526001600160a01b03861660048201526024016106f0565b6040516301ffc9a760e01b8152630c0dbbf160e21b60048201526001600160a01b038616906301ffc9a790602401602060405180830381865afa9250505080156108e9575060408051601f3d908101601f191682019092526108e691810190611c8b565b60015b6109115760405163045b9cdd60e31b81526001600160a01b03861660048201526024016106f0565b8061093a5760405163045b9cdd60e31b81526001600160a01b03871660048201526024016106f0565b505b5f8981526020819052604081205490428210156109595742610964565b610964826001611c3e565b90506109728b828b886114ed565b6001600160a01b03871615158061098857505f8a115b8061099257505f88115b156109c8575f8b8152600360209081526040808320848452909152902060c089901b60a08c901b6001600160a01b038a16171790555b85156109ea575f8b815260016020908152604080832084845290915290208690555b604080518b8152602081018b90529081018990526001600160a01b03881660608201526080810187905260a081018690523360c08201528b9082907f11a490bebff1beffe4bdd210894aca6ea5049427ce4b3c48865717677199cb079060e00160405180910390a3610a5e8b826001610e53565b9b9a5050505050505050505050565b610a75611918565b5f82815260208190526040812054610a8f84826001610e53565b9250610a9b848461102d565b915050915091565b5f825f03610ab25750806102a3565b5f610abd8486611c3e565b9050828110610acd5790506102a3565b5f84610ad98386611c51565b610ae39190611caa565b9050610aef8185611c51565b92505b82841115610b0b57610b048584611c3e565b9250610af2565b50509392505050565b5f8181526020819052604081205481610b2f84836001610e53565b9050610287848261102d565b5f610b4783835f610e53565b9050806080015163ffffffff165f1480610b69575060c081015163ffffffff16155b15610b7357505050565b5f8381526004602090815260408083208483015165ffffffffffff16845290915281206080830151600182015491929163ffffffff90911690610bc290614e20906001600160a81b0316611c3e565b610bcc9190611cbd565b836060015165ffffffffffff16610be39190611c3e565b90505f814210610bf35781610bf5565b425b90505f846060015165ffffffffffff1682610c109190611c51565b90505f856080015163ffffffff168281610c2c57610c2c611c64565b049050610c7788876060015165ffffffffffff16886080015163ffffffff168960a001516001600160701b03168a60c0015163ffffffff168b6020015165ffffffffffff16896105f4565b85546dffffffffffffffffffffffffffff19166001600160701b039190911690811786556001860180546001600160a81b0319166001600160a81b038416908117909155604080518b815260208101939093528201523360608201527f10eae80a31644a6399eaac72c95b18a77049f4192107734621f4cdce85b457729060800160405180910390a15050505050505050565b6060825f03610d24575f8481526020819052604090205492505b5f80610d31868683610e53565b90505b602081015165ffffffffffff1615801590610d4e57508382105b15610d7e5781610d5d81611cd4565b925050610d7786826040015165ffffffffffff165f610e53565b9050610d34565b8167ffffffffffffffff811115610d9757610d97611cec565b604051908082528060200260200182016040528015610dd057816020015b610dbd611918565b815260200190600190039081610db55790505b509250815f03610de15750506102a3565b610ded86866001610e53565b90505f5b82811015610e4957818482610e0581611cd4565b935081518110610e1757610e17611d00565b6020026020010181905250828114610e4457610e4187836040015165ffffffffffff166001610e53565b91505b610df1565b5050509392505050565b610e5b611918565b82156102a35765ffffffffffff8381166020838101919091525f8681526002825260408082208783528352808220546001600160701b03811660a080880191909152607082901c86168388015281811c909516606087015260d081901c8652888352600384528183208884529093529020546001600160a01b03811660e08501529182901c63ffffffff908116608085015260c083811c90911690840152908315610b0b575f86815260016020908152604080832088845290915290205461010084015250509392505050565b5f8181526020819052604081205490610f42838383610e53565b9050806060015165ffffffffffff164210610f5f57505f92915050565b805165ffffffffffff16600103610f765750919050565b604081015165ffffffffffff16610f8b611918565b610f9685835f610e53565b9050806060015165ffffffffffff16421015610fcf57806020015165ffffffffffff169350806040015165ffffffffffff169150610f8b565b610fda85855f610e53565b9250806080015163ffffffff165f141580156110165750806080015163ffffffff16836060015161100b9190611d14565b65ffffffffffff1642105b1561102557505f949350505050565b505050919050565b5f816040015165ffffffffffff165f0361104857505f6102d1565b5f8381526003602090815260408083208582015165ffffffffffff168452909152902054806001600160a01b038116611085575f925050506102d1565b604051632bd6bd4d60e01b81526001600160a01b03821690632bd6bd4d906110b39088908890600401611d32565b602060405180830381865afa9250505080156110ec575060408051601f3d908101601f191682019092526110e991810190611d47565b60015b6110fb576005925050506102d1565b92506102d1915050565b61110d611918565b5f82156111525742846080015163ffffffff16101561114b57608084015161113b9063ffffffff1642611c51565b611146906001611c3e565b61115d565b600161115d565b61115d426001611c3e565b90505f611181856060015165ffffffffffff16866080015163ffffffff1684610aa3565b90505f6111b1865f015165ffffffffffff16876060015165ffffffffffff16886080015163ffffffff1685610248565b90506040518061012001604052808265ffffffffffff168152602001876020015165ffffffffffff168152602001876040015165ffffffffffff1681526020018365ffffffffffff168152602001876080015163ffffffff16815260200161125789896060015165ffffffffffff168a6080015163ffffffff168b60a001516001600160701b03168c60c0015163ffffffff168d6020015165ffffffffffff168a6105f4565b6001600160701b031681526020018760c0015163ffffffff1681526020018760e001516001600160a01b0316815260200187610100015181525093505050509392505050565b5f81815260208190526040812054816112b7848383610e53565b90505b608081015163ffffffff16158015906112f45750806080015163ffffffff1681606001516112e89190611d65565b65ffffffffffff164210155b1561130257505f9392505050565b806060015165ffffffffffff164210611328576020015165ffffffffffff169392505050565b61133f84826040015165ffffffffffff165f610e53565b805190915065ffffffffffff165f036112ba57505f9392505050565b5f80805f19858709858702925082811083820303915050805f036113925783828161138857611388611c64565b04925050506102a3565b8381106113c357604051630c740aef60e31b81526004810187905260248101869052604481018590526064016106f0565b5f8486880960026001871981018816978890046003810283188082028403028082028403028082028403028082028403028082028403029081029092039091025f889003889004909101858311909403939093029303949094049190911702949350505050565b604051632eec7b5560e11b8152600481018290525f907f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690635dd8f6aa90602401602060405180830381865afa15801561148f573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906114b39190611d83565b90506001600160a01b03811633146114e957604051639a007b3960e01b81526001600160a01b03821660048201526024016106f0565b5050565b5f84815260208190526040812054908190036115205761151a856115125f5f5f610e53565b868587611776565b50611770565b5f61152d86836001610e53565b90505f61153a878361102d565b9050816060015165ffffffffffff16421015801561156a5750600481600581111561156757611567611b54565b14155b801561158757505f81600581111561158457611584611b54565b14155b806115e65750816060015165ffffffffffff16421080156115c85750816080015163ffffffff1682606001516115bd9190611d65565b65ffffffffffff1684105b80156115e6575060048160058111156115e3576115e3611b54565b14155b806116815750816060015165ffffffffffff16421080156116285750816080015163ffffffff16826060015161161c9190611d65565b65ffffffffffff168410155b80156116465750600481600581111561164357611643611b54565b14155b80156116645750600381600581111561166157611661611b54565b14155b801561168157505f81600581111561167e5761167e611b54565b14155b156116a05761169d87836040015165ffffffffffff165f610e53565b91505b83826060015165ffffffffffff1611156116c457816060015165ffffffffffff1693505b60e08201515f906001600160a01b031615611750578260e001516001600160a01b0316631be052896040518163ffffffff1660e01b8152600401602060405180830381865afa925050508015611737575060408051601f3d908101601f1916820190925261173491810190611d9e565b60015b61174257505f611750565b61174c8189611c3e565b9150505b61176b8884898885116117635788611765565b845b8a611776565b505050505b50505050565b835165ffffffffffff165f036117cc576020808501515f8781526002835260408082208783529093529190912065ffffffffffff60701b60709290921b91909116821760a084901b17600160d01b1790556118bc565b5f6117ee856060015165ffffffffffff16866080015163ffffffff1685610aa3565b9050816001146117fe5781611846565b61184686866060015165ffffffffffff16876080015163ffffffff168860a001516001600160701b03168960c0015163ffffffff168a6020015165ffffffffffff16876105f4565b91505f611876865f015165ffffffffffff16876060015165ffffffffffff16886080015163ffffffff1685610248565b6020808801515f8a81526002835260408082208a83529093529190912065ffffffffffff60701b60709290921b91909116851760a085901b1760d083901b179055905050505b5f858152602081815260409182902085905585810151915133815265ffffffffffff90921691879186917f470520533918800d64f06ee1795a39e90ff3c27a15350a235e17bd23698a470e910160405180910390a45050505050565b60408051610120810182525f80825260208201819052918101829052606081018290526080810182905260a0810182905260c0810182905260e0810182905261010081019190915290565b5f5f5f5f60808587031215611976575f5ffd5b5050823594602084013594506040840135936060013592509050565b5f5f604083850312156119a3575f5ffd5b50508035926020909101359150565b65ffffffffffff815116825265ffffffffffff602082015116602083015260408101516119e9604084018265ffffffffffff169052565b506060810151611a03606084018265ffffffffffff169052565b506080810151611a1b608084018263ffffffff169052565b5060a0810151611a3660a08401826001600160701b03169052565b5060c0810151611a4e60c084018263ffffffff169052565b5060e0810151611a6960e08401826001600160a01b03169052565b5061010090810151910152565b61012081016102d182846119b2565b5f60208284031215611a95575f5ffd5b5035919050565b5f5f5f5f5f5f5f60e0888a031215611ab2575f5ffd5b505085359760208701359750604087013596606081013596506080810135955060a0810135945060c0013592509050565b6001600160a01b0381168114611af7575f5ffd5b50565b5f5f5f5f5f5f5f60e0888a031215611b10575f5ffd5b873596506020880135955060408801359450606088013593506080880135611b3781611ae3565b9699959850939692959460a0840135945060c09093013592915050565b634e487b7160e01b5f52602160045260245ffd5b60068110611b8457634e487b7160e01b5f52602160045260245ffd5b9052565b6101408101611b9782856119b2565b6102a3610120830184611b68565b5f5f5f60608486031215611bb7575f5ffd5b505081359360208301359350604090920135919050565b602081016102d18284611b68565b602080825282518282018190525f918401906040840190835b81811015611c1f57611c088385516119b2565b602093909301926101209290920191600101611bf5565b509095945050505050565b634e487b7160e01b5f52601160045260245ffd5b808201808211156102d1576102d1611c2a565b818103818111156102d1576102d1611c2a565b634e487b7160e01b5f52601260045260245ffd5b5f82611c8657611c86611c64565b500490565b5f60208284031215611c9b575f5ffd5b815180151581146102a3575f5ffd5b5f82611cb857611cb8611c64565b500690565b80820281158282048414176102d1576102d1611c2a565b5f60018201611ce557611ce5611c2a565b5060010190565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b65ffffffffffff82811682821603908111156102d1576102d1611c2a565b82815261014081016102a360208301846119b2565b5f60208284031215611d57575f5ffd5b8151600681106102a3575f5ffd5b65ffffffffffff81811683821601908111156102d1576102d1611c2a565b5f60208284031215611d93575f5ffd5b81516102a381611ae3565b5f60208284031215611dae575f5ffd5b505191905056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b50600436106100cb575f3560e01c806370174dcc11610088578063bfc48c9e11610063578063bfc48c9e146101e0578063d7e1ec88146101f3578063f3532c7914610213578063fe81dd8014610228575f5ffd5b806370174dcc1461016d578063855a54ed1461018057806388bc2ef3146101a1575f5ffd5b80631b9b2e5f146100cf57806325a61d5c146100f55780632e6bc58a1461011557806333f5bd0a1461012857806343a266c214610147578063441c0cc51461015a575b5f5ffd5b6100e26100dd366004611963565b610248565b6040519081526020015b60405180910390f35b610108610103366004611992565b61028f565b6040516100ec9190611a76565b610108610123366004611a85565b6102aa565b6100e2610136366004611a85565b5f6020819052908152604090205481565b610108610155366004611a85565b610475565b6100e2610168366004611a9c565b6105f4565b61010861017b366004611afa565b610745565b61019361018e366004611a85565b610a6d565b6040516100ec929190611b88565b6101c87f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020016100ec565b6100e26101ee366004611ba5565b610aa3565b610206610201366004611a85565b610b14565b6040516100ec9190611bce565b610226610221366004611992565b610b3b565b005b61023b610236366004611ba5565b610d0a565b6040516100ec9190611bdc565b5f825f036102625761025b856001611c3e565b9050610287565b5f61026d8584611c51565b90506102798482611c78565b6102839087611c3e565b9150505b949350505050565b610297611918565b6102a383836001610e53565b9392505050565b6102b2611918565b5f8281526020819052604081205490036102d7576102d15f5f5f610e53565b92915050565b5f6102e183610f28565b90505f811561037b576102f684836001610e53565b9250610302848461102d565b9050600481600581111561031857610318611b54565b14806103355750600381600581111561033357610333611b54565b145b8061035057505f81600581111561034e5761034e611b54565b145b1561035c575050919050565b61037484846040015165ffffffffffff166001610e53565b92506103cc565b5f848152602081905260409020546103969085906001610e53565b92505b42836060015165ffffffffffff1611156103cc576103c584846040015165ffffffffffff166001610e53565b9250610399565b826080015163ffffffff165f036103e8576102875f5f5f610e53565b6103f2848461102d565b9050600481600581111561040857610408611b54565b148061042457505f81600581111561042257610422611b54565b145b156104345761028784845f611105565b61044c84846040015165ffffffffffff166001610e53565b9250826080015163ffffffff165f0361046a576102875f5f5f610e53565b61028784845f611105565b61047d611918565b5f82815260208190526040812054900361049c576102d15f5f5f610e53565b5f6104a68361129d565b90508015610528576104ba83826001610e53565b91505f6104c7848461102d565b905060048160058111156104dd576104dd611b54565b14806104f957505f8160058111156104f7576104f7611b54565b145b15610505575050919050565b826040015165ffffffffffff16915061052084836001610e53565b9250506105d1565b505f8281526020819052604090205461054383826001610e53565b91505f610550848461102d565b90505b600481600581111561056757610567611b54565b1415801561058657505f81600581111561058357610583611b54565b14155b8061059c5750826060015165ffffffffffff1642105b156105cf57826040015165ffffffffffff1691506105bc84836001610e53565b92506105c8848461102d565b9050610553565b505b816080015163ffffffff165f036105e85750919050565b6102a383836001611105565b5f855f0361061f576106188561060e86633b9aca00611c51565b633b9aca0061135b565b905061073a565b5083831561073a575f6106328884611c51565b90505f87828161064457610644611c64565b0490505f851180156106575750614e2081115b156106ce575f8a8152600460209081526040808320888452825291829020825180840190935280546001600160701b03168352600101546001600160a81b0316908201819052156106cc57805160208201516001600160701b0390911694506106c9906001600160a81b031683611c51565b91505b505b614e208111156106f95760405163421a685360e01b8152600481018b90526024015b60405180910390fd5b5f61070887633b9aca00611c51565b9050633b9aca005f5b838110156107345761072486848461135b565b9550851561073457600101610711565b50505050505b979650505050505050565b61074d611918565b876107578161142a565b63ffffffff88111561078957604051638444f64b60e01b81526004810189905263ffffffff60248201526044016106f0565b633b9aca008611156107b1576040516321e5c74960e21b8152600481018790526024016106f0565b6001600160701b038711156107e957604051632dd7f24160e01b8152600481018890526001600160701b0360248201526044016106f0565b825f036107f4574292505b65ffffffffffff6108058985611c3e565b111561083e576108158884611c3e565b604051632ce261d560e21b8152600481019190915265ffffffffffff60248201526044016106f0565b6001600160a01b0385161561093c57846001600160a01b03163b5f036108825760405163045b9cdd60e31b81526001600160a01b03861660048201526024016106f0565b6040516301ffc9a760e01b8152630c0dbbf160e21b60048201526001600160a01b038616906301ffc9a790602401602060405180830381865afa9250505080156108e9575060408051601f3d908101601f191682019092526108e691810190611c8b565b60015b6109115760405163045b9cdd60e31b81526001600160a01b03861660048201526024016106f0565b8061093a5760405163045b9cdd60e31b81526001600160a01b03871660048201526024016106f0565b505b5f8981526020819052604081205490428210156109595742610964565b610964826001611c3e565b90506109728b828b886114ed565b6001600160a01b03871615158061098857505f8a115b8061099257505f88115b156109c8575f8b8152600360209081526040808320848452909152902060c089901b60a08c901b6001600160a01b038a16171790555b85156109ea575f8b815260016020908152604080832084845290915290208690555b604080518b8152602081018b90529081018990526001600160a01b03881660608201526080810187905260a081018690523360c08201528b9082907f11a490bebff1beffe4bdd210894aca6ea5049427ce4b3c48865717677199cb079060e00160405180910390a3610a5e8b826001610e53565b9b9a5050505050505050505050565b610a75611918565b5f82815260208190526040812054610a8f84826001610e53565b9250610a9b848461102d565b915050915091565b5f825f03610ab25750806102a3565b5f610abd8486611c3e565b9050828110610acd5790506102a3565b5f84610ad98386611c51565b610ae39190611caa565b9050610aef8185611c51565b92505b82841115610b0b57610b048584611c3e565b9250610af2565b50509392505050565b5f8181526020819052604081205481610b2f84836001610e53565b9050610287848261102d565b5f610b4783835f610e53565b9050806080015163ffffffff165f1480610b69575060c081015163ffffffff16155b15610b7357505050565b5f8381526004602090815260408083208483015165ffffffffffff16845290915281206080830151600182015491929163ffffffff90911690610bc290614e20906001600160a81b0316611c3e565b610bcc9190611cbd565b836060015165ffffffffffff16610be39190611c3e565b90505f814210610bf35781610bf5565b425b90505f846060015165ffffffffffff1682610c109190611c51565b90505f856080015163ffffffff168281610c2c57610c2c611c64565b049050610c7788876060015165ffffffffffff16886080015163ffffffff168960a001516001600160701b03168a60c0015163ffffffff168b6020015165ffffffffffff16896105f4565b85546dffffffffffffffffffffffffffff19166001600160701b039190911690811786556001860180546001600160a81b0319166001600160a81b038416908117909155604080518b815260208101939093528201523360608201527f10eae80a31644a6399eaac72c95b18a77049f4192107734621f4cdce85b457729060800160405180910390a15050505050505050565b6060825f03610d24575f8481526020819052604090205492505b5f80610d31868683610e53565b90505b602081015165ffffffffffff1615801590610d4e57508382105b15610d7e5781610d5d81611cd4565b925050610d7786826040015165ffffffffffff165f610e53565b9050610d34565b8167ffffffffffffffff811115610d9757610d97611cec565b604051908082528060200260200182016040528015610dd057816020015b610dbd611918565b815260200190600190039081610db55790505b509250815f03610de15750506102a3565b610ded86866001610e53565b90505f5b82811015610e4957818482610e0581611cd4565b935081518110610e1757610e17611d00565b6020026020010181905250828114610e4457610e4187836040015165ffffffffffff166001610e53565b91505b610df1565b5050509392505050565b610e5b611918565b82156102a35765ffffffffffff8381166020838101919091525f8681526002825260408082208783528352808220546001600160701b03811660a080880191909152607082901c86168388015281811c909516606087015260d081901c8652888352600384528183208884529093529020546001600160a01b03811660e08501529182901c63ffffffff908116608085015260c083811c90911690840152908315610b0b575f86815260016020908152604080832088845290915290205461010084015250509392505050565b5f8181526020819052604081205490610f42838383610e53565b9050806060015165ffffffffffff164210610f5f57505f92915050565b805165ffffffffffff16600103610f765750919050565b604081015165ffffffffffff16610f8b611918565b610f9685835f610e53565b9050806060015165ffffffffffff16421015610fcf57806020015165ffffffffffff169350806040015165ffffffffffff169150610f8b565b610fda85855f610e53565b9250806080015163ffffffff165f141580156110165750806080015163ffffffff16836060015161100b9190611d14565b65ffffffffffff1642105b1561102557505f949350505050565b505050919050565b5f816040015165ffffffffffff165f0361104857505f6102d1565b5f8381526003602090815260408083208582015165ffffffffffff168452909152902054806001600160a01b038116611085575f925050506102d1565b604051632bd6bd4d60e01b81526001600160a01b03821690632bd6bd4d906110b39088908890600401611d32565b602060405180830381865afa9250505080156110ec575060408051601f3d908101601f191682019092526110e991810190611d47565b60015b6110fb576005925050506102d1565b92506102d1915050565b61110d611918565b5f82156111525742846080015163ffffffff16101561114b57608084015161113b9063ffffffff1642611c51565b611146906001611c3e565b61115d565b600161115d565b61115d426001611c3e565b90505f611181856060015165ffffffffffff16866080015163ffffffff1684610aa3565b90505f6111b1865f015165ffffffffffff16876060015165ffffffffffff16886080015163ffffffff1685610248565b90506040518061012001604052808265ffffffffffff168152602001876020015165ffffffffffff168152602001876040015165ffffffffffff1681526020018365ffffffffffff168152602001876080015163ffffffff16815260200161125789896060015165ffffffffffff168a6080015163ffffffff168b60a001516001600160701b03168c60c0015163ffffffff168d6020015165ffffffffffff168a6105f4565b6001600160701b031681526020018760c0015163ffffffff1681526020018760e001516001600160a01b0316815260200187610100015181525093505050509392505050565b5f81815260208190526040812054816112b7848383610e53565b90505b608081015163ffffffff16158015906112f45750806080015163ffffffff1681606001516112e89190611d65565b65ffffffffffff164210155b1561130257505f9392505050565b806060015165ffffffffffff164210611328576020015165ffffffffffff169392505050565b61133f84826040015165ffffffffffff165f610e53565b805190915065ffffffffffff165f036112ba57505f9392505050565b5f80805f19858709858702925082811083820303915050805f036113925783828161138857611388611c64565b04925050506102a3565b8381106113c357604051630c740aef60e31b81526004810187905260248101869052604481018590526064016106f0565b5f8486880960026001871981018816978890046003810283188082028403028082028403028082028403028082028403028082028403029081029092039091025f889003889004909101858311909403939093029303949094049190911702949350505050565b604051632eec7b5560e11b8152600481018290525f907f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031690635dd8f6aa90602401602060405180830381865afa15801561148f573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906114b39190611d83565b90506001600160a01b03811633146114e957604051639a007b3960e01b81526001600160a01b03821660048201526024016106f0565b5050565b5f84815260208190526040812054908190036115205761151a856115125f5f5f610e53565b868587611776565b50611770565b5f61152d86836001610e53565b90505f61153a878361102d565b9050816060015165ffffffffffff16421015801561156a5750600481600581111561156757611567611b54565b14155b801561158757505f81600581111561158457611584611b54565b14155b806115e65750816060015165ffffffffffff16421080156115c85750816080015163ffffffff1682606001516115bd9190611d65565b65ffffffffffff1684105b80156115e6575060048160058111156115e3576115e3611b54565b14155b806116815750816060015165ffffffffffff16421080156116285750816080015163ffffffff16826060015161161c9190611d65565b65ffffffffffff168410155b80156116465750600481600581111561164357611643611b54565b14155b80156116645750600381600581111561166157611661611b54565b14155b801561168157505f81600581111561167e5761167e611b54565b14155b156116a05761169d87836040015165ffffffffffff165f610e53565b91505b83826060015165ffffffffffff1611156116c457816060015165ffffffffffff1693505b60e08201515f906001600160a01b031615611750578260e001516001600160a01b0316631be052896040518163ffffffff1660e01b8152600401602060405180830381865afa925050508015611737575060408051601f3d908101601f1916820190925261173491810190611d9e565b60015b61174257505f611750565b61174c8189611c3e565b9150505b61176b8884898885116117635788611765565b845b8a611776565b505050505b50505050565b835165ffffffffffff165f036117cc576020808501515f8781526002835260408082208783529093529190912065ffffffffffff60701b60709290921b91909116821760a084901b17600160d01b1790556118bc565b5f6117ee856060015165ffffffffffff16866080015163ffffffff1685610aa3565b9050816001146117fe5781611846565b61184686866060015165ffffffffffff16876080015163ffffffff168860a001516001600160701b03168960c0015163ffffffff168a6020015165ffffffffffff16876105f4565b91505f611876865f015165ffffffffffff16876060015165ffffffffffff16886080015163ffffffff1685610248565b6020808801515f8a81526002835260408082208a83529093529190912065ffffffffffff60701b60709290921b91909116851760a085901b1760d083901b179055905050505b5f858152602081815260409182902085905585810151915133815265ffffffffffff90921691879186917f470520533918800d64f06ee1795a39e90ff3c27a15350a235e17bd23698a470e910160405180910390a45050505050565b60408051610120810182525f80825260208201819052918101829052606081018290526080810182905260a0810182905260c0810182905260e0810182905261010081019190915290565b5f5f5f5f60808587031215611976575f5ffd5b5050823594602084013594506040840135936060013592509050565b5f5f604083850312156119a3575f5ffd5b50508035926020909101359150565b65ffffffffffff815116825265ffffffffffff602082015116602083015260408101516119e9604084018265ffffffffffff169052565b506060810151611a03606084018265ffffffffffff169052565b506080810151611a1b608084018263ffffffff169052565b5060a0810151611a3660a08401826001600160701b03169052565b5060c0810151611a4e60c084018263ffffffff169052565b5060e0810151611a6960e08401826001600160a01b03169052565b5061010090810151910152565b61012081016102d182846119b2565b5f60208284031215611a95575f5ffd5b5035919050565b5f5f5f5f5f5f5f60e0888a031215611ab2575f5ffd5b505085359760208701359750604087013596606081013596506080810135955060a0810135945060c0013592509050565b6001600160a01b0381168114611af7575f5ffd5b50565b5f5f5f5f5f5f5f60e0888a031215611b10575f5ffd5b873596506020880135955060408801359450606088013593506080880135611b3781611ae3565b9699959850939692959460a0840135945060c09093013592915050565b634e487b7160e01b5f52602160045260245ffd5b60068110611b8457634e487b7160e01b5f52602160045260245ffd5b9052565b6101408101611b9782856119b2565b6102a3610120830184611b68565b5f5f5f60608486031215611bb7575f5ffd5b505081359360208301359350604090920135919050565b602081016102d18284611b68565b602080825282518282018190525f918401906040840190835b81811015611c1f57611c088385516119b2565b602093909301926101209290920191600101611bf5565b509095945050505050565b634e487b7160e01b5f52601160045260245ffd5b808201808211156102d1576102d1611c2a565b818103818111156102d1576102d1611c2a565b634e487b7160e01b5f52601260045260245ffd5b5f82611c8657611c86611c64565b500490565b5f60208284031215611c9b575f5ffd5b815180151581146102a3575f5ffd5b5f82611cb857611cb8611c64565b500690565b80820281158282048414176102d1576102d1611c2a565b5f60018201611ce557611ce5611c2a565b5060010190565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52603260045260245ffd5b65ffffffffffff82811682821603908111156102d1576102d1611c2a565b82815261014081016102a360208301846119b2565b5f60208284031215611d57575f5ffd5b8151600681106102a3575f5ffd5b65ffffffffffff81811683821601908111156102d1576102d1611c2a565b5f60208284031215611d93575f5ffd5b81516102a381611ae3565b5f60208284031215611dae575f5ffd5b505191905056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IJBDirectory\",\"name\":\"directory\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"controller\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"JBControlled_ControllerUnauthorized\"},{\"inputs\":[{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"hook\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"JBRulesets_InvalidRulesetApprovalHook\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"limit\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBRulesets_InvalidRulesetDuration\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"limit\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBRulesets_InvalidRulesetEndTime\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"weight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"limit\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBRulesets_InvalidWeight\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"percent\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBRulesets_InvalidWeightCutPercent\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBRulesets_WeightCacheRequired\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"denominator\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"PRBMath_MulDiv_Overflow\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"rulesetId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"basedOnId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"RulesetInitialized\",\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"rulesetId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"weight\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"weightCutPercent\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"mustStartAtOrAfter\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"RulesetQueued\",\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"weightCutMultiple\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"WeightCacheUpdated\",\"anonymous\":false},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"DIRECTORY\",\"outputs\":[{\"internalType\":\"contract IJBDirectory\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startingId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"size\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"allOf\",\"outputs\":[{\"internalType\":\"struct JBRuleset[]\",\"name\":\"rulesets\",\"type\":\"tuple[]\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentApprovalStatusForLatestRulesetOf\",\"outputs\":[{\"internalType\":\"enum JBApprovalStatus\",\"name\":\"\",\"type\":\"uint8\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentOf\",\"outputs\":[{\"internalType\":\"struct JBRuleset\",\"name\":\"ruleset\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"baseRulesetCycleNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetStart\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetDuration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"start\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"deriveCycleNumberFrom\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"baseRulesetStart\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetDuration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"mustStartAtOrAfter\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\",\"name\":\"deriveStartFrom\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"start\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetStart\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetDuration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetWeight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetWeightCutPercent\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"baseRulesetCacheId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"start\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"deriveWeightFrom\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"weight\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rulesetId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"getRulesetOf\",\"outputs\":[{\"internalType\":\"struct JBRuleset\",\"name\":\"ruleset\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"latestQueuedOf\",\"outputs\":[{\"internalType\":\"struct JBRuleset\",\"name\":\"ruleset\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]},{\"internalType\":\"enum JBApprovalStatus\",\"name\":\"approvalStatus\",\"type\":\"uint8\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"latestRulesetIdOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"duration\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"weight\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"weightCutPercent\",\"type\":\"uint256\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"mustStartAtOrAfter\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"queueFor\",\"outputs\":[{\"internalType\":\"struct JBRuleset\",\"name\":\"\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"upcomingOf\",\"outputs\":[{\"internalType\":\"struct JBRuleset\",\"name\":\"ruleset\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"rulesetId\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\",\"name\":\"updateRulesetWeightCache\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"allOf(uint256,uint256,uint256)\":{\"params\":{\"projectId\":\"The ID of the project to get the rulesets of.\",\"size\":\"The maximum number of rulesets to return.\",\"startingId\":\"The ID of the ruleset to begin with. This will be the latest ruleset in the result. If 0 is passed, the project's latest ruleset will be used.\"},\"returns\":{\"rulesets\":\"The rulesets as an array of `JBRuleset` structs.\"}},\"constructor\":{\"params\":{\"directory\":\"A contract storing directories of terminals and controllers for each project.\"}},\"currentApprovalStatusForLatestRulesetOf(uint256)\":{\"params\":{\"projectId\":\"The ID of the project to check the approval status of.\"},\"returns\":{\"_0\":\"The project's current approval status.\"}},\"currentOf(uint256)\":{\"details\":\"Returns an empty ruleset (all zeros) if the project has never had a ruleset queued.Payout limits reset each cycle (keyed by `cycleNumber`), but the `rulesetId` stays the same across auto-cycles of the same stored ruleset.\",\"params\":{\"projectId\":\"The ID of the project to get the current ruleset of.\"},\"returns\":{\"ruleset\":\"The project's current ruleset.\"}},\"deriveCycleNumberFrom(uint256,uint256,uint256,uint256)\":{\"details\":\"Each time a ruleset starts, whether it was queued or cycled over, the cycle number is incremented by 1.\",\"params\":{\"baseRulesetCycleNumber\":\"The cycle number of the base ruleset.\",\"baseRulesetDuration\":\"The duration of the base ruleset.\",\"baseRulesetStart\":\"The start time of the base ruleset.\",\"start\":\"The start time of the ruleset to derive a cycle number for.\"},\"returns\":{\"_0\":\"The ruleset's cycle number.\"}},\"deriveStartFrom(uint256,uint256,uint256)\":{\"params\":{\"baseRulesetDuration\":\"The duration of the base ruleset.\",\"baseRulesetStart\":\"The start time of the base ruleset.\",\"mustStartAtOrAfter\":\"The earliest timestamp the next ruleset can start at.\"},\"returns\":{\"start\":\"The next start time.\"}},\"deriveWeightFrom(uint256,uint256,uint256,uint256,uint256,uint256,uint256)\":{\"params\":{\"baseRulesetCacheId\":\"The ID of the ruleset to base the calculation on (the previous ruleset).\",\"baseRulesetDuration\":\"The duration of the base ruleset.\",\"baseRulesetStart\":\"The start time of the base ruleset.\",\"baseRulesetWeight\":\"The weight of the base ruleset.\",\"baseRulesetWeightCutPercent\":\"The weight cut percent of the base ruleset, out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`.\",\"projectId\":\"The ID of the project to which the ruleset weights apply.\",\"start\":\"The start time of the ruleset to derive a weight for.\"},\"returns\":{\"weight\":\"The derived weight, as a fixed point number with 18 decimals.\"}},\"getRulesetOf(uint256,uint256)\":{\"params\":{\"projectId\":\"The ID of the project to which the ruleset belongs.\",\"rulesetId\":\"The ID of the ruleset to get the struct of.\"},\"returns\":{\"ruleset\":\"The ruleset struct.\"}},\"latestQueuedOf(uint256)\":{\"details\":\"Returns struct and status for the ruleset initialized furthest in the future (at the end of the ruleset queue).\",\"params\":{\"projectId\":\"The ID of the project to get the latest queued ruleset of.\"},\"returns\":{\"approvalStatus\":\"The approval hook's status for the ruleset.\",\"ruleset\":\"The project's latest queued ruleset's struct.\"}},\"queueFor(uint256,uint256,uint256,uint256,address,uint256,uint256)\":{\"details\":\"Only the project's current controller can call this.\",\"params\":{\"approvalHook\":\"A contract that gates whether the *next* queued ruleset can take effect (e.g. `JBDeadline` for minimum notice periods). Set to address(0) for no approval gate.\",\"duration\":\"How long the ruleset lasts (seconds). 0 = no auto-cycling (stays active until explicitly replaced). When a duration ends without a queued replacement, the ruleset rolls over with decayed weight.\",\"metadata\":\"Packed 256-bit field decoded by `JBRulesetMetadataResolver`. Not used by `JBRulesets` itself.\",\"mustStartAtOrAfter\":\"The earliest unix timestamp the ruleset can start.\",\"projectId\":\"The ID of the project to queue the ruleset for.\",\"weight\":\"Tokens minted per unit paid (18 decimals). Terminals divide payment amount by weight to determine issuance. A value of 1 means \\\"inherit decayed weight from previous ruleset\\\".\",\"weightCutPercent\":\"How much to reduce weight each auto-cycle, out of `JBConstants.MAX_WEIGHT_CUT_PERCENT`. Only applies when no explicit replacement is queued. 0 = no decay. 100,000,000 = 10% cut per cycle.\"},\"returns\":{\"_0\":\"The struct of the new ruleset.\"}},\"upcomingOf(uint256)\":{\"details\":\"Returns an empty ruleset (all zeros) if there is no upcoming ruleset.\",\"params\":{\"projectId\":\"The ID of the project to get the upcoming ruleset of.\"},\"returns\":{\"ruleset\":\"The struct for the project's upcoming ruleset.\"}},\"updateRulesetWeightCache(uint256,uint256)\":{\"details\":\"The caller should pass the ruleset ID that `currentOf()` actually uses. When a queued ruleset is rejected by an approval hook, `currentOf()` falls back to the base ruleset, not the rejected latest.\",\"params\":{\"projectId\":\"The ID of the project having its ruleset weight cached.\",\"rulesetId\":\"The ID of the ruleset to update the cache for.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"DIRECTORY()\":{\"notice\":\"The directory of terminals and controllers for projects.\"},\"allOf(uint256,uint256,uint256)\":{\"notice\":\"Returns a paginated history of a project's rulesets, sorted newest-first.\"},\"currentApprovalStatusForLatestRulesetOf(uint256)\":{\"notice\":\"Whether the project's most recently queued ruleset has been approved, rejected, or is still pending.\"},\"currentOf(uint256)\":{\"notice\":\"Returns the ruleset currently governing a project. If the stored ruleset has auto-cycled, simulates cycling with weight decay and returns the simulated current cycle.\"},\"deriveCycleNumberFrom(uint256,uint256,uint256,uint256)\":{\"notice\":\"The cycle number of the next ruleset given the specified ruleset.\"},\"deriveStartFrom(uint256,uint256,uint256)\":{\"notice\":\"The date that is the nearest multiple of the base ruleset's duration from the start of the next cycle.\"},\"deriveWeightFrom(uint256,uint256,uint256,uint256,uint256,uint256,uint256)\":{\"notice\":\"The accumulated weight change since the specified ruleset.\"},\"getRulesetOf(uint256,uint256)\":{\"notice\":\"Get the ruleset struct for a given `rulesetId` and `projectId`.\"},\"latestQueuedOf(uint256)\":{\"notice\":\"The latest ruleset queued for a project. Returns the ruleset's struct and its current approval status.\"},\"latestRulesetIdOf(uint256)\":{\"notice\":\"The ID of the ruleset with the latest start time for a specific project, whether the ruleset has been approved or not.\"},\"queueFor(uint256,uint256,uint256,uint256,address,uint256,uint256)\":{\"notice\":\"Queues a new ruleset for a project. The ruleset takes effect after the current one ends (or immediately if the current ruleset has `duration = 0`). Must be approved by the previous ruleset's approval hook.\"},\"upcomingOf(uint256)\":{\"notice\":\"Returns the ruleset that will take effect after the current one ends. This could be an explicitly queued ruleset or a simulated auto-cycle of the current one (with decayed weight).\"},\"updateRulesetWeightCache(uint256,uint256)\":{\"notice\":\"Cache the value of the ruleset weight for a specific ruleset.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/JBRulesets.sol\":\"JBRulesets\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/JBRulesets.sol\":{\"keccak256\":\"0xfa71dd594a242df2462ad8cba7d95e57ca16090fe6656485c8d909211ea1bb1c\",\"urls\":[\"bzz-raw://99e67a2987d6baa953ff787e21d8d6b3fd6dd959c636fbccc2882c8b63eef497\",\"dweb:/ipfs/Qmct7BoW9adjGES9SQzMHkiC4XET18yDArg3TPCczwBUdv\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/abstract/JBControlled.sol\":{\"keccak256\":\"0x73d904a90ee3d8d60f71f4f14650ad4ddd9e6dd3bd537095bb9218a0e893dec0\",\"urls\":[\"bzz-raw://09b5f1c54de78bbbdc6b336053cacd63dafde09fa8c87e69b609cb81191b32c5\",\"dweb:/ipfs/QmVFqo9reQq9v92dMui7gDsg7eC9gyE7fyyh9D83q7LXBW\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/enums/JBApprovalStatus.sol\":{\"keccak256\":\"0x58f3eed8b6ecea6b640f4eb78a5a416ce8737f9155e350ef4077db422b3fca8f\",\"urls\":[\"bzz-raw://0b56bde97ef9d8ec2a3e464202c5d2fee9c39597485b3fb8baaeef971cc63bc8\",\"dweb:/ipfs/QmSdPaNfPm83yibuSvgLbaqgZw7LYkTLhacrxDagH3sprJ\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBControlled.sol\":{\"keccak256\":\"0x7d34d26ea389c5f3fa39a9c6b2fee18af4a1accf10d8b097b3eb2b48550ef1a9\",\"urls\":[\"bzz-raw://5b9a0708b12c6c427023f4ad316f3d2fa80a4c5e5b6aed67122e3c1504bd9638\",\"dweb:/ipfs/QmUDcgAKakdSRQDhagMJQ8QxC8hwCq7vcbNbuRDisH7snE\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBDirectory.sol\":{\"keccak256\":\"0xb8f3ba0a544360b32c9f0a704168ee93c2960accfc010735c8cbea54941e63d5\",\"urls\":[\"bzz-raw://e9f14d5daa2357db4afe96313b40bf0c53c606315c9cb55109fffdc9c2fd85d0\",\"dweb:/ipfs/QmRPHFAiivM9CqdfocRyahdSjfWTbaSepPNCGGQU23ABcv\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPayHook.sol\":{\"keccak256\":\"0x08599d439d898566b311bc4bedf7f0050ce25c86e246c43f673f3ab4d2457f21\",\"urls\":[\"bzz-raw://db19e95707920262c79197be9296fe381782220bfaf00b71df3a4271da83832f\",\"dweb:/ipfs/QmYzdomQzXNSk46U5vkiEnDErJJdR17deL4S6hPundstZd\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBProjects.sol\":{\"keccak256\":\"0x72c6cbda5a93593e3cc49ef6c4e0848a4b6daa88c188c4192776af86c49911dc\",\"urls\":[\"bzz-raw://448ed5d7a704b5f4dd759514dbcb78160b82732ac6bd7bc368a9f8822045e6de\",\"dweb:/ipfs/QmbnpCPxQLDvQx5ymEy1Ty3aks7bjonydops1CsjCACJBN\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesetApprovalHook.sol\":{\"keccak256\":\"0x11dd67effb025396bec1bb97d35a9ba162340e9a824c048e8286802a12acaa45\",\"urls\":[\"bzz-raw://bae11f483c66d98e7fad9bbf47249f6fa4434693e8bace78cbe6d4da9afee009\",\"dweb:/ipfs/QmWjrjPtr8dLGtXQBrz6idwcNqyx2yVSVVQtqo74yqUSZV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesets.sol\":{\"keccak256\":\"0x8fd69e04aa2b5962a917394c0a4baa6653f7cea93629a1915c1f9c2e870143e5\",\"urls\":[\"bzz-raw://6c7ce64037e6a11cc03e5c66607a219eb25c953ad76aa7b914d2a9e8f0cd5434\",\"dweb:/ipfs/QmYoTec9wfd89HAnNckC2XJWegtgUmfjmi1vJYT4LTXQ61\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTerminal.sol\":{\"keccak256\":\"0xa3621c12f7c2e33ee38b5de626a5939190d8a12b1e5318a7cd8d398595480cec\",\"urls\":[\"bzz-raw://1341254389038383117d9b23ed2f9d1812fc30ef1c11cfd6c8423918894d7ba3\",\"dweb:/ipfs/QmV2WJ5a3NW12RnZAM3ySbEfGHNN6GfqqpsMHXorfoxiQo\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTokenUriResolver.sol\":{\"keccak256\":\"0xcbdb1448260ebea5937411516957ef199099e34ff997e7f2a617c2898f921994\",\"urls\":[\"bzz-raw://d1cbf97e5684c987be6703c096e8230d870fab25a23eec8d209cd082e3f2637b\",\"dweb:/ipfs/QmNmzeuQoFiaUTQAcV1tyJyjUYEJ3t7386zTw4ofT7HoZM\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBConstants.sol\":{\"keccak256\":\"0x5d4b095f3b94c52f89b9cf8a8104de0242497e61f1b32ddc82e78a9ba71a6d0f\",\"urls\":[\"bzz-raw://3ac3340339e0b6a7aae881781b2830f59e3f44114955e2f770172a9bffddc104\",\"dweb:/ipfs/QmV9pFGNGcknqHLEuc6rmC1YPwuwtsokjzh1WX8H2jmVRp\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAccountingContext.sol\":{\"keccak256\":\"0xf53e975ce2632558a95d0a57679dbb8afff984d06daaa530cd4c442e467c3403\",\"urls\":[\"bzz-raw://519f7c466c8d90227afe2bd9108e7477412600fea8b4134889795a58a51b156c\",\"dweb:/ipfs/QmaSHMrNLfP8D9RRUaYbMWURdZYweUmt5ysgtTGMZiwnai\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAfterPayRecordedContext.sol\":{\"keccak256\":\"0xcf1761f48e4cbd6eeeb64bb19e434eff50a7f666b2116657f88f63d19620c6de\",\"urls\":[\"bzz-raw://842fe47a4ad56c830040864b458de398efd0cf82eb0add9349e792d0c8b0c275\",\"dweb:/ipfs/QmXBj6EVnzvVX8ZYa2ndyjoSZDGjpXxaoy7dBuoGMaAmRX\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBPayHookSpecification.sol\":{\"keccak256\":\"0x28f565b626774c36a990ac999f268fbaf9d7f7861e862fab1fb8301f2534e8d1\",\"urls\":[\"bzz-raw://a5d7375934179178febd3b412099b1a5ff42a154ce8b949df2c11b5f3cb3b80e\",\"dweb:/ipfs/QmXP5vVq8Z6HntiuMcPWfQURCKejyiyHLKYuMmzCuUJJtV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBRuleset.sol\":{\"keccak256\":\"0xd03f45345597fca43effe3bc593572c989f4294d909505e331cbd2640a801d23\",\"urls\":[\"bzz-raw://2cc09b335549f4982c16c1109f3078f09fb81c32370baff007633a38badb7a83\",\"dweb:/ipfs/QmYJHBvXscvokRqzdGdTCRQtHUpnePS2uaCDfgHLuuMo56\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBRulesetWeightCache.sol\":{\"keccak256\":\"0x523d7c561f4040820c411309d10ee117ad3bf9ae30353d9b5fbe827f15411aaf\",\"urls\":[\"bzz-raw://4d7f9979439244800e00879054fe7861820fc492ab5e668acab5af18cb60b7a5\",\"dweb:/ipfs/QmfQVhJ9xdMpY5RsnNAgWj5pqPkGwVx2uhVzM2BiVyPN9t\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBTokenAmount.sol\":{\"keccak256\":\"0xc61593d33d5ec30e695d382948a1b944d01e29a8f2bfd29f75ecebcdbc7816de\",\"urls\":[\"bzz-raw://8992c1e5fca0c2342ecc0e734dfba6a2a752e4c29184784931d0971e44305051\",\"dweb:/ipfs/QmYNcaW3qeCkgAExUaFTq238fgfJuoYCTwjCn7jm94U4dJ\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xf78f05f3b8c9f75570e85300d7b4600d7f6f6a198449273f31d44c1641adb46f\",\"urls\":[\"bzz-raw://e28b872613b45e0e801d4995aa4380be2531147bfe2d85c1d6275f1de514fba3\",\"dweb:/ipfs/QmeeFcfShHYaS3BdgVj78nxR28ZaVUwbvr66ud8bT6kzw9\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c\",\"urls\":[\"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617\",\"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u\"],\"license\":\"MIT\"},\"node_modules/@prb/math/src/Common.sol\":{\"keccak256\":\"0x1949276271967e9954a65f27c1c32e1dd73cbd1f3d2af88f2fdd694ba4b7da60\",\"urls\":[\"bzz-raw://ca414ac0a29a3d0d9e194afa73029a7d94168029df6aeb5f6a4b540d0072eb14\",\"dweb:/ipfs/QmYVipmQDvcvurNZZSFGjxabWXwEpdfijYYx2b3d7ico8U\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

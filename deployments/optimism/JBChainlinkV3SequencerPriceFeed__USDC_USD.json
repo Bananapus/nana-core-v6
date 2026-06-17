@@ -1,0 +1,276 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0xf4318bbcbdb98516f4e133e5f5d17764cce98d5d",
+	"sourceName": "node_modules/@bananapus/core-v6/src/JBChainlinkV3SequencerPriceFeed.sol",
+	"contractName": "JBChainlinkV3SequencerPriceFeed",
+	"chainId": "0xa",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [
+				{
+					"name": "feed",
+					"type": "address",
+					"internalType": "contract AggregatorV3Interface"
+				},
+				{
+					"name": "threshold",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "sequencerFeed",
+					"type": "address",
+					"internalType": "contract AggregatorV2V3Interface"
+				},
+				{
+					"name": "gracePeriod",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "FEED",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract AggregatorV3Interface"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "GRACE_PERIOD_TIME",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "SEQUENCER_FEED",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract AggregatorV2V3Interface"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "THRESHOLD",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "currentUnitPrice",
+			"inputs": [
+				{
+					"name": "decimals",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_IncompleteRound",
+			"inputs": [
+				{
+					"name": "roundId",
+					"type": "uint80",
+					"internalType": "uint80"
+				},
+				{
+					"name": "answeredInRound",
+					"type": "uint80",
+					"internalType": "uint80"
+				},
+				{
+					"name": "updatedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_NegativePrice",
+			"inputs": [
+				{
+					"name": "price",
+					"type": "int256",
+					"internalType": "int256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_StalePrice",
+			"inputs": [
+				{
+					"name": "timestamp",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "threshold",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "updatedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3SequencerPriceFeed_InvalidRound",
+			"inputs": [
+				{
+					"name": "startedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting",
+			"inputs": [
+				{
+					"name": "timestamp",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "gracePeriodTime",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "startedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		}
+	],
+	"args": [
+		"0x16a9FA2FDa030272Ce99B29CF780dFA30361E0f3",
+		"172800",
+		"0x371EAD81c9102C9BF4874A9075FFFf170F2Ee389",
+		"3600"
+	],
+	"solcInputHash": "07de4322938d140b896d7da78bd4edea",
+	"receipt": {
+		"type": "0x2",
+		"status": "0x1",
+		"cumulativeGasUsed": "0x3c8800",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x3e7abea8d0b07cfdd717f7e19e4b503005f3e97724f501194549060208328d80"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockHash": "0xdf3cc8115ba34bebb543b9a8c0c4f0ff2ee905ce4652da751d4ab5065fb6db85",
+				"blockNumber": "0x91e8251",
+				"blockTimestamp": "0x6a30de5b",
+				"transactionHash": "0xa21c12714cfee5065a27a9d906fba87006c9c003a449a651171d14d324cff139",
+				"transactionIndex": "0x11",
+				"logIndex": "0x32",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockHash": "0xdf3cc8115ba34bebb543b9a8c0c4f0ff2ee905ce4652da751d4ab5065fb6db85",
+				"blockNumber": "0x91e8251",
+				"blockTimestamp": "0x6a30de5b",
+				"transactionHash": "0xa21c12714cfee5065a27a9d906fba87006c9c003a449a651171d14d324cff139",
+				"transactionIndex": "0x11",
+				"logIndex": "0x33",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x000000000000000000000000000000000000000000000000000000000000004e",
+				"blockHash": "0xdf3cc8115ba34bebb543b9a8c0c4f0ff2ee905ce4652da751d4ab5065fb6db85",
+				"blockNumber": "0x91e8251",
+				"blockTimestamp": "0x6a30de5b",
+				"transactionHash": "0xa21c12714cfee5065a27a9d906fba87006c9c003a449a651171d14d324cff139",
+				"transactionIndex": "0x11",
+				"logIndex": "0x34",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000200000000000000000000000000000000040000000000000000040000000000000000000000000000000000000008000000000000080000080008800080000000008000104000000000000000000000000000000000000000000004000040000000000000000000000002200000000000000000000000004000000000002008000000000000000400000000000000000000000000000800000000000040000000900000000000000000200000000000080000000000000000000",
+		"transactionHash": "0xa21c12714cfee5065a27a9d906fba87006c9c003a449a651171d14d324cff139",
+		"transactionIndex": "0x11",
+		"blockHash": "0xdf3cc8115ba34bebb543b9a8c0c4f0ff2ee905ce4652da751d4ab5065fb6db85",
+		"blockNumber": "0x91e8251",
+		"gasUsed": "0x85844",
+		"effectiveGasPrice": "0x24a093",
+		"blobGasUsed": "0x9f470",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"contractAddress": null,
+		"l1GasPrice": "0xb5a1939",
+		"l1GasUsed": "0x65f4",
+		"l1Fee": "0xa6dded3af",
+		"l1BaseFeeScalar": "0x146b",
+		"l1BlobBaseFee": "0xad7ca7",
+		"l1BlobBaseFeeScalar": "0xf79c5",
+		"daFootprintGasScalar": "0x190"
+	},
+	"bytecode": "0x610100604052348015610010575f5ffd5b5060405161084b38038061084b83398101604081905261002f91610069565b6001600160a01b0393841660805260a09290925260c0919091521660e0526100af565b6001600160a01b0381168114610066575f5ffd5b50565b5f5f5f5f6080858703121561007c575f5ffd5b845161008781610052565b60208601516040870151919550935061009f81610052565b6060959095015193969295505050565b60805160a05160c05160e05161073b6101105f395f8181610111015261013801525f818160ea015281816101eb015261023601525f818160a20152818161039501526103d501525f8181605e01528181610281015261042e015261073b5ff3fe608060405234801561000f575f5ffd5b5060043610610055575f3560e01c80630beaf38c14610059578063785ffb371461009d578063d3f5c15f146100d2578063ed2f8603146100e5578063f9405e631461010c575b5f5ffd5b6100807f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100c47f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610094565b6100c46100e036600461052a565b610133565b6100c47f000000000000000000000000000000000000000000000000000000000000000081565b6100807f000000000000000000000000000000000000000000000000000000000000000081565b5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa158015610192573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101b6919061055c565b50509250925050805f036101e557604051631adef7f560e21b8152600481018290526024015b60405180910390fd5b61020f817f00000000000000000000000000000000000000000000000000000000000000006105be565b4211158061021c57508115155b1561026957604051630d5d8d4160e31b81524260048201527f00000000000000000000000000000000000000000000000000000000000000006024820152604481018290526064016101dc565b6102728461027a565b949350505050565b5f5f5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa1580156102db573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906102ff919061055c565b945094505093509350815f036103425760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064016101dc565b836001600160501b0316816001600160501b0316101561038f5760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064016101dc565b6103b9827f00000000000000000000000000000000000000000000000000000000000000006105be565b421115610408576040516352b4aba960e11b81524260048201527f00000000000000000000000000000000000000000000000000000000000000006024820152604481018390526064016101dc565b5f831361042b5760405163e374febf60e01b8152600481018490526024016101dc565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663313ce5676040518163ffffffff1660e01b8152600401602060405180830381865afa158015610488573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104ac91906105d7565b60ff1690506104bc8482896104c7565b979650505050505050565b5f8282036104d6575082610523565b82821115610504576104e883836105f7565b6104f390600a6106ed565b6104fd90856106f8565b9050610523565b61050e82846105f7565b61051990600a6106ed565b6104fd908561070f565b9392505050565b5f6020828403121561053a575f5ffd5b5035919050565b80516001600160501b0381168114610557575f5ffd5b919050565b5f5f5f5f5f60a08688031215610570575f5ffd5b61057986610541565b6020870151604088015160608901519297509095509350915061059e60808701610541565b90509295509295909350565b634e487b7160e01b5f52601160045260245ffd5b808201808211156105d1576105d16105aa565b92915050565b5f602082840312156105e7575f5ffd5b815160ff81168114610523575f5ffd5b818103818111156105d1576105d16105aa565b6001815b600184111561064557808504811115610629576106296105aa565b600184161561063757908102905b60019390931c92800261060e565b935093915050565b5f8261065b575060016105d1565b8161066757505f6105d1565b816001811461067d5760028114610687576106a3565b60019150506105d1565b60ff841115610698576106986105aa565b50506001821b6105d1565b5060208310610133831016604e8410600b84101617156106c6575081810a6105d1565b6106d25f19848461060a565b805f19048211156106e5576106e56105aa565b029392505050565b5f610523838361064d565b80820281158282048414176105d1576105d16105aa565b5f8261072957634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b5060043610610055575f3560e01c80630beaf38c14610059578063785ffb371461009d578063d3f5c15f146100d2578063ed2f8603146100e5578063f9405e631461010c575b5f5ffd5b6100807f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100c47f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610094565b6100c46100e036600461052a565b610133565b6100c47f000000000000000000000000000000000000000000000000000000000000000081565b6100807f000000000000000000000000000000000000000000000000000000000000000081565b5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa158015610192573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101b6919061055c565b50509250925050805f036101e557604051631adef7f560e21b8152600481018290526024015b60405180910390fd5b61020f817f00000000000000000000000000000000000000000000000000000000000000006105be565b4211158061021c57508115155b1561026957604051630d5d8d4160e31b81524260048201527f00000000000000000000000000000000000000000000000000000000000000006024820152604481018290526064016101dc565b6102728461027a565b949350505050565b5f5f5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa1580156102db573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906102ff919061055c565b945094505093509350815f036103425760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064016101dc565b836001600160501b0316816001600160501b0316101561038f5760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064016101dc565b6103b9827f00000000000000000000000000000000000000000000000000000000000000006105be565b421115610408576040516352b4aba960e11b81524260048201527f00000000000000000000000000000000000000000000000000000000000000006024820152604481018390526064016101dc565b5f831361042b5760405163e374febf60e01b8152600481018490526024016101dc565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663313ce5676040518163ffffffff1660e01b8152600401602060405180830381865afa158015610488573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906104ac91906105d7565b60ff1690506104bc8482896104c7565b979650505050505050565b5f8282036104d6575082610523565b82821115610504576104e883836105f7565b6104f390600a6106ed565b6104fd90856106f8565b9050610523565b61050e82846105f7565b61051990600a6106ed565b6104fd908561070f565b9392505050565b5f6020828403121561053a575f5ffd5b5035919050565b80516001600160501b0381168114610557575f5ffd5b919050565b5f5f5f5f5f60a08688031215610570575f5ffd5b61057986610541565b6020870151604088015160608901519297509095509350915061059e60808701610541565b90509295509295909350565b634e487b7160e01b5f52601160045260245ffd5b808201808211156105d1576105d16105aa565b92915050565b5f602082840312156105e7575f5ffd5b815160ff81168114610523575f5ffd5b818103818111156105d1576105d16105aa565b6001815b600184111561064557808504811115610629576106296105aa565b600184161561063757908102905b60019390931c92800261060e565b935093915050565b5f8261065b575060016105d1565b8161066757505f6105d1565b816001811461067d5760028114610687576106a3565b60019150506105d1565b60ff841115610698576106986105aa565b50506001821b6105d1565b5060208310610133831016604e8410600b84101617156106c6575081810a6105d1565b6106d25f19848461060a565b805f19048211156106e5576106e56105aa565b029392505050565b5f610523838361064d565b80820281158282048414176105d1576105d16105aa565b5f8261072957634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"feed\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"},{\"internalType\":\"contract AggregatorV2V3Interface\",\"name\":\"sequencerFeed\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"gracePeriod\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_IncompleteRound\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"price\",\"type\":\"int256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_NegativePrice\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_StalePrice\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3SequencerPriceFeed_InvalidRound\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"gracePeriodTime\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"startedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3SequencerPriceFeed_SequencerDownOrRestarting\"},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"FEED\",\"outputs\":[{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"GRACE_PERIOD_TIME\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"SEQUENCER_FEED\",\"outputs\":[{\"internalType\":\"contract AggregatorV2V3Interface\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"THRESHOLD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"decimals\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentUnitPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"constructor\":{\"params\":{\"feed\":\"The Chainlink feed to report prices from.\",\"gracePeriod\":\"How long the sequencer should have been re-active before returning prices.\",\"sequencerFeed\":\"The Chainlink feed to report sequencer status.\",\"threshold\":\"How many seconds old a price update may be.\"}},\"currentUnitPrice(uint256)\":{\"params\":{\"decimals\":\"The number of decimals the return value should use.\"},\"returns\":{\"_0\":\"The current unit price from the feed, as a fixed point number with the specified number of decimals.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"FEED()\":{\"notice\":\"The Chainlink feed that prices are reported from.\"},\"GRACE_PERIOD_TIME()\":{\"notice\":\"How long the sequencer must be re-active in order to return a price.\"},\"SEQUENCER_FEED()\":{\"notice\":\"The Chainlink sequencer feed that prices are reported from.\"},\"THRESHOLD()\":{\"notice\":\"How many seconds old a Chainlink price update is allowed to be before considered \\\"stale\\\".\"},\"currentUnitPrice(uint256)\":{\"notice\":\"Gets the current price (per 1 unit) from the feed.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/JBChainlinkV3SequencerPriceFeed.sol\":\"JBChainlinkV3SequencerPriceFeed\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/JBChainlinkV3PriceFeed.sol\":{\"keccak256\":\"0x666be16e9243e0fed615166b333c9eca149f9f5c6362bb25c0c1d501b783bda8\",\"urls\":[\"bzz-raw://e3f4d215937e54129deb39ccecc3cdeb9ad016be42a6ac0224d148bdc4123075\",\"dweb:/ipfs/QmU4Lkq2MTghJwRu4EZHkbmHqC5kDpvz6PDdXqmDT1J5GX\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/JBChainlinkV3SequencerPriceFeed.sol\":{\"keccak256\":\"0xa27578dadedb22cace8296ed44519a2fafdf91eb0202b68b7d31b1cae48ba47b\",\"urls\":[\"bzz-raw://6beb3e1e57b7e045ad456aca5b265c88e3694e3c1c83079d6620591c56c68165\",\"dweb:/ipfs/QmNfnZNBL8sMTMt2KHJ5TFTmpa1TPHJEhuj1UTdppHmWdT\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPriceFeed.sol\":{\"keccak256\":\"0x3a948500b5397c90e926f3bdef9423e7f095f906b23cd1503009802c80bedb41\",\"urls\":[\"bzz-raw://a0ea0b7e5d442257f6159799b7bf262615b0f04e5cd542b0980f131ae40a63bb\",\"dweb:/ipfs/QmX7uugLaXtT5XmYxqfrmDqU2YuknAeYjHMiLm9iHaRfHw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBFixedPointNumber.sol\":{\"keccak256\":\"0x5e260964f6c2d08b2a2929630fe4f261e8a93f40f0d073ed1a8174dbc3ca2fef\",\"urls\":[\"bzz-raw://125b54e29e33cb009a34651b9e255ca3e49545079839e58d14d5c5992871a27d\",\"dweb:/ipfs/QmcGAm8kytywkQogQUabLhuYDC5kLnsTinAm1rBLFwRjf9\"],\"license\":\"MIT\"},\"node_modules/@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorInterface.sol\":{\"keccak256\":\"0xfdfb858c7d0c421a58e332867bea3ecd30575ac204c70c0adb24543e37daa57f\",\"urls\":[\"bzz-raw://ec389ecd4d623ff16a2f9742d867aeb1af2e256881e6ef483ba2a44a95025dc1\",\"dweb:/ipfs/QmTMR3ibowhQQ62kjwJiPMWtiXGDBHkfw8hj2iCk4QKM8J\"],\"license\":\"MIT\"},\"node_modules/@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV2V3Interface.sol\":{\"keccak256\":\"0xd5e222c5dd223490b766da8e45266101dd3635b1ba31d9b7a3a80d49f7640f85\",\"urls\":[\"bzz-raw://87dd19489b055e151dd12a5a17df677f72d4591e3c8e2f7a5b50654cba425a10\",\"dweb:/ipfs/QmZcqPVHRkkijPmkkd5dAZt4a8kFx3A9Zo9XNBYbwuNZat\"],\"license\":\"MIT\"},\"node_modules/@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0x257a8d28fa83d3d942547c8e129ef465e4b5f3f31171e7be4739a4c98da6b4f0\",\"urls\":[\"bzz-raw://6d39e11b1dc7b9b8ccdabbc9be442ab7cda4a81c748f57e316dcb1bcb4a28bf9\",\"dweb:/ipfs/QmaG6vz6W6iEUBsbHSBob5mdcitYxWjoygxREHpsJHfWrS\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

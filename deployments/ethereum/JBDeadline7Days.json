@@ -1,0 +1,189 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x540923f7b6166bf9713490719a2210aeebc9fca2",
+	"sourceName": "node_modules/@bananapus/core-v6/src/periphery/JBDeadline7Days.sol",
+	"contractName": "JBDeadline7Days",
+	"chainId": "0x1",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "DURATION",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "approvalStatusOf",
+			"inputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "ruleset",
+					"type": "tuple",
+					"internalType": "struct JBRuleset",
+					"components": [
+						{
+							"name": "cycleNumber",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "id",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "basedOnId",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "start",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "duration",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "weight",
+							"type": "uint112",
+							"internalType": "uint112"
+						},
+						{
+							"name": "weightCutPercent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "approvalHook",
+							"type": "address",
+							"internalType": "contract IJBRulesetApprovalHook"
+						},
+						{
+							"name": "metadata",
+							"type": "uint256",
+							"internalType": "uint256"
+						}
+					]
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint8",
+					"internalType": "enum JBApprovalStatus"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "supportsInterface",
+			"inputs": [
+				{
+					"name": "interfaceId",
+					"type": "bytes4",
+					"internalType": "bytes4"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "bool",
+					"internalType": "bool"
+				}
+			],
+			"stateMutability": "view"
+		}
+	],
+	"args": [],
+	"solcInputHash": "60c21b6d82b78d3f5b773504b3f7fc00",
+	"receipt": {
+		"blockHash": "0x89df5abd6efc794ba7d90d850b8d97286cc82236c0d89cb67f2b3d77839c8f73",
+		"blockNumber": "0x182817e",
+		"contractAddress": null,
+		"cumulativeGasUsed": "0xb720a2",
+		"effectiveGasPrice": "0x47894b20",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"gasUsed": "0x4dffc",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x4b4d5d701a3235c68311232c2a0720752fc8cde26169397e50e13f5fb8d6c41d"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockNumber": "0x182817e",
+				"transactionHash": "0x85dcc8406e27d4175a4013b55f0d8dce27df9a84d502802fa8f6d36283797811",
+				"transactionIndex": "0x5a",
+				"blockHash": "0x89df5abd6efc794ba7d90d850b8d97286cc82236c0d89cb67f2b3d77839c8f73",
+				"blockTimestamp": "0x6a313fc3",
+				"logIndex": "0x17d",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockNumber": "0x182817e",
+				"transactionHash": "0x85dcc8406e27d4175a4013b55f0d8dce27df9a84d502802fa8f6d36283797811",
+				"transactionIndex": "0x5a",
+				"blockHash": "0x89df5abd6efc794ba7d90d850b8d97286cc82236c0d89cb67f2b3d77839c8f73",
+				"blockTimestamp": "0x6a313fc3",
+				"logIndex": "0x17e",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x000000000000000000000000000000000000000000000000000000000000005d",
+				"blockNumber": "0x182817e",
+				"transactionHash": "0x85dcc8406e27d4175a4013b55f0d8dce27df9a84d502802fa8f6d36283797811",
+				"transactionIndex": "0x5a",
+				"blockHash": "0x89df5abd6efc794ba7d90d850b8d97286cc82236c0d89cb67f2b3d77839c8f73",
+				"blockTimestamp": "0x6a313fc3",
+				"logIndex": "0x17f",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000011000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000200000000000000000000000000000000040000000000000000040000000000000000000000000000000000000808000000000000000000080008800000000000008000104000000000000000000000010000000000000000000004000040000000000000000000000002200000000000000000000000004000000000002008000000000000000400000000000000000000000000000800000000000000000000900000000000000000200000000000080000000000000000000",
+		"status": "0x1",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"transactionHash": "0x85dcc8406e27d4175a4013b55f0d8dce27df9a84d502802fa8f6d36283797811",
+		"transactionIndex": "0x5a",
+		"type": "0x2"
+	},
+	"bytecode": "0x60a0604052348015600e575f5ffd5b5062093a8060805260805161036261003b5f395f8181607001528181610121015261016701526103625ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c806301ffc9a7146100435780631be052891461006b5780632bd6bd4d146100a0575b5f5ffd5b6100566100513660046101a5565b6100c0565b60405190151581526020015b60405180910390f35b6100927f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610062565b6100b36100ae366004610262565b6100f6565b604051610062919061032f565b5f6001600160e01b03198216630c0dbbf160e21b14806100f057506001600160e01b031982166301ffc9a760e01b145b92915050565b5f816060015165ffffffffffff16826020015165ffffffffffff16111561011f575060056100f0565b7f0000000000000000000000000000000000000000000000000000000000000000826020015183606001510365ffffffffffff161061019b57816060015165ffffffffffff167f000000000000000000000000000000000000000000000000000000000000000042011061019457600461019e565b600361019e565b60055b9392505050565b5f602082840312156101b5575f5ffd5b81356001600160e01b03198116811461019e575f5ffd5b604051610120810167ffffffffffffffff811182821017156101fc57634e487b7160e01b5f52604160045260245ffd5b60405290565b803565ffffffffffff81168114610217575f5ffd5b919050565b803563ffffffff81168114610217575f5ffd5b80356dffffffffffffffffffffffffffff81168114610217575f5ffd5b80356001600160a01b0381168114610217575f5ffd5b5f5f828403610140811215610275575f5ffd5b83359250610120601f198201121561028b575f5ffd5b506102946101cc565b6102a060208501610202565b81526102ae60408501610202565b60208201526102bf60608501610202565b60408201526102d060808501610202565b60608201526102e160a0850161021c565b60808201526102f260c0850161022f565b60a082015261030360e0850161021c565b60c0820152610315610100850161024c565b60e082015261012093909301356101008401525092909150565b602081016006831061034f57634e487b7160e01b5f52602160045260245ffd5b9190529056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b506004361061003f575f3560e01c806301ffc9a7146100435780631be052891461006b5780632bd6bd4d146100a0575b5f5ffd5b6100566100513660046101a5565b6100c0565b60405190151581526020015b60405180910390f35b6100927f000000000000000000000000000000000000000000000000000000000000000081565b604051908152602001610062565b6100b36100ae366004610262565b6100f6565b604051610062919061032f565b5f6001600160e01b03198216630c0dbbf160e21b14806100f057506001600160e01b031982166301ffc9a760e01b145b92915050565b5f816060015165ffffffffffff16826020015165ffffffffffff16111561011f575060056100f0565b7f0000000000000000000000000000000000000000000000000000000000000000826020015183606001510365ffffffffffff161061019b57816060015165ffffffffffff167f000000000000000000000000000000000000000000000000000000000000000042011061019457600461019e565b600361019e565b60055b9392505050565b5f602082840312156101b5575f5ffd5b81356001600160e01b03198116811461019e575f5ffd5b604051610120810167ffffffffffffffff811182821017156101fc57634e487b7160e01b5f52604160045260245ffd5b60405290565b803565ffffffffffff81168114610217575f5ffd5b919050565b803563ffffffff81168114610217575f5ffd5b80356dffffffffffffffffffffffffffff81168114610217575f5ffd5b80356001600160a01b0381168114610217575f5ffd5b5f5f828403610140811215610275575f5ffd5b83359250610120601f198201121561028b575f5ffd5b506102946101cc565b6102a060208501610202565b81526102ae60408501610202565b60208201526102bf60608501610202565b60408201526102d060808501610202565b60608201526102e160a0850161021c565b60808201526102f260c0850161022f565b60a082015261030360e0850161021c565b60c0820152610315610100850161024c565b60e082015261012093909301356101008401525092909150565b602081016006831061034f57634e487b7160e01b5f52602160045260245ffd5b9190529056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"DURATION\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"struct JBRuleset\",\"name\":\"ruleset\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint48\",\"name\":\"cycleNumber\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"id\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"basedOnId\",\"type\":\"uint48\"},{\"internalType\":\"uint48\",\"name\":\"start\",\"type\":\"uint48\"},{\"internalType\":\"uint32\",\"name\":\"duration\",\"type\":\"uint32\"},{\"internalType\":\"uint112\",\"name\":\"weight\",\"type\":\"uint112\"},{\"internalType\":\"uint32\",\"name\":\"weightCutPercent\",\"type\":\"uint32\"},{\"internalType\":\"contract IJBRulesetApprovalHook\",\"name\":\"approvalHook\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"metadata\",\"type\":\"uint256\"}]}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"approvalStatusOf\",\"outputs\":[{\"internalType\":\"enum JBApprovalStatus\",\"name\":\"\",\"type\":\"uint8\"}]},{\"inputs\":[{\"internalType\":\"bytes4\",\"name\":\"interfaceId\",\"type\":\"bytes4\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"supportsInterface\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}]}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"approvalStatusOf(uint256,(uint48,uint48,uint48,uint48,uint32,uint112,uint32,address,uint256))\":{\"params\":{\"ruleset\":\"ruleset to check the status of.\"},\"returns\":{\"_0\":\"The ruleset's approval status.\"}},\"supportsInterface(bytes4)\":{\"details\":\"See {IERC165-supportsInterface}.\",\"params\":{\"interfaceId\":\"The ID of the interface to check for adherence to.\"},\"returns\":{\"_0\":\"A flag indicating if this contract adheres to the specified interface.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"DURATION()\":{\"notice\":\"The minimum number of seconds between the time a ruleset is queued and the time it starts. If the difference is greater than this number, the ruleset is `Approved`.\"},\"approvalStatusOf(uint256,(uint48,uint48,uint48,uint48,uint32,uint112,uint32,address,uint256))\":{\"notice\":\"The approval status of a given ruleset.\"},\"supportsInterface(bytes4)\":{\"notice\":\"Indicates whether this contract adheres to the specified interface.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/periphery/JBDeadline7Days.sol\":\"JBDeadline7Days\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/JBDeadline.sol\":{\"keccak256\":\"0x6767da3478973b6746dd2f5c1211a347e276a177d57e9cd7844081b4d7fccbe5\",\"urls\":[\"bzz-raw://e7c8a6780d50eb3a93b3f96522de4ba5130d19d2050fb26bbea7c2ef9c883993\",\"dweb:/ipfs/QmRS3qiB1NkTgnKyBdPUcPdhy2tnSw7jqhCZjvSvFz3MZw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/enums/JBApprovalStatus.sol\":{\"keccak256\":\"0x58f3eed8b6ecea6b640f4eb78a5a416ce8737f9155e350ef4077db422b3fca8f\",\"urls\":[\"bzz-raw://0b56bde97ef9d8ec2a3e464202c5d2fee9c39597485b3fb8baaeef971cc63bc8\",\"dweb:/ipfs/QmSdPaNfPm83yibuSvgLbaqgZw7LYkTLhacrxDagH3sprJ\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesetApprovalHook.sol\":{\"keccak256\":\"0x11dd67effb025396bec1bb97d35a9ba162340e9a824c048e8286802a12acaa45\",\"urls\":[\"bzz-raw://bae11f483c66d98e7fad9bbf47249f6fa4434693e8bace78cbe6d4da9afee009\",\"dweb:/ipfs/QmWjrjPtr8dLGtXQBrz6idwcNqyx2yVSVVQtqo74yqUSZV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/periphery/JBDeadline7Days.sol\":{\"keccak256\":\"0x1fa85eaa69e888ef8f495655890f12d268ef1b0cd364b68ca1266ce942e52bec\",\"urls\":[\"bzz-raw://73248b9ef0c06a2dd4e66f50b398a276ff41c8fb5b077fe5cf98c604dacedefc\",\"dweb:/ipfs/QmPz1dmixv3MsqgT8gBsKbyTzRtL6XSnUEnfuhoZRzjgzw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBRuleset.sol\":{\"keccak256\":\"0xd03f45345597fca43effe3bc593572c989f4294d909505e331cbd2640a801d23\",\"urls\":[\"bzz-raw://2cc09b335549f4982c16c1109f3078f09fb81c32370baff007633a38badb7a83\",\"dweb:/ipfs/QmYJHBvXscvokRqzdGdTCRQtHUpnePS2uaCDfgHLuuMo56\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c\",\"urls\":[\"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617\",\"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

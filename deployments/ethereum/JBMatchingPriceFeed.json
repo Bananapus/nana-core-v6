@@ -1,0 +1,105 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0xa37213cbc60cdc9111849d31536471a0f084ece0",
+	"sourceName": "node_modules/@bananapus/core-v6/src/periphery/JBMatchingPriceFeed.sol",
+	"contractName": "JBMatchingPriceFeed",
+	"chainId": "0x1",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "currentUnitPrice",
+			"inputs": [
+				{
+					"name": "decimals",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		}
+	],
+	"args": [],
+	"solcInputHash": "7cda9d62a3c4e23dd78e1508ca7b3bb9",
+	"receipt": {
+		"blockHash": "0xe253fd9b35c81d8212b0d9054c6ac00585dc47681b3f12b0e0608deba1b4bda9",
+		"blockNumber": "0x182816a",
+		"contractAddress": null,
+		"cumulativeGasUsed": "0x1e796c",
+		"effectiveGasPrice": "0x47894b20",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"gasUsed": "0x3484f",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x27e67a426a9b04d44f606088f4d6636b728cf1ea7ed5f11badba5c625ef3be6b"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockNumber": "0x182816a",
+				"transactionHash": "0xe6e476ab20ac97b0db6ff7bbe96f8d03b6f4bf14bb72ed73e547ecc83125904c",
+				"transactionIndex": "0x22",
+				"blockHash": "0xe253fd9b35c81d8212b0d9054c6ac00585dc47681b3f12b0e0608deba1b4bda9",
+				"blockTimestamp": "0x6a313ed3",
+				"logIndex": "0x2b",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockNumber": "0x182816a",
+				"transactionHash": "0xe6e476ab20ac97b0db6ff7bbe96f8d03b6f4bf14bb72ed73e547ecc83125904c",
+				"transactionIndex": "0x22",
+				"blockHash": "0xe253fd9b35c81d8212b0d9054c6ac00585dc47681b3f12b0e0608deba1b4bda9",
+				"blockTimestamp": "0x6a313ed3",
+				"logIndex": "0x2c",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000054",
+				"blockNumber": "0x182816a",
+				"transactionHash": "0xe6e476ab20ac97b0db6ff7bbe96f8d03b6f4bf14bb72ed73e547ecc83125904c",
+				"transactionIndex": "0x22",
+				"blockHash": "0xe253fd9b35c81d8212b0d9054c6ac00585dc47681b3f12b0e0608deba1b4bda9",
+				"blockTimestamp": "0x6a313ed3",
+				"logIndex": "0x2d",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000004000000000200000000000000000000000000000000040000000000000000040000000000000000000000000000000000000008000000000000000000080008800000000000008000104000000000000000000000000000000000000000000004000040000000000000000000000012200000000000000000000000004000000100002008000000000000000400000000000000000000000000000800000000000000000000900000000000000000200000000000080000000000000000000",
+		"status": "0x1",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"transactionHash": "0xe6e476ab20ac97b0db6ff7bbe96f8d03b6f4bf14bb72ed73e547ecc83125904c",
+		"transactionIndex": "0x22",
+		"type": "0x2"
+	},
+	"bytecode": "0x6080604052348015600e575f5ffd5b506101918061001c5f395ff3fe608060405234801561000f575f5ffd5b5060043610610029575f3560e01c8063d3f5c15f1461002d575b5f5ffd5b61004061003b366004610064565b610052565b60405190815260200160405180910390f35b5f61005e82600a610172565b92915050565b5f60208284031215610074575f5ffd5b5035919050565b634e487b7160e01b5f52601160045260245ffd5b6001815b60018411156100ca578085048111156100ae576100ae61007b565b60018416156100bc57908102905b60019390931c928002610093565b935093915050565b5f826100e05750600161005e565b816100ec57505f61005e565b8160018114610102576002811461010c57610128565b600191505061005e565b60ff84111561011d5761011d61007b565b50506001821b61005e565b5060208310610133831016604e8410600b841016171561014b575081810a61005e565b6101575f19848461008f565b805f190482111561016a5761016a61007b565b029392505050565b5f61017d83836100d2565b939250505056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b5060043610610029575f3560e01c8063d3f5c15f1461002d575b5f5ffd5b61004061003b366004610064565b610052565b60405190815260200160405180910390f35b5f61005e82600a610172565b92915050565b5f60208284031215610074575f5ffd5b5035919050565b634e487b7160e01b5f52601160045260245ffd5b6001815b60018411156100ca578085048111156100ae576100ae61007b565b60018416156100bc57908102905b60019390931c928002610093565b935093915050565b5f826100e05750600161005e565b816100ec57505f61005e565b8160018114610102576002811461010c57610128565b600191505061005e565b60ff84111561011d5761011d61007b565b50506001821b61005e565b5060208310610133831016604e8410600b841016171561014b575081810a61005e565b6101575f19848461008f565b805f190482111561016a5761016a61007b565b029392505050565b5f61017d83836100d2565b939250505056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"decimals\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentUnitPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"currentUnitPrice(uint256)\":{\"params\":{\"decimals\":\"The number of decimals the return value should use.\"},\"returns\":{\"_0\":\"The current unit price from the feed, as a fixed point number with the specified number of decimals.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"currentUnitPrice(uint256)\":{\"notice\":\"Gets the current price (per 1 unit) from the feed.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/periphery/JBMatchingPriceFeed.sol\":\"JBMatchingPriceFeed\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/interfaces/IJBPriceFeed.sol\":{\"keccak256\":\"0x3a948500b5397c90e926f3bdef9423e7f095f906b23cd1503009802c80bedb41\",\"urls\":[\"bzz-raw://a0ea0b7e5d442257f6159799b7bf262615b0f04e5cd542b0980f131ae40a63bb\",\"dweb:/ipfs/QmX7uugLaXtT5XmYxqfrmDqU2YuknAeYjHMiLm9iHaRfHw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/periphery/JBMatchingPriceFeed.sol\":{\"keccak256\":\"0xb9922ebf93d064ae1f44cda687b4453185b17896d841455c840c36726ad22ee0\",\"urls\":[\"bzz-raw://049537894013c818fa02654e461fd5d0f2e87647cadf570a312086f8719def2a\",\"dweb:/ipfs/QmaSTbNWGMJ9XXBF6bxb1ESKV2NABUVg9xXeP98w1Ugjrc\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}
