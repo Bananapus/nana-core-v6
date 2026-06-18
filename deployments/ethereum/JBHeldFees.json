@@ -1,0 +1,145 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x62e77076b6e902e7aec8b2925acc9b46058e3d38",
+	"sourceName": "node_modules/@bananapus/core-v6/src/libraries/JBHeldFees.sol",
+	"contractName": "JBHeldFees",
+	"chainId": "0x1",
+	"abi": [
+		{
+			"type": "event",
+			"name": "ReturnHeldFees",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "token",
+					"type": "address",
+					"indexed": true,
+					"internalType": "address"
+				},
+				{
+					"name": "amount",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "returnedFees",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "leftoverAmount",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "error",
+			"name": "PRBMath_MulDiv_Overflow",
+			"inputs": [
+				{
+					"name": "x",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "y",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "denominator",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		}
+	],
+	"args": [],
+	"solcInputHash": "18af40ac3eb122242e45f0f427d0ac26",
+	"receipt": {
+		"blockHash": "0x302ad3ae31228b93fef42b7728d5640020a974559bbfaf257ff7fe8910d092e5",
+		"blockNumber": "0x1827928",
+		"contractAddress": null,
+		"cumulativeGasUsed": "0x71d8cb",
+		"effectiveGasPrice": "0x47894b20",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"gasUsed": "0x89a64",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x0e1d1f79baa812d257c7ad0efe047b7e14e0c3c176c0a686a96675b0eb5c6756"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockNumber": "0x1827928",
+				"transactionHash": "0x19b4d4c56032171f29045539e3cb66dd2b3d3d10759c933d41b284a08b69a14d",
+				"transactionIndex": "0x54",
+				"blockHash": "0x302ad3ae31228b93fef42b7728d5640020a974559bbfaf257ff7fe8910d092e5",
+				"blockTimestamp": "0x6a30db5b",
+				"logIndex": "0x12c",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockNumber": "0x1827928",
+				"transactionHash": "0x19b4d4c56032171f29045539e3cb66dd2b3d3d10759c933d41b284a08b69a14d",
+				"transactionIndex": "0x54",
+				"blockHash": "0x302ad3ae31228b93fef42b7728d5640020a974559bbfaf257ff7fe8910d092e5",
+				"blockTimestamp": "0x6a30db5b",
+				"logIndex": "0x12d",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000001",
+				"blockNumber": "0x1827928",
+				"transactionHash": "0x19b4d4c56032171f29045539e3cb66dd2b3d3d10759c933d41b284a08b69a14d",
+				"transactionIndex": "0x54",
+				"blockHash": "0x302ad3ae31228b93fef42b7728d5640020a974559bbfaf257ff7fe8910d092e5",
+				"blockTimestamp": "0x6a30db5b",
+				"logIndex": "0x12e",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000010000000000200000000000000000000000004000000040000000000000000040000000000000000000000000000000000000008000000000000000000080008800000000000008000104000000000000000000400000000000000000000000004000040000000000000000000000002200000000000000000000000004000000000002008000000000000000400000000000000000000000000000800000000000000000000900000000000000000200000000000080000000000000000000",
+		"status": "0x1",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"transactionHash": "0x19b4d4c56032171f29045539e3cb66dd2b3d3d10759c933d41b284a08b69a14d",
+		"transactionIndex": "0x54",
+		"type": "0x2"
+	},
+	"bytecode": "0x610799610034600b8282823980515f1a607314602857634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061003f575f3560e01c8063aac399d114610043578063b98926761461006c575b5f5ffd5b6100566100513660046105eb565b610099565b604051610063919061062e565b60405180910390f35b818015610077575f5ffd5b5061008b6100863660046106a3565b610272565b604051908152602001610063565b5f838152602085815260408083206001600160a01b038616808552908352818420548785528984528285209185529252909120546060919080821061012257604080515f8082526020820190925290610118565b604080516060810182525f80825260208083018290529282015282525f199092019101816100ed5790505b5092505050610269565b8061012d858461071f565b11156101405761013d8282610732565b93505b8367ffffffffffffffff811115610159576101596106f7565b6040519080825280602002602001820160405280156101a257816020015b604080516060810182525f80825260208083018290529282015282525f199092019101816101775790505b5092505f5b84811015610265575f87815260208a815260408083206001600160a01b038a16845290915290206101d8828561071f565b815481106101e8576101e8610745565b5f9182526020918290206040805160608101825260029390930290910180546001600160e01b03168352600101546001600160a01b03811693830193909352600160a01b90920465ffffffffffff1691810191909152845185908390811061025257610252610745565b60209081029190910101526001016101a7565b5050505b95945050505050565b5f848152602086815260408083206001600160a01b038716808552908352818420548885528a845282852091855292528220548082106102b6575f925050506104c2565b8482805b83811015610431578215610431575f8a815260208d815260408083206001600160a01b038d16845290915281208054839081106102f9576102f9610745565b5f91825260208083206040805160608101825260029490940290910180546001600160e01b03168085526001909101546001600160a01b03811693850193909352600160a01b90920465ffffffffffff169083015290925061035a906104cc565b90505f81835f01516001600160e01b03166103759190610732565b90508086106103995797810197948590039461039284600161071f565b9450610423565b6103a2866104de565b91508186018f5f8f81526020019081526020015f205f8e6001600160a01b03166001600160a01b031681526020019081526020015f2085815481106103e9576103e9610745565b5f918252602082206002919091020180546001600160e01b031981166001600160e01b039182169490940316929092179091559882019895505b8360010193505050506102ba565b5080841461045c575f89815260208b815260408083206001600160a01b038c16845290915290208190555b86886001600160a01b03168a7fedc5125503c021a73fd7d8ed0c2456b296be2c88f39fbed068bd091cef7ca43d88868b6040516104b59392919092835260208301919091526001600160a01b0316604082015260600190565b60405180910390a4505050505b9695505050505050565b5f6104d860288361076d565b92915050565b5f816104ed83602860276104f7565b6104d89190610732565b5f80805f19858709858702925082811083820303915050805f0361052e5783828161052457610524610759565b04925050506105c9565b83811061056357604051630c740aef60e31b815260048101879052602481018690526044810185905260640160405180910390fd5b5f848688098519600190810187169687900496828603819004959092119093035f82900391909104909201919091029190911760038402600290811880860282030280860282030280860282030280860282030280860282030280860290910302029150505b9392505050565b80356001600160a01b03811681146105e6575f5ffd5b919050565b5f5f5f5f5f60a086880312156105ff575f5ffd5b85359450602086013593506040860135925061061d606087016105d0565b949793965091946080013592915050565b602080825282518282018190525f918401906040840190835b8181101561069857835180516001600160e01b031684526020808201516001600160a01b03168186015260409182015165ffffffffffff169185019190915290930192606090920191600101610647565b509095945050505050565b5f5f5f5f5f5f60c087890312156106b8575f5ffd5b8635955060208701359450604087013593506106d6606088016105d0565b9250608087013591506106eb60a088016105d0565b90509295509295509295565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52601160045260245ffd5b808201808211156104d8576104d861070b565b818103818111156104d8576104d861070b565b634e487b7160e01b5f52603260045260245ffd5b634e487b7160e01b5f52601260045260245ffd5b5f8261078757634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x730000000000000000000000000000000000000000301460806040526004361061003f575f3560e01c8063aac399d114610043578063b98926761461006c575b5f5ffd5b6100566100513660046105eb565b610099565b604051610063919061062e565b60405180910390f35b818015610077575f5ffd5b5061008b6100863660046106a3565b610272565b604051908152602001610063565b5f838152602085815260408083206001600160a01b038616808552908352818420548785528984528285209185529252909120546060919080821061012257604080515f8082526020820190925290610118565b604080516060810182525f80825260208083018290529282015282525f199092019101816100ed5790505b5092505050610269565b8061012d858461071f565b11156101405761013d8282610732565b93505b8367ffffffffffffffff811115610159576101596106f7565b6040519080825280602002602001820160405280156101a257816020015b604080516060810182525f80825260208083018290529282015282525f199092019101816101775790505b5092505f5b84811015610265575f87815260208a815260408083206001600160a01b038a16845290915290206101d8828561071f565b815481106101e8576101e8610745565b5f9182526020918290206040805160608101825260029390930290910180546001600160e01b03168352600101546001600160a01b03811693830193909352600160a01b90920465ffffffffffff1691810191909152845185908390811061025257610252610745565b60209081029190910101526001016101a7565b5050505b95945050505050565b5f848152602086815260408083206001600160a01b038716808552908352818420548885528a845282852091855292528220548082106102b6575f925050506104c2565b8482805b83811015610431578215610431575f8a815260208d815260408083206001600160a01b038d16845290915281208054839081106102f9576102f9610745565b5f91825260208083206040805160608101825260029490940290910180546001600160e01b03168085526001909101546001600160a01b03811693850193909352600160a01b90920465ffffffffffff169083015290925061035a906104cc565b90505f81835f01516001600160e01b03166103759190610732565b90508086106103995797810197948590039461039284600161071f565b9450610423565b6103a2866104de565b91508186018f5f8f81526020019081526020015f205f8e6001600160a01b03166001600160a01b031681526020019081526020015f2085815481106103e9576103e9610745565b5f918252602082206002919091020180546001600160e01b031981166001600160e01b039182169490940316929092179091559882019895505b8360010193505050506102ba565b5080841461045c575f89815260208b815260408083206001600160a01b038c16845290915290208190555b86886001600160a01b03168a7fedc5125503c021a73fd7d8ed0c2456b296be2c88f39fbed068bd091cef7ca43d88868b6040516104b59392919092835260208301919091526001600160a01b0316604082015260600190565b60405180910390a4505050505b9695505050505050565b5f6104d860288361076d565b92915050565b5f816104ed83602860276104f7565b6104d89190610732565b5f80805f19858709858702925082811083820303915050805f0361052e5783828161052457610524610759565b04925050506105c9565b83811061056357604051630c740aef60e31b815260048101879052602481018690526044810185905260640160405180910390fd5b5f848688098519600190810187169687900496828603819004959092119093035f82900391909104909201919091029190911760038402600290811880860282030280860282030280860282030280860282030280860282030280860290910302029150505b9392505050565b80356001600160a01b03811681146105e6575f5ffd5b919050565b5f5f5f5f5f60a086880312156105ff575f5ffd5b85359450602086013593506040860135925061061d606087016105d0565b949793965091946080013592915050565b602080825282518282018190525f918401906040840190835b8181101561069857835180516001600160e01b031684526020808201516001600160a01b03168186015260409182015165ffffffffffff169185019190915290930192606090920191600101610647565b509095945050505050565b5f5f5f5f5f5f60c087890312156106b8575f5ffd5b8635955060208701359450604087013593506106d6606088016105d0565b9250608087013591506106eb60a088016105d0565b90509295509295509295565b634e487b7160e01b5f52604160045260245ffd5b634e487b7160e01b5f52601160045260245ffd5b808201808211156104d8576104d861070b565b818103818111156104d8576104d861070b565b634e487b7160e01b5f52603260045260245ffd5b634e487b7160e01b5f52601260045260245ffd5b5f8261078757634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"denominator\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"PRBMath_MulDiv_Overflow\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"returnedFees\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"leftoverAmount\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"ReturnHeldFees\",\"anonymous\":false}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"returnHeldFees(mapping(uint256 => mapping(address => JBFee[])) storage,mapping(uint256 => mapping(address => uint256)) storage,uint256,address,uint256,address)\":{\"details\":\"Walks unprocessed held fees in storage order. For each fee, checks if the incoming `amount` covers the original net payout (gross minus fee). If yes, the fee is fully credited back and the entry is tombstoned by advancing the index. If only part of the fee can be refunded, the entry's stored gross amount is shrunk in place using the back-calculated fee so a future top-up can still settle the remainder.Partial refunds use `standardFeeAmountResultingIn` so repaying a dust amount cannot both credit the payer project and leave the fee project owed the 1-unit minimum fee. Reads `caller` from a parameter instead of `msg.sender` because the library runs under `DELEGATECALL` from the terminal — `msg.sender` here is the original external caller of the terminal, not the meta-tx-aware caller the terminal would emit. The terminal passes `_msgSender()` so the event carries the meta-tx sender as intended.\",\"params\":{\"amount\":\"The incoming amount available to match against held fees.\",\"caller\":\"The address that triggered the return, forwarded into the `ReturnHeldFees` event.\",\"heldFeesOf\":\"The terminal's held-fee storage mapping.\",\"nextHeldFeeIndexOf\":\"The terminal's per-project/token next-index storage mapping.\",\"projectId\":\"The project to return held fees to.\",\"token\":\"The token that the held fees are in.\"},\"returns\":{\"returnedFees\":\"The total fee amount returned to the project (sum of fully and partially refunded fees).\"}},\"viewHeldFees(mapping(uint256 => mapping(address => JBFee[])) storage,mapping(uint256 => mapping(address => uint256)) storage,uint256,address,uint256)\":{\"params\":{\"count\":\"The maximum number of held fees to return.\",\"heldFeesOf\":\"The terminal's held-fee storage mapping (project => token => array).\",\"nextHeldFeeIndexOf\":\"The terminal's per-project/token next-index storage mapping.\",\"projectId\":\"The ID of the project to read held fees for.\",\"token\":\"The token the fees are denominated in.\"},\"returns\":{\"heldFees\":\"A view-only copy of the unprocessed held fees, in storage order.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"returnHeldFees(mapping(uint256 => mapping(address => JBFee[])) storage,mapping(uint256 => mapping(address => uint256)) storage,uint256,address,uint256,address)\":{\"notice\":\"Returns held fees back to a project's balance based on the specified incoming amount.\"},\"viewHeldFees(mapping(uint256 => mapping(address => JBFee[])) storage,mapping(uint256 => mapping(address => uint256)) storage,uint256,address,uint256)\":{\"notice\":\"Returns up to `count` held fees for a project/token, starting from the next unprocessed index.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/libraries/JBHeldFees.sol\":\"JBHeldFees\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/enums/JBApprovalStatus.sol\":{\"keccak256\":\"0x58f3eed8b6ecea6b640f4eb78a5a416ce8737f9155e350ef4077db422b3fca8f\",\"urls\":[\"bzz-raw://0b56bde97ef9d8ec2a3e464202c5d2fee9c39597485b3fb8baaeef971cc63bc8\",\"dweb:/ipfs/QmSdPaNfPm83yibuSvgLbaqgZw7LYkTLhacrxDagH3sprJ\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBFeeTerminal.sol\":{\"keccak256\":\"0xaaa9a98ad8967e1ab71b560f1cc07fc53d4900a8d595d53f5fb090d8e004562f\",\"urls\":[\"bzz-raw://36513a02be24f9677e0f1e82e01970c81c09043b69e4e60cb3007e2a05f3ce64\",\"dweb:/ipfs/QmZPKkEhgM5A5GzHG4TPxAe8HzjyLxLZzmJaDMDTNxV783\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBFeelessAddresses.sol\":{\"keccak256\":\"0x13cad5a8ef2daeb7634d93df6c9f6d1681b5344f4cdc89b03bbbd0953802fd8a\",\"urls\":[\"bzz-raw://35f25042894569b5c50a38d39ab3ceb91e4f69e56d448785701a3ffff335fe98\",\"dweb:/ipfs/QmTd6dF5X6L3v9bnfsh2ZKtRjK5ApwvmKipMWHNXfjwjBF\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBFeelessHook.sol\":{\"keccak256\":\"0x39b8d6e9798a90f555ea9ca44ade52f2fec5964df8994494bd5f4cfd42853602\",\"urls\":[\"bzz-raw://18e0a22e15d53db093648f6087280b45cf5a19571cf721ea49e4453f5da1cb98\",\"dweb:/ipfs/QmaRDN58nhCR4EkP3oaHpyG5EPgLtR2DSEDfPw4gRUG5Zd\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPayHook.sol\":{\"keccak256\":\"0x08599d439d898566b311bc4bedf7f0050ce25c86e246c43f673f3ab4d2457f21\",\"urls\":[\"bzz-raw://db19e95707920262c79197be9296fe381782220bfaf00b71df3a4271da83832f\",\"dweb:/ipfs/QmYzdomQzXNSk46U5vkiEnDErJJdR17deL4S6hPundstZd\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesetApprovalHook.sol\":{\"keccak256\":\"0x11dd67effb025396bec1bb97d35a9ba162340e9a824c048e8286802a12acaa45\",\"urls\":[\"bzz-raw://bae11f483c66d98e7fad9bbf47249f6fa4434693e8bace78cbe6d4da9afee009\",\"dweb:/ipfs/QmWjrjPtr8dLGtXQBrz6idwcNqyx2yVSVVQtqo74yqUSZV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTerminal.sol\":{\"keccak256\":\"0xa3621c12f7c2e33ee38b5de626a5939190d8a12b1e5318a7cd8d398595480cec\",\"urls\":[\"bzz-raw://1341254389038383117d9b23ed2f9d1812fc30ef1c11cfd6c8423918894d7ba3\",\"dweb:/ipfs/QmV2WJ5a3NW12RnZAM3ySbEfGHNN6GfqqpsMHXorfoxiQo\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBConstants.sol\":{\"keccak256\":\"0x5d4b095f3b94c52f89b9cf8a8104de0242497e61f1b32ddc82e78a9ba71a6d0f\",\"urls\":[\"bzz-raw://3ac3340339e0b6a7aae881781b2830f59e3f44114955e2f770172a9bffddc104\",\"dweb:/ipfs/QmV9pFGNGcknqHLEuc6rmC1YPwuwtsokjzh1WX8H2jmVRp\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBFees.sol\":{\"keccak256\":\"0x8f09351a739b9b99258bf6034190fd8bc9e48adc4ece31615dbeaa0f830859aa\",\"urls\":[\"bzz-raw://30b4486940f25131972c603c4417dc0b8b0166390fb8ebf9b9afbf1a0c0fa5ba\",\"dweb:/ipfs/Qme5YniWZmqotsBHnJnhtGVY2xQuUG1yaNo9URhQ2Qu4GY\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBHeldFees.sol\":{\"keccak256\":\"0x5820432dbebcdc2e4343a2c4ada2b4f545048baa8225c12895f10072082899ba\",\"urls\":[\"bzz-raw://5bc6b40bbf60e98a138d0c54a98e06c9f21c29f9f1dd9f1cad14c1f717138c36\",\"dweb:/ipfs/QmVcSiGxLG7md8sUaYL9fvd8PQSrzp6GCcFoYtN6MNWzym\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAccountingContext.sol\":{\"keccak256\":\"0xf53e975ce2632558a95d0a57679dbb8afff984d06daaa530cd4c442e467c3403\",\"urls\":[\"bzz-raw://519f7c466c8d90227afe2bd9108e7477412600fea8b4134889795a58a51b156c\",\"dweb:/ipfs/QmaSHMrNLfP8D9RRUaYbMWURdZYweUmt5ysgtTGMZiwnai\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAfterPayRecordedContext.sol\":{\"keccak256\":\"0xcf1761f48e4cbd6eeeb64bb19e434eff50a7f666b2116657f88f63d19620c6de\",\"urls\":[\"bzz-raw://842fe47a4ad56c830040864b458de398efd0cf82eb0add9349e792d0c8b0c275\",\"dweb:/ipfs/QmXBj6EVnzvVX8ZYa2ndyjoSZDGjpXxaoy7dBuoGMaAmRX\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBFee.sol\":{\"keccak256\":\"0x354a99f21d8fa1e306886b0163c8b2daed66d32a2b2bcf6eb1dcefecfc7ef471\",\"urls\":[\"bzz-raw://91b468d942f96d5e27882b836d503125aedd8b0da4ea8e4295cd1b619a83073b\",\"dweb:/ipfs/QmT6TL5eEap2GvaWCwcsCEgVVVwnwnNWmBGskrkESJeFKu\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBPayHookSpecification.sol\":{\"keccak256\":\"0x28f565b626774c36a990ac999f268fbaf9d7f7861e862fab1fb8301f2534e8d1\",\"urls\":[\"bzz-raw://a5d7375934179178febd3b412099b1a5ff42a154ce8b949df2c11b5f3cb3b80e\",\"dweb:/ipfs/QmXP5vVq8Z6HntiuMcPWfQURCKejyiyHLKYuMmzCuUJJtV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBRuleset.sol\":{\"keccak256\":\"0xd03f45345597fca43effe3bc593572c989f4294d909505e331cbd2640a801d23\",\"urls\":[\"bzz-raw://2cc09b335549f4982c16c1109f3078f09fb81c32370baff007633a38badb7a83\",\"dweb:/ipfs/QmYJHBvXscvokRqzdGdTCRQtHUpnePS2uaCDfgHLuuMo56\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBTokenAmount.sol\":{\"keccak256\":\"0xc61593d33d5ec30e695d382948a1b944d01e29a8f2bfd29f75ecebcdbc7816de\",\"urls\":[\"bzz-raw://8992c1e5fca0c2342ecc0e734dfba6a2a752e4c29184784931d0971e44305051\",\"dweb:/ipfs/QmYNcaW3qeCkgAExUaFTq238fgfJuoYCTwjCn7jm94U4dJ\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c\",\"urls\":[\"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617\",\"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u\"],\"license\":\"MIT\"},\"node_modules/@prb/math/src/Common.sol\":{\"keccak256\":\"0x1949276271967e9954a65f27c1c32e1dd73cbd1f3d2af88f2fdd694ba4b7da60\",\"urls\":[\"bzz-raw://ca414ac0a29a3d0d9e194afa73029a7d94168029df6aeb5f6a4b540d0072eb14\",\"dweb:/ipfs/QmYVipmQDvcvurNZZSFGjxabWXwEpdfijYYx2b3d7ico8U\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

@@ -1,0 +1,271 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x8a7409d34ae5c2c497a85aa1f4ba9793be8b33d2",
+	"sourceName": "node_modules/@bananapus/core-v6/src/libraries/JBPayoutSplitGroupLib.sol",
+	"contractName": "JBPayoutSplitGroupLib",
+	"chainId": "0xa",
+	"abi": [
+		{
+			"type": "event",
+			"name": "PayoutReverted",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "split",
+					"type": "tuple",
+					"indexed": false,
+					"internalType": "struct JBSplit",
+					"components": [
+						{
+							"name": "percent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "projectId",
+							"type": "uint64",
+							"internalType": "uint64"
+						},
+						{
+							"name": "beneficiary",
+							"type": "address",
+							"internalType": "address payable"
+						},
+						{
+							"name": "preferAddToBalance",
+							"type": "bool",
+							"internalType": "bool"
+						},
+						{
+							"name": "lockedUntil",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "hook",
+							"type": "address",
+							"internalType": "contract IJBSplitHook"
+						}
+					]
+				},
+				{
+					"name": "amount",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "reason",
+					"type": "bytes",
+					"indexed": false,
+					"internalType": "bytes"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "event",
+			"name": "SendPayoutToSplit",
+			"inputs": [
+				{
+					"name": "projectId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "rulesetId",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "group",
+					"type": "uint256",
+					"indexed": true,
+					"internalType": "uint256"
+				},
+				{
+					"name": "split",
+					"type": "tuple",
+					"indexed": false,
+					"internalType": "struct JBSplit",
+					"components": [
+						{
+							"name": "percent",
+							"type": "uint32",
+							"internalType": "uint32"
+						},
+						{
+							"name": "projectId",
+							"type": "uint64",
+							"internalType": "uint64"
+						},
+						{
+							"name": "beneficiary",
+							"type": "address",
+							"internalType": "address payable"
+						},
+						{
+							"name": "preferAddToBalance",
+							"type": "bool",
+							"internalType": "bool"
+						},
+						{
+							"name": "lockedUntil",
+							"type": "uint48",
+							"internalType": "uint48"
+						},
+						{
+							"name": "hook",
+							"type": "address",
+							"internalType": "contract IJBSplitHook"
+						}
+					]
+				},
+				{
+					"name": "amount",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "netAmount",
+					"type": "uint256",
+					"indexed": false,
+					"internalType": "uint256"
+				},
+				{
+					"name": "caller",
+					"type": "address",
+					"indexed": false,
+					"internalType": "address"
+				}
+			],
+			"anonymous": false
+		},
+		{
+			"type": "error",
+			"name": "PRBMath_MulDiv_Overflow",
+			"inputs": [
+				{
+					"name": "x",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "y",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "denominator",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "SafeERC20FailedOperation",
+			"inputs": [
+				{
+					"name": "token",
+					"type": "address",
+					"internalType": "address"
+				}
+			]
+		}
+	],
+	"args": [],
+	"solcInputHash": "244f4b87f59244d3d7a02f122ca22615",
+	"receipt": {
+		"type": "0x2",
+		"status": "0x1",
+		"cumulativeGasUsed": "0x6c8c60",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x13afa02425d5e042c0ae8a45286f0d114aeb6e9d269761d9b9fc62f874abffa2"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockHash": "0xe31b13193283f8ee728bad566c7f26a666108c7e7b4b710805060ec8810e424c",
+				"blockNumber": "0x91e80c4",
+				"blockTimestamp": "0x6a30db41",
+				"transactionHash": "0xc8bb31b031470044d7387a4ad93f68af65ff067fcbfaac482d27f39ce7377079",
+				"transactionIndex": "0x20",
+				"logIndex": "0x6b",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockHash": "0xe31b13193283f8ee728bad566c7f26a666108c7e7b4b710805060ec8810e424c",
+				"blockNumber": "0x91e80c4",
+				"blockTimestamp": "0x6a30db41",
+				"transactionHash": "0xc8bb31b031470044d7387a4ad93f68af65ff067fcbfaac482d27f39ce7377079",
+				"transactionIndex": "0x20",
+				"logIndex": "0x6c",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000002",
+				"blockHash": "0xe31b13193283f8ee728bad566c7f26a666108c7e7b4b710805060ec8810e424c",
+				"blockNumber": "0x91e80c4",
+				"blockTimestamp": "0x6a30db41",
+				"transactionHash": "0xc8bb31b031470044d7387a4ad93f68af65ff067fcbfaac482d27f39ce7377079",
+				"transactionIndex": "0x20",
+				"logIndex": "0x6d",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000200000000000000000000000000000000040000000000000000040000000000000000000000000004000000000008000000000000000000080008800000000000008000104000100000000000000000000000000000000000000004000040000000000000000000000002200000000000000000000000084000000000002008000000000000000400000000000000000000000000000800000000000000000000900000000000000000200000000000080000000000000000000",
+		"transactionHash": "0xc8bb31b031470044d7387a4ad93f68af65ff067fcbfaac482d27f39ce7377079",
+		"transactionIndex": "0x20",
+		"blockHash": "0xe31b13193283f8ee728bad566c7f26a666108c7e7b4b710805060ec8810e424c",
+		"blockNumber": "0x91e80c4",
+		"gasUsed": "0xe9f6f",
+		"effectiveGasPrice": "0x24a093",
+		"blobGasUsed": "0x10da10",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"contractAddress": null,
+		"l1GasPrice": "0x70f9697",
+		"l1GasUsed": "0xac95",
+		"l1Fee": "0xaf247e6c4",
+		"l1BaseFeeScalar": "0x146b",
+		"l1BlobBaseFee": "0x6b195b",
+		"l1BlobBaseFeeScalar": "0xf79c5",
+		"daFootprintGasScalar": "0x190"
+	},
+	"bytecode": "0x610e6d610034600b8282823980515f1a607314602857634e487b7160e01b5f525f60045260245ffd5b305f52607381538281f3fe730000000000000000000000000000000000000000301460806040526004361061003f575f3560e01c80630f63305c1461004357806370a36d561461007b575b5f5ffd5b81801561004e575f5ffd5b5061006261005d366004610832565b61009a565b6040805192835260208301919091520160405180910390f35b818015610086575f5ffd5b5061006261009536600461089e565b610393565b6040805160c0810182526001600160a01b038681168083526020830186905283516344f9c50960e01b8152306004820152602481018a9052604481018290525f94859461eeee9093149385939291830191908816906344f9c50990606401606060405180830381865afa158015610113573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101379190610993565b6020015160ff1681526020018a8152602001896001600160a01b031681526020018b8036038101906101699190610a3f565b905290505f821561017b575085610195565b6101958961018f60c08e0160a08f01610acc565b89610660565b5f6101a660c08d0160a08e01610acc565b6001600160a01b031663c5a0938883856040518363ffffffff1660e01b81526004016101d29190610b47565b5f604051808303818588803b1580156101e9575f5ffd5b505af1935050505080156101fb575060015b15610204575060015b831561021e5780610215575f610217565b875b95506102d7565b896001600160a01b031663dd62ed3e308e60a00160208101906102419190610acc565b6040516001600160e01b031960e085901b1681526001600160a01b03928316600482015291166024820152604401602060405180830381865afa15801561028a573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906102ae9190610b9b565b6102b89089610bc6565b95506102d78a8d60a00160208101906102d19190610acc565b5f610660565b87861015610363575f6102f48a6102ee898c610bc6565b8b6106e4565b90508015610361576040516351fc173560e01b8152600481018d90526001600160a01b038c81166024830152604482018390528916906351fc1735906064015f604051808303815f87803b15801561034a575f5ffd5b505af115801561035c573d5f5f3e3d5ffd5b505050505b505b888810801561037157508515155b156103845761038189878a6106e4565b94505b50505050965096945050505050565b6040516369e11cc560e01b815260048101869052602481018490526001600160a01b0385811660448301525f918291633b9aca009183918c16906369e11cc5906064015f60405180830381865afa1580156103f0573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f191682016040526104179190810190610bdf565b90508593505f5b8151811015610651575f82828151811061043a5761043a610d0f565b602002602001015190505f61045987835f015163ffffffff16876106e4565b90505f306001600160a01b031663206d4975848f8f868e6040518663ffffffff1660e01b8152600401610490959493929190610d23565b60408051808303815f875af19250505080156104c9575060408051601f3d908101601f191682019092526104c691810190610d62565b60015b6105b7573d8080156104f6576040519150601f19603f3d011682016040523d82523d5f602084013e6104fb565b606091505b508d7fe1dc2e46221329e3b79397625c100336d78d12de8fbbeefcc76c350ba44a89b38585848e6040516105329493929190610d84565b60405180910390a28e6001600160a01b03166351fc17358f8f866040518463ffffffff1660e01b8152600401610584939291909283526001600160a01b03919091166020830152604082015260600190565b5f604051808303815f87803b15801561059b575f5ffd5b505af11580156105ad573d5f5f3e3d5ffd5b50505050506105e0565b8192506028816105c79190610dfa565b6105d19082610bc6565b6105db908a610e19565b985050505b81156105ec5781880397505b825f015163ffffffff16860395508b6001600160a01b03168b8e7f946c70c84d6886ad6041aecbcdd3c9afb80133d1ba92011a9f54dbc173e6d8a78686868f60405161063b9493929190610e2c565b60405180910390a483600101935050505061041e565b50505097509795505050505050565b61066c8383835f6107b9565b6106df5761067d83835f60016107b9565b6106aa57604051635274afe760e01b81526001600160a01b03841660048201526024015b60405180910390fd5b6106b783838360016107b9565b6106df57604051635274afe760e01b81526001600160a01b03841660048201526024016106a1565b505050565b5f80805f19858709858702925082811083820303915050805f0361071b5783828161071157610711610de6565b04925050506107b2565b83811061074c57604051630c740aef60e31b81526004810187905260248101869052604481018590526064016106a1565b5f848688098519600190810187169687900496828603819004959092119093035f82900391909104909201919091029190911760038402600290811880860282030280860282030280860282030280860282030280860282030280860290910302029150505b9392505050565b60405163095ea7b360e01b5f8181526001600160a01b038616600452602485905291602083604481808b5af1925060015f5114831661080f578383151615610803573d5f823e3d81fd5b5f873b113d1516831692505b60405250949350505050565b6001600160a01b038116811461082f575f5ffd5b50565b5f5f5f5f5f5f868803610160811215610849575f5ffd5b60c0811215610856575f5ffd5b5086955060c0860135945060e086013561086f8161081b565b9350610100870135925061012087013591506101408701356108908161081b565b809150509295509295509295565b5f5f5f5f5f5f5f60e0888a0312156108b4575f5ffd5b87356108bf8161081b565b965060208801356108cf8161081b565b95506040880135945060608801356108e68161081b565b93506080880135925060a0880135915060c08801356109048161081b565b8091505092959891949750929550565b634e487b7160e01b5f52604160045260245ffd5b60405160c0810167ffffffffffffffff8111828210171561094b5761094b610914565b60405290565b604051601f8201601f1916810167ffffffffffffffff8111828210171561097a5761097a610914565b604052919050565b63ffffffff8116811461082f575f5ffd5b5f60608284031280156109a4575f5ffd5b506040516060810167ffffffffffffffff811182821017156109c8576109c8610914565b60405282516109d68161081b565b8152602083015160ff811681146109eb575f5ffd5b602082015260408301516109fe81610982565b60408201529392505050565b67ffffffffffffffff8116811461082f575f5ffd5b801515811461082f575f5ffd5b65ffffffffffff8116811461082f575f5ffd5b5f60c0828403128015610a50575f5ffd5b50610a59610928565b8235610a6481610982565b81526020830135610a7481610a0a565b60208201526040830135610a878161081b565b60408201526060830135610a9a81610a1f565b60608201526080830135610aad81610a2c565b608082015260a0830135610ac08161081b565b60a08201529392505050565b5f60208284031215610adc575f5ffd5b81356107b28161081b565b805163ffffffff16825260208082015167ffffffffffffffff16908301526040808201516001600160a01b039081169184019190915260608083015115159084015260808083015165ffffffffffff169084015260a09182015116910152565b81516001600160a01b031681526020808301519082015260408083015190820152606080830151908201526080808301519082015260a082810151610160830191610b9490840182610ae7565b5092915050565b5f60208284031215610bab575f5ffd5b5051919050565b634e487b7160e01b5f52601160045260245ffd5b81810381811115610bd957610bd9610bb2565b92915050565b5f60208284031215610bef575f5ffd5b815167ffffffffffffffff811115610c05575f5ffd5b8201601f81018413610c15575f5ffd5b805167ffffffffffffffff811115610c2f57610c2f610914565b610c3e60208260051b01610951565b80828252602082019150602060c08402850101925086831115610c5f575f5ffd5b6020840193505b82841015610d055760c08488031215610c7d575f5ffd5b610c85610928565b8451610c9081610982565b81526020850151610ca081610a0a565b60208201526040850151610cb38161081b565b60408201526060850151610cc681610a1f565b60608201526080850151610cd981610a2c565b608082015260a0850151610cec8161081b565b60a0820152825260c09390930192602090910190610c66565b9695505050505050565b634e487b7160e01b5f52603260045260245ffd5b6101408101610d328288610ae7565b60c08201959095526001600160a01b0393841660e082015261010081019290925290911661012090910152919050565b5f5f60408385031215610d73575f5ffd5b505080516020909101519092909150565b610d8e8186610ae7565b8360c082015261012060e08201525f835180610120840152806020860161014085015e5f838201610140908101919091526001600160a01b0394909416610100840152601f01601f1916909101909101949350505050565b634e487b7160e01b5f52601260045260245ffd5b5f82610e1457634e487b7160e01b5f52601260045260245ffd5b500690565b80820180821115610bd957610bd9610bb2565b6101208101610e3b8287610ae7565b60c082019490945260e08101929092526001600160a01b03166101009091015291905056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x730000000000000000000000000000000000000000301460806040526004361061003f575f3560e01c80630f63305c1461004357806370a36d561461007b575b5f5ffd5b81801561004e575f5ffd5b5061006261005d366004610832565b61009a565b6040805192835260208301919091520160405180910390f35b818015610086575f5ffd5b5061006261009536600461089e565b610393565b6040805160c0810182526001600160a01b038681168083526020830186905283516344f9c50960e01b8152306004820152602481018a9052604481018290525f94859461eeee9093149385939291830191908816906344f9c50990606401606060405180830381865afa158015610113573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101379190610993565b6020015160ff1681526020018a8152602001896001600160a01b031681526020018b8036038101906101699190610a3f565b905290505f821561017b575085610195565b6101958961018f60c08e0160a08f01610acc565b89610660565b5f6101a660c08d0160a08e01610acc565b6001600160a01b031663c5a0938883856040518363ffffffff1660e01b81526004016101d29190610b47565b5f604051808303818588803b1580156101e9575f5ffd5b505af1935050505080156101fb575060015b15610204575060015b831561021e5780610215575f610217565b875b95506102d7565b896001600160a01b031663dd62ed3e308e60a00160208101906102419190610acc565b6040516001600160e01b031960e085901b1681526001600160a01b03928316600482015291166024820152604401602060405180830381865afa15801561028a573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906102ae9190610b9b565b6102b89089610bc6565b95506102d78a8d60a00160208101906102d19190610acc565b5f610660565b87861015610363575f6102f48a6102ee898c610bc6565b8b6106e4565b90508015610361576040516351fc173560e01b8152600481018d90526001600160a01b038c81166024830152604482018390528916906351fc1735906064015f604051808303815f87803b15801561034a575f5ffd5b505af115801561035c573d5f5f3e3d5ffd5b505050505b505b888810801561037157508515155b156103845761038189878a6106e4565b94505b50505050965096945050505050565b6040516369e11cc560e01b815260048101869052602481018490526001600160a01b0385811660448301525f918291633b9aca009183918c16906369e11cc5906064015f60405180830381865afa1580156103f0573d5f5f3e3d5ffd5b505050506040513d5f823e601f3d908101601f191682016040526104179190810190610bdf565b90508593505f5b8151811015610651575f82828151811061043a5761043a610d0f565b602002602001015190505f61045987835f015163ffffffff16876106e4565b90505f306001600160a01b031663206d4975848f8f868e6040518663ffffffff1660e01b8152600401610490959493929190610d23565b60408051808303815f875af19250505080156104c9575060408051601f3d908101601f191682019092526104c691810190610d62565b60015b6105b7573d8080156104f6576040519150601f19603f3d011682016040523d82523d5f602084013e6104fb565b606091505b508d7fe1dc2e46221329e3b79397625c100336d78d12de8fbbeefcc76c350ba44a89b38585848e6040516105329493929190610d84565b60405180910390a28e6001600160a01b03166351fc17358f8f866040518463ffffffff1660e01b8152600401610584939291909283526001600160a01b03919091166020830152604082015260600190565b5f604051808303815f87803b15801561059b575f5ffd5b505af11580156105ad573d5f5f3e3d5ffd5b50505050506105e0565b8192506028816105c79190610dfa565b6105d19082610bc6565b6105db908a610e19565b985050505b81156105ec5781880397505b825f015163ffffffff16860395508b6001600160a01b03168b8e7f946c70c84d6886ad6041aecbcdd3c9afb80133d1ba92011a9f54dbc173e6d8a78686868f60405161063b9493929190610e2c565b60405180910390a483600101935050505061041e565b50505097509795505050505050565b61066c8383835f6107b9565b6106df5761067d83835f60016107b9565b6106aa57604051635274afe760e01b81526001600160a01b03841660048201526024015b60405180910390fd5b6106b783838360016107b9565b6106df57604051635274afe760e01b81526001600160a01b03841660048201526024016106a1565b505050565b5f80805f19858709858702925082811083820303915050805f0361071b5783828161071157610711610de6565b04925050506107b2565b83811061074c57604051630c740aef60e31b81526004810187905260248101869052604481018590526064016106a1565b5f848688098519600190810187169687900496828603819004959092119093035f82900391909104909201919091029190911760038402600290811880860282030280860282030280860282030280860282030280860282030280860290910302029150505b9392505050565b60405163095ea7b360e01b5f8181526001600160a01b038616600452602485905291602083604481808b5af1925060015f5114831661080f578383151615610803573d5f823e3d81fd5b5f873b113d1516831692505b60405250949350505050565b6001600160a01b038116811461082f575f5ffd5b50565b5f5f5f5f5f5f868803610160811215610849575f5ffd5b60c0811215610856575f5ffd5b5086955060c0860135945060e086013561086f8161081b565b9350610100870135925061012087013591506101408701356108908161081b565b809150509295509295509295565b5f5f5f5f5f5f5f60e0888a0312156108b4575f5ffd5b87356108bf8161081b565b965060208801356108cf8161081b565b95506040880135945060608801356108e68161081b565b93506080880135925060a0880135915060c08801356109048161081b565b8091505092959891949750929550565b634e487b7160e01b5f52604160045260245ffd5b60405160c0810167ffffffffffffffff8111828210171561094b5761094b610914565b60405290565b604051601f8201601f1916810167ffffffffffffffff8111828210171561097a5761097a610914565b604052919050565b63ffffffff8116811461082f575f5ffd5b5f60608284031280156109a4575f5ffd5b506040516060810167ffffffffffffffff811182821017156109c8576109c8610914565b60405282516109d68161081b565b8152602083015160ff811681146109eb575f5ffd5b602082015260408301516109fe81610982565b60408201529392505050565b67ffffffffffffffff8116811461082f575f5ffd5b801515811461082f575f5ffd5b65ffffffffffff8116811461082f575f5ffd5b5f60c0828403128015610a50575f5ffd5b50610a59610928565b8235610a6481610982565b81526020830135610a7481610a0a565b60208201526040830135610a878161081b565b60408201526060830135610a9a81610a1f565b60608201526080830135610aad81610a2c565b608082015260a0830135610ac08161081b565b60a08201529392505050565b5f60208284031215610adc575f5ffd5b81356107b28161081b565b805163ffffffff16825260208082015167ffffffffffffffff16908301526040808201516001600160a01b039081169184019190915260608083015115159084015260808083015165ffffffffffff169084015260a09182015116910152565b81516001600160a01b031681526020808301519082015260408083015190820152606080830151908201526080808301519082015260a082810151610160830191610b9490840182610ae7565b5092915050565b5f60208284031215610bab575f5ffd5b5051919050565b634e487b7160e01b5f52601160045260245ffd5b81810381811115610bd957610bd9610bb2565b92915050565b5f60208284031215610bef575f5ffd5b815167ffffffffffffffff811115610c05575f5ffd5b8201601f81018413610c15575f5ffd5b805167ffffffffffffffff811115610c2f57610c2f610914565b610c3e60208260051b01610951565b80828252602082019150602060c08402850101925086831115610c5f575f5ffd5b6020840193505b82841015610d055760c08488031215610c7d575f5ffd5b610c85610928565b8451610c9081610982565b81526020850151610ca081610a0a565b60208201526040850151610cb38161081b565b60408201526060850151610cc681610a1f565b60608201526080850151610cd981610a2c565b608082015260a0850151610cec8161081b565b60a0820152825260c09390930192602090910190610c66565b9695505050505050565b634e487b7160e01b5f52603260045260245ffd5b6101408101610d328288610ae7565b60c08201959095526001600160a01b0393841660e082015261010081019290925290911661012090910152919050565b5f5f60408385031215610d73575f5ffd5b505080516020909101519092909150565b610d8e8186610ae7565b8360c082015261012060e08201525f835180610120840152806020860161014085015e5f838201610140908101919091526001600160a01b0394909416610100840152601f01601f1916909101909101949350505050565b634e487b7160e01b5f52601260045260245ffd5b5f82610e1457634e487b7160e01b5f52601260045260245ffd5b500690565b80820180821115610bd957610bd9610bb2565b6101208101610e3b8287610ae7565b60c082019490945260e08101929092526001600160a01b03166101009091015291905056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"x\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"y\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"denominator\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"PRBMath_MulDiv_Overflow\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"type\":\"error\",\"name\":\"SafeERC20FailedOperation\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"struct JBSplit\",\"name\":\"split\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"percent\",\"type\":\"uint32\"},{\"internalType\":\"uint64\",\"name\":\"projectId\",\"type\":\"uint64\"},{\"internalType\":\"address payable\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"preferAddToBalance\",\"type\":\"bool\"},{\"internalType\":\"uint48\",\"name\":\"lockedUntil\",\"type\":\"uint48\"},{\"internalType\":\"contract IJBSplitHook\",\"name\":\"hook\",\"type\":\"address\"}],\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"bytes\",\"name\":\"reason\",\"type\":\"bytes\",\"indexed\":false},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"PayoutReverted\",\"anonymous\":false},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"projectId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"rulesetId\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"uint256\",\"name\":\"group\",\"type\":\"uint256\",\"indexed\":true},{\"internalType\":\"struct JBSplit\",\"name\":\"split\",\"type\":\"tuple\",\"components\":[{\"internalType\":\"uint32\",\"name\":\"percent\",\"type\":\"uint32\"},{\"internalType\":\"uint64\",\"name\":\"projectId\",\"type\":\"uint64\"},{\"internalType\":\"address payable\",\"name\":\"beneficiary\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"preferAddToBalance\",\"type\":\"bool\"},{\"internalType\":\"uint48\",\"name\":\"lockedUntil\",\"type\":\"uint48\"},{\"internalType\":\"contract IJBSplitHook\",\"name\":\"hook\",\"type\":\"address\"}],\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"uint256\",\"name\":\"netAmount\",\"type\":\"uint256\",\"indexed\":false},{\"internalType\":\"address\",\"name\":\"caller\",\"type\":\"address\",\"indexed\":false}],\"type\":\"event\",\"name\":\"SendPayoutToSplit\",\"anonymous\":false}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"invokeSplitHookWithPartial(JBSplit,uint256,address,uint256,uint256,IJBTerminalStore)\":{\"details\":\"For ERC-20: grants the hook an allowance, calls `processSplitWith`, and revokes any unconsumed allowance. For native ETH: pushes via `msg.value`. The hook may take less than offered (revert or short-pull); the unsent portion is routed back to the project balance via `store.recordAddedBalanceFor`, scaled to include the proportional fee allocation so the held fee is effectively charged only on the consumed amount. Fee-eligibility is inferred from `netPayoutAmount < amount`.Called via DELEGATECALL from the terminal, so `address(this)` is the terminal and `msg.sender` observed by the hook is the terminal — hooks that check `DIRECTORY.isTerminalOf(msg.sender)` continue to work unchanged.\",\"params\":{\"amount\":\"The gross amount allocated to this split (pre-fee).\",\"netPayoutAmount\":\"The amount the hook is offered (post-fee for non-feeless splits, == amount otherwise).\",\"projectId\":\"The originating project ID.\",\"split\":\"The split (must have a non-zero hook address).\",\"store\":\"The terminal store used to credit any refund back to the project and to look up decimals.\",\"token\":\"The token being distributed. Use `JBConstants.NATIVE_TOKEN` for ETH.\"},\"returns\":{\"feeEligibleAmount\":\"The gross-equivalent of `sent` (used for held-fee accounting). Zero for feeless splits or when the hook consumed nothing.\",\"sent\":\"The amount the hook actually received.\"}},\"sendPayoutsToSplitGroupOf(IJBSplits,IJBTerminalStore,uint256,address,uint256,uint256,address)\":{\"params\":{\"amount\":\"The total amount to pay out.\",\"caller\":\"The original caller of the terminal payout flow.\",\"projectId\":\"The ID of the project to send the payouts of.\",\"rulesetId\":\"The ID of the ruleset of the split group to pay.\",\"splits\":\"The splits contract to read splits from.\",\"store\":\"The terminal store used to restore balance when a payout fails.\",\"token\":\"The address of the token to pay out.\"},\"returns\":{\"amountEligibleForFees\":\"The amount of payouts that are eligible for fees.\",\"leftoverAmount\":\"The leftover amount after split payouts.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"invokeSplitHookWithPartial(JBSplit,uint256,address,uint256,uint256,IJBTerminalStore)\":{\"notice\":\"Invokes a split hook with partial-pull-aware allowance handling.\"},\"sendPayoutsToSplitGroupOf(IJBSplits,IJBTerminalStore,uint256,address,uint256,uint256,address)\":{\"notice\":\"Sends payouts to the payout splits group specified in a project's ruleset.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/libraries/JBPayoutSplitGroupLib.sol\":\"JBPayoutSplitGroupLib\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/enums/JBApprovalStatus.sol\":{\"keccak256\":\"0x58f3eed8b6ecea6b640f4eb78a5a416ce8737f9155e350ef4077db422b3fca8f\",\"urls\":[\"bzz-raw://0b56bde97ef9d8ec2a3e464202c5d2fee9c39597485b3fb8baaeef971cc63bc8\",\"dweb:/ipfs/QmSdPaNfPm83yibuSvgLbaqgZw7LYkTLhacrxDagH3sprJ\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBCashOutHook.sol\":{\"keccak256\":\"0x2a6d327092775fdbeaf922b8364403102cae437f765f662fe142bf97e87c2ef1\",\"urls\":[\"bzz-raw://5f9a23971860b907569917fe14cbcc85993d83fb32e5342dd5338a1721e540f7\",\"dweb:/ipfs/Qmamt2n7HaWo2cUDn8K2FhrZPHBVxuaCWh9jf8V3WYPXMN\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBDirectory.sol\":{\"keccak256\":\"0xb8f3ba0a544360b32c9f0a704168ee93c2960accfc010735c8cbea54941e63d5\",\"urls\":[\"bzz-raw://e9f14d5daa2357db4afe96313b40bf0c53c606315c9cb55109fffdc9c2fd85d0\",\"dweb:/ipfs/QmRPHFAiivM9CqdfocRyahdSjfWTbaSepPNCGGQU23ABcv\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPayHook.sol\":{\"keccak256\":\"0x08599d439d898566b311bc4bedf7f0050ce25c86e246c43f673f3ab4d2457f21\",\"urls\":[\"bzz-raw://db19e95707920262c79197be9296fe381782220bfaf00b71df3a4271da83832f\",\"dweb:/ipfs/QmYzdomQzXNSk46U5vkiEnDErJJdR17deL4S6hPundstZd\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPriceFeed.sol\":{\"keccak256\":\"0x3a948500b5397c90e926f3bdef9423e7f095f906b23cd1503009802c80bedb41\",\"urls\":[\"bzz-raw://a0ea0b7e5d442257f6159799b7bf262615b0f04e5cd542b0980f131ae40a63bb\",\"dweb:/ipfs/QmX7uugLaXtT5XmYxqfrmDqU2YuknAeYjHMiLm9iHaRfHw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPrices.sol\":{\"keccak256\":\"0xed5e532f6ee86029a1a4a1ba8b593296f772909a5f9d95da6cc6c595a838446f\",\"urls\":[\"bzz-raw://4314cbfe4ebd96a48eaf1c14af860aa08b7cd6a73da10391746b4d3410d13d67\",\"dweb:/ipfs/QmfRkWFbxmJUMew6DsDGbK88PypDBUA6PDTJFvfBaMno5n\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBProjects.sol\":{\"keccak256\":\"0x72c6cbda5a93593e3cc49ef6c4e0848a4b6daa88c188c4192776af86c49911dc\",\"urls\":[\"bzz-raw://448ed5d7a704b5f4dd759514dbcb78160b82732ac6bd7bc368a9f8822045e6de\",\"dweb:/ipfs/QmbnpCPxQLDvQx5ymEy1Ty3aks7bjonydops1CsjCACJBN\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesetApprovalHook.sol\":{\"keccak256\":\"0x11dd67effb025396bec1bb97d35a9ba162340e9a824c048e8286802a12acaa45\",\"urls\":[\"bzz-raw://bae11f483c66d98e7fad9bbf47249f6fa4434693e8bace78cbe6d4da9afee009\",\"dweb:/ipfs/QmWjrjPtr8dLGtXQBrz6idwcNqyx2yVSVVQtqo74yqUSZV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBRulesets.sol\":{\"keccak256\":\"0x8fd69e04aa2b5962a917394c0a4baa6653f7cea93629a1915c1f9c2e870143e5\",\"urls\":[\"bzz-raw://6c7ce64037e6a11cc03e5c66607a219eb25c953ad76aa7b914d2a9e8f0cd5434\",\"dweb:/ipfs/QmYoTec9wfd89HAnNckC2XJWegtgUmfjmi1vJYT4LTXQ61\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBSplitHook.sol\":{\"keccak256\":\"0x8155763689f6f51b5c6712ac6f23728b248a8924e69e63f8aa14d01c78ea17f1\",\"urls\":[\"bzz-raw://7bab14bd7250cc3ba6665573f2a961308a3453015af7a0305488c0db1745f95b\",\"dweb:/ipfs/QmYpKwToPcSChWXyJ75SBEeWKugBygAnQ1WaZ8wWcu5rha\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBSplits.sol\":{\"keccak256\":\"0x9d27fe4d9aa6dcbb24a24ee1fc16e51b51fab1c4ab1eace93981e73f3c4ce636\",\"urls\":[\"bzz-raw://7a6a1243102ac23cb1643bcc670b6b16b70566877941233964159f9b37755113\",\"dweb:/ipfs/Qmewa2o3nyoRwZ4pdhWqUh1ShWXA3GHJffiVafcKYXg2Ao\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTerminal.sol\":{\"keccak256\":\"0xa3621c12f7c2e33ee38b5de626a5939190d8a12b1e5318a7cd8d398595480cec\",\"urls\":[\"bzz-raw://1341254389038383117d9b23ed2f9d1812fc30ef1c11cfd6c8423918894d7ba3\",\"dweb:/ipfs/QmV2WJ5a3NW12RnZAM3ySbEfGHNN6GfqqpsMHXorfoxiQo\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTerminalStore.sol\":{\"keccak256\":\"0x0ab2fd1b5249ff9dcbb51585df7df8c09af309a984fb0a2378426c7fd1800f43\",\"urls\":[\"bzz-raw://8bab809f8ea5692c738fbeb3f83d7b7259e469e03b7e4e3011358f887636ca44\",\"dweb:/ipfs/QmdbyiVSctQZcfibvygyyJntRpwzRoMDKrSkPydn7VouYm\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBTokenUriResolver.sol\":{\"keccak256\":\"0xcbdb1448260ebea5937411516957ef199099e34ff997e7f2a617c2898f921994\",\"urls\":[\"bzz-raw://d1cbf97e5684c987be6703c096e8230d870fab25a23eec8d209cd082e3f2637b\",\"dweb:/ipfs/QmNmzeuQoFiaUTQAcV1tyJyjUYEJ3t7386zTw4ofT7HoZM\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBConstants.sol\":{\"keccak256\":\"0x5d4b095f3b94c52f89b9cf8a8104de0242497e61f1b32ddc82e78a9ba71a6d0f\",\"urls\":[\"bzz-raw://3ac3340339e0b6a7aae881781b2830f59e3f44114955e2f770172a9bffddc104\",\"dweb:/ipfs/QmV9pFGNGcknqHLEuc6rmC1YPwuwtsokjzh1WX8H2jmVRp\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBPayoutSplitGroupLib.sol\":{\"keccak256\":\"0x4bbf3c970e4efc0edaa0e71ea4f9e17acea4492834efa0540dbed7177adc2b88\",\"urls\":[\"bzz-raw://ae8cf5bb8d55feeed1c831562546a371d9497c83372ce271096f5d18da0d6efb\",\"dweb:/ipfs/QmVikRjSjzzyR8ZTtswG6J6E42dgEFp461mDiHKqmxR2xp\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAccountingContext.sol\":{\"keccak256\":\"0xf53e975ce2632558a95d0a57679dbb8afff984d06daaa530cd4c442e467c3403\",\"urls\":[\"bzz-raw://519f7c466c8d90227afe2bd9108e7477412600fea8b4134889795a58a51b156c\",\"dweb:/ipfs/QmaSHMrNLfP8D9RRUaYbMWURdZYweUmt5ysgtTGMZiwnai\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAfterCashOutRecordedContext.sol\":{\"keccak256\":\"0x8cd6d13c98bd825d7e61cb3b2f5cbf56e77f9a2f85eaa0e27d82f1fb8d5af4f7\",\"urls\":[\"bzz-raw://0e4ff9a254147cc6728b3bdc3862b77d15b518b49375e400b5f0b78552f14c62\",\"dweb:/ipfs/Qmd25R3LDrnRHiSdrNSdfqk8746A3J3VH44C5HDfHkFvU2\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBAfterPayRecordedContext.sol\":{\"keccak256\":\"0xcf1761f48e4cbd6eeeb64bb19e434eff50a7f666b2116657f88f63d19620c6de\",\"urls\":[\"bzz-raw://842fe47a4ad56c830040864b458de398efd0cf82eb0add9349e792d0c8b0c275\",\"dweb:/ipfs/QmXBj6EVnzvVX8ZYa2ndyjoSZDGjpXxaoy7dBuoGMaAmRX\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBCashOutHookSpecification.sol\":{\"keccak256\":\"0x1579c160a19e68eb06158f56120acf06b8aa4bbbc9836c80fabbb3d2e57ccf3d\",\"urls\":[\"bzz-raw://a81f5e0c384caf0ac11814825ce07e6c6cee97d28f60dcd65dfe8d529b6135fe\",\"dweb:/ipfs/QmY2q7oMFDMN1PoQ8zp7PUQu4K5dYKhYLKBKqrTy42YU6N\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBPayHookSpecification.sol\":{\"keccak256\":\"0x28f565b626774c36a990ac999f268fbaf9d7f7861e862fab1fb8301f2534e8d1\",\"urls\":[\"bzz-raw://a5d7375934179178febd3b412099b1a5ff42a154ce8b949df2c11b5f3cb3b80e\",\"dweb:/ipfs/QmXP5vVq8Z6HntiuMcPWfQURCKejyiyHLKYuMmzCuUJJtV\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBRuleset.sol\":{\"keccak256\":\"0xd03f45345597fca43effe3bc593572c989f4294d909505e331cbd2640a801d23\",\"urls\":[\"bzz-raw://2cc09b335549f4982c16c1109f3078f09fb81c32370baff007633a38badb7a83\",\"dweb:/ipfs/QmYJHBvXscvokRqzdGdTCRQtHUpnePS2uaCDfgHLuuMo56\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBSplit.sol\":{\"keccak256\":\"0xf50ba85591d86076ff127e97af2c4b7d1a1be3e20e25d784b64591697d71ab52\",\"urls\":[\"bzz-raw://04276773313a01c2b816c95addea68843c21db3888f4c547eb6e6c486ac55547\",\"dweb:/ipfs/QmZGpxzryNkheek5V9dJWfcJyTP7T52PsPXgRBuweK2rsN\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBSplitGroup.sol\":{\"keccak256\":\"0x8dc98fa9e730bee8bcc0a8acf1bc4db1c9b0edf307d969c9c9caa4d6b8d856d9\",\"urls\":[\"bzz-raw://66f4306e0e69c82033927952564fd617e7c4b29aa8b165d5b53a0ebe3109ea12\",\"dweb:/ipfs/QmQqN1u7FHAdEtEZNRcKvZwYtXEQVQnLd6FMzHESP7wDtx\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBSplitHookContext.sol\":{\"keccak256\":\"0xa2246f4960ec2b24db3fbfce5d59782cdb9a8fb3c3f832a2c39ddc92859ff170\",\"urls\":[\"bzz-raw://3e3a0ae100c15bb15f0484cb68e3052c3d3d764f84e37020e8dd6b658ff98076\",\"dweb:/ipfs/QmPAv99zN7senrfCMMkeT4RMWpwTdqLgMURQR73BLRe4ZG\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/structs/JBTokenAmount.sol\":{\"keccak256\":\"0xc61593d33d5ec30e695d382948a1b944d01e29a8f2bfd29f75ecebcdbc7816de\",\"urls\":[\"bzz-raw://8992c1e5fca0c2342ecc0e734dfba6a2a752e4c29184784931d0971e44305051\",\"dweb:/ipfs/QmYNcaW3qeCkgAExUaFTq238fgfJuoYCTwjCn7jm94U4dJ\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/interfaces/IERC1363.sol\":{\"keccak256\":\"0xd5ea07362ab630a6a3dee4285a74cf2377044ca2e4be472755ad64d7c5d4b69d\",\"urls\":[\"bzz-raw://da5e832b40fc5c3145d3781e2e5fa60ac2052c9d08af7e300dc8ab80c4343100\",\"dweb:/ipfs/QmTzf7N5ZUdh5raqtzbM11yexiUoLC9z3Ws632MCuycq1d\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/interfaces/IERC165.sol\":{\"keccak256\":\"0x0afcb7e740d1537b252cb2676f600465ce6938398569f09ba1b9ca240dde2dfc\",\"urls\":[\"bzz-raw://1c299900ac4ec268d4570ecef0d697a3013cd11a6eb74e295ee3fbc945056037\",\"dweb:/ipfs/Qmab9owJoxcA7vJT5XNayCMaUR1qxqj1NDzzisduwaJMcZ\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/interfaces/IERC20.sol\":{\"keccak256\":\"0x1a6221315ce0307746c2c4827c125d821ee796c74a676787762f4778671d4f44\",\"urls\":[\"bzz-raw://1bb2332a7ee26dd0b0de9b7fe266749f54820c99ab6a3bcb6f7e6b751d47ee2d\",\"dweb:/ipfs/QmcRWpaBeCYkhy68PR3B4AgD7asuQk7PwkWxrvJbZcikLF\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x74ed01eb66b923d0d0cfe3be84604ac04b76482a55f9dd655e1ef4d367f95bc2\",\"urls\":[\"bzz-raw://5282825a626cfe924e504274b864a652b0023591fa66f06a067b25b51ba9b303\",\"dweb:/ipfs/QmeCfPykghhMc81VJTrHTC7sF6CRvaA1FXVq2pJhwYp1dV\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol\":{\"keccak256\":\"0x304d732678032a9781ae85c8f204c8fba3d3a5e31c02616964e75cfdc5049098\",\"urls\":[\"bzz-raw://299ced486011781dc98f638059678323c03079fefae1482abaa2135b22fa92d0\",\"dweb:/ipfs/QmbZNbcPTBxNvwChavN2kkZZs7xHhYL7mv51KrxMhsMs3j\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/token/ERC721/IERC721.sol\":{\"keccak256\":\"0xf78f05f3b8c9f75570e85300d7b4600d7f6f6a198449273f31d44c1641adb46f\",\"urls\":[\"bzz-raw://e28b872613b45e0e801d4995aa4380be2531147bfe2d85c1d6275f1de514fba3\",\"dweb:/ipfs/QmeeFcfShHYaS3BdgVj78nxR28ZaVUwbvr66ud8bT6kzw9\"],\"license\":\"MIT\"},\"node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol\":{\"keccak256\":\"0x8891738ffe910f0cf2da09566928589bf5d63f4524dd734fd9cedbac3274dd5c\",\"urls\":[\"bzz-raw://971f954442df5c2ef5b5ebf1eb245d7105d9fbacc7386ee5c796df1d45b21617\",\"dweb:/ipfs/QmadRjHbkicwqwwh61raUEapaVEtaLMcYbQZWs9gUkgj3u\"],\"license\":\"MIT\"},\"node_modules/@prb/math/src/Common.sol\":{\"keccak256\":\"0x1949276271967e9954a65f27c1c32e1dd73cbd1f3d2af88f2fdd694ba4b7da60\",\"urls\":[\"bzz-raw://ca414ac0a29a3d0d9e194afa73029a7d94168029df6aeb5f6a4b540d0072eb14\",\"dweb:/ipfs/QmYVipmQDvcvurNZZSFGjxabWXwEpdfijYYx2b3d7ico8U\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}

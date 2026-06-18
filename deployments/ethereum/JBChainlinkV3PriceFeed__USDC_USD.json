@@ -1,0 +1,198 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x58be5fc7076e405ed7f10b15a636be576a1cc341",
+	"sourceName": "node_modules/@bananapus/core-v6/src/JBChainlinkV3PriceFeed.sol",
+	"contractName": "JBChainlinkV3PriceFeed",
+	"chainId": "0x1",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [
+				{
+					"name": "feed",
+					"type": "address",
+					"internalType": "contract AggregatorV3Interface"
+				},
+				{
+					"name": "threshold",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "FEED",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract AggregatorV3Interface"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "THRESHOLD",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "currentUnitPrice",
+			"inputs": [
+				{
+					"name": "decimals",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_IncompleteRound",
+			"inputs": [
+				{
+					"name": "roundId",
+					"type": "uint80",
+					"internalType": "uint80"
+				},
+				{
+					"name": "answeredInRound",
+					"type": "uint80",
+					"internalType": "uint80"
+				},
+				{
+					"name": "updatedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_NegativePrice",
+			"inputs": [
+				{
+					"name": "price",
+					"type": "int256",
+					"internalType": "int256"
+				}
+			]
+		},
+		{
+			"type": "error",
+			"name": "JBChainlinkV3PriceFeed_StalePrice",
+			"inputs": [
+				{
+					"name": "timestamp",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "threshold",
+					"type": "uint256",
+					"internalType": "uint256"
+				},
+				{
+					"name": "updatedAt",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			]
+		}
+	],
+	"args": [
+		"0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6",
+		"172800"
+	],
+	"solcInputHash": "ba561b95f874fcf9fb3d742ba86859ed",
+	"receipt": {
+		"blockHash": "0x40279a1af1adda82b192e13ff193ee8a16b4f225bfa565b40f4f1a8ca00337d7",
+		"blockNumber": "0x1828173",
+		"contractAddress": null,
+		"cumulativeGasUsed": "0x8bff9f",
+		"effectiveGasPrice": "0x473f053e",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"gasUsed": "0x6d9cb",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x911632d13e3c5ef7feb2bc1903a7d6941bac340a4c6c6a481ac440f1296542d1"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockNumber": "0x1828173",
+				"transactionHash": "0x70d303d48d2af21acfaf5c61a12927762051bb3f266ef8f66abeffbe38eb1b99",
+				"transactionIndex": "0x31",
+				"blockHash": "0x40279a1af1adda82b192e13ff193ee8a16b4f225bfa565b40f4f1a8ca00337d7",
+				"blockTimestamp": "0x6a313f3f",
+				"logIndex": "0x113",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockNumber": "0x1828173",
+				"transactionHash": "0x70d303d48d2af21acfaf5c61a12927762051bb3f266ef8f66abeffbe38eb1b99",
+				"transactionIndex": "0x31",
+				"blockHash": "0x40279a1af1adda82b192e13ff193ee8a16b4f225bfa565b40f4f1a8ca00337d7",
+				"blockTimestamp": "0x6a313f3f",
+				"logIndex": "0x114",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x7121bdb5da6ff5e4ab87d465ed70caab6b1014022975d109ade9af46634578d5"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000058",
+				"blockNumber": "0x1828173",
+				"transactionHash": "0x70d303d48d2af21acfaf5c61a12927762051bb3f266ef8f66abeffbe38eb1b99",
+				"transactionIndex": "0x31",
+				"blockHash": "0x40279a1af1adda82b192e13ff193ee8a16b4f225bfa565b40f4f1a8ca00337d7",
+				"blockTimestamp": "0x6a313f3f",
+				"logIndex": "0x115",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010000000000000080000001000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000200000000000000000000000000000000040000000000000000040000000000000000000000000000000000000008000000000000000000080008800000000000008000104000000000000000000000000000000000000000000004000040000000000000000000000002200000000000000000000000004000000000002008000000000000000400000020000000000000000000000800000000000000000000900000020000000000200000000000080002000000000000000",
+		"status": "0x1",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"transactionHash": "0x70d303d48d2af21acfaf5c61a12927762051bb3f266ef8f66abeffbe38eb1b99",
+		"transactionIndex": "0x31",
+		"type": "0x2"
+	},
+	"bytecode": "0x60c060405234801561000f575f5ffd5b5060405161064538038061064583398101604081905261002e91610044565b6001600160a01b0390911660805260a05261007b565b5f5f60408385031215610055575f5ffd5b82516001600160a01b038116811461006b575f5ffd5b6020939093015192949293505050565b60805160a0516105906100b55f395f8181608c015281816101ea015261022a01525f818160480152818160d1015261028301526105905ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80630beaf38c14610043578063785ffb3714610087578063d3f5c15f146100bc575b5f5ffd5b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100ae7f000000000000000000000000000000000000000000000000000000000000000081565b60405190815260200161007e565b6100ae6100ca36600461037f565b5f5f5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa15801561012b573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061014f91906103b1565b945094505093509350815f036101975760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064015b60405180910390fd5b836001600160501b0316816001600160501b031610156101e45760405163d998366560e01b81526001600160501b038086166004830152821660248201526044810183905260640161018e565b61020e827f0000000000000000000000000000000000000000000000000000000000000000610413565b42111561025d576040516352b4aba960e11b81524260048201527f000000000000000000000000000000000000000000000000000000000000000060248201526044810183905260640161018e565b5f83136102805760405163e374febf60e01b81526004810184905260240161018e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663313ce5676040518163ffffffff1660e01b8152600401602060405180830381865afa1580156102dd573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610301919061042c565b60ff16905061031184828961031c565b979650505050505050565b5f82820361032b575082610378565b828211156103595761033d838361044c565b61034890600a610542565b610352908561054d565b9050610378565b610363828461044c565b61036e90600a610542565b6103529085610564565b9392505050565b5f6020828403121561038f575f5ffd5b5035919050565b80516001600160501b03811681146103ac575f5ffd5b919050565b5f5f5f5f5f60a086880312156103c5575f5ffd5b6103ce86610396565b602087015160408801516060890151929750909550935091506103f360808701610396565b90509295509295909350565b634e487b7160e01b5f52601160045260245ffd5b80820180821115610426576104266103ff565b92915050565b5f6020828403121561043c575f5ffd5b815160ff81168114610378575f5ffd5b81810381811115610426576104266103ff565b6001815b600184111561049a5780850481111561047e5761047e6103ff565b600184161561048c57908102905b60019390931c928002610463565b935093915050565b5f826104b057506001610426565b816104bc57505f610426565b81600181146104d257600281146104dc576104f8565b6001915050610426565b60ff8411156104ed576104ed6103ff565b50506001821b610426565b5060208310610133831016604e8410600b841016171561051b575081810a610426565b6105275f19848461045f565b805f190482111561053a5761053a6103ff565b029392505050565b5f61037883836104a2565b8082028115828204841417610426576104266103ff565b5f8261057e57634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b506004361061003f575f3560e01c80630beaf38c14610043578063785ffb3714610087578063d3f5c15f146100bc575b5f5ffd5b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b6100ae7f000000000000000000000000000000000000000000000000000000000000000081565b60405190815260200161007e565b6100ae6100ca36600461037f565b5f5f5f5f5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663feaf968c6040518163ffffffff1660e01b815260040160a060405180830381865afa15801561012b573d5f5f3e3d5ffd5b505050506040513d601f19601f8201168201806040525081019061014f91906103b1565b945094505093509350815f036101975760405163d998366560e01b81526001600160501b03808616600483015282166024820152604481018390526064015b60405180910390fd5b836001600160501b0316816001600160501b031610156101e45760405163d998366560e01b81526001600160501b038086166004830152821660248201526044810183905260640161018e565b61020e827f0000000000000000000000000000000000000000000000000000000000000000610413565b42111561025d576040516352b4aba960e11b81524260048201527f000000000000000000000000000000000000000000000000000000000000000060248201526044810183905260640161018e565b5f83136102805760405163e374febf60e01b81526004810184905260240161018e565b5f7f00000000000000000000000000000000000000000000000000000000000000006001600160a01b031663313ce5676040518163ffffffff1660e01b8152600401602060405180830381865afa1580156102dd573d5f5f3e3d5ffd5b505050506040513d601f19601f82011682018060405250810190610301919061042c565b60ff16905061031184828961031c565b979650505050505050565b5f82820361032b575082610378565b828211156103595761033d838361044c565b61034890600a610542565b610352908561054d565b9050610378565b610363828461044c565b61036e90600a610542565b6103529085610564565b9392505050565b5f6020828403121561038f575f5ffd5b5035919050565b80516001600160501b03811681146103ac575f5ffd5b919050565b5f5f5f5f5f60a086880312156103c5575f5ffd5b6103ce86610396565b602087015160408801516060890151929750909550935091506103f360808701610396565b90509295509295909350565b634e487b7160e01b5f52601160045260245ffd5b80820180821115610426576104266103ff565b92915050565b5f6020828403121561043c575f5ffd5b815160ff81168114610378575f5ffd5b81810381811115610426576104266103ff565b6001815b600184111561049a5780850481111561047e5761047e6103ff565b600184161561048c57908102905b60019390931c928002610463565b935093915050565b5f826104b057506001610426565b816104bc57505f610426565b81600181146104d257600281146104dc576104f8565b6001915050610426565b60ff8411156104ed576104ed6103ff565b50506001821b610426565b5060208310610133831016604e8410600b841016171561051b575081810a610426565b6105275f19848461045f565b805f190482111561053a5761053a6103ff565b029392505050565b5f61037883836104a2565b8082028115828204841417610426576104266103ff565b5f8261057e57634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"feed\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"uint80\",\"name\":\"roundId\",\"type\":\"uint80\"},{\"internalType\":\"uint80\",\"name\":\"answeredInRound\",\"type\":\"uint80\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_IncompleteRound\"},{\"inputs\":[{\"internalType\":\"int256\",\"name\":\"price\",\"type\":\"int256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_NegativePrice\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"timestamp\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"threshold\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"updatedAt\",\"type\":\"uint256\"}],\"type\":\"error\",\"name\":\"JBChainlinkV3PriceFeed_StalePrice\"},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"FEED\",\"outputs\":[{\"internalType\":\"contract AggregatorV3Interface\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"THRESHOLD\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"decimals\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentUnitPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"constructor\":{\"params\":{\"feed\":\"The Chainlink feed to report prices from.\",\"threshold\":\"How many seconds old a price update may be.\"}},\"currentUnitPrice(uint256)\":{\"params\":{\"decimals\":\"The number of decimals the return value should use.\"},\"returns\":{\"_0\":\"The current unit price from the feed, as a fixed point number with the specified number of decimals.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"FEED()\":{\"notice\":\"The Chainlink feed that prices are reported from.\"},\"THRESHOLD()\":{\"notice\":\"How many seconds old a Chainlink price update is allowed to be before considered \\\"stale\\\".\"},\"currentUnitPrice(uint256)\":{\"notice\":\"Gets the current price (per 1 unit) from the feed.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/JBChainlinkV3PriceFeed.sol\":\"JBChainlinkV3PriceFeed\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/JBChainlinkV3PriceFeed.sol\":{\"keccak256\":\"0x666be16e9243e0fed615166b333c9eca149f9f5c6362bb25c0c1d501b783bda8\",\"urls\":[\"bzz-raw://e3f4d215937e54129deb39ccecc3cdeb9ad016be42a6ac0224d148bdc4123075\",\"dweb:/ipfs/QmU4Lkq2MTghJwRu4EZHkbmHqC5kDpvz6PDdXqmDT1J5GX\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/interfaces/IJBPriceFeed.sol\":{\"keccak256\":\"0x3a948500b5397c90e926f3bdef9423e7f095f906b23cd1503009802c80bedb41\",\"urls\":[\"bzz-raw://a0ea0b7e5d442257f6159799b7bf262615b0f04e5cd542b0980f131ae40a63bb\",\"dweb:/ipfs/QmX7uugLaXtT5XmYxqfrmDqU2YuknAeYjHMiLm9iHaRfHw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/libraries/JBFixedPointNumber.sol\":{\"keccak256\":\"0x5e260964f6c2d08b2a2929630fe4f261e8a93f40f0d073ed1a8174dbc3ca2fef\",\"urls\":[\"bzz-raw://125b54e29e33cb009a34651b9e255ca3e49545079839e58d14d5c5992871a27d\",\"dweb:/ipfs/QmcGAm8kytywkQogQUabLhuYDC5kLnsTinAm1rBLFwRjf9\"],\"license\":\"MIT\"},\"node_modules/@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol\":{\"keccak256\":\"0x257a8d28fa83d3d942547c8e129ef465e4b5f3f31171e7be4739a4c98da6b4f0\",\"urls\":[\"bzz-raw://6d39e11b1dc7b9b8ccdabbc9be442ab7cda4a81c748f57e316dcb1bcb4a28bf9\",\"dweb:/ipfs/QmaG6vz6W6iEUBsbHSBob5mdcitYxWjoygxREHpsJHfWrS\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.0.2",
+	"gitDirty": false,
+	"history": []
+}
