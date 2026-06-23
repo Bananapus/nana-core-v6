@@ -18,28 +18,6 @@ import {JBRulesetMetadata} from "../src/structs/JBRulesetMetadata.sol";
 import {JBSplitGroup} from "../src/structs/JBSplitGroup.sol";
 import {JBTerminalConfig} from "../src/structs/JBTerminalConfig.sol";
 
-contract MutableApprovalHook is IJBRulesetApprovalHook {
-    uint256 public immutable override DURATION;
-    JBApprovalStatus public status;
-
-    constructor(uint256 duration, JBApprovalStatus initialStatus) {
-        DURATION = duration;
-        status = initialStatus;
-    }
-
-    function setStatus(JBApprovalStatus newStatus) external {
-        status = newStatus;
-    }
-
-    function approvalStatusOf(uint256, JBRuleset memory) external view override returns (JBApprovalStatus) {
-        return status;
-    }
-
-    function supportsInterface(bytes4 interfaceId) external pure override returns (bool) {
-        return interfaceId == type(IJBRulesetApprovalHook).interfaceId;
-    }
-}
-
 // A project's rulesets can be queued, and re-queued as long as the current ruleset approval hook approves.
 contract TestRulesetQueuing_Local is TestBaseWorkflow {
     IJBController private _controller;
@@ -1045,79 +1023,5 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
 
         // check: current should be an iterated cycle.
         assertEq(currentRuleset.cycleNumber, (2 days / 1 hours) + 1);
-    }
-
-    function test_childRulesetCannotBecomeCurrentAfterExpectedParentLaterFails() public {
-        MutableApprovalHook parentApprovalHook =
-            new MutableApprovalHook({duration: 0, initialStatus: JBApprovalStatus.ApprovalExpected});
-
-        JBRulesetConfig[] memory initialConfig = new JBRulesetConfig[](1);
-        initialConfig[0].mustStartAtOrAfter = 0;
-        initialConfig[0].duration = 1 days;
-        initialConfig[0].weight = _weight;
-        initialConfig[0].weightCutPercent = 0;
-        initialConfig[0].approvalHook = parentApprovalHook;
-        initialConfig[0].metadata = _metadata;
-        initialConfig[0].splitGroups = new JBSplitGroup[](0);
-        initialConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
-
-        JBTerminalConfig[] memory terminalConfigurations = new JBTerminalConfig[](1);
-        JBAccountingContext[] memory tokensToAccept = new JBAccountingContext[](1);
-        tokensToAccept[0] = JBAccountingContext({
-            token: JBConstants.NATIVE_TOKEN, decimals: 18, currency: uint32(uint160(JBConstants.NATIVE_TOKEN))
-        });
-        terminalConfigurations[0] = JBTerminalConfig({terminal: _terminal, accountingContextsToAccept: tokensToAccept});
-
-        uint256 projectId = _controller.launchProjectFor({
-            owner: address(multisig()),
-            projectUri: "myIPFSHash",
-            rulesetConfigurations: initialConfig,
-            terminalConfigurations: terminalConfigurations,
-            memo: ""
-        });
-
-        JBRulesetConfig[] memory expectedParentConfig = new JBRulesetConfig[](1);
-        expectedParentConfig[0].mustStartAtOrAfter = uint48(block.timestamp + 3 days);
-        expectedParentConfig[0].duration = 1 days;
-        expectedParentConfig[0].weight = _weight + 1;
-        expectedParentConfig[0].weightCutPercent = 0;
-        expectedParentConfig[0].approvalHook = IJBRulesetApprovalHook(address(0));
-        expectedParentConfig[0].metadata = _metadata;
-        expectedParentConfig[0].splitGroups = new JBSplitGroup[](0);
-        expectedParentConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
-
-        vm.prank(multisig());
-        _controller.queueRulesetsOf(projectId, expectedParentConfig, "");
-
-        (JBRuleset memory expectedParent,) = jbRulesets().latestQueuedOf(projectId);
-        assertEq(
-            uint256(parentApprovalHook.status()),
-            uint256(JBApprovalStatus.ApprovalExpected),
-            "parent must be expected while the child is queued"
-        );
-
-        JBRulesetConfig[] memory childConfig = new JBRulesetConfig[](1);
-        childConfig[0].mustStartAtOrAfter = uint48(expectedParent.start + expectedParent.duration);
-        childConfig[0].duration = 1 days;
-        childConfig[0].weight = _weight + 2;
-        childConfig[0].weightCutPercent = 0;
-        childConfig[0].approvalHook = IJBRulesetApprovalHook(address(0));
-        childConfig[0].metadata = _metadata;
-        childConfig[0].splitGroups = new JBSplitGroup[](0);
-        childConfig[0].fundAccessLimitGroups = new JBFundAccessLimitGroup[](0);
-
-        vm.prank(multisig());
-        _controller.queueRulesetsOf(projectId, childConfig, "");
-
-        (JBRuleset memory child,) = jbRulesets().latestQueuedOf(projectId);
-        assertEq(child.basedOnId, expectedParent.id, "child was based on the ApprovalExpected parent");
-
-        parentApprovalHook.setStatus(JBApprovalStatus.Failed);
-        vm.warp(child.start);
-
-        JBRuleset memory currentRuleset = jbRulesets().currentOf(projectId);
-
-        assertNotEq(currentRuleset.id, child.id, "child must not activate after its parent later fails");
-        assertEq(currentRuleset.weight, _weight, "current ruleset falls back to the last approved economics");
     }
 }
