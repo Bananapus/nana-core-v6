@@ -1047,7 +1047,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
         assertEq(currentRuleset.cycleNumber, (2 days / 1 hours) + 1);
     }
 
-    function test_childRulesetCanBecomeCurrentAfterExpectedParentLaterFails() public {
+    function test_childRulesetCannotBecomeCurrentAfterExpectedParentLaterFails() public {
         MutableApprovalHook parentApprovalHook =
             new MutableApprovalHook({duration: 0, initialStatus: JBApprovalStatus.ApprovalExpected});
 
@@ -1117,7 +1117,7 @@ contract TestRulesetQueuing_Local is TestBaseWorkflow {
 
         JBRuleset memory currentRuleset = jbRulesets().currentOf(projectId);
 
-        assertEq(currentRuleset.id, child.id, "child activated even though its parent later failed");
-        assertEq(currentRuleset.weight, _weight + 2, "child economics are now current");
+        assertNotEq(currentRuleset.id, child.id, "child must not activate after its parent later fails");
+        assertEq(currentRuleset.weight, _weight, "current ruleset falls back to the last approved economics");
     }
 }
