@@ -377,25 +377,23 @@ contract JBRulesets is JBControlled, IJBRulesets {
             // and potentially returned).
             ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
-            uint256 candidateRulesetId = rulesetId;
+            // Get a reference to the approval status.
+            JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
 
-            while (ruleset.id != 0) {
-                // Get a reference to the approval status of this ruleset and its ancestors.
-                JBApprovalStatus approvalStatus =
-                    _approvalStatusOfRulesetAndAncestors({projectId: projectId, ruleset: ruleset});
-
-                // Check to see if this ruleset and its ancestors are approved if they have approval hooks.
-                // If so, return the candidate. If we've walked back to a base ruleset, simulate from it below.
-                if (approvalStatus == JBApprovalStatus.Approved || approvalStatus == JBApprovalStatus.Empty) {
-                    if (ruleset.id == candidateRulesetId) return ruleset;
-                    break;
-                }
-
-                // If it or one of its ancestors hasn't been approved, set the ruleset configuration to be the
-                // configuration of the ruleset that it's based on, which carries the last approved configuration.
-                rulesetId = ruleset.basedOnId;
-                ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
+            // Check to see if this ruleset's approval hook is approved if it exists.
+            // If so, return it.
+            if (approvalStatus == JBApprovalStatus.Approved || approvalStatus == JBApprovalStatus.Empty) {
+                return ruleset;
             }
+
+            // If it hasn't been approved, set the ruleset configuration to be the configuration of the ruleset that
+            // it's based on,
+            // which carries the last approved configuration.
+            rulesetId = ruleset.basedOnId;
+
+            // Keep a reference to its ruleset, with metadata (used by `_simulateCycledRulesetBasedOn` and may be
+            // returned).
+            ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
         } else {
             // No upcoming ruleset found that is currently approvable,
             // so use the latest ruleset ID.
@@ -405,8 +403,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
 
             // Get a reference to the approval status.
-            JBApprovalStatus approvalStatus =
-                _approvalStatusOfRulesetAndAncestors({projectId: projectId, ruleset: ruleset});
+            JBApprovalStatus approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
 
             // While the ruleset has an approval hook that isn't approved or if it hasn't yet started, get a reference
             // to the ruleset that the latest is based on, which has the latest approved configuration.
@@ -417,7 +414,7 @@ contract JBRulesets is JBControlled, IJBRulesets {
             ) {
                 rulesetId = ruleset.basedOnId;
                 ruleset = _getStructFor({projectId: projectId, rulesetId: rulesetId, withMetadata: true});
-                approvalStatus = _approvalStatusOfRulesetAndAncestors({projectId: projectId, ruleset: ruleset});
+                approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
             }
         }
 
@@ -489,8 +486,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         if (upcomingApprovableRulesetId != 0) {
             ruleset = _getStructFor({projectId: projectId, rulesetId: upcomingApprovableRulesetId, withMetadata: true});
 
-            // Get a reference to the approval status of this ruleset and its ancestors.
-            approvalStatus = _approvalStatusOfRulesetAndAncestors({projectId: projectId, ruleset: ruleset});
+            // Get a reference to the approval status.
+            approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
 
             // If the approval hook is empty, expects approval, or has approved the ruleset, return it.
             if (
@@ -518,8 +515,8 @@ contract JBRulesets is JBControlled, IJBRulesets {
         // There's no queued if the current has a duration of 0.
         if (ruleset.duration == 0) return _getStructFor({projectId: 0, rulesetId: 0, withMetadata: false});
 
-        // Get a reference to the approval status of this ruleset and its ancestors.
-        approvalStatus = _approvalStatusOfRulesetAndAncestors({projectId: projectId, ruleset: ruleset});
+        // Get a reference to the approval status.
+        approvalStatus = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
 
         // Check to see if this ruleset's approval hook hasn't failed.
         // If so, return a ruleset based on it.
@@ -925,30 +922,6 @@ contract JBRulesets is JBControlled, IJBRulesets {
         } catch {
             return JBApprovalStatus.Failed;
         }
-    }
-
-    /// @notice The first non-approved status found while walking a ruleset and its ancestors.
-    /// @dev Descendants of a failed or still-expected ancestor must not become current just because the immediate
-    /// parent has no approval hook.
-    /// @param projectId The ID of the project the ruleset belongs to.
-    /// @param ruleset The newest ruleset to check.
-    /// @return status Empty or Approved when the full chain is approved, otherwise the first blocking status.
-    function _approvalStatusOfRulesetAndAncestors(
-        uint256 projectId,
-        JBRuleset memory ruleset
-    )
-        internal
-        view
-        returns (JBApprovalStatus status)
-    {
-        while (ruleset.id != 0) {
-            status = _approvalStatusOf({projectId: projectId, ruleset: ruleset});
-            if (status != JBApprovalStatus.Approved && status != JBApprovalStatus.Empty) return status;
-
-            ruleset = _getStructFor({projectId: projectId, rulesetId: ruleset.basedOnId, withMetadata: true});
-        }
-
-        return JBApprovalStatus.Empty;
     }
 
     /// @notice The ID of the ruleset which has started and hasn't expired yet, whether or not it has been approved, for
