@@ -530,6 +530,10 @@ directly.
   - **Invariant:** ruleset IDs strictly increase (`latestId + 1` or `block.timestamp`, whichever
     is larger); a rejected approval falls back to the `basedOnId` chain; approval hook must support
     `IJBRulesetApprovalHook` (ERC-165). Weight overflow checked at queue (uint112).
+  - **Approval lifecycle:** `ApprovalExpected` is a provisional, replaceable status. It can be
+    replaced within its scheduled cycle, but it can also base a later queued cycle because it is
+    expected to become `Approved` unless replaced first. `Approved` is final for its scheduled
+    cycle; later queued rulesets derive from it instead of replacing that cycle.
 - **`updateRulesetWeightCache(projectId, rulesetId)`** (`L214-264`) — permissionless. Advances
   weight-decay cache up to `_WEIGHT_CUT_MULTIPLE_CACHE_LOOKUP_THRESHOLD` (20_000) iterations per
   call. Required after 20_000 elapsed cycles to keep `deriveWeightFrom` cheap (RISKS.md §2).
@@ -653,7 +657,8 @@ configuration and ruleset start.
 
 - **`approvalStatusOf(projectId, rulesetId, startTimestamp) → JBApprovalStatus`** — view. Returns
   `Approved` if `startTimestamp - block.timestamp >= DURATION`, `ApprovalExpected` while the
-  notice window is still open, otherwise `Failed`. Stateless.
+  notice window is still open, otherwise `Failed`. A ruleset returning `ApprovalExpected` becomes
+  `Approved` once the deadline is reached unless another ruleset replaces it first. Stateless.
 
 The deadline contracts hold no state and grant no privileges.
 

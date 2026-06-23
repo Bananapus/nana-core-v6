@@ -102,6 +102,9 @@ contract JBRulesets is JBControlled, IJBRulesets {
     /// @notice Queues a new ruleset for a project. The ruleset takes effect after the current one ends (or immediately
     /// if the current ruleset has `duration = 0`). Must be approved by the previous ruleset's approval hook.
     /// @dev Only the project's current controller can call this.
+    /// @dev A latest queued ruleset with `ApprovalExpected` can still be replaced within its scheduled cycle, but can
+    /// be used as the base for a later cycle because it is expected to become `Approved` unless replaced. A latest
+    /// queued ruleset with `Approved` is final for its scheduled cycle; later queued rulesets derive from it.
     /// @param projectId The ID of the project to queue the ruleset for.
     /// @param duration How long the ruleset lasts (seconds). 0 = no auto-cycling (stays active until explicitly
     /// replaced). When a duration ends without a queued replacement, the ruleset rolls over with decayed weight.

@@ -12,7 +12,8 @@ import {JBRuleset} from "./structs/JBRuleset.sol";
 /// a guaranteed notice period before any project configuration changes take effect.
 /// @dev If `DURATION` is set longer than the ruleset's cycle duration, no queued ruleset can ever satisfy the deadline
 /// and the current ruleset will effectively be locked in perpetuity. Choose a `DURATION` shorter than the shortest
-/// cycle it will govern.
+/// cycle it will govern. A ruleset that currently returns `ApprovalExpected` will become `Approved` once the deadline
+/// is reached unless it is replaced first.
 contract JBDeadline is IJBRulesetApprovalHook {
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
