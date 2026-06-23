@@ -188,6 +188,8 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 - A reverting approval hook is caught and treated as failed approval.
 - A gas-burning approval hook can still DoS `currentOf()` by exhausting gas.
+- Custom hooks must only return `ApprovalExpected` for rulesets that will become `Approved` if no
+  later ruleset replaces them first.
 - Repeated approval-hook rejection at a ruleset boundary can create complex fallback behavior that needs testing.
 
 ### Locked split scope
