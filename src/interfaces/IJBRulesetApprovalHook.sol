@@ -9,6 +9,9 @@ import {JBRuleset} from "./../structs/JBRuleset.sol";
 /// @notice Determines whether the next ruleset in a project's queue is approved or rejected.
 /// @dev Project rulesets are stored in a queue. Rulesets take effect after the previous ruleset in the queue ends, and
 /// only if they are approved by the previous ruleset's approval hook.
+/// `ApprovalExpected` is a provisional, non-blocking approval state: hooks should return it only when the ruleset will
+/// become `Approved` if no later ruleset replaces it before final approval. Once a hook returns `Approved`, the ruleset
+/// is final for its scheduled cycle and later queued rulesets must derive from it instead of replacing that cycle.
 interface IJBRulesetApprovalHook is IERC165 {
     /// @notice The minimum number of seconds that must pass for a queued ruleset to be considered approved.
     function DURATION() external view returns (uint256);

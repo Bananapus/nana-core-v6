@@ -149,6 +149,9 @@ interface IJBRulesets {
         returns (uint256);
 
     /// @notice Queues a new ruleset for a project.
+    /// @dev A latest queued ruleset with `ApprovalExpected` can still be replaced within its scheduled cycle, but can
+    /// be used as the base for a later cycle because it is expected to become `Approved` unless replaced. A latest
+    /// queued ruleset with `Approved` is final for its scheduled cycle; later queued rulesets derive from it.
     /// @param projectId The ID of the project to queue the ruleset for.
     /// @param duration The duration of the ruleset in seconds.
     /// @param weight The weight of the ruleset.
