@@ -120,7 +120,7 @@ This repo is the main runtime surface for Juicebox V6. It owns project identity,
 **Postconditions**
 - value leaves the treasury only through configured limits, recipients, and fee logic
 
-**Note: payouts are not the only exit, and they are not the only fee treatment.** Payouts pay the 2.5% protocol fee; a cash out at `cashOutTaxRate == 0` against genuine payment surplus does not. An owner running `reservedPercent == 100%`, no payout limit, and `cashOutTaxRate == 0` can mint the reserved tokens to themselves and reclaim the full surplus through Journey 5 fee-free. This is the defined meaning of a 0% cash-out tax (self-dealing the owner's own deposit, reachable only for surplus — not payout-limited funds), not a bypass. Set a non-zero `cashOutTaxRate` if the fee should apply on exits. See RISKS.md §8.6.
+**Note: not every exit pays the fee.** A payout pays the 2.5% protocol fee; a cash out at `cashOutTaxRate == 0` against genuine payment surplus does not. An owner running `reservedPercent == 100%`, no payout limit, and `cashOutTaxRate == 0` can mint the reserved tokens to themselves and reclaim the full surplus through Journey 5 fee-free. This is the defined meaning of a 0% cash-out tax, not a bypass: it is self-dealing the owner's own deposit, and it reaches only surplus, never payout-limited funds. Set a non-zero `cashOutTaxRate` if the fee should apply on exits. See RISKS.md §8.6.
 
 ## Journey 5: Let holders cash out against surplus
 
