@@ -296,6 +296,24 @@ Core can be deployed before project `#1` is fully ready. During that period, fee
 
 The return path doesn't care where the returning funds come from — the project owner can rebate a payout's held fee using funds from any wallet, not just funds the original payout recipient returned. This stays consistent with the proof-of-custody framing: whoever pays the protocol back the same amount the project sent out has demonstrated that the project's accounting position is unchanged. The owner subsidizing a vendor's payout doesn't extract value either way, since they spend the full payout amount back into the protocol to do it.
 
+### 8.6 Zero cash-out tax means fee-free surplus exit (the fee is on payouts and the cash-out tax, not on holding)
+
+The protocol fee (`FEE=25`, 2.5%) is charged on exactly two events: payouts leaving the terminal, and cash outs taken at a **non-zero** `cashOutTaxRate` (`JBMultiTerminal._cashOutTokensOf`, the `cashOutTaxRate != 0` branch). A cash out at `cashOutTaxRate == 0` is fee-free except up to `feeFreeSurplusOf` — and that counter is seeded only by fee-free intra-terminal payouts (`_sendPayoutsOf`), never by payments. So genuine payment surplus carries `feeFreeSurplusOf == 0` and reclaims with no fee.
+
+A project owner can therefore extract treasury funds without paying the payout fee:
+
+1. Configure the ruleset with `reservedPercent == 100%` and no payout limit (so payment funds become surplus rather than payout-distributable).
+2. Take payment — issuance accrues entirely as pending reserved tokens; mint them to yourself via `sendReservedTokensToSplitsOf`. You now hold the full supply.
+3. Cash out at `cashOutTaxRate == 0`, reclaiming 100% of the surplus fee-free.
+
+This is the definition of a 0% cash-out tax, not a fee bypass — there is no taxed event to skim. The mechanism is bounded:
+
+- **It reaches only surplus.** Funds under a payout limit are not cash-out-reclaimable (`JBTerminalStore.recordCashOutFor` caps the reclaim at `localSurplus`); moving those out requires a payout, which charges the fee. The fee-free path exists only because the project ran 0% payout limit + 0% cash-out tax, i.e. declined both protections the fee pays for.
+- **It is self-dealing, not theft.** With `reservedPercent == 100%` third-party payers receive zero project tokens, so no rational outsider funds the project. In practice the owner is cycling their own deposit in and back out. A payer who knowingly accepts zero tokens has no surplus claim to protect.
+- **The genuine round-trip bypass is still closed.** A fee-free intra-terminal payout into a sister project followed by a 0%-tax cash out is taxed up to `feeFreeSurplusOf` (the `cashOutTaxRate == 0` else-branch), then capped by `_capFeeFreeSurplus` after every outflow. See `test/TestFeeFreeCashOutBypass.sol`.
+
+A project that wants the protocol fee to apply on exits must set a non-zero `cashOutTaxRate` (and/or route distributions through payout limits).
+
 ## 9. Invariants to verify
 
 - **Balance conservation:** `terminal.balance(token) >= sum(store.balanceOf(projectId, terminal, token))` for projects sharing a terminal.

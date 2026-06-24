@@ -87,9 +87,16 @@ inline because operators may toggle them.
   - processed permissionlessly by anyone after the 28-day window via `processHeldFeesOf` — funds
     forwarded to project 1 (the fee beneficiary, `FEE_BENEFICIARY_PROJECT_ID` in `JBConstants`).
 - `useAllowanceOf` and migration fees are NOT held; they are taken immediately.
-- A `cashOutTaxRate == 0` ruleset still charges fees up to `feeFreeSurplusOf[projectId][token]` to
-  defeat the round-trip bypass (intra-terminal payout → zero-tax cash out)
-  (`JBMultiTerminal.sol:117-130`).
+- A `cashOutTaxRate == 0` cash out is fee-free on genuine payment surplus: the zero-tax branch
+  charges the fee only up to `feeFreeSurplusOf[projectId][token]`, and that counter is seeded only
+  by fee-free intra-terminal payouts (`_sendPayoutsOf`), never by payments. Payment surplus
+  therefore carries `feeFreeSurplusOf == 0` and reclaims with no protocol fee. Consequence: an
+  owner with `reservedPercent == 100%`, no payout limit, and `cashOutTaxRate == 0` can reclaim the
+  full surplus fee-free instead of paying out — this is the defined meaning of a 0% cash-out tax
+  (reachable only for surplus, not payout-limited funds), accepted in RISKS.md §8.6, not a bypass.
+- The fee charged up to `feeFreeSurplusOf` on a zero-tax cash out is what defeats the genuine
+  round-trip bypass (intra-terminal payout → zero-tax cash out), capped by `_capFeeFreeSurplus`
+  after every outflow (`JBMultiTerminal.sol:117-130`).
 - `processHeldFeesOf` is reentrancy-safe: it deletes the entry and advances
   `_nextHeldFeeIndexOf[projectId][token]` BEFORE the external fee-terminal call
   (`JBMultiTerminal.sol:744-770`).
