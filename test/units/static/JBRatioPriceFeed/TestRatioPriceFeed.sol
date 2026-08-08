@@ -253,6 +253,84 @@ contract TestRatioPriceFeed_Local is JBTest {
         assertGt((result + 1) * scaledDenominator, scaledNumerator, "result must be the largest such integer");
     }
 
+    /// @notice The floored-quotient property holds at every combination of requested precision and leg decimals.
+    /// @dev Scaling is applied once per leg, for that leg's own decimals, and again for the requested precision plus
+    /// the headroom. The quotient fuzz above holds both of those fixed, so the interaction between them is unexercised
+    /// — and a scaling mistake would live exactly there. The scaled legs are recomputed here from the aggregators'
+    /// raw
+    /// answers instead of read back off the legs, so the assertion cannot inherit the error it is looking for.
+    function testFuzz_currentUnitPrice_isFlooredQuotientAcrossDecimals(
+        uint64 numeratorRaw,
+        uint64 denominatorRaw,
+        uint8 decimals,
+        uint8 numeratorLegSeed,
+        uint8 denominatorLegSeed
+    )
+        external
+    {
+        numeratorRaw = uint64(bound(uint256(numeratorRaw), 1, type(uint64).max));
+        denominatorRaw = uint64(bound(uint256(denominatorRaw), 1, type(uint64).max));
+        decimals = uint8(bound(uint256(decimals), 0, 36));
+
+        uint8 numeratorLegDecimals = _legDecimals(numeratorLegSeed);
+        uint8 denominatorLegDecimals = _legDecimals(denominatorLegSeed);
+
+        JBRatioPriceFeed ratio = new JBRatioPriceFeed({
+            numerator: _feedReporting({decimals: numeratorLegDecimals, price: int256(uint256(numeratorRaw))}),
+            denominator: _feedReporting({decimals: denominatorLegDecimals, price: int256(uint256(denominatorRaw))})
+        });
+
+        // Both scales are widenings: the numerator is asked for `decimals + 18`, which is at least 18, and the
+        // denominator for 18, and no leg here reports more than 18 decimals. So neither raw answer is floored on the
+        // way in and the two products below are exact.
+        uint256 scaledNumerator = uint256(numeratorRaw) * 10 ** (uint256(decimals) + 18 - numeratorLegDecimals);
+        uint256 scaledDenominator = uint256(denominatorRaw) * 10 ** (18 - denominatorLegDecimals);
+
+        uint256 result = ratio.currentUnitPrice(decimals);
+
+        assertLe(result * scaledDenominator, scaledNumerator, "result must not exceed the exact quotient");
+        assertGt((result + 1) * scaledDenominator, scaledNumerator, "result must be the largest such integer");
+    }
+
+    //*********************************************************************//
+    // --- Direction ----------------------------------------------------- //
+    //*********************************************************************//
+
+    /// @notice Composing a pair of legs one way and then the other yields reciprocal prices.
+    /// @dev The reversed-legs test above pins the direction convention at one pair of prices. This pins it as a
+    /// property: the two compositions are reciprocals, so `forward * reverse` is one unit squared.
+    /// @dev The bound comes out of the flooring rather than being picked. Writing `P` and `Q` for the two exact
+    /// quotients, `P * Q == 10 ** (2 * decimals)` and the contract returns `p = floor(P)` and `q = floor(Q)`. Then
+    /// `p * q <= P * Q`, and `p * q > P * Q - P - Q` because each dropped fraction is under one, and `P < p + 1` and
+    /// `Q < q + 1` restate that in terms the test can read.
+    function testFuzz_currentUnitPrice_reversedLegsAreReciprocal(
+        uint64 numeratorRaw,
+        uint64 denominatorRaw,
+        uint8 decimals
+    )
+        external
+    {
+        numeratorRaw = uint64(bound(uint256(numeratorRaw), 1, type(uint64).max));
+        denominatorRaw = uint64(bound(uint256(denominatorRaw), 1, type(uint64).max));
+        decimals = uint8(bound(uint256(decimals), 0, 36));
+
+        _usdcUsdAggregator.setPrice(int256(uint256(numeratorRaw)));
+        _ethUsdAggregator.setPrice(int256(uint256(denominatorRaw)));
+
+        uint256 forwardPrice = _ethPerUsdc.currentUnitPrice(decimals);
+        uint256 reversePrice =
+            new JBRatioPriceFeed({numerator: _ethUsdFeed, denominator: _usdcUsdFeed}).currentUnitPrice(decimals);
+
+        uint256 unitSquared = 10 ** (2 * uint256(decimals));
+
+        assertLe(forwardPrice * reversePrice, unitSquared, "reciprocals cannot exceed one unit squared");
+        assertGt(
+            forwardPrice * reversePrice + forwardPrice + reversePrice + 2,
+            unitSquared,
+            "reciprocals fall further below one unit squared than the flooring allows"
+        );
+    }
+
     //*********************************************************************//
     // --- Zero denominator ---------------------------------------------- //
     //*********************************************************************//
@@ -358,5 +436,28 @@ contract TestRatioPriceFeed_Local is JBTest {
             500_000_000_000_000,
             "0.0005e18 ETH per USDC through JBPrices"
         );
+    }
+
+    //*********************************************************************//
+    // --- Helpers ------------------------------------------------------- //
+    //*********************************************************************//
+
+    /// @notice A leg over a fresh aggregator reporting a fixed price in a given number of decimals.
+    /// @param decimals The number of decimals the aggregator reports in.
+    /// @param price The price the aggregator reports.
+    /// @return The leg.
+    function _feedReporting(uint8 decimals, int256 price) internal returns (JBChainlinkV3PriceFeed) {
+        MockRatioAggregator aggregator = new MockRatioAggregator({decimals_: decimals, price_: price});
+
+        return new JBChainlinkV3PriceFeed({feed: AggregatorV3Interface(address(aggregator)), threshold: _THRESHOLD});
+    }
+
+    /// @notice Picks one of the decimal counts Chainlink aggregators actually report in.
+    /// @param seed The fuzzed selector.
+    /// @return The number of decimals.
+    function _legDecimals(uint8 seed) internal pure returns (uint8) {
+        if (seed % 3 == 0) return 6;
+        if (seed % 3 == 1) return 8;
+        return 18;
     }
 }
