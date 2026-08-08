@@ -16,13 +16,6 @@ fail_on_revert = false
 
 [rpc_endpoints]
 ethereum = "${RPC_ETHEREUM_MAINNET}"
-optimism = "${RPC_OPTIMISM_MAINNET}"
-base = "${RPC_BASE_MAINNET}"
-arbitrum = "${RPC_ARBITRUM_MAINNET}"
-ethereum_sepolia = "${RPC_ETHEREUM_SEPOLIA}"
-optimism_sepolia = "${RPC_OPTIMISM_SEPOLIA}"
-base_sepolia = "${RPC_BASE_SEPOLIA}"
-arbitrum_sepolia = "${RPC_ARBITRUM_SEPOLIA}"
 
 [lint]
 exclude_lints = ["mixed-case-variable", "pascal-case-struct"]

@@ -64,6 +64,7 @@ The practical split is simple:
 - Use narrow project-scoped permissions instead of wildcard or ROOT permissions when possible.
 - Check whether the active ruleset allows the change before assuming the owner or operator can make it.
 - Treat controller migration, terminal migration, token deployment, fee-exemption changes, and price-feed installation as high-blast-radius control-plane changes.
+- Register default feeds per currency pair. `JBPrices` resolves a pair through one direct feed or one inverted feed and never chains two, so a pair reachable only through a shared intermediate currency needs a composed `JBRatioPriceFeed` registered for that pair itself.
 - Read both the permission check and the current ruleset flags before concluding an action is allowed.
 - Keep fee-route and payout-path failure semantics in mind. Some failures restore project balance instead of trapping funds.
 

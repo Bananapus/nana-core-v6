@@ -658,7 +658,33 @@ overwrite existing entries, so once a feed is registered for `(projectId, pricin
 unitCurrency)` at index 0 it is permanent. Adding backups appends — they win only when the
 primary feed reverts or returns zero (`JBPrices._pricePerUnitOf`).
 
-### C.15 `JBDeadline` (and `src/periphery/JBDeadline{1Day,3Days,3Hours,7Days}.sol`)
+### C.15 `JBRatioPriceFeed` — `src/periphery/JBRatioPriceFeed.sol`
+
+Composes two `IJBPriceFeed` legs denominated in the same intermediate currency into their quotient,
+pricing a pair that neither leg can price alone (e.g. ETH per USDC from a USDC/USD numerator over an
+ETH/USD denominator).
+
+- **`constructor(numerator, denominator)`** (`L68-74`) — reverts with `JBRatioPriceFeed_ZeroNumerator`
+  or `JBRatioPriceFeed_ZeroDenominator` if either leg is the zero address. Both legs are stored as
+  immutables.
+- **`currentUnitPrice(decimals)`** (`L85-102`) — view. Quotes the numerator leg at `decimals + 18`
+  and the denominator leg at `18`, then divides, so the headroom cancels and the quotient lands on
+  the requested precision. Reverts if:
+  - the denominator leg reports zero (`JBRatioPriceFeed_ZeroDenominatorPrice`, `L97`), since the
+    quotient has no reciprocal,
+  - either leg reverts. Leg failures — staleness, incomplete round, non-positive price, and the L2
+    sequencer being down or inside its grace period — propagate uncaught, so a stale leg can never
+    produce a usable composite price.
+
+**Invariant:** the contract holds no state and has no setters, like the other feeds. Its output is a
+pure function of what its two legs report at call time, so it adds no trust beyond them.
+
+**Non-revert case:** the quotient is floored (`L101`), so a ratio below one unit of the requested
+precision returns `0` rather than reverting. `JBPrices._pricePerUnitOf` treats a zero return as an
+unavailable feed and rolls past it to the remaining backups, the opposite direction, and then the
+project-0 defaults (`JBPrices._priceFrom` `L337-346`) — the same handling a reverting feed gets.
+
+### C.16 `JBDeadline` (and `src/periphery/JBDeadline{1Day,3Days,3Hours,7Days}.sol`)
 
 Approval-hook implementations used by projects that want minimum notice between ruleset
 configuration and ruleset start.
