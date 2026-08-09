@@ -27,6 +27,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
 | `JBDeadline` | Approval hook: rejects rulesets queued within `DURATION` seconds of start. Ships as `JBDeadline3Hours`, `JBDeadline1Day`, `JBDeadline3Days`, `JBDeadline7Days`. |
 | `JBMatchingPriceFeed` | Always returns 1:1. For equivalent currencies (e.g. ETH/NATIVE_TOKEN). |
+| `JBRatioPriceFeed` | Divides one feed's price by another's. For a pair with no direct feed whose legs share an intermediate currency (e.g. ETH per USDC from USDC/USD over ETH/USD). |
 
 ## Key functions
 

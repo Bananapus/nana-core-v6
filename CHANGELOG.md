@@ -24,6 +24,8 @@ This is a V5-to-V6 migration changelog, not a package release log or commit hist
 
 ## ABI, Event, and Error Changes
 
+- Added contracts:
+  - `src/periphery/JBRatioPriceFeed` is new: an `IJBPriceFeed` that divides one feed's price by another's to price a pair that has no direct feed, when both legs are denominated in the same intermediate currency (e.g. ETH per USDC from a USDC/USD feed over an ETH/USD feed). `JBPrices` resolves a pair through one direct or one inverted feed and never chains two, so a composed pair needs this registered as its own feed. Each leg's staleness and validity reverts propagate uncaught.
 - Added functions:
   - `IJBTerminal.previewPayFor(...)`
   - `IJBCashOutTerminal.previewCashOutFrom(...)`
