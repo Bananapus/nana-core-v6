@@ -120,7 +120,7 @@ See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`
 
 `currentUnitPrice(decimals)` reads the numerator at `decimals + 18`, the denominator at 18, and floors their quotient to the requested precision. Feed addresses are immutable. Each leg enforces its own freshness, round completeness, and sequencer rules; their failures propagate through the ratio feed so `JBPrices` can try another available feed. A zero denominator reverts; a quotient rounded to zero is unavailable to `JBPrices`.
 
-The canonical ratio-feed artifact includes its constructor legs and receipt for each executed chain. OP Sepolia can use this feed without deploying the Uniswap stack. Neither a receipt on another chain nor a package version proves that the local project-0 pair was registered.
+The canonical ratio-feed artifacts include constructor legs and executed receipts for Ethereum, Optimism, Base, Arbitrum, and their four supported testnets. OP Sepolia has this feed without the Uniswap stack. Neither a receipt on another chain nor a package version proves that the local project-0 pair was registered.
 
 ## Security model
 
