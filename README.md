@@ -75,11 +75,15 @@ The shortest reading path is:
 | `JBERC20` | Cloneable project-token ERC-20 with Votes, Permit, ERC-1271, and active-vote total checkpoints. |
 | `JBPermissions` | Packed operator-permission registry. |
 | `JBPrices` | Price-feed routing used by terminals and integrations. |
+| `JBRatioPriceFeed` | Immutable quotient of two feeds sharing an intermediate currency, used for otherwise missing conversion pairs. |
 
 ## Integration traps
 
 - `JBMultiTerminal` is multi-token and multi-terminal. Do not assume one token or one balance.
+- `JBPrices` resolves direct or inverse feeds; it does not compose a route through USD automatically. `JBRatioPriceFeed` supplies the missing USDC-per-NATIVE and USDC-per-ETH pairs used by USDC payments into ETH-based projects and by mixed-asset cash outs
+- the ratio-feed rollout has executed on Ethereum, Optimism, Base, and Arbitrum, alongside the four supported testnets. Deployment and registration remain per chain: read `deployments/<chain>/JBRatioPriceFeed.json` and verify the project-0 pair in `JBPrices`
 - Data hooks and cash-out hooks can change economics and side effects. They are part of the protocol surface.
+- fee routing through a selected `JBRouterTerminalGateway` may succeed at the core boundary while retaining the original input for retry. Read the gateway's queue and settlement/refund events before labeling a fee collected, forgiven, or refunded
 - Permission checks are not always against the project owner. Some flows are scoped to the token holder instead.
 - Preview and execution are intentionally close, but callers should still treat them as separate surfaces when hooks or routing can change behavior.
 - `JBERC20.getPastTotalSupply(...)` includes undelegated balances. Use `getPastTotalActiveVotes(...)` when an

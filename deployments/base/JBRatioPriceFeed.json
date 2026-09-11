@@ -1,0 +1,182 @@
+{
+	"format": "sphinx-sol-ct-artifact-1",
+	"address": "0x3c2f3742785b0dec9bbb401de6615b70f740e4ca",
+	"sourceName": "node_modules/@bananapus/core-v6/src/periphery/JBRatioPriceFeed.sol",
+	"contractName": "JBRatioPriceFeed",
+	"chainId": "0x2105",
+	"abi": [
+		{
+			"type": "constructor",
+			"inputs": [
+				{
+					"name": "numerator",
+					"type": "address",
+					"internalType": "contract IJBPriceFeed"
+				},
+				{
+					"name": "denominator",
+					"type": "address",
+					"internalType": "contract IJBPriceFeed"
+				}
+			],
+			"stateMutability": "nonpayable"
+		},
+		{
+			"type": "function",
+			"name": "DENOMINATOR",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract IJBPriceFeed"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "NUMERATOR",
+			"inputs": [],
+			"outputs": [
+				{
+					"name": "",
+					"type": "address",
+					"internalType": "contract IJBPriceFeed"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "function",
+			"name": "currentUnitPrice",
+			"inputs": [
+				{
+					"name": "decimals",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"outputs": [
+				{
+					"name": "",
+					"type": "uint256",
+					"internalType": "uint256"
+				}
+			],
+			"stateMutability": "view"
+		},
+		{
+			"type": "error",
+			"name": "JBRatioPriceFeed_ZeroDenominator",
+			"inputs": []
+		},
+		{
+			"type": "error",
+			"name": "JBRatioPriceFeed_ZeroDenominatorPrice",
+			"inputs": []
+		},
+		{
+			"type": "error",
+			"name": "JBRatioPriceFeed_ZeroNumerator",
+			"inputs": []
+		}
+	],
+	"args": [
+		"0x79AB3A63920A47Bc9E0f0e4AEC201663ffe83102",
+		"0x5896Aaf909Cf6829704DFC1ddB14Ac5d9f755592"
+	],
+	"solcInputHash": "36f3a151c5b2d0e9a20b8db945a7626b",
+	"receipt": {
+		"type": "0x2",
+		"status": "0x1",
+		"cumulativeGasUsed": "0xda7ae",
+		"logs": [
+			{
+				"address": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+				"topics": [
+					"0x572f161235911da04685a68c06adf558fc7e4a36909dca394650e0adc19cc93d",
+					"0x000000000000000000000000755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38",
+					"0x64c05fadaff1c58111689b301d2f91582e1de484f5d3f2667b90618151b1ff02"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000000",
+				"blockHash": "0x41d28d1b6c6c9fafd754a92dd73edaa4d5940525c4eb36c7156bae4ab0be2d1f",
+				"blockNumber": "0x30d0418",
+				"blockTimestamp": "0x6aa46513",
+				"transactionHash": "0xa8fc2eaecb3e5e3d7992e13dc1ff2ec3988f6e3fb16951a8dc98f564e92f4646",
+				"transactionIndex": "0xe",
+				"logIndex": "0x3",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0xb648d3644f584ed1c2232d53c46d87e693586486ad0d1175f8656013110b714e"
+				],
+				"data": "0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d380000000000000000000000004e59b44847b379578588920ca78fbf26c0b4956c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004129c36ad5334cdae0ff6bdcb1b659e77fd835f42b83aae9b20f8d1544bf4dca70a60c060405234801561000f575f5ffd5b506040516103b23803806103b283398101604081905261002e916100ae565b6001600160a01b038216610055576040516318a2652160e21b815260040160405180910390fd5b6001600160a01b03811661007c57604051631b52a36f60e11b815260040160405180910390fd5b6001600160a01b039081166080521660a0526100df565b80516001600160a01b03811681146100a9575f5ffd5b919050565b5f5f604083850312156100bf575f5ffd5b6100c883610093565b91506100d660208401610093565b90509250929050565b60805160a0516102a761010b5f395f818160ad015260db01525f81816048015261018b01526102a75ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c8063918f867414610043578063d3f5c15f14610087578063d8830c7d146100a8575b5f5ffd5b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b61009a610095366004610228565b6100cf565b60405190815260200161007e565b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b5f806001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001663d3f5c15f61010b60128661023f565b6040518263ffffffff1660e01b815260040161012991815260200190565b602060405180830381865afa158015610144573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101689190610264565b60405163d3f5c15f60e01b8152601260048201529091505f906001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063d3f5c15f90602401602060405180830381865afa1580156101d0573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101f49190610264565b9050805f03610216576040516352f3bac960e01b815260040160405180910390fd5b610220818361027b565b949350505050565b5f60208284031215610238575f5ffd5b5035919050565b8082018082111561025e57634e487b7160e01b5f52601160045260245ffd5b92915050565b5f60208284031215610274575f5ffd5b5051919050565b5f8261029557634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a00000000000000000000000079ab3a63920a47bc9e0f0e4aec201663ffe831020000000000000000000000005896aaf909cf6829704dfc1ddb14ac5d9f7555920000000000000000000000000000",
+				"blockHash": "0x41d28d1b6c6c9fafd754a92dd73edaa4d5940525c4eb36c7156bae4ab0be2d1f",
+				"blockNumber": "0x30d0418",
+				"blockTimestamp": "0x6aa46513",
+				"transactionHash": "0xa8fc2eaecb3e5e3d7992e13dc1ff2ec3988f6e3fb16951a8dc98f564e92f4646",
+				"transactionIndex": "0xe",
+				"logIndex": "0x4",
+				"removed": false
+			},
+			{
+				"address": "0x4dc161ef837ff1c4485b08ddfcdb182f2157be18",
+				"topics": [
+					"0x6895c13664aa4f67288b25d7a21d7aaa34916e355fb9b6fae0a139a9085becb8",
+					"0x00000000000000000000000091f164e1300f13beaf77358e4d84ed78f8e99d38"
+				],
+				"data": "0x",
+				"blockHash": "0x41d28d1b6c6c9fafd754a92dd73edaa4d5940525c4eb36c7156bae4ab0be2d1f",
+				"blockNumber": "0x30d0418",
+				"blockTimestamp": "0x6aa46513",
+				"transactionHash": "0xa8fc2eaecb3e5e3d7992e13dc1ff2ec3988f6e3fb16951a8dc98f564e92f4646",
+				"transactionIndex": "0xe",
+				"logIndex": "0x5",
+				"removed": false
+			},
+			{
+				"address": "0x91f164e1300f13beaf77358e4d84ed78f8e99d38",
+				"topics": [
+					"0xa65fb05c5808f5f389d72edeaf719ce38f4cc55c1f69ca3cbfb31c21501caa07",
+					"0x8ce9d2609b152b6421ef9aec2110a4e7cd26f32d81a50da7d88ce333fd0caa54"
+				],
+				"data": "0x0000000000000000000000000000000000000000000000000000000000000001",
+				"blockHash": "0x41d28d1b6c6c9fafd754a92dd73edaa4d5940525c4eb36c7156bae4ab0be2d1f",
+				"blockNumber": "0x30d0418",
+				"blockTimestamp": "0x6aa46513",
+				"transactionHash": "0xa8fc2eaecb3e5e3d7992e13dc1ff2ec3988f6e3fb16951a8dc98f564e92f4646",
+				"transactionIndex": "0xe",
+				"logIndex": "0x6",
+				"removed": false
+			}
+		],
+		"logsBloom": "0x00000000000010008000000000080000001020000000000000000000000000000000000000000000000000000040000000000000000000008000000000000000000000000000200000000000000000000000000000000040000000200000000040000000000000000000000000000000000000000000000000000000000080008800000030000000000104000000000000000000000000000000000000000000004000040000000000000000000040002200000000000000000000000004000000000002008000000000000000400000000000000020000000000000800000000000000000000100000000000000000200000000400080000000000000000000",
+		"transactionHash": "0xa8fc2eaecb3e5e3d7992e13dc1ff2ec3988f6e3fb16951a8dc98f564e92f4646",
+		"transactionIndex": "0xe",
+		"blockHash": "0x41d28d1b6c6c9fafd754a92dd73edaa4d5940525c4eb36c7156bae4ab0be2d1f",
+		"blockNumber": "0x30d0418",
+		"gasUsed": "0x47da5",
+		"effectiveGasPrice": "0x802c80",
+		"blobGasUsed": "0x22c28",
+		"from": "0x755ff2f75a0a586ecfa2b9a3c959cb662458a105",
+		"to": "0xa2ea7657440875bf916cbfc0cfa88f13e38ad463",
+		"contractAddress": null,
+		"l1GasPrice": "0x3ad709a",
+		"l1GasUsed": "0x3c20",
+		"l1Fee": "0x15ec23347",
+		"l1BaseFeeScalar": "0x8dd",
+		"l1BlobBaseFee": "0x38089d",
+		"l1BlobBaseFeeScalar": "0x101c12",
+		"daFootprintGasScalar": "0x94"
+	},
+	"bytecode": "0x60c060405234801561000f575f5ffd5b506040516103b23803806103b283398101604081905261002e916100ae565b6001600160a01b038216610055576040516318a2652160e21b815260040160405180910390fd5b6001600160a01b03811661007c57604051631b52a36f60e11b815260040160405180910390fd5b6001600160a01b039081166080521660a0526100df565b80516001600160a01b03811681146100a9575f5ffd5b919050565b5f5f604083850312156100bf575f5ffd5b6100c883610093565b91506100d660208401610093565b90509250929050565b60805160a0516102a761010b5f395f818160ad015260db01525f81816048015261018b01526102a75ff3fe608060405234801561000f575f5ffd5b506004361061003f575f3560e01c8063918f867414610043578063d3f5c15f14610087578063d8830c7d146100a8575b5f5ffd5b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b61009a610095366004610228565b6100cf565b60405190815260200161007e565b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b5f806001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001663d3f5c15f61010b60128661023f565b6040518263ffffffff1660e01b815260040161012991815260200190565b602060405180830381865afa158015610144573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101689190610264565b60405163d3f5c15f60e01b8152601260048201529091505f906001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063d3f5c15f90602401602060405180830381865afa1580156101d0573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101f49190610264565b9050805f03610216576040516352f3bac960e01b815260040160405180910390fd5b610220818361027b565b949350505050565b5f60208284031215610238575f5ffd5b5035919050565b8082018082111561025e57634e487b7160e01b5f52601160045260245ffd5b92915050565b5f60208284031215610274575f5ffd5b5051919050565b5f8261029557634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"deployedBytecode": "0x608060405234801561000f575f5ffd5b506004361061003f575f3560e01c8063918f867414610043578063d3f5c15f14610087578063d8830c7d146100a8575b5f5ffd5b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b6040516001600160a01b0390911681526020015b60405180910390f35b61009a610095366004610228565b6100cf565b60405190815260200161007e565b61006a7f000000000000000000000000000000000000000000000000000000000000000081565b5f806001600160a01b037f00000000000000000000000000000000000000000000000000000000000000001663d3f5c15f61010b60128661023f565b6040518263ffffffff1660e01b815260040161012991815260200190565b602060405180830381865afa158015610144573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101689190610264565b60405163d3f5c15f60e01b8152601260048201529091505f906001600160a01b037f0000000000000000000000000000000000000000000000000000000000000000169063d3f5c15f90602401602060405180830381865afa1580156101d0573d5f5f3e3d5ffd5b505050506040513d601f19601f820116820180604052508101906101f49190610264565b9050805f03610216576040516352f3bac960e01b815260040160405180910390fd5b610220818361027b565b949350505050565b5f60208284031215610238575f5ffd5b5035919050565b8082018082111561025e57634e487b7160e01b5f52601160045260245ffd5b92915050565b5f60208284031215610274575f5ffd5b5051919050565b5f8261029557634e487b7160e01b5f52601260045260245ffd5b50049056fea164736f6c634300081c000a",
+	"metadata": "{\"compiler\":{\"version\":\"0.8.28+commit.7893614a\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"contract IJBPriceFeed\",\"name\":\"numerator\",\"type\":\"address\"},{\"internalType\":\"contract IJBPriceFeed\",\"name\":\"denominator\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[],\"type\":\"error\",\"name\":\"JBRatioPriceFeed_ZeroDenominator\"},{\"inputs\":[],\"type\":\"error\",\"name\":\"JBRatioPriceFeed_ZeroDenominatorPrice\"},{\"inputs\":[],\"type\":\"error\",\"name\":\"JBRatioPriceFeed_ZeroNumerator\"},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"DENOMINATOR\",\"outputs\":[{\"internalType\":\"contract IJBPriceFeed\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"NUMERATOR\",\"outputs\":[{\"internalType\":\"contract IJBPriceFeed\",\"name\":\"\",\"type\":\"address\"}]},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"decimals\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\",\"name\":\"currentUnitPrice\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}]}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"constructor\":{\"params\":{\"denominator\":\"The feed pricing one unit of the currency the result is denominated in, denominated in the same intermediate currency.\",\"numerator\":\"The feed pricing one unit of the currency being priced, denominated in the intermediate currency.\"}},\"currentUnitPrice(uint256)\":{\"details\":\"The result is floored. At small `decimals` a ratio below one unit of the requested precision floors to zero, which `JBPrices` treats as an unavailable feed and rolls past to its remaining backups.\",\"params\":{\"decimals\":\"The number of decimals the return value should use.\"},\"returns\":{\"_0\":\"The current unit price from the feed, as a fixed point number with the specified number of decimals.\"}}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"DENOMINATOR()\":{\"notice\":\"The feed whose price the result is divided by. Its currency is the one the result is denominated in.\"},\"NUMERATOR()\":{\"notice\":\"The feed whose price the result is divided from. Its currency is the one the result prices a unit of.\"},\"currentUnitPrice(uint256)\":{\"notice\":\"Gets the current price (per 1 unit) from the feed.\"}},\"version\":1}},\"settings\":{\"remappings\":[\"@arbitrum/=node_modules/@arbitrum/\",\"@ballkidz/=node_modules/@ballkidz/\",\"@bananapus/=node_modules/@bananapus/\",\"@bannynet/=node_modules/@bannynet/\",\"@chainlink/=node_modules/@chainlink/\",\"@croptop/=node_modules/@croptop/\",\"@ensdomains/=node_modules/@ensdomains/\",\"@eth-optimism/=node_modules/@eth-optimism/\",\"@offchainlabs/=node_modules/@offchainlabs/\",\"@openzeppelin/=node_modules/@openzeppelin/\",\"@prb/=node_modules/@prb/\",\"@rev-net/=node_modules/@rev-net/\",\"@scroll-tech/=node_modules/@scroll-tech/\",\"@sphinx-labs/=node_modules/@sphinx-labs/\",\"@uniswap/=node_modules/@uniswap/\",\"@unruggable/=node_modules/@unruggable/\",\"@zksync/=node_modules/@zksync/\",\"base64-sol/=node_modules/base64-sol/\",\"ds-test/=node_modules/@uniswap/v4-core/lib/solmate/lib/ds-test/\",\"erc4626-tests/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/lib/erc4626-tests/\",\"forge-gas-snapshot/=node_modules/@uniswap/v4-periphery/lib/permit2/lib/forge-gas-snapshot/\",\"forge-std/=lib/forge-std/src/\",\"hardhat/=node_modules/hardhat/\",\"lib/base64/=node_modules/base64-sol/\",\"openzeppelin-contracts/=node_modules/@uniswap/v4-core/lib/openzeppelin-contracts/\",\"permit2/=node_modules/@uniswap/v4-periphery/lib/permit2/\",\"solady/=node_modules/solady/\",\"solmate/=node_modules/@sphinx-labs/contracts/node_modules/solmate/\",\"typeface/=lib/typeface/contracts/\",\"v4-core/=node_modules/@uniswap/v4-periphery/lib/v4-core/\"],\"optimizer\":{\"enabled\":true,\"runs\":200},\"metadata\":{\"bytecodeHash\":\"none\"},\"compilationTarget\":{\"node_modules/@bananapus/core-v6/src/periphery/JBRatioPriceFeed.sol\":\"JBRatioPriceFeed\"},\"evmVersion\":\"cancun\",\"libraries\":{}},\"sources\":{\"node_modules/@bananapus/core-v6/src/interfaces/IJBPriceFeed.sol\":{\"keccak256\":\"0x3a948500b5397c90e926f3bdef9423e7f095f906b23cd1503009802c80bedb41\",\"urls\":[\"bzz-raw://a0ea0b7e5d442257f6159799b7bf262615b0f04e5cd542b0980f131ae40a63bb\",\"dweb:/ipfs/QmX7uugLaXtT5XmYxqfrmDqU2YuknAeYjHMiLm9iHaRfHw\"],\"license\":\"MIT\"},\"node_modules/@bananapus/core-v6/src/periphery/JBRatioPriceFeed.sol\":{\"keccak256\":\"0xde6976cafe53397dcf4cb3010e4d30bb91b31f0b7bb71cbc9f5fd8e790b04dca\",\"urls\":[\"bzz-raw://3ec28cf7db4af8146aaa751c47d791a362210e0ac226e7de9b7543622c4f31fd\",\"dweb:/ipfs/QmShWaMsPQFno3843URU6kWNFYfvhZwerpQZ8NaxTY4BTc\"],\"license\":\"MIT\"}},\"version\":1}",
+	"gitCommit": "npm:@bananapus/core-v6@1.2.0",
+	"gitDirty": false,
+	"history": []
+}

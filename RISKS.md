@@ -179,6 +179,8 @@ Core does not use `ReentrancyGuard`. It relies on state ordering plus `Inadequat
 
 ### Price feed reverts
 
+- A `JBRatioPriceFeed` depends on both immutable legs sharing the same intermediate currency and being ordered correctly. Reversing them inverts the price; wrong project-0 pair direction can lose precision for six-decimal USDC queries. Verify the registered USDC-per-NATIVE/ETH direction and the artifact's constructor legs
+- The ratio feed delegates stale-round and sequencer validation to its legs. Either leg reverting makes the composed feed unavailable; a zero denominator reverts, and a low-precision quotient can floor to zero. `JBPrices` tries available backups, but the operation still reverts if no usable route remains
 - Stale or incomplete Chainlink data can block multi-currency operations.
 - L2 sequencer downtime can also block feeds behind a sequencer-check wrapper.
 - Single-currency projects are unaffected when they do not need conversion.
