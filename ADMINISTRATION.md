@@ -65,8 +65,11 @@ The practical split is simple:
 - Check whether the active ruleset allows the change before assuming the owner or operator can make it.
 - Treat controller migration, terminal migration, token deployment, fee-exemption changes, and price-feed installation as high-blast-radius control-plane changes.
 - Register default feeds per currency pair. `JBPrices` resolves a pair through one direct feed or one inverted feed and never chains two, so a pair reachable only through a shared intermediate currency needs a composed `JBRatioPriceFeed` registered for that pair itself.
+- For the floor-fix feed, verify `NUMERATOR` against the live USD-per-NATIVE wrapper and `DENOMINATOR` against the live USD-per-USDC wrapper, then check both project-0 pairs with USDC as `pricingCurrency` and NATIVE/ETH as `unitCurrency`. The ratio feed has no owner or setters; updating its legs requires a new deployment and applicable `JBPrices` registration, whose append-only backup rules still apply
+- Treat executed deployment receipts and registered feed pairs separately from proposals. Mainnet records retain the previous stack until each chain's proposal executes; OP Sepolia receives the feed independently of the absent Uniswap stack
 - Read both the permission check and the current ruleset flags before concluding an action is allowed.
 - Keep fee-route and payout-path failure semantics in mind. Some failures restore project balance instead of trapping funds.
+- A queued gateway fee remains in gateway custody and is not a core `FeeReverted` balance restore. A later gateway refund calls source-project `addToBalanceOf` and does not restore `feeFreeSurplusOf`; use the gateway's pending-call events and views to reconcile it
 
 ## Machine notes
 

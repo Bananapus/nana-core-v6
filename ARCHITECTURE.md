@@ -114,6 +114,14 @@ Implications:
 
 See `JBCurrencyIds`, `JBAccountingContext`, and `JBRulesetMetadata.baseCurrency`.
 
+### Composed price feeds
+
+`src/periphery/JBRatioPriceFeed.sol` implements an explicit two-leg conversion because `JBPrices` only resolves one direct feed or one inverted feed. With numerator USD-per-NATIVE and denominator USD-per-USDC, their quotient is USDC per NATIVE. The floor-fix deployment registers that feed under project 0 with `pricingCurrency = uint32(uint160(usdc))` and `unitCurrency` equal to either the native-token currency or `JBCurrencyIds.ETH`. This direction gives six-decimal USDC pay queries a direct price rather than first rounding a small reciprocal.
+
+`currentUnitPrice(decimals)` reads the numerator at `decimals + 18`, the denominator at 18, and floors their quotient to the requested precision. Feed addresses are immutable. Each leg enforces its own freshness, round completeness, and sequencer rules; their failures propagate through the ratio feed so `JBPrices` can try another available feed. A zero denominator reverts; a quotient rounded to zero is unavailable to `JBPrices`.
+
+The canonical ratio-feed artifact includes its constructor legs and receipt for each executed chain. OP Sepolia can use this feed without deploying the Uniswap stack. Neither a receipt on another chain nor a package version proves that the local project-0 pair was registered.
+
 ## Security model
 
 - Review `JBMultiTerminal`, `JBTerminalStore`, and `JBController` as one pipeline.
