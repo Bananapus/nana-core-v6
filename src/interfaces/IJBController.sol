@@ -48,7 +48,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     );
 
     /// @notice A project was launched with its initial rulesets and terminals.
-    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param rulesetId The ID of the last queued ruleset, or 0 if no rulesets were queued.
     /// @param projectId The ID of the newly created project.
     /// @param projectUri The metadata URI of the project.
     /// @param memo A memo associated with the launch.
@@ -56,7 +56,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     event LaunchProject(uint256 rulesetId, uint256 projectId, string projectUri, string memo, address caller);
 
     /// @notice Rulesets were launched for an existing project.
-    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param rulesetId The ID of the last queued ruleset.
     /// @param projectId The ID of the project.
     /// @param projectUri The metadata URI of the project.
     /// @param memo A memo associated with the launch.
@@ -82,7 +82,7 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     );
 
     /// @notice Rulesets were queued for a project.
-    /// @param rulesetId The ID of the first queued ruleset.
+    /// @param rulesetId The ID of the last queued ruleset.
     /// @param projectId The ID of the project.
     /// @param memo A memo associated with the queue operation.
     /// @param caller The address that called the queue function.

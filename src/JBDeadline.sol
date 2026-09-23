@@ -7,13 +7,14 @@ import {JBApprovalStatus} from "./enums/JBApprovalStatus.sol";
 import {IJBRulesetApprovalHook} from "./interfaces/IJBRulesetApprovalHook.sol";
 import {JBRuleset} from "./structs/JBRuleset.sol";
 
-/// @notice A ruleset approval hook that enforces a queuing deadline. If a new ruleset is not queued at least `DURATION`
-/// seconds before the current ruleset ends, it is rejected and the existing rules continue. This gives token holders
-/// a guaranteed notice period before any project configuration changes take effect.
-/// @dev If `DURATION` is set longer than the ruleset's cycle duration, no queued ruleset can ever satisfy the deadline
-/// and the current ruleset will effectively be locked in perpetuity. Choose a `DURATION` shorter than the shortest
-/// cycle it will govern. A ruleset that currently returns `ApprovalExpected` will become `Approved` once the deadline
-/// is reached unless it is replaced first.
+/// @notice A ruleset approval hook that enforces a queuing deadline. A ruleset that starts less than `DURATION` seconds
+/// after it was queued is `Failed`, and the existing rules continue. This gives token holders a guaranteed notice
+/// period before any project configuration changes take effect.
+/// @dev `JBRulesets` moves a ruleset based on one that uses this hook to start no earlier than `DURATION` seconds after
+/// it was queued, rounded up to the next cycle boundary of the ruleset it is based on. So a ruleset queued late in a
+/// cycle, or under a `DURATION` longer than the cycle, is delayed to a later cycle rather than rejected, and the
+/// current ruleset keeps cycling until then. A ruleset that currently returns `ApprovalExpected` will become `Approved`
+/// once the deadline is reached unless it is replaced first.
 contract JBDeadline is IJBRulesetApprovalHook {
     //*********************************************************************//
     // ---------------- public immutable stored properties --------------- //
