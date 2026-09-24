@@ -555,7 +555,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         // Configure the terminals.
         _configureTerminals({projectId: projectId, terminalConfigurations: terminalConfigurations});
 
-        // Queue the first ruleset.
+        // Queue the rulesets.
         rulesetId = _queueRulesets({projectId: projectId, rulesetConfigurations: rulesetConfigurations});
 
         emit LaunchRulesets({

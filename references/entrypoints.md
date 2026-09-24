@@ -21,7 +21,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `JBSplits` | Split configurations per project/ruleset/group. Packed storage for gas efficiency. |
 | `JBFundAccessLimits` | Payout limits and surplus allowances per project/ruleset/terminal/token. |
 | `JBPrices` | Append-only price feed registry with project-specific feeds, protocol defaults, inverse lookup, and backup feeds. |
-| `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271 and active-vote total checkpoints. Controlled by `JBTokens` via `onlyTokens`. Deployed via `Clones.clone()`. |
+| `JBERC20` | Cloneable ERC-20 with Votes + Permit + ERC-1271 and active-vote total checkpoints. Controlled by `JBTokens` via `onlyTokens`. Deployed by `JBTokens` via `Clones.clone()` (zero salt) or `Clones.cloneDeterministic()` (non-zero salt). |
 | `JBFeelessAddresses` | Static and hook-driven fee-exemption registry. |
 | `JBChainlinkV3PriceFeed` | Chainlink AggregatorV3 price feed with staleness threshold. Rejects negative/zero prices, incomplete rounds (`updatedAt == 0`), and stale answers carried from previous rounds (`answeredInRound < roundId`). |
 | `JBChainlinkV3SequencerPriceFeed` | L2 sequencer-aware Chainlink feed (Optimism/Arbitrum) with grace period after restart. Treats any non-zero sequencer answer as down (`answer != 0`). |
@@ -35,27 +35,27 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 
 | Function | What it does |
 |----------|--------------|
-| `launchProjectFor(address owner, string uri, JBRulesetConfig[] rulesetConfigs, JBTerminalConfig[] terminalConfigs, string memo)` | Creates a project, queues its first rulesets, and configures terminals. Returns `projectId`. |
-| `launchRulesetsFor(uint256 projectId, JBRulesetConfig[] rulesetConfigs, JBTerminalConfig[] terminalConfigs, string memo)` | Launches the first rulesets for an existing project that has none. |
-| `queueRulesetsOf(uint256 projectId, JBRulesetConfig[] rulesetConfigs, string memo)` | Queues new rulesets for a project. Takes effect after the current ruleset ends (or immediately if duration is 0). |
-| `mintTokensOf(uint256 projectId, uint256 tokenCount, address beneficiary, string memo, bool useReservedPercent)` | Mints project tokens. Requires `allowOwnerMinting` in the current ruleset or caller must be a terminal/hook with mint permission. |
-| `burnTokensOf(address holder, uint256 projectId, uint256 tokenCount, string memo)` | Burns tokens from a holder. Requires holder's permission (`BURN_TOKENS`). |
+| `launchProjectFor(address owner, string projectUri, JBRulesetConfig[] rulesetConfigurations, JBTerminalConfig[] terminalConfigurations, string memo)` | Creates a project, queues its first rulesets, and configures terminals. Returns `projectId`. Payable: `msg.value` must equal `PROJECTS.creationFee()`, which is forwarded to `JBProjects`. An empty `rulesetConfigurations` launches the project with no rulesets. |
+| `launchRulesetsFor(uint256 projectId, string projectUri, JBRulesetConfig[] rulesetConfigurations, JBTerminalConfig[] terminalConfigurations, string memo)` | Launches the first rulesets for an existing project that has none, sets this controller in the directory, and configures terminals. Requires `LAUNCH_RULESETS` and `SET_TERMINALS`, plus `SET_PROJECT_URI` when `projectUri` is non-empty (an empty `projectUri` leaves the URI unchanged). Returns the last queued ruleset's ID. |
+| `queueRulesetsOf(uint256 projectId, JBRulesetConfig[] rulesetConfigurations, string memo)` | Queues new rulesets for a project. Takes effect after the current ruleset ends (or immediately if duration is 0). |
+| `mintTokensOf(uint256 projectId, uint256 tokenCount, address beneficiary, string memo, bool useReservedPercent)` | Mints project tokens. The owner or a `MINT_TOKENS` operator can mint when the current ruleset has `allowOwnerMinting` (or there is no current ruleset). The project's terminals, its data hook, and addresses the data hook grants via `hasMintPermissionFor` can always mint. |
+| `burnTokensOf(address holder, uint256 projectId, uint256 tokenCount, string memo)` | Burns tokens from a holder. Requires holder's permission (`BURN_TOKENS`) unless the caller is one of the project's terminals. |
 | `sendReservedTokensToSplitsOf(uint256 projectId)` | Distributes accumulated reserved tokens to the reserved token split group. Returns token count sent. |
 | `deployERC20For(uint256 projectId, string name, string symbol, bytes32 salt)` | Deploys a cloneable `JBERC20` for the project. Credits become claimable. |
-| `claimTokensFor(address holder, uint256 projectId, uint256 count, address beneficiary)` | Redeems credits for ERC-20 tokens into beneficiary's wallet. |
+| `claimTokensFor(address holder, uint256 projectId, uint256 tokenCount, address beneficiary)` | Redeems credits for ERC-20 tokens into beneficiary's wallet. |
 | `setSplitGroupsOf(uint256 projectId, uint256 rulesetId, JBSplitGroup[] splitGroups)` | Sets the split groups for a project's ruleset. |
-| `setTokenFor(uint256 projectId, IJBToken token)` | Sets an existing ERC-20 token for the project (requires `allowSetCustomToken` in ruleset). External token supply changes affect only that project's supply-sensitive pricing and cash-out math. |
+| `setTokenFor(uint256 projectId, IJBToken token)` | Sets an existing ERC-20 token for the project (requires `allowSetCustomToken` in the current ruleset, or the upcoming one when there is no current ruleset). External token supply changes affect only that project's supply-sensitive pricing and cash-out math. |
 | `setTokenMetadataOf(uint256 projectId, string name, string symbol)` | Sets the name and symbol of a project's ERC-20 token. Requires `SET_TOKEN_METADATA` permission. |
 | `setUriOf(uint256 projectId, string uri)` | Sets the project's metadata URI. |
 | `transferCreditsFrom(address holder, uint256 projectId, address recipient, uint256 creditCount)` | Transfers credits between addresses (reverts if `pauseCreditTransfers` is set in ruleset). |
-| `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in ruleset). |
-| `migrate(uint256 projectId, IERC165 to)` | Migrates the project to a new controller. Calls `beforeReceiveMigrationFrom`, `migrate`, updates directory, then `afterReceiveMigrationFrom`. |
+| `addPriceFeedFor(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency, IJBPriceFeed feed)` | Registers a price feed (requires `allowAddPriceFeed` in the current ruleset when one exists). |
+| `migrate(uint256 projectId, IERC165 to)` | Directory-only. `JBDirectory.setControllerOf` calls it on the outgoing controller while the directory still points to it. Reverts with `JBController_PendingReservedTokens` if reserved tokens are still pending. |
 | `currentRulesetOf(uint256 projectId)` | Returns the current ruleset and unpacked metadata. |
 | `upcomingRulesetOf(uint256 projectId)` | Returns the upcoming ruleset and unpacked metadata. |
 | `allRulesetsOf(uint256 projectId, uint256 startingId, uint256 size)` | Returns an array of rulesets with metadata, paginated. |
 | `pendingReservedTokenBalanceOf(uint256 projectId)` | Returns accumulated reserved tokens not yet distributed. |
 | `totalTokenSupplyWithReservedTokensOf(uint256 projectId)` | Returns total supply including pending reserved tokens. |
-| `previewMintOf(uint256 projectId, uint256 tokenCount, bool useReservedPercent)` | Simulates a mint under the current ruleset. Returns `(beneficiaryTokenCount, reservedTokenCount)`. Reverts if `tokenCount` is 0. |
+| `previewMintOf(uint256 projectId, uint256 tokenCount, bool useReservedPercent)` | Simulates a mint under the current ruleset. Returns `(beneficiaryTokenCount, reservedTokenCount)`. Returns `(0, 0)` if `tokenCount` is 0. |
 
 ### JBMultiTerminal
 
@@ -63,11 +63,11 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 |----------|--------------|
 | `pay(uint256 projectId, address token, uint256 amount, address beneficiary, uint256 minReturnedTokens, string memo, bytes metadata)` | Pays a project. Mints project tokens to beneficiary based on ruleset weight. Returns token count. |
 | `cashOutTokensOf(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, uint256 minTokensReclaimed, address payable beneficiary, bytes metadata)` | Burns project tokens and reclaims surplus terminal tokens via bonding curve. |
-| `sendPayoutsOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut)` | Distributes payouts from the project's balance to its payout split group, up to the payout limit. |
+| `sendPayoutsOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut)` | Distributes payouts from the project's balance to its payout split group, up to the payout limit. Permissionless unless the ruleset sets `ownerMustSendPayouts` (then `SEND_PAYOUTS`). |
 | `useAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency, uint256 minTokensPaidOut, address payable beneficiary, address payable feeBeneficiary, string memo)` | Withdraws from the project's surplus allowance to a beneficiary. The `feeBeneficiary` receives tokens minted by the fee payment. |
 | `addToBalanceOf(uint256 projectId, address token, uint256 amount, bool shouldReturnHeldFees, string memo, bytes metadata)` | Adds funds to a project's balance without minting tokens. Can unlock held fees. |
 | `migrateBalanceOf(uint256 projectId, address token, IJBTerminal to)` | Migrates a project's token balance to another terminal. Requires `allowTerminalMigration`. |
-| `processHeldFeesOf(uint256 projectId, address token, uint256 count)` | Processes up to `count` held fees for a project, sending them to the fee beneficiary project. |
+| `processHeldFeesOf(uint256 projectId, address token, uint256 count)` | Processes up to `count` unlocked held fees for a project, sending them to the fee beneficiary project. Stops at the first fee still locked. |
 | `addAccountingContextsFor(uint256 projectId, JBAccountingContext[] accountingContexts)` | Adds new accounting contexts (token types) to a terminal for a project. |
 | `currentSurplusOf(uint256 projectId, address[] tokens, uint256 decimals, uint256 currency)` | Returns the project's current surplus in this terminal. Empty `tokens` = all tokens. |
 | `accountingContextForTokenOf(uint256 projectId, address token)` | Returns the accounting context for a specific token. |
@@ -81,8 +81,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | Function | What it does |
 |----------|--------------|
 | `recordPaymentFrom(address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Records a payment. Applies data hook if enabled. Returns ruleset, token count, hook specifications. |
-| `recordPayoutFor(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records a payout. Enforces payout limits. Returns ruleset and amount paid out. |
-| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via the bonding curve, including any pricing-only adjustments returned by the cash-out data hook. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `recordPayoutFor(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records a payout. Caps `amount` at the remaining payout limit for the cycle instead of reverting. Returns ruleset and amount paid out. |
+| `recordCashOutFor(address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Records a cash out. Computes reclaim via the bonding curve, including any pricing-only adjustments returned by the cash-out data hook. Reverts if the reclaim plus forwarded hook amounts exceed the token's surplus in the calling terminal. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 | `recordUsedAllowanceOf(uint256 projectId, address token, uint256 amount, uint256 currency)` | Records surplus allowance usage. Enforces allowance limits. Returns ruleset and used amount. |
 | `recordAddedBalanceFor(uint256 projectId, address token, uint256 amount)` | Records funds added to a project's balance. |
 | `recordTerminalMigration(uint256 projectId, address token)` | Records a terminal migration, returning the full balance. |
@@ -94,8 +94,8 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentTotalReclaimableSurplusOf(uint256 projectId, uint256 cashOutCount, uint256 decimals, uint256 currency)` | Convenience view: reclaimable surplus across all terminals and all tokens. |
 | `currentSurplusOf(uint256 projectId, IJBTerminal[] terminals, address[] tokens, uint256 decimals, uint256 currency)` | Returns the current surplus across specified terminals and tokens. Empty arrays default to all. |
 | `currentTotalSurplusOf(uint256 projectId, uint256 decimals, uint256 currency)` | Convenience view: total surplus across all terminals and all tokens. |
-| `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
-| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter for balance/surplus lookups. Invokes data hooks if configured, including any pricing-only adjustments they return. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
+| `previewPayFrom(address terminal, address payer, JBTokenAmount amount, uint256 projectId, address beneficiary, bytes metadata)` | Simulates a payment without modifying state. Uses the explicit `terminal` parameter in place of `msg.sender` (it is passed to the data hook as the context's terminal). Invokes data hooks if configured. Returns ruleset, token count, and hook specifications. |
+| `previewCashOutFrom(address terminal, address holder, uint256 projectId, uint256 cashOutCount, address tokenToReclaim, bool beneficiaryIsFeeless, bytes metadata)` | Simulates a cash out without modifying state. Uses the explicit `terminal` parameter in place of `msg.sender` to look up the reclaimed token's accounting context. Skips the local-surplus check that `recordCashOutFor` applies. Invokes data hooks if configured, including any pricing-only adjustments they return. Returns ruleset, reclaim amount, tax rate, and hook specifications. |
 
 ### JBRulesets
 
@@ -104,13 +104,22 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `currentOf(uint256 projectId)` | Returns the currently active ruleset with decayed weight and correct cycle number. |
 | `latestQueuedOf(uint256 projectId)` | Returns the latest queued ruleset and its approval status. |
 | `queueFor(uint256 projectId, uint256 duration, uint256 weight, uint256 weightCutPercent, IJBRulesetApprovalHook approvalHook, uint256 metadata, uint256 mustStartAtOrAfter)` | Queues a new ruleset. Only callable by the project's controller. |
-| `updateRulesetWeightCache(uint256 projectId, uint256 rulesetId)` | Updates the weight cache for long-running rulesets. Required when `weightCutMultiple > 20,000` to avoid gas limits. |
+| `updateRulesetWeightCache(uint256 projectId, uint256 rulesetId)` | Permissionless. Updates the weight cache for long-running rulesets, advancing it by at most 20,000 cycles per call. Required once more than 20,000 weight cuts separate the cached value from the derived start; `deriveWeightFrom` otherwise reverts with `JBRulesets_WeightCacheRequired`. |
+| `upcomingOf(uint256 projectId)` | Returns the ruleset that takes effect after the current one: the next queued ruleset if its approval status is `Approved`, `ApprovalExpected` or `Empty`, otherwise a simulated cycle (with decayed weight) of the ruleset it would follow. Returns an empty ruleset if that ruleset has `duration = 0`. |
+| `getRulesetOf(uint256 projectId, uint256 rulesetId)` | Returns the stored ruleset (with metadata) for a ruleset ID, without cycling or weight decay. |
+| `allOf(uint256 projectId, uint256 startingId, uint256 size)` | Returns up to `size` rulesets, newest first, walking `basedOnId` back from `startingId` (0 = latest). |
+| `latestRulesetIdOf(uint256 projectId)` | Returns the ID of the project's latest queued ruleset, approved or not. |
+| `currentApprovalStatusForLatestRulesetOf(uint256 projectId)` | Returns the approval status of the project's latest queued ruleset. |
+| `deriveStartFrom(uint256 baseRulesetStart, uint256 baseRulesetDuration, uint256 mustStartAtOrAfter)` | Pure. Returns the earliest `baseRulesetStart + k * baseRulesetDuration` (k >= 1) that is at or after `mustStartAtOrAfter`, or `mustStartAtOrAfter` itself if the base has `duration = 0`. |
+| `deriveCycleNumberFrom(uint256 baseRulesetCycleNumber, uint256 baseRulesetStart, uint256 baseRulesetDuration, uint256 start)` | Pure. Returns the cycle number of a ruleset starting at `start`, counted from the base ruleset. |
+| `deriveWeightFrom(uint256 projectId, uint256 baseRulesetStart, uint256 baseRulesetDuration, uint256 baseRulesetWeight, uint256 baseRulesetWeightCutPercent, uint256 baseRulesetCacheId, uint256 start)` | Returns the base weight after one weight cut per elapsed cycle (one cut if the base has `duration = 0`). Uses the weight cache when more than 20,000 cuts apply and reverts with `JBRulesets_WeightCacheRequired` if more than 20,000 remain after it. |
+| `DIRECTORY()` | Returns the `JBDirectory` used to authorize the controller. |
 
 ### JBPermissions
 
 | Function | What it does |
 |----------|--------------|
-| `setPermissionsFor(address account, JBPermissionsData permissionsData)` | Grants or revokes operator permissions. ROOT operators can set non-ROOT permissions for others. |
+| `setPermissionsFor(address account, JBPermissionsData permissionsData)` | Grants or revokes operator permissions. ROOT operators can set non-ROOT permissions for the account on a specific (non-wildcard) project they hold ROOT for. |
 | `hasPermission(address operator, address account, uint256 projectId, uint256 permissionId, bool includeRoot, bool includeWildcardProjectId)` | Checks if an operator has a specific permission. |
 | `hasPermissions(address operator, address account, uint256 projectId, uint256[] permissionIds, bool includeRoot, bool includeWildcardProjectId)` | Checks if an operator has all specified permissions. |
 
@@ -122,7 +131,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 | `terminalsOf(uint256 projectId)` | Returns the project's terminals as `IJBTerminal[]`. |
 | `primaryTerminalOf(uint256 projectId, address token)` | Returns the project's primary terminal for a given token. |
 | `isTerminalOf(uint256 projectId, IJBTerminal terminal)` | Checks if a terminal belongs to a project. |
-| `setControllerOf(uint256 projectId, IERC165 controller)` | Sets the project's controller. |
+| `setControllerOf(uint256 projectId, IERC165 controller)` | Sets the project's controller. When replacing a controller, calls `beforeReceiveMigrationFrom` on the new one, `migrate` on the old one, updates the directory, then calls `afterReceiveMigrationFrom` on the new one (each only if that controller supports `IJBMigratable`). |
 | `setTerminalsOf(uint256 projectId, IJBTerminal[] terminals)` | Sets the project's terminals. |
 | `setPrimaryTerminalOf(uint256 projectId, address token, IJBTerminal terminal)` | Sets the primary terminal for a token. Requires `ADD_TERMINALS` permission if the terminal is not already in the project's terminal list (implicit addition). |
 | `setIsAllowedToSetFirstController(address addr, bool flag)` | Allows/disallows an address to set a project's first controller. Owner-only. |
@@ -153,7 +162,7 @@ The core Juicebox V6 protocol on EVM: a modular system for launching treasury-ba
 
 | Function | What it does |
 |----------|--------------|
-| `getPastTotalActiveVotes(uint256 timepoint)` | Returns the total voting units delegated to nonzero delegates at a past block. Unlike `getPastTotalSupply`, this excludes undelegated balances such as AMM-held tokens with no delegate. |
+| `getPastTotalActiveVotes(uint256 blockNumber)` | Returns the total voting units delegated to nonzero delegates at a past block. Unlike `getPastTotalSupply`, this excludes undelegated balances such as AMM-held tokens with no delegate. |
 | `getTotalActiveVotes()` | Returns the current total voting units delegated to nonzero delegates. |
 
 ### JBSplits
