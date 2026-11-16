@@ -1125,119 +1125,14 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
 
             // Mints tokens for the split if needed.
             if (splitTokenCount > 0) {
-                // 1. If the split has a `hook`, call the hook's `processSplitWith` function.
-                // 2. Otherwise, if the split has a `projectId`, try to pay the project using the split's `beneficiary`,
-                // or the `_msgSender()` if the split has no beneficiary.
-                // 3. Otherwise, if the split has a beneficiary, send the tokens to the split's beneficiary.
-                // 4. Otherwise, send the tokens to the `_msgSender()`.
-
-                // If the split has a hook, call its `processSplitWith` function.
-                if (split.hook != IJBSplitHook(address(0))) {
-                    if (token != IJBToken(address(0))) {
-                        // ERC-20: grant the hook an allowance and let it pull tokens via transferFrom.
-                        IERC20(address(token)).forceApprove({spender: address(split.hook), value: splitTokenCount});
-                    } else {
-                        // Credits: send directly — there is no allowance mechanism for credits.
-                        TOKENS.transferCreditsFrom({
-                            holder: address(this),
-                            projectId: projectId,
-                            recipient: address(split.hook),
-                            count: splitTokenCount
-                        });
-                    }
-
-                    try split.hook
-                        .processSplitWith(
-                            JBSplitHookContext({
-                                token: address(token),
-                                amount: splitTokenCount,
-                                decimals: 18, // Hard-coded in `JBTokens`.
-                                projectId: projectId,
-                                groupId: groupId,
-                                split: split
-                            })
-                        ) {}
-                    catch (bytes memory reason) {
-                        emit SplitHookReverted({
-                            projectId: projectId, hook: address(split.hook), reason: reason, caller: messageSender
-                        });
-                    }
-
-                    // For ERC-20 tokens, burn any tokens the hook did not consume.
-                    if (token != IJBToken(address(0))) {
-                        uint256 remaining =
-                            IERC20(address(token)).allowance({owner: address(this), spender: address(split.hook)});
-                        if (remaining > 0) {
-                            IERC20(address(token)).forceApprove({spender: address(split.hook), value: 0});
-                            TOKENS.burnFrom({holder: address(this), projectId: projectId, count: remaining});
-                        }
-                    }
-                    // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
-                } else {
-                    // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message
-                    // sender.
-                    address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
-
-                    // Reserved token splits with no project ID mint directly to the beneficiary. A non-zero project ID
-                    // takes the "pay another project" path, which treats the reserved tokens as revenue for the
-                    // destination project and can mint another batch of tokens according to its ruleset.
-                    if (split.projectId != 0) {
-                        if (split.projectId == projectId) {
-                            // The source project is not a valid destination for the terminal-payment path.
-                            // `sendReservedTokensToSplitsOf` clears the pending reserve balance before this helper
-                            // runs. Paying those freshly minted reserves into the same project's terminal would book
-                            // them as new revenue, mint another batch of tokens, and start the reserve cycle again.
-                            revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
-                        }
-
-                        // Get a reference to the receiving project's primary payment terminal for the token.
-                        IJBTerminal terminal = token == IJBToken(address(0))
-                            ? IJBTerminal(address(0))
-                            : DIRECTORY.primaryTerminalOf({projectId: split.projectId, token: address(token)});
-
-                        // If the project doesn't have a token, or if the receiving project doesn't have a terminal
-                        // which accepts the token, send the tokens to the beneficiary.
-                        if (address(token) == address(0) || address(terminal) == address(0)) {
-                            // Mint the tokens to the beneficiary.
-                            _sendTokens({
-                                projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
-                            });
-                        } else {
-                            // Use the `projectId` in the pay metadata.
-                            bytes memory metadata = bytes(abi.encodePacked(projectId));
-
-                            // Try to fulfill the payment.
-                            try this.executePayReservedTokenToTerminal({
-                                projectId: split.projectId,
-                                terminal: terminal,
-                                token: token,
-                                splitTokenCount: splitTokenCount,
-                                beneficiary: beneficiary,
-                                metadata: metadata
-                            }) {}
-                            catch (bytes memory reason) {
-                                emit ReservedDistributionReverted({
-                                    projectId: projectId,
-                                    split: split,
-                                    tokenCount: splitTokenCount,
-                                    reason: reason,
-                                    caller: messageSender
-                                });
-
-                                // If it fails, transfer the tokens from this contract to the beneficiary.
-                                IERC20(address(token)).safeTransfer({to: beneficiary, value: splitTokenCount});
-                            }
-                        }
-                    } else if (beneficiary == address(0xdead)) {
-                        // If the split has no project ID, and the beneficiary is 0xdead, burn.
-                        TOKENS.burnFrom({holder: address(this), projectId: projectId, count: splitTokenCount});
-                    } else {
-                        // If the split has no project Id, send to beneficiary.
-                        _sendTokens({
-                            projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
-                        });
-                    }
-                }
+                _sendReservedTokensToSplit({
+                    projectId: projectId,
+                    groupId: groupId,
+                    split: split,
+                    splitTokenCount: splitTokenCount,
+                    token: token,
+                    messageSender: messageSender
+                });
 
                 // Subtract the amount sent from the leftover.
                 leftoverTokenCount -= splitTokenCount;
@@ -1253,6 +1148,138 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             });
             unchecked {
                 ++i;
+            }
+        }
+    }
+
+    /// @notice Send one split's share of reserved tokens.
+    /// @param projectId The ID of the project the split belongs to.
+    /// @param groupId The ID of the split group.
+    /// @param split The split to send to.
+    /// @param splitTokenCount The number of tokens to send.
+    /// @param token The project's token, or the zero address if it only has credits.
+    /// @param messageSender The original caller.
+    function _sendReservedTokensToSplit(
+        uint256 projectId,
+        uint256 groupId,
+        JBSplit memory split,
+        uint256 splitTokenCount,
+        IJBToken token,
+        address messageSender
+    )
+        internal
+    {
+        // 1. If the split has a `hook`, call the hook's `processSplitWith` function.
+        // 2. Otherwise, if the split has a `projectId`, try to pay the project using the split's `beneficiary`,
+        // or the `_msgSender()` if the split has no beneficiary.
+        // 3. Otherwise, if the split has a beneficiary, send the tokens to the split's beneficiary.
+        // 4. Otherwise, send the tokens to the `_msgSender()`.
+
+        // If the split has a hook, call its `processSplitWith` function.
+        if (split.hook != IJBSplitHook(address(0))) {
+            if (token != IJBToken(address(0))) {
+                // ERC-20: grant the hook an allowance and let it pull tokens via transferFrom.
+                IERC20(address(token)).forceApprove({spender: address(split.hook), value: splitTokenCount});
+            } else {
+                // Credits: send directly — there is no allowance mechanism for credits.
+                TOKENS.transferCreditsFrom({
+                    holder: address(this),
+                    projectId: projectId,
+                    recipient: address(split.hook),
+                    count: splitTokenCount
+                });
+            }
+
+            try split.hook
+                .processSplitWith(
+                    JBSplitHookContext({
+                        token: address(token),
+                        amount: splitTokenCount,
+                        decimals: 18, // Hard-coded in `JBTokens`.
+                        projectId: projectId,
+                        groupId: groupId,
+                        split: split
+                    })
+                ) {}
+            catch (bytes memory reason) {
+                emit SplitHookReverted({
+                    projectId: projectId, hook: address(split.hook), reason: reason, caller: messageSender
+                });
+            }
+
+            // For ERC-20 tokens, burn any tokens the hook did not consume.
+            if (token != IJBToken(address(0))) {
+                uint256 remaining =
+                    IERC20(address(token)).allowance({owner: address(this), spender: address(split.hook)});
+                if (remaining > 0) {
+                    IERC20(address(token)).forceApprove({spender: address(split.hook), value: 0});
+                    TOKENS.burnFrom({holder: address(this), projectId: projectId, count: remaining});
+                }
+            }
+            // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
+        } else {
+            // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message
+            // sender.
+            address beneficiary = split.beneficiary != address(0) ? split.beneficiary : messageSender;
+
+            // Reserved token splits with no project ID mint directly to the beneficiary. A non-zero project ID
+            // takes the "pay another project" path, which treats the reserved tokens as revenue for the
+            // destination project and can mint another batch of tokens according to its ruleset.
+            if (split.projectId != 0) {
+                if (split.projectId == projectId) {
+                    // The source project is not a valid destination for the terminal-payment path.
+                    // `sendReservedTokensToSplitsOf` clears the pending reserve balance before this helper
+                    // runs. Paying those freshly minted reserves into the same project's terminal would book
+                    // them as new revenue, mint another batch of tokens, and start the reserve cycle again.
+                    revert JBController_ReservedTokenSplitProjectSameAsOwner({projectId: projectId});
+                }
+
+                // Get a reference to the receiving project's primary payment terminal for the token.
+                IJBTerminal terminal = token == IJBToken(address(0))
+                    ? IJBTerminal(address(0))
+                    : DIRECTORY.primaryTerminalOf({projectId: split.projectId, token: address(token)});
+
+                // If the project doesn't have a token, or if the receiving project doesn't have a terminal
+                // which accepts the token, send the tokens to the beneficiary.
+                if (address(token) == address(0) || address(terminal) == address(0)) {
+                    // Mint the tokens to the beneficiary.
+                    _sendTokens({
+                        projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
+                    });
+                } else {
+                    // Use the `projectId` in the pay metadata.
+                    bytes memory metadata = bytes(abi.encodePacked(projectId));
+
+                    // Try to fulfill the payment.
+                    try this.executePayReservedTokenToTerminal({
+                        projectId: split.projectId,
+                        terminal: terminal,
+                        token: token,
+                        splitTokenCount: splitTokenCount,
+                        beneficiary: beneficiary,
+                        metadata: metadata
+                    }) {}
+                    catch (bytes memory reason) {
+                        emit ReservedDistributionReverted({
+                            projectId: projectId,
+                            split: split,
+                            tokenCount: splitTokenCount,
+                            reason: reason,
+                            caller: messageSender
+                        });
+
+                        // If it fails, transfer the tokens from this contract to the beneficiary.
+                        IERC20(address(token)).safeTransfer({to: beneficiary, value: splitTokenCount});
+                    }
+                }
+            } else if (beneficiary == address(0xdead)) {
+                // If the split has no project ID, and the beneficiary is 0xdead, burn.
+                TOKENS.burnFrom({holder: address(this), projectId: projectId, count: splitTokenCount});
+            } else {
+                // If the split has no project Id, send to beneficiary.
+                _sendTokens({
+                    projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
+                });
             }
         }
     }
