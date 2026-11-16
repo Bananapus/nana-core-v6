@@ -71,7 +71,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
     /// @notice Thrown when a payout split routes back into the project that is paying out.
     error JBMultiTerminal_MintNotAllowed(uint256 projectId, address terminal);
-
     /// @notice Thrown when native value is sent with an operation that does not accept it.
     error JBMultiTerminal_NoMsgValueAllowed(uint256 value);
 
@@ -154,6 +153,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @custom:param projectId The ID of the project that received the payout.
     /// @custom:param token The token that was received.
     mapping(uint256 projectId => mapping(address token => uint256)) public override feeFreeSurplusOf;
+
+    /// @notice Payouts whose recipient could not take them, held by the gross amount until a retry succeeds.
+    /// @dev Keyed by `keccak256(abi.encode(split))` of the held split, which carries a resolved beneficiary. Anyone
+    /// can retry with `processHeldPayoutOf`. A failed payout is never returned to the project or forgiven, so the
+    /// gas a caller picks cannot change who the money belongs to.
+    /// @custom:param projectId The ID of the project the payout is from.
+    /// @custom:param token The token of the payout.
+    /// @custom:param splitHash The hash of the held split.
+    mapping(uint256 projectId => mapping(address token => mapping(bytes32 splitHash => uint256 amount)))
+        public
+        override heldPayoutOf;
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
@@ -707,8 +717,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @dev Only processes fees whose `unlockTimestamp` has passed. Stops early if it encounters a still-locked fee.
     /// @dev Reentrancy-safe: re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the index before
     /// the external `_processFee` call, preventing double-processing.
-    /// @dev If `_processFee` reverts (fee terminal rejects), the fee amount is returned to the project's balance
-    /// (forgiven, not retried). A `FeeReverted` event is emitted for off-chain observability.
+    /// @dev If `_processFee` reverts (fee terminal rejects), the fee is re-held at the end of the queue with no lock,
+    /// so a stuck fee never blocks the ones behind it and is never forgiven. A `FeeReverted` event is emitted.
     /// @param projectId The ID of the project to process held fees for.
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
@@ -736,11 +746,8 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
 
             // Delete the entry and advance the index *before* the external call. This is intentional:
             // 1. It prevents reentrancy from reprocessing the same fee.
-            // 2. If `_processFee` fails (try-catch), the fee amount is returned to the project's balance via
-            //    `_recordAddedBalanceFor` — the fee is forgiven rather than retried. This is a deliberate design
-            // choice: projects should not have funds permanently stuck because the fee route is misconfigured or
-            // reverting.
-            //    A `FeeReverted` event is emitted so the forgiveness is observable off-chain.
+            // 2. If `_processFee` fails (try-catch), it pushes the fee back onto the end of this array, so the
+            //    retry is bounded by `count` and the fee is never lost.
             delete _heldFeesOf[projectId][token][currentIndex];
             // `currentIndex` was proven to be within the held-fee array.
             unchecked {
@@ -751,7 +758,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _processFee({
                 projectId: projectId,
                 token: token,
-                amount: _feeAmountFrom(heldFee.amount),
+                amount: heldFee.amount,
                 beneficiary: heldFee.beneficiary,
                 feeTerminal: feeTerminal,
                 wasHeld: true
@@ -769,6 +776,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         ) {
             delete _heldFeesOf[projectId][token];
             delete _nextHeldFeeIndexOf[projectId][token];
+        }
+    }
+
+    /// @notice Retries a payout that was held because its recipient could not take it at the time.
+    /// @dev Permissionless. The payout runs with no catch, so a recipient that still fails reverts this call and the
+    /// amount stays held. Fees apply exactly as they would have in `sendPayoutsOf`.
+    /// @param projectId The ID of the project the payout is from.
+    /// @param token The token of the payout.
+    /// @param split The held split, as emitted in `HoldSplit`.
+    function processHeldPayoutOf(uint256 projectId, address token, JBSplit calldata split) external override {
+        uint256 feeEligibleAmount = JBPayoutSplitGroupLib.processHeldPayout({
+            heldPayoutOf: heldPayoutOf, projectId: projectId, token: token, split: split, caller: _msgSender()
+        });
+
+        if (feeEligibleAmount != 0) {
+            _takeFeeFrom({
+                projectId: projectId,
+                token: token,
+                amount: feeEligibleAmount,
+                beneficiary: _ownerOf(projectId),
+                shouldHoldFees: STORE.RULESETS().currentOf(projectId).holdFees()
+            });
         }
     }
 
@@ -1786,15 +1815,17 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         }
     }
 
-    /// @notice Process a fee of the specified amount from a project.
+    /// @notice Process the fee on the specified gross amount from a project.
     /// @param projectId The ID of the project paying the fee.
     /// @param token The token the fee is paid in.
-    /// @param amount The fee amount, as a fixed point number with 18 decimals.
+    /// @param amount The gross amount the fee is taken from, as a fixed point number with 18 decimals.
     /// @param beneficiary The address which will receive any platform tokens minted.
     /// @param feeTerminal The terminal that'll receive the fee.
     /// @param wasHeld A flag indicating if the fee to process was held by this terminal.
-    /// @dev Fee-route failures are forgiven instead of reverted so project funds cannot be trapped by project #1
-    /// misconfiguration. The failed fee amount is credited back to the payer project's balance on this terminal.
+    /// @dev A failed fee route must not trap payouts, cash outs, allowances or terminal migration, but it must not
+    /// change who ends up with the fee either: the outcome of a fee route can depend on the gas the caller chose, so
+    /// a forgiven fee would be a fee anyone can waive. On failure the fee is held in `_heldFeesOf` with no lock and
+    /// `processHeldFeesOf` retries it.
     function _processFee(
         uint256 projectId,
         address token,
@@ -1805,36 +1836,64 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     )
         internal
     {
+        uint256 fee = _feeAmountFrom(amount);
+
         try this.executeProcessFee({
-            projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
+            projectId: projectId, token: token, amount: fee, beneficiary: beneficiary, feeTerminal: feeTerminal
         }) {
             emit ProcessFee({
                 projectId: projectId,
                 token: token,
-                amount: amount,
+                amount: fee,
                 wasHeld: wasHeld,
                 beneficiary: beneficiary,
                 caller: _msgSender()
             });
         } catch (bytes memory reason) {
-            // Fee processing is fail-open for project liveness: a broken project #1 terminal or fee route must not
-            // trap payouts, cash outs, allowances, held-fee processing, or terminal migration. The fee is forgiven,
-            // credited back to the originating project on this terminal, and surfaced through `FeeReverted`.
             emit FeeReverted({
                 projectId: projectId,
                 token: token,
                 feeProjectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
-                amount: amount,
+                amount: fee,
                 reason: reason,
                 caller: _msgSender()
             });
 
-            _recordAddedBalanceFor({projectId: projectId, token: token, amount: amount});
-            // The store balance was credited first; this mirrors that bounded increase for fee recovery.
-            unchecked {
-                feeFreeSurplusOf[projectId][token] += amount;
-            }
+            // Hold the fee for the fee project, unlocked, so anyone can retry it.
+            _holdFee({
+                projectId: projectId,
+                token: token,
+                amount: amount,
+                beneficiary: beneficiary,
+                unlockTimestamp: block.timestamp
+            });
         }
+    }
+
+    /// @notice Records a held fee on the gross amount it will be taken from.
+    /// @param projectId The ID of the project holding the fee.
+    /// @param token The token the fee is held in.
+    /// @param amount The gross amount the fee will be taken from.
+    /// @param beneficiary The address that will receive fee project tokens when the fee is processed.
+    /// @param unlockTimestamp When the fee can be processed.
+    function _holdFee(
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        uint256 unlockTimestamp
+    )
+        internal
+    {
+        JBHeldFees.hold({
+            heldFeesOf: _heldFeesOf,
+            projectId: projectId,
+            token: token,
+            amount: amount,
+            beneficiary: beneficiary,
+            unlockTimestamp: unlockTimestamp,
+            caller: _msgSender()
+        });
     }
 
     /// @notice Records an added balance for a project.
@@ -1913,7 +1972,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         // Also get a reference to the amount which was paid out to splits that is eligible for fees.
         (uint256 leftoverPayoutAmount, uint256 amountEligibleForFees) = JBPayoutSplitGroupLib.sendPayoutsToSplitGroupOf({
             splits: SPLITS,
-            store: STORE,
+            heldPayoutOf: heldPayoutOf,
             projectId: projectId,
             token: token,
             rulesetId: ruleset.id,
@@ -1932,27 +1991,23 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 netLeftoverPayoutAmount = leftoverPayoutAmount - fee;
             }
 
-            // Failed owner transfer consumes the payout limit by design. Same pattern as split payouts:
-            // the try-catch prevents revert, failed amount is returned to project balance, and the owner can retry
-            // via addToBalanceOf or in the next cycle.
+            // Failed owner transfer consumes the payout limit by design. Same pattern as split payouts: the try-catch
+            // prevents revert and the gross amount is held for the owner, who (or anyone) can retry it through
+            // `processHeldPayoutOf`.
             try this.executeTransferTo({addr: projectOwner, token: token, amount: netLeftoverPayoutAmount}) {
                 if (fee > 0) {
                     amountEligibleForFees += leftoverPayoutAmount;
                     leftoverPayoutAmount = netLeftoverPayoutAmount;
                 }
             } catch (bytes memory reason) {
-                emit PayoutTransferReverted({
+                JBPayoutSplitGroupLib.holdOwnerPayout({
+                    heldPayoutOf: heldPayoutOf,
                     projectId: projectId,
-                    addr: projectOwner,
                     token: token,
-                    amount: netLeftoverPayoutAmount,
-                    fee: fee,
-                    reason: reason,
-                    caller: sender
+                    owner: projectOwner,
+                    amount: leftoverPayoutAmount,
+                    reason: reason
                 });
-
-                // Add balance back to the project.
-                _recordAddedBalanceFor({projectId: projectId, token: token, amount: leftoverPayoutAmount});
             }
         }
 
@@ -1990,7 +2045,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param beneficiary The address to mint the platform's project's tokens for.
     /// @param shouldHoldFees If fees should be tracked and held instead of processing them immediately.
     /// @return feeAmount The fee withheld from the current outflow. If immediate fee processing fails, `_processFee`
-    /// credits this amount back to the payer project while the current outflow continues.
+    /// holds it for a later retry while the current outflow continues.
     function _takeFeeFrom(
         uint256 projectId,
         address token,
@@ -2005,28 +2060,13 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         feeAmount = _feeAmountFrom(amount);
 
         if (shouldHoldFees) {
-            // The held-fee record stores the basis amount in a `uint224`. Reject a basis that wouldn't fit so it
-            // can't silently truncate and corrupt the eventual fee processing/refund.
-            _checkFitsIn({value: amount, max: type(uint224).max});
-
             // Store the gross amount so future repayments can recover the corresponding fee.
-            _heldFeesOf[projectId][token].push(
-                JBFee({
-                    // forge-lint: disable-next-line(unsafe-typecast)
-                    amount: uint224(amount),
-                    beneficiary: beneficiary,
-                    // forge-lint: disable-next-line(unsafe-typecast)
-                    unlockTimestamp: uint48(block.timestamp + _FEE_HOLDING_SECONDS)
-                })
-            );
-
-            emit HoldFee({
+            _holdFee({
                 projectId: projectId,
                 token: token,
                 amount: amount,
-                fee: JBConstants.STANDARD_FEE,
                 beneficiary: beneficiary,
-                caller: _msgSender()
+                unlockTimestamp: block.timestamp + _FEE_HOLDING_SECONDS
             });
         } else {
             // Resolve the fee project's terminal for this token and process the fee immediately.
@@ -2036,7 +2076,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             _processFee({
                 projectId: projectId,
                 token: token,
-                amount: feeAmount,
+                amount: amount,
                 beneficiary: beneficiary,
                 feeTerminal: feeTerminal,
                 wasHeld: false

@@ -88,15 +88,14 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param caller The address that called the queue function.
     event QueueRulesets(uint256 rulesetId, uint256 projectId, string memo, address caller);
 
-    /// @notice A reserved token distribution to a split reverted.
+    /// @notice A reserved token split's recipient could not take its tokens, so they are held until a retry succeeds.
     /// @param projectId The ID of the project.
-    /// @param split The split that the distribution reverted for.
-    /// @param tokenCount The number of tokens that failed to distribute.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param split The split the tokens are held for, with a resolved beneficiary. Hash it to read
+    /// `heldReservedTokensOf`.
+    /// @param amount The number of tokens held.
     /// @param reason The revert reason.
-    /// @param caller The address that called the distribution function.
-    event ReservedDistributionReverted(
-        uint256 indexed projectId, JBSplit split, uint256 tokenCount, bytes reason, address caller
-    );
+    event HoldSplit(uint256 indexed projectId, address indexed token, JBSplit split, uint256 amount, bytes reason);
 
     /// @notice A split hook's `processSplitWith` call reverted.
     /// @param projectId The ID of the project.
@@ -219,6 +218,12 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param projectId The ID of the project to get the pending reserved token balance of.
     /// @return The pending reserved token balance.
     function pendingReservedTokenBalanceOf(uint256 projectId) external view returns (uint256);
+
+    /// @notice The number of reserved tokens held for a split whose recipient could not take them.
+    /// @param projectId The ID of the project.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param splitHash `keccak256(abi.encode(split))` of the held split, as emitted in `HoldSplit`.
+    function heldReservedTokensOf(uint256 projectId, address token, bytes32 splitHash) external view returns (uint256);
 
     /// @notice Previews how many beneficiary and reserved tokens `mintTokensOf(...)` would produce.
     /// @param projectId The ID of the project to mint tokens for.
@@ -358,6 +363,12 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     )
         external
         returns (uint256 rulesetId);
+
+    /// @notice Retries delivering held reserved tokens. Reverts if the recipient still cannot take them.
+    /// @param projectId The ID of the project.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param split The held split, as emitted in `HoldSplit`.
+    function processHeldReservedTokensOf(uint256 projectId, address token, JBSplit calldata split) external;
 
     /// @notice Sends a project's pending reserved tokens to its reserved token splits.
     /// @param projectId The ID of the project to send reserved tokens for.

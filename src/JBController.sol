@@ -31,6 +31,7 @@ import {IJBTerminal} from "./interfaces/IJBTerminal.sol";
 import {IJBToken} from "./interfaces/IJBToken.sol";
 import {IJBTokens} from "./interfaces/IJBTokens.sol";
 import {JBConstants} from "./libraries/JBConstants.sol";
+import {JBHeldSplits} from "./libraries/JBHeldSplits.sol";
 import {JBPayerTrackerLib} from "./libraries/JBPayerTrackerLib.sol";
 import {JBRulesetMetadataResolver} from "./libraries/JBRulesetMetadataResolver.sol";
 import {JBSplitGroupIds} from "./libraries/JBSplitGroupIds.sol";
@@ -67,6 +68,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     error JBController_CreditTransfersPaused(uint256 projectId, uint256 rulesetId);
 
     /// @notice Thrown when the cash out tax rate exceeds the allowed maximum.
+    error JBController_HeldReservedTokensStillFailing(uint256 projectId, address token, bytes32 splitHash);
     error JBController_InvalidCashOutTaxRate(uint256 rate, uint256 limit);
 
     /// @notice Thrown when the native value sent does not equal the required creation fee.
@@ -156,6 +158,18 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// reserved token split group yet).
     /// @custom:param projectId The ID of the project to get the pending reserved token balance of.
     mapping(uint256 projectId => uint256) public override pendingReservedTokenBalanceOf;
+
+    /// @notice Reserved tokens whose split recipient could not take them, held in this contract until a retry
+    /// succeeds.
+    /// @dev Keyed by `keccak256(abi.encode(split))` of the held split, which carries a resolved beneficiary. Anyone
+    /// can retry with `processHeldReservedTokensOf`. A failed split is never burned or redirected, so the gas a
+    /// caller picks cannot change who the tokens belong to.
+    /// @custom:param projectId The ID of the project the tokens belong to.
+    /// @custom:param token The project's ERC-20 at the time the tokens were held.
+    /// @custom:param splitHash The hash of the held split.
+    mapping(uint256 projectId => mapping(address token => mapping(bytes32 splitHash => uint256 tokenCount)))
+        public
+        override heldReservedTokensOf;
 
     /// @notice The metadata URI for each project. This is typically an IPFS hash, optionally with an `ipfs://` prefix.
     /// @custom:param projectId The ID of the project to get the metadata URI of.
@@ -702,6 +716,32 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         emit QueueRulesets({rulesetId: rulesetId, projectId: projectId, memo: memo, caller: _msgSender()});
     }
 
+    /// @notice Retries delivering reserved tokens that were held because their split recipient could not take them.
+    /// @dev Permissionless. A recipient that still fails reverts this call and the tokens stay held.
+    /// @param projectId The ID of the project the tokens belong to.
+    /// @param token The project's ERC-20 at the time the tokens were held.
+    /// @param split The held split, as emitted in `HoldSplit`.
+    function processHeldReservedTokensOf(uint256 projectId, address token, JBSplit calldata split) external override {
+        (uint256 tokenCount, bytes32 splitHash) =
+            JBHeldSplits.take({heldOf: heldReservedTokensOf, projectId: projectId, token: token, split: split});
+
+        _sendReservedTokensToSplit({
+            projectId: projectId,
+            groupId: JBSplitGroupIds.RESERVED_TOKENS,
+            split: split,
+            splitTokenCount: tokenCount,
+            token: IJBToken(token),
+            messageSender: _msgSender()
+        });
+
+        // The same code re-holds a split that fails again. A retry must leave the ledger as it found it instead.
+        if (heldReservedTokensOf[projectId][token][splitHash] != 0) {
+            revert JBController_HeldReservedTokensStillFailing({
+                projectId: projectId, token: token, splitHash: splitHash
+            });
+        }
+    }
+
     /// @notice Mints and distributes all pending reserved tokens to the project's reserved token split recipients.
     /// Anyone can call this — it's permissionless.
     /// @dev If splits don't add up to 100%, the remainder goes to the project owner.
@@ -1119,6 +1159,12 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             // Get a reference to the split being iterated on.
             JBSplit memory split = splits[i];
 
+            // A split with no hook and no beneficiary pays the caller. Resolve it now so the split that is paid, held
+            // and emitted is the same one, and a held split can never be redirected to whoever retries it.
+            if (split.hook == IJBSplitHook(address(0)) && split.beneficiary == address(0)) {
+                split.beneficiary = payable(messageSender);
+            }
+
             // Calculate the amount to send to the split.
             uint256 splitTokenCount =
                 mulDiv({x: tokenCount, y: split.percent, denominator: JBConstants.SPLITS_TOTAL_PERCENT});
@@ -1153,6 +1199,8 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     }
 
     /// @notice Send one split's share of reserved tokens.
+    /// @dev A hook or terminal that reverts has its share held in `heldReservedTokensOf` for a later
+    /// `processHeldReservedTokensOf`.
     /// @param projectId The ID of the project the split belongs to.
     /// @param groupId The ID of the split group.
     /// @param split The split to send to.
@@ -1183,25 +1231,36 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
             } else {
                 // Credits: send directly — there is no allowance mechanism for credits.
                 TOKENS.transferCreditsFrom({
-                    holder: address(this),
-                    projectId: projectId,
-                    recipient: address(split.hook),
-                    count: splitTokenCount
+                    holder: address(this), projectId: projectId, recipient: address(split.hook), count: splitTokenCount
                 });
             }
 
-            try split.hook
-                .processSplitWith(
-                    JBSplitHookContext({
-                        token: address(token),
-                        amount: splitTokenCount,
-                        decimals: 18, // Hard-coded in `JBTokens`.
-                        projectId: projectId,
-                        groupId: groupId,
-                        split: split
-                    })
-                ) {}
+            JBSplitHookContext memory context = JBSplitHookContext({
+                token: address(token),
+                amount: splitTokenCount,
+                decimals: 18, // Hard-coded in `JBTokens`.
+                projectId: projectId,
+                groupId: groupId,
+                split: split
+            });
+
+            try split.hook.processSplitWith(context) {}
             catch (bytes memory reason) {
+                if (token != IJBToken(address(0))) {
+                    // The hook's frame rolled back, so it pulled nothing: revoke the allowance and hold the whole
+                    // share for it instead of burning it.
+                    IERC20(address(token)).forceApprove({spender: address(split.hook), value: 0});
+                    _holdReservedTokens({
+                        projectId: projectId,
+                        token: address(token),
+                        split: split,
+                        tokenCount: splitTokenCount,
+                        reason: reason
+                    });
+                    return;
+                }
+
+                // Credits were already transferred to the hook, so there is nothing left here to hold.
                 emit SplitHookReverted({
                     projectId: projectId, hook: address(split.hook), reason: reason, caller: messageSender
                 });
@@ -1216,7 +1275,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     TOKENS.burnFrom({holder: address(this), projectId: projectId, count: remaining});
                 }
             }
-            // If the split has a project ID, try to pay the project. If that fails, pay the beneficiary.
+            // If the split has a project ID, try to pay the project. If that fails, hold the tokens for the split.
         } else {
             // Pay the project using the split's beneficiary if one was provided. Otherwise, use the message
             // sender.
@@ -1250,7 +1309,7 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                     // Use the `projectId` in the pay metadata.
                     bytes memory metadata = bytes(abi.encodePacked(projectId));
 
-                    // Try to fulfill the payment.
+                    // Try to fulfill the payment. If it fails, hold the tokens for this split.
                     try this.executePayReservedTokenToTerminal({
                         projectId: split.projectId,
                         terminal: terminal,
@@ -1260,16 +1319,13 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                         metadata: metadata
                     }) {}
                     catch (bytes memory reason) {
-                        emit ReservedDistributionReverted({
+                        _holdReservedTokens({
                             projectId: projectId,
+                            token: address(token),
                             split: split,
                             tokenCount: splitTokenCount,
-                            reason: reason,
-                            caller: messageSender
+                            reason: reason
                         });
-
-                        // If it fails, transfer the tokens from this contract to the beneficiary.
-                        IERC20(address(token)).safeTransfer({to: beneficiary, value: splitTokenCount});
                     }
                 }
             } else if (beneficiary == address(0xdead)) {
@@ -1277,11 +1333,34 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 TOKENS.burnFrom({holder: address(this), projectId: projectId, count: splitTokenCount});
             } else {
                 // If the split has no project Id, send to beneficiary.
-                _sendTokens({
-                    projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token
-                });
+                _sendTokens({projectId: projectId, tokenCount: splitTokenCount, recipient: beneficiary, token: token});
             }
         }
+    }
+
+    /// @notice Holds a split's reserved tokens in this contract until a retry delivers them.
+    /// @param projectId The ID of the project the tokens belong to.
+    /// @param token The project's ERC-20.
+    /// @param split The split the tokens are held for, with its beneficiary already resolved.
+    /// @param tokenCount The number of tokens to hold.
+    /// @param reason The reason the delivery reverted.
+    function _holdReservedTokens(
+        uint256 projectId,
+        address token,
+        JBSplit memory split,
+        uint256 tokenCount,
+        bytes memory reason
+    )
+        internal
+    {
+        JBHeldSplits.hold({
+            heldOf: heldReservedTokensOf,
+            projectId: projectId,
+            token: token,
+            split: split,
+            amount: tokenCount,
+            reason: reason
+        });
     }
 
     /// @notice Sends pending reserved tokens to the project's reserved token splits.

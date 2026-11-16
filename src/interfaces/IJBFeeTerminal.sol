@@ -7,7 +7,7 @@ import {JBFee} from "../structs/JBFee.sol";
 
 /// @notice A terminal that can process and hold fees.
 interface IJBFeeTerminal is IJBTerminal {
-    /// @notice A fee payment to the fee project reverted and was returned to the project's balance.
+    /// @notice A fee payment to the fee project reverted and was held for a later retry through `processHeldFeesOf`.
     /// @param projectId The ID of the project the fee was for.
     /// @param token The token the fee was denominated in.
     /// @param feeProjectId The ID of the fee project.

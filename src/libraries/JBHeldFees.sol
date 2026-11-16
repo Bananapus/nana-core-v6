@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {IJBFeeTerminal} from "../interfaces/IJBFeeTerminal.sol";
 import {JBFee} from "../structs/JBFee.sol";
+import {JBConstants} from "./JBConstants.sol";
 import {JBFees} from "./JBFees.sol";
 
 /// @notice External-library implementation of held-fee storage operations for `JBMultiTerminal`.
@@ -10,6 +11,51 @@ import {JBFees} from "./JBFees.sol";
 /// terminal via `DELEGATECALL`, keeping terminal bytecode below the EIP-170 limit. Storage refs are passed as
 /// parameters so the library reads/writes the caller's mappings.
 library JBHeldFees {
+    error JBHeldFees_OverflowAlert(uint256 value, uint256 limit);
+
+    /// @notice Records a held fee.
+    /// @dev The record stores the gross amount in a `uint224`; a larger amount reverts rather than truncating.
+    /// @param heldFeesOf The terminal's held-fee storage mapping.
+    /// @param projectId The ID of the project holding the fee.
+    /// @param token The token the fee is held in.
+    /// @param amount The gross amount the fee will be taken from.
+    /// @param beneficiary The address that will receive fee project tokens when the fee is processed.
+    /// @param unlockTimestamp When the fee can be processed.
+    /// @param caller The address that triggered the hold, forwarded into the `HoldFee` event.
+    function hold(
+        mapping(uint256 => mapping(address => JBFee[])) storage heldFeesOf,
+        uint256 projectId,
+        address token,
+        uint256 amount,
+        address beneficiary,
+        uint256 unlockTimestamp,
+        address caller
+    )
+        external
+    {
+        if (amount > type(uint224).max) revert JBHeldFees_OverflowAlert({value: amount, limit: type(uint224).max});
+
+        heldFeesOf[projectId][token].push(
+            JBFee({
+                // forge-lint: disable-next-line(unsafe-typecast)
+                amount: uint224(amount),
+                beneficiary: beneficiary,
+                // forge-lint: disable-next-line(unsafe-typecast)
+                unlockTimestamp: uint48(unlockTimestamp)
+            })
+        );
+
+        // Emit through the interface qualifier so the event topic matches what `IJBFeeTerminal` declares.
+        emit IJBFeeTerminal.HoldFee({
+            projectId: projectId,
+            token: token,
+            amount: amount,
+            fee: JBConstants.STANDARD_FEE,
+            beneficiary: beneficiary,
+            caller: caller
+        });
+    }
+
     /// @notice Returns held fees back to a project's balance based on the specified incoming amount.
     /// @dev Walks unprocessed held fees in storage order. For each fee, checks if the incoming `amount` covers
     /// the original net payout (gross minus fee). If yes, the fee is fully credited back and the entry is
