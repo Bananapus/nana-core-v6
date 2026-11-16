@@ -6,29 +6,27 @@ import {JBSplit} from "../structs/JBSplit.sol";
 
 /// @notice A terminal that can send payouts.
 interface IJBPayoutTerminal is IJBTerminal {
-    /// @notice A payout to a split hook reverted.
+    /// @notice A payout to a split reverted, so the gross amount is held for the split until a retry succeeds.
     /// @param projectId The ID of the project the payout was for.
-    /// @param split The split that the payout reverted for.
-    /// @param amount The amount of the payout.
+    /// @param token The token of the payout.
+    /// @param split The split the amount is held for, with a resolved beneficiary. Hash it to read `heldPayoutOf`.
+    /// @param amount The gross amount held.
     /// @param reason The revert reason.
-    /// @param caller The address that called the payout function.
-    event PayoutReverted(uint256 indexed projectId, JBSplit split, uint256 amount, bytes reason, address caller);
+    event HoldSplit(uint256 indexed projectId, address indexed token, JBSplit split, uint256 amount, bytes reason);
 
-    /// @notice A direct payout transfer reverted.
+    /// @notice A held payout was retried and delivered.
     /// @param projectId The ID of the project the payout was for.
-    /// @param addr The address the payout was sent to.
-    /// @param token The token to pay out.
-    /// @param amount The amount of the payout.
-    /// @param fee The fee taken from the payout.
-    /// @param reason The revert reason.
-    /// @param caller The address that called the payout function.
-    event PayoutTransferReverted(
+    /// @param token The token of the payout.
+    /// @param split The split that was paid.
+    /// @param amount The gross amount that was held.
+    /// @param netAmount The amount the recipient received after fees.
+    /// @param caller The address that retried the payout.
+    event ProcessHeldSplit(
         uint256 indexed projectId,
-        address addr,
-        address token,
+        address indexed token,
+        JBSplit split,
         uint256 amount,
-        uint256 fee,
-        bytes reason,
+        uint256 netAmount,
         address caller
     );
 
@@ -112,6 +110,18 @@ interface IJBPayoutTerminal is IJBTerminal {
     )
         external
         returns (uint256 amountPaidOut);
+
+    /// @notice The gross amount held for a split whose payout could not be delivered.
+    /// @param projectId The ID of the project the payout is from.
+    /// @param token The token of the payout.
+    /// @param splitHash `keccak256(abi.encode(split))` of the held split, as emitted in `HoldSplit`.
+    function heldPayoutOf(uint256 projectId, address token, bytes32 splitHash) external view returns (uint256);
+
+    /// @notice Retries a held payout. Reverts if the recipient still cannot take it.
+    /// @param projectId The ID of the project the payout is from.
+    /// @param token The token of the payout.
+    /// @param split The held split, as emitted in `HoldSplit`.
+    function processHeldPayoutOf(uint256 projectId, address token, JBSplit calldata split) external;
 
     /// @notice Uses a project's surplus allowance to send funds to a beneficiary.
     /// @param projectId The ID of the project to use the surplus allowance of.
