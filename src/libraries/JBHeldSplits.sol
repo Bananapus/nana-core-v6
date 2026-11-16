@@ -6,8 +6,7 @@ import {JBSplit} from "../structs/JBSplit.sol";
 /// @notice Holds a split's share when its recipient cannot take it, so anyone can retry it later. Used by the
 /// terminal for payouts and by the controller for reserved tokens: a failed split is never forgiven, skipped, burned
 /// or rerouted, so the gas a caller picks can never change who the share belongs to.
-/// @dev Extracted as an external library to keep the terminal and controller under the bytecode size limit. Called via
-/// DELEGATECALL, so events are emitted from the caller's address.
+/// @dev An internal library: the compiler inlines it into the terminal and the controller.
 library JBHeldSplits {
     /// @notice A split's share could not be delivered, so it is held until a retry succeeds.
     /// @param projectId The ID of the project the share is from.
@@ -53,7 +52,7 @@ library JBHeldSplits {
         uint256 amount,
         bytes memory reason
     )
-        external
+        internal
     {
         heldOf[projectId][token][keccak256(abi.encode(split))] += amount;
 
@@ -75,7 +74,7 @@ library JBHeldSplits {
         address token,
         JBSplit memory split
     )
-        external
+        internal
         returns (uint256 amount, bytes32 splitHash)
     {
         splitHash = keccak256(abi.encode(split));
@@ -99,7 +98,7 @@ library JBHeldSplits {
         uint256 netAmount,
         address caller
     )
-        external
+        internal
     {
         emit ProcessHeldSplit({
             projectId: projectId, token: token, split: split, amount: amount, netAmount: netAmount, caller: caller
