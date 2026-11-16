@@ -6,10 +6,9 @@ import {JBFee} from "../structs/JBFee.sol";
 import {JBConstants} from "./JBConstants.sol";
 import {JBFees} from "./JBFees.sol";
 
-/// @notice External-library implementation of held-fee storage operations for `JBMultiTerminal`.
-/// @dev Functions are `external` so they live in this library's deployed bytecode and are reached from the caller
-/// terminal via `DELEGATECALL`, keeping terminal bytecode below the EIP-170 limit. Storage refs are passed as
-/// parameters so the library reads/writes the caller's mappings.
+/// @notice Held-fee storage operations for `JBMultiTerminal`.
+/// @dev An internal library: the compiler inlines it into the terminal. It was external while EIP-170 bound. Storage
+/// refs are passed as parameters so the library reads/writes the caller's mappings.
 library JBHeldFees {
     error JBHeldFees_OverflowAlert(uint256 value, uint256 limit);
 
@@ -31,7 +30,7 @@ library JBHeldFees {
         uint256 unlockTimestamp,
         address caller
     )
-        external
+        internal
     {
         if (amount > type(uint224).max) revert JBHeldFees_OverflowAlert({value: amount, limit: type(uint224).max});
 
@@ -63,7 +62,7 @@ library JBHeldFees {
     /// amount is shrunk in place using the back-calculated fee so a future top-up can still settle the remainder.
     /// @dev Partial refunds use `standardFeeAmountResultingIn` so repaying a dust amount cannot both credit the
     /// payer project and leave the fee project owed the 1-unit minimum fee. Reads `caller` from a parameter
-    /// instead of `msg.sender` because the library runs under `DELEGATECALL` from the terminal — `msg.sender`
+    /// instead of `msg.sender` because the library is inlined into the terminal — `msg.sender`
     /// here is the original external caller of the terminal, not the meta-tx-aware caller the terminal would
     /// emit. The terminal passes `_msgSender()` so the event carries the meta-tx sender as intended.
     /// @param heldFeesOf The terminal's held-fee storage mapping.
@@ -81,7 +80,7 @@ library JBHeldFees {
         uint256 amount,
         address caller
     )
-        external
+        internal
         returns (uint256 returnedFees)
     {
         // The first slot not yet returned, processed, or forgiven. Earlier slots are tombstones and skipped.
@@ -154,7 +153,7 @@ library JBHeldFees {
         if (startIndex != newStartIndex) nextHeldFeeIndexOf[projectId][token] = newStartIndex;
 
         // Emit through the interface qualifier so the event topic matches what `IJBFeeTerminal` declares. The
-        // log surfaces under the calling terminal's address (we're inside its DELEGATECALL frame), so off-chain
+        // log surfaces under the calling terminal's address, so off-chain
         // consumers filter on the terminal as usual.
         emit IJBFeeTerminal.ReturnHeldFees({
             projectId: projectId,
@@ -180,7 +179,7 @@ library JBHeldFees {
         address token,
         uint256 count
     )
-        external
+        internal
         view
         returns (JBFee[] memory heldFees)
     {

@@ -97,6 +97,22 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param reason The revert reason.
     event HoldSplit(uint256 indexed projectId, address indexed token, JBSplit split, uint256 amount, bytes reason);
 
+    /// @notice Held reserved tokens were retried and delivered.
+    /// @param projectId The ID of the project.
+    /// @param token The project's ERC-20 the tokens were held in.
+    /// @param split The split that received the tokens.
+    /// @param amount The number of tokens delivered.
+    /// @param netAmount The same number; reserved tokens carry no fee.
+    /// @param caller The address that retried the delivery.
+    event ProcessHeldSplit(
+        uint256 indexed projectId,
+        address indexed token,
+        JBSplit split,
+        uint256 amount,
+        uint256 netAmount,
+        address caller
+    );
+
     /// @notice A split hook's `processSplitWith` call reverted.
     /// @param projectId The ID of the project.
     /// @param hook The split hook that reverted.

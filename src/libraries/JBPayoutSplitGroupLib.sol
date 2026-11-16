@@ -43,8 +43,7 @@ interface IJBPayoutSplitGroupExecutor {
 /// proportional amount, and isolates failures: if a split payout reverts (e.g. a hook is broken), the amount is held
 /// for that split in the terminal and anyone can retry it through `processHeldPayoutOf`, so one bad recipient never
 /// blocks the others and never changes who the money belongs to.
-/// @dev Extracted as an external library to reduce `JBMultiTerminal` bytecode size. Called via DELEGATECALL, so events
-/// are emitted from the terminal's address.
+/// @dev An internal library: the compiler inlines it into the terminal. It was external while EIP-170 bound.
 library JBPayoutSplitGroupLib {
     /// @notice Holds a payout for a split whose recipient could not take it, so anyone can retry it later.
     /// @param heldPayoutOf The terminal's held payout ledger.
@@ -64,7 +63,7 @@ library JBPayoutSplitGroupLib {
         uint256 amount,
         bytes memory reason
     )
-        public
+        internal
     {
         JBHeldSplits.hold({
             heldOf: heldPayoutOf, projectId: projectId, token: token, split: split, amount: amount, reason: reason
@@ -88,7 +87,7 @@ library JBPayoutSplitGroupLib {
         JBSplit memory split,
         address caller
     )
-        external
+        internal
         returns (uint256 feeEligible)
     {
         (uint256 amount,) = JBHeldSplits.take({heldOf: heldPayoutOf, projectId: projectId, token: token, split: split});
@@ -127,7 +126,7 @@ library JBPayoutSplitGroupLib {
     /// short-pull); the unsent portion is routed back to the project balance via `store.recordAddedBalanceFor`,
     /// scaled to include the proportional fee allocation so the held fee is effectively charged only on the
     /// consumed amount. Fee-eligibility is inferred from `netPayoutAmount < amount`.
-    /// @dev Called via DELEGATECALL from the terminal, so `address(this)` is the terminal and `msg.sender`
+    /// @dev Inlined into the terminal, so `address(this)` is the terminal and `msg.sender`
     /// observed by the hook is the terminal — hooks that check `DIRECTORY.isTerminalOf(msg.sender)` continue
     /// to work unchanged.
     /// @param split The split (must have a non-zero hook address).
@@ -147,7 +146,7 @@ library JBPayoutSplitGroupLib {
         uint256 netPayoutAmount,
         IJBTerminalStore store
     )
-        external
+        internal
         returns (uint256 sent, uint256 feeEligibleAmount)
     {
         // Native vs ERC-20 governs the transfer mechanism (push via msg.value vs allowance pull).
@@ -231,7 +230,7 @@ library JBPayoutSplitGroupLib {
         uint256 amount,
         bytes memory reason
     )
-        external
+        internal
     {
         holdPayout({
             heldPayoutOf: heldPayoutOf,
@@ -320,7 +319,7 @@ library JBPayoutSplitGroupLib {
         uint256 amount,
         address caller
     )
-        external
+        internal
         returns (uint256 leftoverAmount, uint256 amountEligibleForFees)
     {
         // The total percentage available to split.

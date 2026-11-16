@@ -740,6 +740,15 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
                 projectId: projectId, token: token, splitHash: splitHash
             });
         }
+
+        JBHeldSplits.processed({
+            projectId: projectId,
+            token: token,
+            split: split,
+            amount: tokenCount,
+            netAmount: tokenCount,
+            caller: _msgSender()
+        });
     }
 
     /// @notice Mints and distributes all pending reserved tokens to the project's reserved token split recipients.
