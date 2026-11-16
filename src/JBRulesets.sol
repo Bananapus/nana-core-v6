@@ -250,10 +250,10 @@ contract JBRulesets is JBControlled, IJBRulesets {
         uint256 startDistance = start - targetRuleset.start;
 
         // Calculate the weight cut multiple.
-        uint168 weightCutMultiple;
+        uint144 weightCutMultiple;
         unchecked {
             // forge-lint: disable-next-line(unsafe-typecast)
-            weightCutMultiple = uint168(startDistance / targetRuleset.duration);
+            weightCutMultiple = uint144(startDistance / targetRuleset.duration);
         }
 
         // Store the new values.

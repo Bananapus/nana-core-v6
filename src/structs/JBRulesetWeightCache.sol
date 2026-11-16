@@ -5,5 +5,5 @@ pragma solidity ^0.8.0;
 /// @custom:member weightCutMultiple The weight cut multiple that produces the given weight.
 struct JBRulesetWeightCache {
     uint112 weight;
-    uint168 weightCutMultiple;
+    uint144 weightCutMultiple;
 }
