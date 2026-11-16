@@ -19,9 +19,9 @@ so the gas a caller picks can never change who ends up with the money. No gas co
       `processHeldReservedTokensOf(projectId, token, split)` reruns the same code and reverts if it re-held.
 - [x] `JBHeldSplits`: one external library owns the held-split ledger shape, `HoldSplit` and `ProcessHeldSplit`,
       used by the terminal and the controller.
-- [ ] Size: JBMultiTerminal fits (96 bytes margin). JBController is about 530 bytes over EIP-170 with this change
-      (main has 291 bytes of margin). Landing it needs the reserved split distribution moved into an external
-      library the way the terminal already does with `JBPayoutSplitGroupLib`; that is a separate refactor PR.
+- [x] Size: ships after Glamsterdam, where EIP-7954 raises the code limit to 65,536 bytes. JBMultiTerminal is
+      24,480 and JBController 25,106 (about 530 over today's 24,576; main has 291 of margin), both fine post-fork.
+      The `--sizes` CI step stays red until Foundry targets the fork. Do not merge before the fork.
 - [ ] Tests: not in scope for this PR (user: "dont worry about tests yet"); existing tests asserting forgiveness
       will need rewriting.
 
