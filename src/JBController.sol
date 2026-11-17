@@ -722,6 +722,35 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
     /// @param token The project's ERC-20 at the time the tokens were held.
     /// @param split The held split, as emitted in `HoldSplit`.
     function processHeldReservedTokensOf(uint256 projectId, address token, JBSplit calldata split) external override {
+        _processHeldReservedTokensOf({projectId: projectId, token: token, split: split});
+    }
+
+    /// @notice Retries delivering several held reserved token splits of one project in one call.
+    /// @dev Each split follows `processHeldReservedTokensOf` exactly; one recipient that still fails reverts the call.
+    /// @param projectId The ID of the project the tokens belong to.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param splits The held splits, as emitted in `HoldSplit`.
+    function processHeldReservedTokensBatchOf(
+        uint256 projectId,
+        address token,
+        JBSplit[] calldata splits
+    )
+        external
+        override
+    {
+        for (uint256 i; i < splits.length;) {
+            _processHeldReservedTokensOf({projectId: projectId, token: token, split: splits[i]});
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @notice Retries delivering one held reserved token split. See `processHeldReservedTokensOf`.
+    /// @param projectId The ID of the project the tokens belong to.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param split The held split.
+    function _processHeldReservedTokensOf(uint256 projectId, address token, JBSplit calldata split) internal {
         (uint256 tokenCount, bytes32 splitHash) =
             JBHeldSplits.take({heldOf: heldReservedTokensOf, projectId: projectId, token: token, split: split});
 

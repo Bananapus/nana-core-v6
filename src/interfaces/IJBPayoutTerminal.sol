@@ -123,6 +123,12 @@ interface IJBPayoutTerminal is IJBTerminal {
     /// @param split The held split, as emitted in `HoldSplit`.
     function processHeldPayoutOf(uint256 projectId, address token, JBSplit calldata split) external;
 
+    /// @notice Retries several held payouts of one project and token. Reverts if any recipient still cannot take it.
+    /// @param projectId The ID of the project the payouts are from.
+    /// @param token The token of the payouts.
+    /// @param splits The held splits, as emitted in `HoldSplit`.
+    function processHeldPayoutsOf(uint256 projectId, address token, JBSplit[] calldata splits) external;
+
     /// @notice Uses a project's surplus allowance to send funds to a beneficiary.
     /// @param projectId The ID of the project to use the surplus allowance of.
     /// @param token The token to pay out.
