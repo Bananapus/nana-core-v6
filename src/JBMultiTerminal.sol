@@ -716,9 +716,10 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// after a payout — processing them finalizes the fee payment.
     /// @dev Only processes fees whose `unlockTimestamp` has passed. Stops early if it encounters a still-locked fee.
     /// @dev Reentrancy-safe: re-reads `_nextHeldFeeIndexOf` from storage each iteration and advances the index before
-    /// the external `_processFee` call, preventing double-processing.
-    /// @dev If `_processFee` reverts (fee terminal rejects), the fee is re-held at the end of the queue with no lock,
-    /// so a stuck fee never blocks the ones behind it and is never forgiven. A `FeeReverted` event is emitted.
+    /// the external call, preventing double-processing.
+    /// @dev If the fee project rejects a fee, that fee is written back to its slot and processing stops there, with a
+    /// `FeeReverted` event. Nothing is forgiven and nothing is re-queued: every fee for a token goes to the same fee
+    /// terminal, so the ones behind it would fail the same way, and rewriting the original slot costs no new storage.
     /// @param projectId The ID of the project to process held fees for.
     /// @param token The token to process held fees for.
     /// @param count The number of fees to process.
@@ -744,25 +745,46 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
             // forge-lint: disable-next-line(block-timestamp)
             if (heldFee.unlockTimestamp > block.timestamp) break;
 
-            // Delete the entry and advance the index *before* the external call. This is intentional:
-            // 1. It prevents reentrancy from reprocessing the same fee.
-            // 2. If `_processFee` fails (try-catch), it pushes the fee back onto the end of this array, so the
-            //    retry is bounded by `count` and the fee is never lost.
+            // Delete the entry and advance the index *before* the external call so a reentrant call cannot process the
+            // same fee twice. `currentIndex` was proven to be within the held-fee array.
             delete _heldFeesOf[projectId][token][currentIndex];
-            // `currentIndex` was proven to be within the held-fee array.
             unchecked {
                 _nextHeldFeeIndexOf[projectId][token] = currentIndex + 1;
             }
 
             // Process the standard fee on the original gross amount recorded when the held fee was created.
-            _processFee({
+            uint256 fee = _feeAmountFrom(heldFee.amount);
+            try this.executeProcessFee({
                 projectId: projectId,
                 token: token,
-                amount: heldFee.amount,
+                amount: fee,
                 beneficiary: heldFee.beneficiary,
-                feeTerminal: feeTerminal,
-                wasHeld: true
-            });
+                feeTerminal: feeTerminal
+            }) {
+                emit ProcessFee({
+                    projectId: projectId,
+                    token: token,
+                    amount: fee,
+                    wasHeld: true,
+                    beneficiary: heldFee.beneficiary,
+                    caller: _msgSender()
+                });
+            } catch (bytes memory reason) {
+                // The fee project could not take it. Put the fee back where it was and stop: the callee's frame rolled
+                // back, so no reentrant call touched this slot in between.
+                _heldFeesOf[projectId][token][currentIndex] = heldFee;
+                _nextHeldFeeIndexOf[projectId][token] = currentIndex;
+
+                emit FeeReverted({
+                    projectId: projectId,
+                    token: token,
+                    feeProjectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID,
+                    amount: fee,
+                    reason: reason,
+                    caller: _msgSender()
+                });
+                break;
+            }
 
             unchecked {
                 ++i;
@@ -1821,7 +1843,6 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param amount The gross amount the fee is taken from, as a fixed point number with 18 decimals.
     /// @param beneficiary The address which will receive any platform tokens minted.
     /// @param feeTerminal The terminal that'll receive the fee.
-    /// @param wasHeld A flag indicating if the fee to process was held by this terminal.
     /// @dev A failed fee route must not trap payouts, cash outs, allowances or terminal migration, but it must not
     /// change who ends up with the fee either: the outcome of a fee route can depend on the gas the caller chose, so
     /// a forgiven fee would be a fee anyone can waive. On failure the fee is held in `_heldFeesOf` with no lock and
@@ -1831,8 +1852,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
         address token,
         uint256 amount,
         address beneficiary,
-        IJBTerminal feeTerminal,
-        bool wasHeld
+        IJBTerminal feeTerminal
     )
         internal
     {
@@ -1845,7 +1865,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 projectId: projectId,
                 token: token,
                 amount: fee,
-                wasHeld: wasHeld,
+                wasHeld: false,
                 beneficiary: beneficiary,
                 caller: _msgSender()
             });
@@ -2074,12 +2094,7 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
                 _primaryTerminalOf({projectId: JBConstants.FEE_BENEFICIARY_PROJECT_ID, token: token});
 
             _processFee({
-                projectId: projectId,
-                token: token,
-                amount: amount,
-                beneficiary: beneficiary,
-                feeTerminal: feeTerminal,
-                wasHeld: false
+                projectId: projectId, token: token, amount: amount, beneficiary: beneficiary, feeTerminal: feeTerminal
             });
         }
     }
