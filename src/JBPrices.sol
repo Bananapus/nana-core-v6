@@ -320,7 +320,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     }
 
     /// @notice Returns the first non-zero direct price from `feeds`.
-    /// @dev Feeds are tried in registration order. A feed that reverts or returns zero is treated as unavailable.
+    /// @dev Feeds are tried in registration order. A feed that returns zero is treated as unavailable and the next
+    /// feed is tried. A feed that reverts makes the whole lookup revert: whether a call reverts can depend on the gas
+    /// the caller chose, so falling through would let the caller pick which feed prices their transaction.
     /// @param feeds The direct price feeds to try.
     /// @param decimals The number of decimals the returned fixed point price should use.
     /// @return price The first non-zero price returned by the feeds.
@@ -335,10 +337,8 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     {
         uint256 numberOfFeeds = feeds.length;
         for (uint256 i; i < numberOfFeeds;) {
-            // Try each feed independently so one unavailable oracle does not block later backups.
-            try feeds[i].currentUnitPrice(decimals) returns (uint256 returnedPrice) {
-                if (returnedPrice != 0) return (returnedPrice, true);
-            } catch {}
+            uint256 returnedPrice = feeds[i].currentUnitPrice(decimals);
+            if (returnedPrice != 0) return (returnedPrice, true);
 
             unchecked {
                 ++i;
@@ -347,8 +347,9 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     }
 
     /// @notice Returns the first non-zero inverse price from `feeds`.
-    /// @dev Feeds are tried in registration order. A feed that reverts, returns zero, or inverts to zero at the
-    /// requested precision is treated as unavailable.
+    /// @dev Feeds are tried in registration order. A feed that returns zero, or inverts to zero at the requested
+    /// precision, is treated as unavailable and the next feed is tried. A feed that reverts makes the whole lookup
+    /// revert, for the same reason as `_priceFrom`.
     /// @param feeds The opposite-direction price feeds to invert.
     /// @param decimals The number of decimals the returned fixed point price should use.
     /// @return price The first non-zero inverse price returned by the feeds.
@@ -363,14 +364,12 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
     {
         uint256 numberOfFeeds = feeds.length;
         for (uint256 i; i < numberOfFeeds;) {
-            // Each opposite-direction feed is optional; continue to backups if it cannot produce a usable price.
-            try feeds[i].currentUnitPrice(decimals) returns (uint256 inversePrice) {
-                if (inversePrice != 0) {
-                    // Convert "unit per pricing" into "pricing per unit" using the same fixed-point precision.
-                    uint256 invertedPrice = mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: inversePrice});
-                    if (invertedPrice != 0) return (invertedPrice, true);
-                }
-            } catch {}
+            uint256 inversePrice = feeds[i].currentUnitPrice(decimals);
+            if (inversePrice != 0) {
+                // Convert "unit per pricing" into "pricing per unit" using the same fixed-point precision.
+                uint256 invertedPrice = mulDiv({x: 10 ** decimals, y: 10 ** decimals, denominator: inversePrice});
+                if (invertedPrice != 0) return (invertedPrice, true);
+            }
 
             unchecked {
                 ++i;
