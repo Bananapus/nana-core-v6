@@ -808,6 +808,28 @@ contract JBMultiTerminal is JBPermissioned, ERC2771Context, IJBMultiTerminal {
     /// @param token The token of the payout.
     /// @param split The held split, as emitted in `HoldSplit`.
     function processHeldPayoutOf(uint256 projectId, address token, JBSplit calldata split) external override {
+        _processHeldPayoutOf({projectId: projectId, token: token, split: split});
+    }
+
+    /// @notice Retries several held payouts of one project and token in one call.
+    /// @dev Each split follows `processHeldPayoutOf` exactly; one recipient that still fails reverts the whole call.
+    /// @param projectId The ID of the project the payouts are from.
+    /// @param token The token of the payouts.
+    /// @param splits The held splits, as emitted in `HoldSplit`.
+    function processHeldPayoutsOf(uint256 projectId, address token, JBSplit[] calldata splits) external override {
+        for (uint256 i; i < splits.length;) {
+            _processHeldPayoutOf({projectId: projectId, token: token, split: splits[i]});
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /// @notice Retries one held payout. See `processHeldPayoutOf`.
+    /// @param projectId The ID of the project the payout is from.
+    /// @param token The token of the payout.
+    /// @param split The held split.
+    function _processHeldPayoutOf(uint256 projectId, address token, JBSplit calldata split) internal {
         uint256 feeEligibleAmount = JBPayoutSplitGroupLib.processHeldPayout({
             heldPayoutOf: heldPayoutOf, projectId: projectId, token: token, split: split, caller: _msgSender()
         });

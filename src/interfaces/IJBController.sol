@@ -386,6 +386,12 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     /// @param split The held split, as emitted in `HoldSplit`.
     function processHeldReservedTokensOf(uint256 projectId, address token, JBSplit calldata split) external;
 
+    /// @notice Retries delivering several held reserved token splits. Reverts if any recipient still cannot take them.
+    /// @param projectId The ID of the project.
+    /// @param token The project's ERC-20 the tokens are held in.
+    /// @param splits The held splits, as emitted in `HoldSplit`.
+    function processHeldReservedTokensBatchOf(uint256 projectId, address token, JBSplit[] calldata splits) external;
+
     /// @notice Sends a project's pending reserved tokens to its reserved token splits.
     /// @param projectId The ID of the project to send reserved tokens for.
     /// @return The amount of reserved tokens minted and sent.
