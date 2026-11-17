@@ -20,6 +20,20 @@ interface IJBPrices {
         address caller
     );
 
+    /// @notice A price feed was removed from a project's currency pair.
+    /// @param projectId The ID of the project, or 0 for a protocol default.
+    /// @param pricingCurrency The currency that the feed's returned price is denominated in.
+    /// @param unitCurrency The currency whose unit is priced by the feed.
+    /// @param feed The price feed that was removed.
+    /// @param caller The address that removed it.
+    event RemovePriceFeed(
+        uint256 indexed projectId,
+        uint256 indexed pricingCurrency,
+        uint256 indexed unitCurrency,
+        IJBPriceFeed feed,
+        address caller
+    );
+
     /// @notice The project ID used to store protocol default price feeds.
     /// @return projectId The project ID used to store protocol defaults.
     function DEFAULT_PROJECT_ID() external view returns (uint256 projectId);
@@ -103,6 +117,20 @@ interface IJBPrices {
     /// @param unitCurrency The currency whose unit is priced by the feed.
     /// @param feed The price feed to add.
     function addPriceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        external;
+
+    /// @notice Removes a price feed from a project's exact currency pair, keeping the order of the remaining feeds.
+    /// @dev Gated like `addPriceFeedFor`: project ID 0 by the contract owner, any other project by its controller.
+    /// @param projectId The ID of the project to remove the feed from, or 0 to remove a protocol default.
+    /// @param pricingCurrency The currency that the feed's returned price is denominated in.
+    /// @param unitCurrency The currency whose unit is priced by the feed.
+    /// @param feed The price feed to remove.
+    function removePriceFeedFor(
         uint256 projectId,
         uint256 pricingCurrency,
         uint256 unitCurrency,

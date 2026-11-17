@@ -28,6 +28,7 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
 
     /// @notice Thrown when no configured price feed can be found for the requested currency pair.
     error JBPrices_PriceFeedNotFound(uint256 projectId, uint256 pricingCurrency, uint256 unitCurrency);
+    error JBPrices_PriceFeedNotRegistered(IJBPriceFeed feed);
 
     /// @notice Thrown when the provided price feed is the zero address.
     error JBPrices_ZeroPriceFeed();
@@ -141,6 +142,56 @@ contract JBPrices is JBControlled, JBPermissioned, ERC2771Context, Ownable, IJBP
             feed: feed,
             caller: _msgSender()
         });
+    }
+
+    /// @notice Removes a price feed from a project's exact currency pair, keeping the order of the remaining feeds.
+    /// @dev Gated like `addPriceFeedFor`: project ID 0 by this contract's owner, any other project by its controller.
+    /// A feed that reverts now reverts every lookup that reaches it, so the party that registered it needs a way to
+    /// take it out.
+    /// @param projectId The ID of the project to remove the feed from, or 0 to remove a protocol default.
+    /// @param pricingCurrency The currency that the feed's returned price is denominated in.
+    /// @param unitCurrency The currency whose unit is priced by the feed.
+    /// @param feed The price feed to remove.
+    function removePriceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        external
+        override
+    {
+        projectId == DEFAULT_PROJECT_ID ? _checkOwner() : _onlyControllerOf(projectId);
+
+        IJBPriceFeed[] storage feeds = _priceFeedsFor[projectId][pricingCurrency][unitCurrency];
+        uint256 numberOfFeeds = feeds.length;
+
+        for (uint256 i; i < numberOfFeeds;) {
+            if (feeds[i] == feed) {
+                // Shift the feeds behind it forward so the primary and backup order is preserved, then drop the tail.
+                for (uint256 j = i + 1; j < numberOfFeeds;) {
+                    feeds[j - 1] = feeds[j];
+                    unchecked {
+                        ++j;
+                    }
+                }
+                feeds.pop();
+
+                emit RemovePriceFeed({
+                    projectId: projectId,
+                    pricingCurrency: pricingCurrency,
+                    unitCurrency: unitCurrency,
+                    feed: feed,
+                    caller: _msgSender()
+                });
+                return;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+
+        revert JBPrices_PriceFeedNotRegistered({feed: feed});
     }
 
     //*********************************************************************//
