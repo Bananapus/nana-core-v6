@@ -251,6 +251,39 @@ contract JBController is JBPermissioned, ERC2771Context, IJBController, IJBMigra
         });
     }
 
+    /// @notice Removes one of the project's price feeds, so a feed that has started reverting can be taken out.
+    /// @dev Same gate as `addPriceFeedFor`: the project's owner or an operator with `ADD_PRICE_FEED` permission, and
+    /// the current ruleset must have `allowAddPriceFeed` enabled when one exists.
+    /// @param projectId The ID of the project to remove the feed from.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency the feed prices.
+    /// @param feed The address of the price feed to remove.
+    function removePriceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        external
+        override
+    {
+        // Enforce permissions.
+        _requirePermissionFrom({
+            account: _ownerOf(projectId), projectId: projectId, permissionId: JBPermissionIds.ADD_PRICE_FEED
+        });
+
+        JBRuleset memory ruleset = _currentRulesetOf(projectId);
+
+        // The same ruleset flag governs adding and removing: both change which oracle prices the project.
+        if (ruleset.id != 0 && !ruleset.allowAddPriceFeed()) {
+            revert JBController_AddingPriceFeedNotAllowed(projectId);
+        }
+
+        PRICES.removePriceFeedFor({
+            projectId: projectId, pricingCurrency: pricingCurrency, unitCurrency: unitCurrency, feed: feed
+        });
+    }
+
     /// @notice Called after this controller has been set as the project's controller in the directory.
     /// @dev Can only be called by the directory.
     /// @param from The controller to migrate from.

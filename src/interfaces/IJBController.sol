@@ -262,6 +262,19 @@ interface IJBController is IERC165, IJBProjectUriRegistry, IJBDirectoryAccessCon
     )
         external;
 
+    /// @notice Removes one of the project's price feeds. Same gate as `addPriceFeedFor`.
+    /// @param projectId The ID of the project to remove the feed from.
+    /// @param pricingCurrency The currency the feed's output price is in terms of.
+    /// @param unitCurrency The currency the feed prices.
+    /// @param feed The price feed to remove.
+    function removePriceFeedFor(
+        uint256 projectId,
+        uint256 pricingCurrency,
+        uint256 unitCurrency,
+        IJBPriceFeed feed
+    )
+        external;
+
     /// @notice Burns a holder's project tokens or unclaimed project token credits, removing them from supply.
     /// @param holder The address whose project tokens (or credits) are being burned.
     /// @param projectId The ID of the project whose project tokens are being burned.
