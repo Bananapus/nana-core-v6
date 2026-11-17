@@ -232,15 +232,9 @@ contract JBTerminalStore is IJBTerminalStore {
                 knownInvalidDecimals = true;
                 expectedDecimals = 18;
             } else if (context.token != JBConstants.NATIVE_TOKEN && context.token.code.length > 0) {
-                try IERC20Metadata(context.token).decimals() returns (uint8 decimals) {
-                    expectedDecimals = decimals;
-                } catch {
-                    // The token didn't support `decimals`.
-                    // @dev Non-standard ERC20s that revert on `decimals()` will bypass decimal validation.
-                    // The caller is responsible for providing the correct decimals for such tokens.
-                    knownInvalidDecimals = false;
-                    expectedDecimals = context.decimals;
-                }
+                // A token whose `decimals()` reverts cannot be added. Whether the call reverts can depend on the gas
+                // the caller chose, so a catch here would let the caller declare any decimals for a standard token.
+                expectedDecimals = IERC20Metadata(context.token).decimals();
 
                 if (expectedDecimals > 36) {
                     revert JBTerminalStore_AccountingContextDecimalsOutOfRange({
