@@ -95,7 +95,8 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
     /// @dev The static admin-set mappings are caller-agnostic and always apply. The hook (if set) receives `caller`
     /// (typically the terminal's `_msgSender()`) and may use it to narrow its grant — e.g. grant an ecosystem
     /// router feeless cash-outs only when the router itself is the caller, not when it appears as a split recipient
-    /// of someone else's payout. Hook is invoked via try/catch — a reverting hook is treated as `false`.
+    /// of someone else's payout. A reverting hook reverts the lookup: whether the call reverts can depend on the
+    /// gas the caller chose, and treating a revert as `false` would let anyone turn a fee on for a feeless address.
     /// @param addr The address to check.
     /// @param projectId The ID of the project to check.
     /// @param caller The outer caller (typically the terminal's `_msgSender()`). Pass `address(0)` for lookups
@@ -108,12 +109,8 @@ contract JBFeelessAddresses is Ownable, IJBFeelessAddresses, IERC165 {
         IJBFeelessHook hook = feelessHook;
         if (address(hook) == address(0)) return false;
 
-        // Hook grants are optional and caller-aware; a reverting hook is treated as "not feeless".
-        try hook.isFeeless({projectId: projectId, addr: addr, caller: caller}) returns (bool result) {
-            return result;
-        } catch {
-            return false;
-        }
+        // Hook grants are optional and caller-aware.
+        return hook.isFeeless({projectId: projectId, addr: addr, caller: caller});
     }
 
     //*********************************************************************//
